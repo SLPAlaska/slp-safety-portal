@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THA Form - SLP Alaska</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="form-container">
+    <div class="header">
+      <h1>Task Hazard Assessment (THA)</h1>
+      <p>SLP Alaska Safety Portal</p>
+    </div>
+    
+    <form id="thaForm">
+      <div class="section-header">General Information</div>
+      
+      <div class="form-group">
+        <label for="date">Date *</label>
+        <input type="date" id="date" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="company">Company *</label>
+        <select id="company" required>
+          <option value="">-- Select Company --</option>
+          <option value="Hilcorp Alaska">Hilcorp Alaska</option>
+          <option value="MagTec Alaska">MagTec Alaska</option>
+          <option value="ConocoPhillips">ConocoPhillips</option>
+          <option value="ASRC Energy Services">ASRC Energy Services</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="location">Location *</label>
+        <select id="location" required>
+          <option value="">-- Select Location --</option>
+          <option value="Kenai">Kenai</option>
+          <option value="Prudhoe Bay">Prudhoe Bay</option>
+          <option value="Kuparuk">Kuparuk</option>
+          <option value="Alpine">Alpine</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="crewLead">Crew Lead *</label>
+        <input type="text" id="crewLead" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="taskDescription">Task Description *</label>
+        <textarea id="taskDescription" rows="3" required></textarea>
+      </div>
+      
+      <div class="section-header">Task Steps</div>
+      
+      <div id="taskStepsContainer">
+        <!-- Steps added dynamically -->
+      </div>
+      
+      <button type="button" class="add-btn" onclick="addTaskStep()">+ Add Task Step</button>
+      
+      <button type="submit" class="submit-btn" id="submitBtn">Submit THA</button>
+      
+      <div class="loading" id="loading">Submitting...</div>
+      
+      <div class="success" id="success">
+        <h2>✓ THA Submitted!</h2>
+        <p>THA Number: <span id="thaNumber"></span></p>
+        <button type="button" onclick="resetForm()">Create New THA</button>
+      </div>
+    </form>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>
