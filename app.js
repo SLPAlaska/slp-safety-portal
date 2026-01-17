@@ -2,7 +2,7 @@
 const SUPABASE_URL = 'https://iypezirwdlqpptjpeeyf.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let taskStepCount = 0;
 
@@ -111,7 +111,7 @@ document.getElementById('thaForm').addEventListener('submit', async function(e) 
   
   try {
     // Insert main THA record
-    const { data: thaData, error: thaError } = await supabase
+    const { data: thaData, error: thaError } = await supabaseClient
       .from('tha_submissions')
       .insert({
         tha_number: thaNumber,
@@ -134,7 +134,7 @@ document.getElementById('thaForm').addEventListener('submit', async function(e) 
         tha_number: thaNumber
       }));
       
-      const { error: stepsError } = await supabase
+      const { error: stepsError } = await supabaseClient
         .from('tha_task_steps')
         .insert(stepsWithTHA);
       
