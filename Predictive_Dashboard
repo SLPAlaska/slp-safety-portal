@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Roboto, sans-serif; background: #0a0f1a; color: #e2e8f0; min-height: 100vh; }
+    
+    .header { background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-bottom: 3px solid #f97316; position: sticky; top: 0; z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { height: 45px; }
+    .header h1 { color: #f97316; font-size: 18px; font-weight: 700; }
+    .header-subtitle { color: #94a3b8; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .filter-group { display: flex; flex-direction: column; gap: 2px; }
+    .filter-label { font-size: 9px; color: #64748b; text-transform: uppercase; }
+    .filter-select { padding: 6px 10px; border-radius: 4px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-size: 12px; min-width: 120px; }
+    .filter-select.year-select { min-width: 90px; background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%); border-color: #f97316; font-weight: 600; }
+    .refresh-btn { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; }
+    .refresh-btn:hover { opacity: 0.9; }
+    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .filter-banner { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 8px; text-align: center; font-weight: 600; font-size: 12px; }
+    
+    .year-banner { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 6px 12px; text-align: center; font-size: 11px; color: #94a3b8; border-bottom: 1px solid #334155; }
+    .year-banner strong { color: #f97316; font-size: 13px; }
+    
+    .cache-indicator { display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 600; }
+    .cache-indicator.cached { background: #22c55e33; color: #22c55e; }
+    .cache-indicator.fresh { background: #f9731633; color: #f97316; }
+    
+    .container { padding: 16px; max-width: 1800px; margin: 0 auto; }
+    
+    /* Score Cards */
+    .score-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .score-card { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 10px; padding: 14px; text-align: center; position: relative; overflow: hidden; }
+    .score-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .score-card.sci::before { background: linear-gradient(90deg, #ef4444, #eab308, #22c55e); }
+    .score-card.risk::before { background: linear-gradient(90deg, #22c55e, #eab308, #ef4444); }
+    .score-card.safe::before { background: #22c55e; }
+    .score-card.warning::before { background: #eab308; }
+    .score-card.danger::before { background: #ef4444; }
+    .score-card.cost::before { background: linear-gradient(90deg, #059669, #10b981); }
+    .score-card.sif::before { background: linear-gradient(90deg, #dc2626, #991b1b); }
+    .score-card.energy::before { background: linear-gradient(90deg, #7c3aed, #4f46e5); }
+    .score-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .score-value { font-size: 32px; font-weight: 700; }
+    .score-value.good { color: #22c55e; }
+    .score-value.warning { color: #eab308; }
+    .score-value.danger { color: #ef4444; }
+    .score-value.neutral { color: #f97316; }
+    .score-value.money { color: #10b981; }
+    .score-value.purple { color: #a78bfa; }
+    .score-detail { font-size: 9px; color: #64748b; margin-top: 4px; }
+    
+    /* Main Grid */
+    .main-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    
+    /* Panels */
+    .panel { background: linear-gradient(135deg, #1e293b 0%, #2d3748 100%); border-radius: 10px; overflow: hidden; }
+    .panel-header { background: rgba(0,0,0,0.3); padding: 10px 14px; font-weight: 600; font-size: 12px; color: #f97316; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .panel-header .icon { font-size: 14px; }
+    .panel-header.cost-header { color: #10b981; }
+    .panel-header.sif-header { color: #fca5a5; background: linear-gradient(135deg, rgba(220,38,38,0.2) 0%, rgba(153,27,27,0.2) 100%); }
+    .panel-header.energy-header { color: #c4b5fd; background: linear-gradient(135deg, rgba(124,58,237,0.2) 0%, rgba(79,70,229,0.2) 100%); }
+    .panel-content { padding: 14px; }
+    
+    /* Metrics Grid */
+    .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .metrics-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .metric { background: #0f172a; padding: 10px; border-radius: 6px; }
+    .metric-label { font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+    .metric-value { font-size: 22px; font-weight: 700; }
+    .metric-value.green { color: #22c55e; }
+    .metric-value.red { color: #ef4444; }
+    .metric-value.yellow { color: #eab308; }
+    .metric-value.orange { color: #f97316; }
+    .metric-value.blue { color: #3b82f6; }
+    .metric-value.teal { color: #10b981; }
+    .metric-value.purple { color: #a78bfa; }
+    .metric-detail { font-size: 9px; color: #64748b; margin-top: 2px; }
+    
+    /* BBS Specific */
+    .bbs-ratio { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 12px; background: #0f172a; border-radius: 8px; margin-bottom: 10px; }
+    .ratio-item { text-align: center; }
+    .ratio-value { font-size: 28px; font-weight: 700; }
+    .ratio-label { font-size: 9px; color: #64748b; text-transform: uppercase; }
+    .ratio-divider { font-size: 24px; color: #475569; }
+    
+    /* Status Row */
+    .status-row { display: flex; gap: 8px; margin-top: 10px; }
+    .status-item { flex: 1; background: #0f172a; padding: 10px; border-radius: 6px; text-align: center; }
+    .status-item.open { border-left: 3px solid #ef4444; }
+    .status-item.closed { border-left: 3px solid #22c55e; }
+    .status-item.critical { border-left: 3px solid #dc2626; }
+    .status-item.overdue { border-left: 3px solid #f97316; }
+    
+    /* Energy bars */
+    .energy-bar-container { margin-bottom: 8px; }
+    .energy-bar-label { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 2px; }
+    .energy-bar-label span:first-child { color: #94a3b8; }
+    .energy-bar-label span:last-child { color: #a78bfa; font-weight: 600; }
+    .energy-bar { height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+    .energy-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .energy-bar-fill.gravity { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .energy-bar-fill.motion { background: linear-gradient(90deg, #f97316, #ea580c); }
+    .energy-bar-fill.mechanical { background: linear-gradient(90deg, #eab308, #ca8a04); }
+    .energy-bar-fill.electrical { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+    .energy-bar-fill.pressure { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+    .energy-bar-fill.chemical { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .energy-bar-fill.temperature { background: linear-gradient(90deg, #ec4899, #db2777); }
+    .energy-bar-fill.stored { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+    
+    /* Control tier bars */
+    .control-tier { display: flex; align-items: center; gap: 8px; padding: 8px; background: #0f172a; border-radius: 6px; margin-bottom: 6px; }
+    .control-tier-label { font-size: 10px; color: #94a3b8; width: 80px; }
+    .control-tier-bar { flex: 1; height: 16px; background: #1e293b; border-radius: 4px; overflow: hidden; position: relative; }
+    .control-tier-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+    .control-tier-fill.tier1 { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .control-tier-fill.tier2 { background: linear-gradient(90deg, #eab308, #ca8a04); }
+    .control-tier-fill.tier3 { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .control-tier-count { font-size: 10px; font-weight: 600; color: white; }
+    
+    /* SIF specific */
+    .sif-rate-display { text-align: center; padding: 16px; background: linear-gradient(135deg, rgba(220,38,38,0.1) 0%, rgba(153,27,27,0.1) 100%); border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(220,38,38,0.3); }
+    .sif-rate-value { font-size: 42px; font-weight: 700; color: #fca5a5; }
+    .sif-rate-label { font-size: 10px; color: #f87171; text-transform: uppercase; }
+    
+    /* Chart */
+    .chart-container { height: 200px; position: relative; }
+    
+    /* Table */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    .data-table th { text-align: left; padding: 6px 8px; background: #0f172a; color: #64748b; font-weight: 500; text-transform: uppercase; font-size: 9px; }
+    .data-table td { padding: 6px 8px; border-bottom: 1px solid #1e293b; }
+    .data-table tr:hover { background: rgba(249, 115, 22, 0.1); }
+    .scrollable { max-height: 250px; overflow-y: auto; }
+    
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; }
+    .badge-open { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    .badge-closed { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+    .badge-sif { background: rgba(220, 38, 38, 0.3); color: #fca5a5; }
+    .days { font-weight: 700; padding: 2px 6px; border-radius: 3px; font-size: 10px; }
+    .days-critical { background: #ef4444; color: white; }
+    .days-warning { background: #eab308; color: #1e293b; }
+    .days-ok { background: #22c55e; color: white; }
+    
+    /* Loading */
+    .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top-color: #f97316; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .last-updated { text-align: center; color: #475569; font-size: 10px; margin-top: 16px; }
+    
+    /* Category breakdown */
+    .category-list { margin-top: 10px; }
+    .category-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1e293b; font-size: 11px; }
+    .category-name { color: #94a3b8; }
+    .category-count { color: #f97316; font-weight: 600; }
+    
+    /* TrueCost specific */
+    .cost-summary { display: flex; justify-content: space-around; padding: 12px; background: #0f172a; border-radius: 8px; margin-bottom: 12px; }
+    .cost-item { text-align: center; }
+    .cost-amount { font-size: 20px; font-weight: 700; color: #10b981; }
+    .cost-label { font-size: 9px; color: #64748b; text-transform: uppercase; }
+    .no-cost-data { text-align: center; padding: 20px; color: #64748b; font-style: italic; }
+    
+    /* Print styles */
+    @media print {
+      body { background: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .header { background: #f97316 !important; -webkit-print-color-adjust: exact !important; }
+      .score-card, .panel { background: #1e293b !important; -webkit-print-color-adjust: exact !important; break-inside: avoid; }
+      .refresh-btn, #printBtn { display: none !important; }
+      .dashboard { padding: 10px !important; }
+      .print-timestamp { display: block !important; text-align: center; color: #64748b; font-size: 10px; margin-bottom: 10px; }
+      .cache-indicator { display: none !important; }
+    }
+    .print-timestamp { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+    
+      <div>
+        <h1>Predictive Safety Analytics</h1>
+        <div class="header-subtitle">Real-Time Leading & Lagging Indicators</div>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="filter-group">
+        <span class="filter-label">Year</span>
+        <select id="yearFilter" class="filter-select year-select">
+          <option value="" id="currentYearOption"></option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Company</span>
+        <select id="companyFilter" class="filter-select"><option value="All">All Companies</option></select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Location</span>
+        <select id="locationFilter" class="filter-select"><option value="All">All Locations</option></select>
+      </div>
+      <button class="refresh-btn" id="printBtn" style="margin-right:8px;background:#1e293b;">🖨️ Print</button>
+      <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
+    </div>
+  </div>
+  
+  <div class="print-timestamp" id="printTimestamp"></div>
+  <div class="year-banner" id="yearBanner">Showing data for: <strong id="yearDisplay"></strong><span class="cache-indicator cached" id="cacheIndicator"></span></div>
+  <div class="filter-banner" id="filterBanner" style="display:none;"></div>
+  
+  <div class="container">
+    <div id="content">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading predictive analytics...</p>
+        <p style="font-size:9px;color:#475569;margin-top:8px;">Loading from cache for instant results...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var data = null;
+    var currentYear = new Date().getFullYear();
+    var isRefreshing = false;
+    
+    function init() {
+      var yearSelect = document.getElementById("yearFilter");
+      var currentYearOption = document.getElementById("currentYearOption");
+      currentYearOption.value = String(currentYear);
+      currentYearOption.textContent = currentYear;
+      
+      document.getElementById("yearFilter").addEventListener("change", applyFilters);
+      document.getElementById("companyFilter").addEventListener("change", applyFilters);
+      document.getElementById("locationFilter").addEventListener("change", applyFilters);
+      document.getElementById("refreshBtn").addEventListener("click", refreshData);
+      document.getElementById("printBtn").addEventListener("click", printDashboard);
+      
+      google.script.run.withSuccessHandler(function(opts) {
+        populateFilters(opts);
+        loadData(false);
+      }).withFailureHandler(showError).getFilterOptions();
+    }
+    
+    function populateFilters(opts) {
+      var ys = document.getElementById("yearFilter");
+      var cs = document.getElementById("companyFilter");
+      var ls = document.getElementById("locationFilter");
+      
+      var allTimeOpt = document.createElement("option");
+      allTimeOpt.value = "All";
+      allTimeOpt.textContent = "All Time";
+      ys.appendChild(allTimeOpt);
+      
+      if (opts.years) {
+        opts.years.forEach(function(y) {
+          if (String(y) !== String(currentYear)) {
+            var o = document.createElement("option");
+            o.value = y;
+            o.textContent = y;
+            ys.appendChild(o);
+          }
+        });
+      }
+      
+      if (opts.companies) opts.companies.forEach(function(c) { var o = document.createElement("option"); o.value = c; o.textContent = c; cs.appendChild(o); });
+      if (opts.locations) opts.locations.forEach(function(l) { var o = document.createElement("option"); o.value = l; o.textContent = l; ls.appendChild(o); });
+    }
+    
+    function applyFilters() {
+      var y = document.getElementById("yearFilter").value || String(currentYear);
+      var c = document.getElementById("companyFilter").value;
+      var l = document.getElementById("locationFilter").value;
+      
+      var yearDisplay = document.getElementById("yearDisplay");
+      yearDisplay.textContent = (y === "All") ? "All Time" : y;
+      
+      var banner = document.getElementById("filterBanner");
+      if (c !== "All" || l !== "All") {
+        var t = "Filtered: " + (c !== "All" ? c : "All Companies") + " at " + (l !== "All" ? l : "All Locations");
+        banner.textContent = t;
+        banner.style.display = "block";
+      } else { 
+        banner.style.display = "none"; 
+      }
+      
+      loadData(false);
+    }
+    
+    function loadData(forceRefresh) {
+      var loadingMsg = forceRefresh ? 
+        '<div class="loading"><div class="spinner"></div><p>Refreshing from all data sources...</p><p style="font-size:9px;color:#475569;margin-top:8px;">This may take 2-3 minutes.</p></div>' :
+        '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
+      
+      document.getElementById("content").innerHTML = loadingMsg;
+      
+      var y = document.getElementById("yearFilter").value || String(currentYear);
+      var c = document.getElementById("companyFilter").value;
+      var l = document.getElementById("locationFilter").value;
+      
+      var yearDisplay = document.getElementById("yearDisplay");
+      yearDisplay.textContent = (y === "All") ? "All Time" : y;
+      
+      var cacheIndicator = document.getElementById("cacheIndicator");
+      if (forceRefresh) {
+        cacheIndicator.className = "cache-indicator fresh";
+        cacheIndicator.textContent = "Refreshing...";
+      }
+      
+      google.script.run
+        .withSuccessHandler(function(d) { 
+          console.log('Data received:', d ? 'yes' : 'null');
+          data = d; 
+          isRefreshing = false;
+          document.getElementById("refreshBtn").disabled = false;
+          document.getElementById("refreshBtn").textContent = "🔄 Refresh";
+          if (!d) {
+            document.getElementById("content").innerHTML = '<div class="loading"><p style="color:#ef4444;">Error: No data returned from server.</p><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#f97316;color:white;border:none;border-radius:4px;cursor:pointer;">Retry</button></div>';
+            return;
+          }
+          render(); 
+        })
+        .withFailureHandler(function(e) {
+          isRefreshing = false;
+          document.getElementById("refreshBtn").disabled = false;
+          document.getElementById("refreshBtn").textContent = "🔄 Refresh";
+          showError(e);
+        })
+        .getDashboardData(c, l, y, forceRefresh || false);
+    }
+    
+    function refreshData() { 
+      if (isRefreshing) return;
+      isRefreshing = true;
+      document.getElementById("refreshBtn").disabled = true;
+      document.getElementById("refreshBtn").textContent = "⏳ Refreshing...";
+      google.script.run.refreshData();
+      loadData(true);
+    }
+    
+    function printDashboard() {
+      var year = document.getElementById("yearFilter").value || String(currentYear);
+      var company = document.getElementById("companyFilter").value || "All Companies";
+      var location = document.getElementById("locationFilter").value || "All Locations";
+      var now = new Date();
+      var timestamp = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      var printDiv = document.getElementById("printTimestamp");
+      var yearText = (year === "All") ? "All Time" : year;
+      printDiv.innerHTML = "SLP Alaska Predictive Safety Analytics Report - <strong>" + yearText + "</strong><br><strong>" + company + " | " + location + "</strong><br>Generated: " + timestamp;
+      window.print();
+    }
+    
+    function showError(e) { document.getElementById("content").innerHTML = '<div class="loading"><p style="color:#ef4444;">Error: ' + e + '</p></div>'; }
+    
+    function formatMoney(amount) {
+      if (amount >= 1000000) return '$' + (amount / 1000000).toFixed(1) + 'M';
+      if (amount >= 1000) return '$' + (amount / 1000).toFixed(1) + 'K';
+      return '$' + Math.round(amount).toLocaleString();
+    }
+    
+    function render() {
+      var d = data;
+      var html = "";
+      
+      var cacheIndicator = document.getElementById("cacheIndicator");
+      if (d.fromCache) {
+        cacheIndicator.className = "cache-indicator cached";
+        cacheIndicator.textContent = "⚡ Cached (" + d.cacheAge + "m ago)";
+      } else {
+        cacheIndicator.className = "cache-indicator fresh";
+        cacheIndicator.textContent = "✓ Fresh data";
+      }
+      
+      // Score Cards Row
+      html += '<div class="score-row">';
+      
+      var sciClass = d.safetyCultureIndex >= 70 ? "good" : (d.safetyCultureIndex >= 50 ? "warning" : "danger");
+      html += '<div class="score-card sci"><div class="score-label">Safety Culture Index</div><div class="score-value ' + sciClass + '">' + d.safetyCultureIndex + '</div><div class="score-detail">Target: 70+</div></div>';
+      
+      var riskClass = d.predictiveRiskScore <= 30 ? "good" : (d.predictiveRiskScore <= 60 ? "warning" : "danger");
+      html += '<div class="score-card risk"><div class="score-label">Predictive Risk Score</div><div class="score-value ' + riskClass + '">' + d.predictiveRiskScore + '</div><div class="score-detail">Lower is better</div></div>';
+      
+      var ratioClass = d.bbsMetrics.safeRatio >= 5 ? "good" : (d.bbsMetrics.safeRatio >= 2 ? "warning" : "danger");
+      html += '<div class="score-card safe"><div class="score-label">Safe/At-Risk Ratio</div><div class="score-value ' + ratioClass + '">' + d.bbsMetrics.safeRatio + ':1</div><div class="score-detail">Target: 5:1</div></div>';
+      
+      var jsClass = d.bbsMetrics.jobStopRate >= 50 ? "good" : (d.bbsMetrics.jobStopRate >= 25 ? "warning" : "danger");
+      var jsDetail = d.bbsMetrics.atRisk > 0 ? (d.bbsMetrics.jobStops + ' / ' + d.bbsMetrics.atRisk + ' at-risk') : (d.bbsMetrics.jobStops + ' stops');
+      html += '<div class="score-card warning"><div class="score-label">Job Stop Rate</div><div class="score-value ' + (d.bbsMetrics.jobStopRate > 0 ? jsClass : "neutral") + '">' + d.bbsMetrics.jobStopRate + '%</div><div class="score-detail">' + jsDetail + '</div></div>';
+      
+      // SIF Potential Rate (NEW)
+      var sifRate = d.sifMetrics ? d.sifMetrics.sifPotentialRate : 0;
+      var sifClass = sifRate <= 10 ? "good" : (sifRate <= 25 ? "warning" : "danger");
+      html += '<div class="score-card sif"><div class="score-label">⚠️ SIF Potential Rate</div><div class="score-value ' + sifClass + '">' + sifRate + '%</div><div class="score-detail">' + (d.sifMetrics ? d.sifMetrics.sifPotentialCount : 0) + ' of ' + (d.sifMetrics ? d.sifMetrics.totalEvents : 0) + ' events</div></div>';
+      
+      // Control Hierarchy Score (NEW)
+      var chScore = d.energySourceMetrics ? d.energySourceMetrics.controlHierarchyScore : 0;
+      var chClass = chScore >= 70 ? "good" : (chScore >= 50 ? "warning" : "danger");
+      html += '<div class="score-card energy"><div class="score-label">🛡️ Control Quality</div><div class="score-value ' + chClass + '">' + chScore + '</div><div class="score-detail">Higher = better controls</div></div>';
+      
+      var totalNM = d.nearMissMetrics.totalReported + d.nearMissMetrics.fromBBS + d.nearMissMetrics.fromHazardID;
+      html += '<div class="score-card danger"><div class="score-label">Near Misses</div><div class="score-value neutral">' + totalNM + '</div><div class="score-detail">More = better culture</div></div>';
+      
+      var openClass = d.laggingIndicators.openIncidents + d.laggingIndicators.sailOpen === 0 ? "good" : "danger";
+      html += '<div class="score-card danger"><div class="score-label">Open Items</div><div class="score-value ' + openClass + '">' + (d.laggingIndicators.openIncidents + d.laggingIndicators.sailOpen) + '</div><div class="score-detail">' + d.laggingIndicators.sailOverdue + ' overdue</div></div>';
+      
+      if (d.trueCost && d.trueCost.hasData) {
+        html += '<div class="score-card cost"><div class="score-label">💰 Incident Costs</div><div class="score-value money">' + formatMoney(d.trueCost.totalCosts) + '</div><div class="score-detail">' + d.trueCost.incidentsCosted + ' incidents</div></div>';
+      }
+      
+      html += '</div>';
+      
+      // Main Grid
+      html += '<div class="main-grid">';
+      
+      // ENERGY SOURCE ANALYTICS PANEL (NEW)
+      html += '<div class="panel"><div class="panel-header energy-header">⚡ Energy Source Analytics</div><div class="panel-content">';
+      if (d.energySourceMetrics && d.energySourceMetrics.totalObservations > 0) {
+        html += '<div style="text-align:center;margin-bottom:12px;padding:10px;background:#0f172a;border-radius:8px;">';
+        html += '<div style="font-size:28px;font-weight:700;color:#a78bfa;">' + d.energySourceMetrics.totalObservations + '</div>';
+        html += '<div style="font-size:9px;color:#64748b;text-transform:uppercase;">Energy Sources Identified</div>';
+        html += '</div>';
+        
+        // Energy type breakdown
+        var energyTypes = ['Gravity', 'Motion', 'Mechanical', 'Electrical', 'Pressure', 'Chemical', 'Temperature', 'Stored'];
+        var maxEnergy = 1;
+        energyTypes.forEach(function(type) {
+          var count = (d.energySourceMetrics.byEnergyType && d.energySourceMetrics.byEnergyType[type]) || 0;
+          if (count > maxEnergy) maxEnergy = count;
+        });
+        
+        html += '<div style="margin-bottom:12px;">';
+        html += '<div style="font-size:10px;color:#64748b;margin-bottom:8px;text-transform:uppercase;">Energy Types Encountered</div>';
+        energyTypes.forEach(function(type) {
+          var count = (d.energySourceMetrics.byEnergyType && d.energySourceMetrics.byEnergyType[type]) || 0;
+          var pct = maxEnergy > 0 ? (count / maxEnergy * 100) : 0;
+          html += '<div class="energy-bar-container">';
+          html += '<div class="energy-bar-label"><span>' + type + '</span><span>' + count + '</span></div>';
+          html += '<div class="energy-bar"><div class="energy-bar-fill ' + type.toLowerCase() + '" style="width:' + pct + '%;"></div></div>';
+          html += '</div>';
+        });
+        html += '</div>';
+        
+        // Control tier breakdown
+        html += '<div style="font-size:10px;color:#64748b;margin-bottom:8px;text-transform:uppercase;">Control Hierarchy Distribution</div>';
+        var cq = d.energySourceMetrics.controlQuality || { tier1Count: 0, tier2Count: 0, tier3Count: 0, noControlCount: 0 };
+        var totalControls = cq.tier1Count + cq.tier2Count + cq.tier3Count + cq.noControlCount;
+        if (totalControls > 0) {
+          html += '<div class="control-tier"><div class="control-tier-label" style="color:#22c55e;">Tier 1</div><div class="control-tier-bar"><div class="control-tier-fill tier1" style="width:' + (cq.tier1Count/totalControls*100) + '%;"><span class="control-tier-count">' + cq.tier1Count + '</span></div></div></div>';
+          html += '<div class="control-tier"><div class="control-tier-label" style="color:#eab308;">Tier 2</div><div class="control-tier-bar"><div class="control-tier-fill tier2" style="width:' + (cq.tier2Count/totalControls*100) + '%;"><span class="control-tier-count">' + cq.tier2Count + '</span></div></div></div>';
+          html += '<div class="control-tier"><div class="control-tier-label" style="color:#ef4444;">Tier 3</div><div class="control-tier-bar"><div class="control-tier-fill tier3" style="width:' + (cq.tier3Count/totalControls*100) + '%;"><span class="control-tier-count">' + cq.tier3Count + '</span></div></div></div>';
+        }
+        html += '<div style="font-size:9px;color:#475569;margin-top:8px;">Tier 1: Elimination/Engineering | Tier 2: Guarding/LOTO | Tier 3: Admin/PPE</div>';
+      } else {
+        html += '<div style="text-align:center;padding:30px;color:#64748b;">No energy source data available yet.<br><span style="font-size:10px;">Data comes from THA/JSA, STOP Take 5, Risk Control Conversations</span></div>';
+      }
+      html += '</div></div>';
+      
+      // SIF POTENTIAL PANEL (NEW)
+      html += '<div class="panel"><div class="panel-header sif-header">☠️ SIF Potential (STKY) Analytics</div><div class="panel-content">';
+      if (d.sifMetrics && d.sifMetrics.totalEvents > 0) {
+        html += '<div class="sif-rate-display">';
+        html += '<div class="sif-rate-value">' + d.sifMetrics.sifPotentialRate + '%</div>';
+        html += '<div class="sif-rate-label">SIF Potential Rate</div>';
+        html += '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">' + d.sifMetrics.sifPotentialCount + ' of ' + d.sifMetrics.totalEvents + ' events had SIF potential</div>';
+        html += '</div>';
+        
+        // Direct control status
+        var dcs = d.sifMetrics.directControlStatus || { effective: 0, failed: 0, alternativeOnly: 0, none: 0 };
+        var totalDC = dcs.effective + dcs.failed + dcs.alternativeOnly + dcs.none;
+        if (totalDC > 0) {
+          html += '<div style="font-size:10px;color:#64748b;margin-bottom:6px;text-transform:uppercase;">Direct Control Status (SIF Events)</div>';
+          html += '<div class="metrics-grid" style="margin-bottom:12px;">';
+          html += '<div class="metric"><div class="metric-label">✓ Effective</div><div class="metric-value green">' + dcs.effective + '</div></div>';
+          html += '<div class="metric"><div class="metric-label">✗ Failed</div><div class="metric-value red">' + dcs.failed + '</div></div>';
+          html += '<div class="metric"><div class="metric-label">⚠ Alt Only</div><div class="metric-value yellow">' + dcs.alternativeOnly + '</div></div>';
+          html += '<div class="metric"><div class="metric-label">✗ None</div><div class="metric-value red">' + dcs.none + '</div></div>';
+          html += '</div>';
+        }
+        
+        // SIF by energy type
+        if (d.sifMetrics.byEnergyType) {
+          var sifEnergies = [];
+          for (var et in d.sifMetrics.byEnergyType) {
+            if (d.sifMetrics.byEnergyType[et] > 0) {
+              sifEnergies.push({ type: et, count: d.sifMetrics.byEnergyType[et] });
+            }
+          }
+          sifEnergies.sort(function(a,b) { return b.count - a.count; });
+          if (sifEnergies.length > 0) {
+            html += '<div style="font-size:10px;color:#64748b;margin-bottom:6px;text-transform:uppercase;">Top SIF Energy Sources</div>';
+            html += '<div class="category-list">';
+            sifEnergies.slice(0, 5).forEach(function(e) {
+              html += '<div class="category-item"><span class="category-name">' + e.type + '</span><span style="color:#fca5a5;font-weight:600;">' + e.count + '</span></div>';
+            });
+            html += '</div>';
+          }
+        }
+      } else {
+        html += '<div style="text-align:center;padding:30px;color:#64748b;">No SIF potential data available yet.<br><span style="font-size:10px;">Data comes from Good Catch, Incidents, BBS, Hazard ID, Property Damage</span></div>';
+      }
+      html += '</div></div>';
+      
+      // BBS Observations Panel
+      html += '<div class="panel"><div class="panel-header">📊 BBS Observations</div><div class="panel-content">';
+      html += '<div class="bbs-ratio">';
+      html += '<div class="ratio-item"><div class="ratio-value green">' + d.bbsMetrics.safe + '</div><div class="ratio-label">Safe</div></div>';
+      html += '<div class="ratio-divider">:</div>';
+      html += '<div class="ratio-item"><div class="ratio-value red">' + d.bbsMetrics.atRisk + '</div><div class="ratio-label">At-Risk</div></div>';
+      html += '</div>';
+      html += '<div class="metrics-grid">';
+      html += '<div class="metric"><div class="metric-label">Total Observations</div><div class="metric-value blue">' + d.bbsMetrics.total + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Job Stops</div><div class="metric-value orange">' + d.bbsMetrics.jobStops + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Near Misses</div><div class="metric-value yellow">' + d.bbsMetrics.nearMisses + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Potential Damage</div><div class="metric-value red">' + d.bbsMetrics.potentialDamage + '</div></div>';
+      html += '</div>';
+      if (Object.keys(d.bbsMetrics.byCategory).length > 0) {
+        html += '<div class="category-list">';
+        for (var cat in d.bbsMetrics.byCategory) {
+          html += '<div class="category-item"><span class="category-name">' + cat + '</span><span class="category-count">' + d.bbsMetrics.byCategory[cat] + '</span></div>';
+        }
+        html += '</div>';
+      }
+      html += '</div></div>';
+      
+      // Near Miss & Hazards Panel
+      html += '<div class="panel"><div class="panel-header">⚠️ Near Miss & Hazard Tracking</div><div class="panel-content">';
+      html += '<div class="metrics-grid">';
+      html += '<div class="metric"><div class="metric-label">Good Catches</div><div class="metric-value green">' + d.nearMissMetrics.goodCatches + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Near Misses</div><div class="metric-value yellow">' + d.nearMissMetrics.nearMisses + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Hazards ID</div><div class="metric-value orange">' + d.hazardMetrics.total + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">High Threat</div><div class="metric-value red">' + d.hazardMetrics.highThreat + '</div></div>';
+      html += '</div>';
+      html += '<div style="margin-top:12px;padding:10px;background:#0f172a;border-radius:6px;">';
+      html += '<div style="font-size:10px;color:#64748b;margin-bottom:6px;">NEAR MISS SOURCES</div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>From BBS:</span><span class="yellow">' + d.nearMissMetrics.fromBBS + '</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>From Hazard ID:</span><span class="yellow">' + d.nearMissMetrics.fromHazardID + '</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span>From Reports:</span><span class="yellow">' + d.nearMissMetrics.nearMisses + '</span></div>';
+      html += '</div></div></div>';
+      
+      // Leading Indicators Panel
+      html += '<div class="panel"><div class="panel-header">📈 Leading Indicators</div><div class="panel-content">';
+      html += '<div class="metrics-grid">';
+      html += '<div class="metric"><div class="metric-label">HSE Contacts</div><div class="metric-value green">' + (d.leadingIndicators.hseContacts || 0) + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">THA/JSAs</div><div class="metric-value green">' + d.leadingIndicators.thas + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Safety Meetings</div><div class="metric-value green">' + d.leadingIndicators.safetyMeetings + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Toolbox Meetings</div><div class="metric-value green">' + d.leadingIndicators.toolboxMeetings + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">STOP & Take 5</div><div class="metric-value green">' + d.leadingIndicators.stopTake5 + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Risk Conversations</div><div class="metric-value green">' + d.leadingIndicators.riskConversations + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">MBWA</div><div class="metric-value green">' + d.leadingIndicators.mbwa + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">LSR Audits</div><div class="metric-value green">' + d.leadingIndicators.lsrAudits + '</div></div>';
+      html += '</div></div></div>';
+      
+      // Lagging Indicators Panel
+      html += '<div class="panel"><div class="panel-header">📉 Lagging Indicators</div><div class="panel-content">';
+      html += '<div style="margin-bottom:10px;"><div style="font-size:10px;color:#64748b;margin-bottom:6px;">INCIDENTS</div>';
+      html += '<div class="status-row">';
+      html += '<div class="status-item open"><div class="metric-value red">' + d.laggingIndicators.openIncidents + '</div><div class="metric-label">Open</div></div>';
+      html += '<div class="status-item closed"><div class="metric-value green">' + d.laggingIndicators.closedIncidents + '</div><div class="metric-label">Closed</div></div>';
+      html += '</div></div>';
+      html += '<div class="metrics-grid">';
+      html += '<div class="metric"><div class="metric-label">First Aid</div><div class="metric-value yellow">' + d.laggingIndicators.firstAid + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Recordable</div><div class="metric-value red">' + d.laggingIndicators.recordable + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Lost Time</div><div class="metric-value red">' + d.laggingIndicators.lostTime + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Vehicle</div><div class="metric-value orange">' + (d.laggingIndicators.vehicleIncidents || 0) + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Property Damage</div><div class="metric-value orange">' + d.laggingIndicators.propertyDamage + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Env. Releases</div><div class="metric-value orange">' + (d.laggingIndicators.environmentalReleases || 0) + '</div></div>';
+      html += '</div>';
+      html += '<div style="margin-top:10px;"><div style="font-size:10px;color:#64748b;margin-bottom:6px;">SAIL LOG</div>';
+      html += '<div class="status-row">';
+      html += '<div class="status-item open"><div class="metric-value red">' + d.laggingIndicators.sailOpen + '</div><div class="metric-label">Open</div></div>';
+      html += '<div class="status-item critical"><div class="metric-value red">' + d.laggingIndicators.sailCritical + '</div><div class="metric-label">Critical</div></div>';
+      html += '<div class="status-item overdue"><div class="metric-value orange">' + d.laggingIndicators.sailOverdue + '</div><div class="metric-label">Overdue</div></div>';
+      html += '</div></div></div></div>';
+      
+      // TrueCost Panel
+      html += '<div class="panel"><div class="panel-header cost-header">💰 TrueCost™</div><div class="panel-content">';
+      if (d.trueCost && d.trueCost.hasData) {
+        html += '<div class="cost-summary">';
+        html += '<div class="cost-item"><div class="cost-amount">' + formatMoney(d.trueCost.directCosts) + '</div><div class="cost-label">Direct</div></div>';
+        html += '<div class="cost-item"><div class="cost-amount" style="color:#f97316;">' + formatMoney(d.trueCost.indirectCosts) + '</div><div class="cost-label">Indirect</div></div>';
+        html += '<div class="cost-item"><div class="cost-amount">' + d.trueCost.ratio + '</div><div class="cost-label">Ratio</div></div>';
+        html += '</div>';
+        var totalCost = d.trueCost.directCosts + d.trueCost.indirectCosts;
+        var directPct = totalCost > 0 ? (d.trueCost.directCosts / totalCost * 100) : 0;
+        html += '<div style="margin-bottom:12px;">';
+        html += '<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;background:#1e293b;">';
+        html += '<div style="width:' + directPct + '%;background:#ef4444;"></div>';
+        html += '<div style="flex:1;background:#f97316;"></div>';
+        html += '</div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#64748b;margin-top:2px;"><span>Direct ' + Math.round(directPct) + '%</span><span>Indirect ' + Math.round(100-directPct) + '%</span></div>';
+        html += '</div>';
+        html += '<div class="metrics-grid">';
+        html += '<div class="metric"><div class="metric-label">Incidents Costed</div><div class="metric-value teal">' + d.trueCost.incidentsCosted + '</div></div>';
+        html += '<div class="metric"><div class="metric-label">Avg/Incident</div><div class="metric-value teal">' + formatMoney(d.trueCost.avgCostPerIncident) + '</div></div>';
+        html += '</div>';
+        html += '<div style="margin-top:12px;padding:10px;background:#0f172a;border-radius:6px;"><div style="font-size:10px;color:#64748b;margin-bottom:6px;">TOP COST CATEGORY</div><div style="font-size:14px;font-weight:600;color:#10b981;">' + d.trueCost.topCostCategory + '</div></div>';
+      } else {
+        html += '<div class="no-cost-data">No cost data entered yet.</div>';
+      }
+      html += '</div></div>';
+      
+      // Aging & Chart
+      html += '<div class="panel"><div class="panel-header">⏰ Aging Metrics</div><div class="panel-content">';
+      html += '<div class="metrics-grid">';
+      html += '<div class="metric"><div class="metric-label">Avg Days Open</div><div class="metric-value orange">' + d.aging.avgDaysOpen + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Over 30 Days</div><div class="metric-value yellow">' + d.aging.over30Days + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Over 60 Days</div><div class="metric-value orange">' + d.aging.over60Days + '</div></div>';
+      html += '<div class="metric"><div class="metric-label">Over 90 Days</div><div class="metric-value red">' + d.aging.over90Days + '</div></div>';
+      html += '</div></div></div>';
+      
+      html += '<div class="panel"><div class="panel-header">📊 Leading vs Lagging</div><div class="panel-content"><div class="chart-container"><canvas id="ratioChart"></canvas></div></div></div>';
+      
+      html += '</div>';
+      
+      // High Energy with Weak Controls (NEW - Predictive Warning)
+      if (d.energySourceMetrics && d.energySourceMetrics.highEnergyWithWeakControls && d.energySourceMetrics.highEnergyWithWeakControls.length > 0) {
+        html += '<div class="panel" style="margin-top:16px;border:1px solid rgba(220,38,38,0.5);"><div class="panel-header sif-header">🚨 High Energy with Weak Controls (Predictive Risk)</div><div class="panel-content"><div class="scrollable">';
+        html += '<table class="data-table"><thead><tr><th>Form</th><th>Energy Type</th><th>Controls Used</th><th>Company</th></tr></thead><tbody>';
+        d.energySourceMetrics.highEnergyWithWeakControls.forEach(function(item) {
+          html += '<tr><td>' + item.form + '</td><td><span class="badge badge-sif">' + item.energy + '</span></td><td style="color:#fca5a5;">' + item.controls + '</td><td>' + item.company + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        html += '</div></div></div>';
+      }
+      
+      // Areas Needing Focus
+      html += '<div class="panel" style="margin-top:16px;"><div class="panel-header">⚠️ Areas Needing Focus (LSR Audits)</div><div class="panel-content"><div class="scrollable">';
+      if (!d.areasNeedingFocus || d.areasNeedingFocus.length === 0) {
+        html += '<div style="text-align:center;color:#64748b;padding:20px;">No issues identified</div>';
+      } else {
+        html += '<table class="data-table"><thead><tr><th>Category</th><th>Issue</th><th>Count</th><th>Location</th></tr></thead><tbody>';
+        for (var i = 0; i < d.areasNeedingFocus.length; i++) {
+          var focus = d.areasNeedingFocus[i];
+          var riskClass = focus.count >= 3 ? 'red' : (focus.count >= 2 ? 'orange' : 'yellow');
+          html += '<tr><td style="color:#f97316;font-weight:600;">' + focus.category + '</td><td style="font-size:11px;">' + focus.issue + '</td><td><span class="' + riskClass + '" style="font-weight:bold;">' + focus.count + '</span></td><td style="font-size:11px;">' + (focus.topLocation || 'N/A') + '</td></tr>';
+        }
+        html += '</tbody></table>';
+      }
+      html += '</div></div></div>';
+      
+      // Open Items Table
+      html += '<div class="panel" style="margin-top:16px;"><div class="panel-header">🔴 Oldest Open Items</div><div class="panel-content"><div class="scrollable">';
+      if (d.openItems.length === 0) {
+        html += '<p style="color:#64748b;text-align:center;padding:20px;">No open items - Great job!</p>';
+      } else {
+        html += '<table class="data-table"><thead><tr><th>Form</th><th>Company</th><th>Location</th><th>Status</th><th>Days</th></tr></thead><tbody>';
+        for (var i = 0; i < d.openItems.length; i++) {
+          var item = d.openItems[i];
+          var dc = item.daysOpen > 90 ? "days-critical" : (item.daysOpen > 30 ? "days-warning" : "days-ok");
+          html += '<tr><td>' + item.form + '</td><td>' + item.company + '</td><td>' + item.location + '</td><td><span class="badge badge-open">' + item.status + '</span></td><td><span class="days ' + dc + '">' + item.daysOpen + '</span></td></tr>';
+        }
+        html += '</tbody></table>';
+      }
+      html += '</div></div></div>';
+      
+      html += '<div class="last-updated">Last Updated: ' + new Date(d.lastUpdated).toLocaleString() + ' | ' + (d.displayYear === 'All' ? 'All Time' : d.displayYear) + '</div>';
+      
+      document.getElementById("content").innerHTML = html;
+      
+      setTimeout(function() {
+        var canvas = document.getElementById("ratioChart");
+        if (canvas) {
+          var leading = d.bbsMetrics.total + d.leadingIndicators.thas + d.leadingIndicators.safetyMeetings + d.leadingIndicators.toolboxMeetings + d.leadingIndicators.stopTake5 + d.leadingIndicators.mbwa + d.leadingIndicators.lsrAudits + (d.leadingIndicators.hseContacts || 0);
+          var lagging = d.laggingIndicators.totalIncidents + d.laggingIndicators.propertyDamage + d.laggingIndicators.sailOpen;
+          new Chart(canvas, {
+            type: "doughnut",
+            data: { labels: ["Leading (" + leading + ")", "Lagging (" + lagging + ")"], datasets: [{ data: [leading, lagging], backgroundColor: ["#22c55e", "#ef4444"], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { color: "#94a3b8", font: { size: 10 } } } } }
+          });
+        }
+      }, 100);
+    }
+    
+    window.onload = init;
+  </script>
+  
+  <style>
+  .slp-powered-footer { text-align: center; padding: 20px 10px; margin-top: 30px; border-top: 1px solid #334155; font-size: 10px; color: #64748b; }
+  </style>
+  <div class="slp-powered-footer">
+    Powered by Predictive Safety Analytics™ | © 2026 SLP Alaska
+  </div>
+</body>
+</html>
