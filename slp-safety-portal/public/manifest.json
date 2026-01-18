@@ -1,0 +1,21 @@
+{
+  "name": "SLP Safety Portal",
+  "short_name": "Safety Portal",
+  "description": "SLP Alaska Safety Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#ea580c",
+  "icons": [
+    {
+      "src": "/Logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
