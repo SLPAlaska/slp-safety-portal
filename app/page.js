@@ -24,7 +24,7 @@ const FORM_CATEGORIES = [
     forms: [
       { name: 'BBS Observation', href: '/bbs-form', isLocal: true },
       { name: 'Cold Weather Operating Risk Assessment', href: '/cold-weather-form', isLocal: true },
-      { name: 'Dropped Object Prevention Audit', href: 'https://script.google.com/macros/s/AKfycbxovEzZnCQ3BSgj-Rv19PxBuBC22j6qJUecc5syoTNBeHtFVkiPzs1vnR8IKEOmppBb/exec' },
+      { name: 'Dropped Object Prevention Audit', href: '/dropped-object-audit', isLocal: true },
       { name: 'E-Line Safety Audit', href: 'https://script.google.com/macros/s/AKfycbzWiONuRMrESw5MrmNstG4VcPVPXWqxcJGNNipH8Oht2-mXXUFo3yOy9I9cJjmIuEFw/exec' },
       { name: 'EHS Field Verification', href: 'https://script.google.com/macros/s/AKfycbyjNDMLYDpFTPYdC0dWxVmVeMalG6ycfkHoy0o-cWBmSj0RlcpmPTMl7VVlW2ibzap7/exec' },
       { name: 'Field Environmental Audit', href: 'https://script.google.com/macros/s/AKfycbzn7KMeUmMRRbHi1b4oWCXgMB5S19s4jJi-QKUgtunfG19xaXuGf_RfXIDIGGrsjs0EsQ/exec' },
