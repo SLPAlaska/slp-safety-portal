@@ -415,7 +415,9 @@ export default function SafetyPortal() {
           content: "📄 ";
           margin-right: 8px;
         }
-        
+        .form-link.local::before {
+  content: "⚡ ";
+}
         .footer {
           text-align: center;
           margin-top: 30px;
@@ -494,10 +496,10 @@ export default function SafetyPortal() {
               </div>
               <div className="folder-content">
                 {category.forms.map((form, idx) => (
-                  form.isLocal ? (
-                    <Link key={idx} href={form.href} className="form-link">
-                      {form.name}
-                    </Link>
+  form.isLocal ? (
+    <Link key={idx} href={form.href} className="form-link local">
+      {form.name}
+    </Link>
                   ) : (
                     <a key={idx} href={form.href} target="_blank" rel="noopener noreferrer" className="form-link">
                       {form.name}
