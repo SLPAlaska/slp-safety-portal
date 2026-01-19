@@ -9,7 +9,7 @@ const FORM_CATEGORIES = [
     id: 'training-competency',
     title: 'Training & Competency',
     icon: '🎯',
-    isTraining: true,
+    color: 'green',
     forms: [
       { name: 'Aerial Lift Practical Evaluation', href: 'https://script.google.com/macros/s/AKfycbwJ6NO7yeqOlhmzo0U2ozZiamuv-pAPju0mUOTMyrxYQz93onlw-YSnkQwuqbmFAdzH/exec' },
       { name: 'Crane/Boom Truck Practical Evaluation', href: 'https://script.google.com/macros/s/AKfycbxE2BjVP7-YLadBLnP73FXNdbuAY5dJSH6BTjgNh55mVhLB_7ZLvTCLorno1HQQpUX1uw/exec' },
@@ -22,6 +22,7 @@ const FORM_CATEGORIES = [
     id: 'field-forms',
     title: 'Field Forms',
     icon: '📋',
+    color: 'orange',
     forms: [
       { name: 'BBS Observation', href: '/bbs-form', isLocal: true },
       { name: 'Cold Weather Operating Risk Assessment', href: '/cold-weather-form', isLocal: true },
@@ -54,6 +55,7 @@ const FORM_CATEGORIES = [
     id: 'monthly-inspections',
     title: 'Monthly Inspections',
     icon: '📅',
+    color: 'red',
     forms: [
       { name: 'Chain Hoist Inspection', href: 'https://script.google.com/macros/s/AKfycbwOGv4xCGJ9hVLQdAgFO4EnK-pQj0kO09c1hwda6ien-N51FX1C8tp5nfGilNxbrZkb8A/exec' },
       { name: 'Emergency Drill Evaluation', href: 'https://script.google.com/macros/s/AKfycbxdMN764DWm0nuU2mqxf-ucpcj3w1pBIhK_f82AJ8Aon2nJAmBRQdA9cez_4CszVHe_sw/exec' },
@@ -73,6 +75,7 @@ const FORM_CATEGORIES = [
     id: 'permits',
     title: 'Permits',
     icon: '📝',
+    color: 'red',
     forms: [
       { name: 'Confined Space Entry', href: 'https://script.google.com/macros/s/AKfycbyeB2ZC6nn5cQV9Sz0qUyuSSnGsNXJiGsFgJ2x_zRG-9NDHkUmEEUNZYu8EVzRaleVfPA/exec' },
       { name: 'Energized Electrical Work', href: 'https://script.google.com/macros/s/AKfycbyVGarPGIcDZuGaEh01Qe46HMq1Op3Hv17gkY2fr4VqtwrwxOfzh981RXo0_6K18Ycesw/exec' },
@@ -87,6 +90,7 @@ const FORM_CATEGORIES = [
     id: 'lsr-audits',
     title: 'Lifesaving Rules Audits',
     icon: '🛡️',
+    color: 'red',
     forms: [
       { name: 'LSR- Confined Spaces', href: 'https://script.google.com/macros/s/AKfycbygYWMVhaVv5DHGBiE69b6Snu2LqX8M8lW0Z6_FAYTZ2ve4QzH36JIXCHsI-4HVQ9KdiQ/exec' },
       { name: 'LSR- Driving', href: 'https://script.google.com/macros/s/AKfycbycddyDWHlMcQXge5a93mQLQaI9CRHivwbw1wiwWKQIIAqWeirBgiHUAtMaAaqJC04M/exec' },
@@ -101,6 +105,7 @@ const FORM_CATEGORIES = [
     id: 'equipment-inspections',
     title: 'Equipment Inspections',
     icon: '🚛',
+    color: 'red',
     forms: [
       { name: 'Heavy Equipment Daily Inspection', href: 'https://script.google.com/macros/s/AKfycbzFGKDv1xRpgWMFDiGQ64ydsA7aJ9Ci8hOKhXQS8yoRDT9XYCR2g836ptxMElrV_6XY/exec' },
       { name: 'Pre-Shift Crane Inspection', href: 'https://script.google.com/macros/s/AKfycbzwdSq235XV12PxTZXh0ZbZHK7VCRNB0n7wkv5V_B_7YjrmFn8k_9SRHLs3TkVP9ApDFg/exec' },
@@ -112,8 +117,9 @@ const FORM_CATEGORIES = [
     id: 'daily-forms',
     title: 'Daily Forms',
     icon: '☀️',
+    color: 'red',
     forms: [
-      { name: 'Daily Scaffold Inspection', href: 'https://script.google.com/macros/s/AKfycbzq5zwZDZR15CP1YgOF-jKw5b36qgoXl_m8n6zaVnDOkfiIWGkFCe0JfLXlOYl4iHAAIA/exec' },
+      { name: 'Daily Scaffold Inspection', href: '/scaffold-inspection-form', isLocal: true },
       { name: 'Exc. & Trench Competent Person Daily Inspection Form', href: '/competent-person-form', isLocal: true },
       { name: 'Fillable THA/JSA', href: 'https://script.google.com/macros/s/AKfycbyXG_2TUazwZEqAGdE6ULettW6fXk94XYM0_6mKRwfa8_Jh6mEHFU2j6RyF5_DQE0PP/exec' },
     ]
@@ -122,6 +128,7 @@ const FORM_CATEGORIES = [
     id: 'incident-forms',
     title: 'Incident Forms',
     icon: '🚨',
+    color: 'red',
     forms: [
       { name: 'Incident Investigation Form', href: 'https://script.google.com/macros/s/AKfycbxSaiG_z2j6pr1mryb1cngLLaMBKkUppYaFnaL15uNfYXYoaadDzr5ZdJK3byXf4zyM/exec' },
       { name: 'Property Damage Report', href: 'https://script.google.com/macros/s/AKfycbwTxdpgiZy9TVZlJxTBaT-gIZAdIQH3g8cLuBTnKQsOyeGGOXyIQfgiCUyFitmsJSk/exec' },
@@ -129,8 +136,9 @@ const FORM_CATEGORIES = [
   },
   {
     id: 'critical-lift',
-    title: 'Critical Lift Planning',
+    title: 'Critical Lift Plans',
     icon: '🏗️',
+    color: 'red',
     forms: [
       { name: 'Critical Lift Plan', href: '/critical-lift-plan', isLocal: true },
     ]
@@ -139,263 +147,260 @@ const FORM_CATEGORIES = [
 
 export default function SafetyPortal() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [openFolders, setOpenFolders] = useState({})
+  const [selectedCategory, setSelectedCategory] = useState(null)
 
   const totalForms = FORM_CATEGORIES.reduce((sum, category) => sum + category.forms.length, 0)
 
-  const filteredCategories = FORM_CATEGORIES
-    .map(category => ({
-      ...category,
-      forms: category.forms.filter(form => 
-        form.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }))
-    .filter(category => category.forms.length > 0)
+  const filteredCategories = FORM_CATEGORIES.filter(category => 
+    category.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    category.forms.some(form => form.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
 
-  const toggleFolder = (id) => {
-    setOpenFolders(prev => ({ ...prev, [id]: !prev[id] }))
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category)
+  }
+
+  const handleBackClick = () => {
+    setSelectedCategory(null)
+  }
+
+  if (selectedCategory) {
+    return (
+      <div className="portal-page">
+        <style jsx>{`
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { background: #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+          .portal-page { min-height: 100vh; background: #1e293b; padding: 20px; }
+          .back-btn { background: #475569; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 20px; }
+          .back-btn:hover { background: #64748b; }
+          .category-header { background: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+          .category-title { font-size: 28px; font-weight: 700; color: #1e293b; }
+          .forms-list { display: flex; flex-direction: column; gap: 12px; }
+          .form-item { background: white; padding: 16px 20px; border-radius: 8px; text-decoration: none; color: #1e293b; display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s; }
+          .form-item:hover { transform: translateX(4px); background: #f8fafc; }
+          .form-name { font-size: 16px; font-weight: 500; }
+          .local-badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        `}</style>
+
+        <button className="back-btn" onClick={handleBackClick}>← Back to Categories</button>
+        
+        <div className="category-header">
+          <div className="category-title">{selectedCategory.icon} {selectedCategory.title}</div>
+        </div>
+
+        <div className="forms-list">
+          {selectedCategory.forms.map((form, idx) => (
+            form.isLocal ? (
+              <Link key={idx} href={form.href} className="form-item">
+                <span className="form-name">{form.name}</span>
+                <span className="local-badge">⚡ NEW</span>
+              </Link>
+            ) : (
+              <a key={idx} href={form.href} target="_blank" rel="noopener noreferrer" className="form-item">
+                <span className="form-name">{form.name}</span>
+              </a>
+            )
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="portal-page">
       <style jsx>{`
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { height: 100%; }
+        body { background: #1e293b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         
         .portal-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+          background: #1e293b;
           padding: 20px;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
         .container {
-          max-width: 1200px;
+          max-width: 800px;
           margin: 0 auto;
         }
         
-        .header {
+        .header-card {
+          background: white;
+          border-radius: 12px;
+          padding: 40px 30px;
           text-align: center;
-          color: white;
           margin-bottom: 30px;
         }
         
         .logo {
-          max-width: 200px;
+          max-width: 180px;
           height: auto;
           margin-bottom: 20px;
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
         }
         
-        .header h1 {
+        .title {
           font-size: 32px;
           font-weight: 700;
-          margin-bottom: 10px;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          color: #dc2626;
+          margin-bottom: 8px;
         }
         
         .subtitle {
-          font-size: 18px;
+          font-size: 16px;
+          color: #1e293b;
+          font-weight: 500;
           margin-bottom: 5px;
-          opacity: 0.95;
         }
         
         .tagline {
           font-size: 14px;
-          opacity: 0.85;
+          color: #ea580c;
           font-style: italic;
         }
         
-        .stats-bar {
+        .stats {
           display: flex;
           justify-content: center;
-          gap: 30px;
-          margin-bottom: 30px;
+          gap: 40px;
+          margin: 30px 0;
         }
         
-        .stat-item {
-          background: rgba(255,255,255,0.15);
-          backdrop-filter: blur(10px);
-          padding: 15px 30px;
-          border-radius: 10px;
+        .stat {
           text-align: center;
-          color: white;
         }
         
         .stat-number {
-          font-size: 32px;
+          font-size: 36px;
           font-weight: 700;
+          color: #1e293b;
         }
         
         .stat-label {
           font-size: 12px;
-          opacity: 0.9;
-          margin-top: 5px;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-top: 4px;
         }
         
         .search-box {
           width: 100%;
           padding: 15px 20px;
-          font-size: 16px;
           border: none;
-          border-radius: 10px;
-          margin-bottom: 30px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          border-radius: 8px;
+          font-size: 16px;
+          margin-bottom: 20px;
+          background: #f1f5f9;
         }
         
         .search-box:focus {
-          outline: 3px solid #fbbf24;
+          outline: 2px solid #3b82f6;
         }
         
-        .folders-grid {
+        .categories-grid {
           display: grid;
-          gap: 20px;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 15px;
         }
         
-        .folder {
-          background: white;
-          border-radius: 10px;
-          overflow: hidden;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .folder:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-        
-        .folder-header {
-          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-          color: white;
-          padding: 15px 20px;
+        .category-card {
+          background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+          border-radius: 12px;
+          padding: 20px;
           cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s;
+          color: white;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          font-weight: 600;
-          font-size: 15px;
+          border: none;
+          text-align: left;
         }
         
-        .folder-header.training {
-          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        .category-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         }
         
-        .folder-title {
+        .category-card.green {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .category-card.orange {
+          background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+        }
+        
+        .category-card.red {
+          background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+        }
+        
+        .category-left {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
         }
         
-        .folder-icon {
-          font-size: 20px;
+        .category-icon {
+          font-size: 28px;
         }
         
-        .folder-count {
-          background: rgba(255,255,255,0.2);
-          padding: 4px 10px;
+        .category-title {
+          font-size: 15px;
+          font-weight: 600;
+        }
+        
+        .category-count {
+          background: rgba(255,255,255,0.3);
+          padding: 6px 12px;
           border-radius: 20px;
-          font-size: 12px;
-        }
-        
-        .folder-arrow {
-          transition: transform 0.3s;
-          font-size: 12px;
-        }
-        
-        .folder.open .folder-arrow {
-          transform: rotate(180deg);
-        }
-        
-        .folder-content {
-          max-height: 0;
-          overflow: hidden;
-          transition: max-height 0.3s ease;
-        }
-        
-        .folder.open .folder-content {
-          max-height: 2000px;
-        }
-        
-        .form-link {
-          display: block;
-          padding: 12px 20px;
-          color: #1e3a8a;
-          text-decoration: none;
-          border-bottom: 1px solid #f3f4f6;
-          transition: background 0.2s;
           font-size: 14px;
-        }
-        
-        .form-link:last-child {
-          border-bottom: none;
-        }
-        
-        .form-link:hover {
-          background: #f8fafc;
-        }
-        
-        .form-link::before {
-          content: "📄 ";
-          margin-right: 8px;
-        }
-        
-        .form-link.local::before {
-          content: "⚡ ";
-        }
-        
-        .no-results {
+          font-weight: 700;
+          min-width: 40px;
           text-align: center;
-          padding: 40px;
-          color: rgba(255,255,255,0.7);
         }
         
         .footer {
           text-align: center;
-          margin-top: 30px;
-          color: rgba(255,255,255,0.7);
-          font-size: 11px;
+          color: #94a3b8;
+          font-size: 12px;
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 1px solid #334155;
         }
         
         .footer a {
-          color: #fbbf24;
+          color: #f97316;
           text-decoration: none;
         }
         
-        .footer .powered-by {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(255,255,255,0.2);
+        .footer-powered {
+          margin-top: 8px;
           font-size: 10px;
-          color: rgba(255,255,255,0.5);
+          color: #64748b;
         }
         
         @media (max-width: 600px) {
-          .portal-page { padding: 10px; }
-          .header h1 { font-size: 22px; }
-          .folder-header { padding: 12px 15px; font-size: 13px; }
-          .form-link { padding: 10px 15px; font-size: 12px; }
-          .stats-bar { gap: 15px; }
-          .stat-item { padding: 8px 15px; }
+          .categories-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
 
       <div className="container">
-        <div className="header">
+        <div className="header-card">
           <img src="/Logo.png" alt="SLP Alaska Logo" className="logo" />
-          <h1>🛡️ SLP Safety Portal</h1>
+          <h1 className="title">SLP Safety Portal</h1>
           <p className="subtitle">Safety • Leadership • Performance</p>
           <p className="tagline">"Safety isn't expensive, it's PRICELESS!"</p>
-        </div>
-        
-        <div className="stats-bar">
-          <div className="stat-item">
-            <div className="stat-number">{totalForms}</div>
-            <div className="stat-label">Forms</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">{FORM_CATEGORIES.length}</div>
-            <div className="stat-label">Categories</div>
+          
+          <div className="stats">
+            <div className="stat">
+              <div className="stat-number">{totalForms}</div>
+              <div className="stat-label">Forms</div>
+            </div>
+            <div className="stat">
+              <div className="stat-number">{FORM_CATEGORIES.length}</div>
+              <div className="stat-label">Categories</div>
+            </div>
           </div>
         </div>
         
@@ -404,60 +409,29 @@ export default function SafetyPortal() {
           className="search-box"
           placeholder="🔍 Search forms..."
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value)
-            // Auto-open folders when searching
-            if (e.target.value) {
-              const newOpen = {}
-              FORM_CATEGORIES.forEach(cat => { newOpen[cat.id] = true })
-              setOpenFolders(newOpen)
-            } else {
-              setOpenFolders({})
-            }
-          }}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
         
-        {filteredCategories.length === 0 ? (
-          <div className="no-results">
-            <p>No forms found matching your search.</p>
-          </div>
-        ) : (
-          <div className="folders-grid">
-            {filteredCategories.map(category => (
-              <div key={category.id} className={`folder ${openFolders[category.id] ? 'open' : ''}`}>
-                <div 
-                  className={`folder-header ${category.isTraining ? 'training' : ''}`}
-                  onClick={() => toggleFolder(category.id)}
-                >
-                  <div className="folder-title">
-                    <span className="folder-icon">{category.icon}</span>
-                    {category.title}
-                  </div>
-                  <span className="folder-count">{category.forms.length}</span>
-                  <span className="folder-arrow">▼</span>
-                </div>
-                <div className="folder-content">
-                  {category.forms.map((form, idx) => (
-                    form.isLocal ? (
-                      <Link key={idx} href={form.href} className={`form-link ${form.isLocal ? 'local' : ''}`}>
-                        {form.name}
-                      </Link>
-                    ) : (
-                      <a key={idx} href={form.href} target="_blank" rel="noopener noreferrer" className="form-link">
-                        {form.name}
-                      </a>
-                    )
-                  ))}
-                </div>
+        <div className="categories-grid">
+          {filteredCategories.map(category => (
+            <button
+              key={category.id}
+              className={`category-card ${category.color}`}
+              onClick={() => handleCategoryClick(category)}
+            >
+              <div className="category-left">
+                <span className="category-icon">{category.icon}</span>
+                <span className="category-title">{category.title}</span>
               </div>
-            ))}
-          </div>
-        )}
+              <span className="category-count">{category.forms.length}</span>
+            </button>
+          ))}
+        </div>
         
         <div className="footer">
-          <p>© 2026 SLP Alaska | <a href="tel:9072023274">(907) 202-3274</a></p>
-          <p style={{marginTop: '5px'}}>Safety • Leadership • Performance</p>
-          <p className="powered-by">Powered by Predictive Safety Analytics™ © 2026 SLP Alaska</p>
+          <p>© 2025 SLP Alaska | <a href="tel:9072023274">(907) 202-3274</a></p>
+          <p>Safety • Leadership • Performance</p>
+          <p className="footer-powered">Powered by Predictive Safety Analytics™ © 2025 SLP Alaska</p>
         </div>
       </div>
     </div>
