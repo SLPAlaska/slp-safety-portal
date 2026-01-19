@@ -392,13 +392,17 @@ export default function SafetyPortal() {
         }
         
         .form-link {
-          display: block;
+          display: block !important;
           padding: 12px 20px;
           color: #1e3a5f;
           text-decoration: none;
           border-bottom: 1px solid #e2e8f0;
           font-size: 13px;
           transition: background 0.2s, padding-left 0.2s;
+        }
+        
+        a.form-link {
+          display: block !important;
         }
         
         .form-link:hover {
