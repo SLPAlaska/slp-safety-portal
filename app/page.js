@@ -157,7 +157,7 @@ const FORM_CATEGORIES = [
     title: 'Critical Lift Plans',
     icon: '🏗️',
     forms: [
-      { name: 'Critical Lift Plans', href: 'https://script.google.com/macros/s/AKfycbyV7-NaoCWH17dQntRSxlB0OZ8taur1aF6sEyD9LGggLwuFQqOLUtynbg9DT6f_dFGQOQ/exec' },
+      { name: 'Critical Lift Plans', href: '/critical-lift-plan', isLocal: true },
     ]
   },
   {
