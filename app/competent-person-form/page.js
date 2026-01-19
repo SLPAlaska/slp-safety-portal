@@ -1,13 +1,8 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import Link from 'next/link';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { useState } from 'react'
+import Link from 'next/link'
+import { supabase } from '../../lib/supabase'
 
 const COMPANIES = [
   'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
@@ -17,1340 +12,412 @@ const COMPANIES = [
   'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders', 'Nordic-Calista', 'Parker TRS',
   'Peninsula Paving', 'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos',
   'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other'
-];
+]
 
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 'Point Thompson',
   'North Star Island', 'Endicott', 'Badami', 'Other North Slope'
-];
+]
 
-const EXCAVATION_TYPES = [
-  'Trench', 'Bell-Bottom Pier Hole', 'Shaft', 'Open Excavation', 'Other'
-];
-
-const SOIL_CLASSIFICATIONS = [
-  'Type A - Stable Rock', 'Type A - Clay', 'Type B - Silt', 'Type B - Medium Clay',
-  'Type B - Unstable Rock', 'Type C - Gravel', 'Type C - Sand', 'Type C - Submerged Soil',
-  'Layered - Multiple Types'
-];
-
-const PROTECTIVE_SYSTEMS = [
-  'Sloping', 'Benching', 'Shoring - Timber', 'Shoring - Aluminum Hydraulic',
-  'Shielding - Trench Box', 'Shielding - Steel Plate', 'Combination', 'None Required (<4ft)'
-];
-
-const WEATHER_CONDITIONS = [
-  'Clear/Sunny', 'Partly Cloudy', 'Overcast', 'Light Rain', 'Heavy Rain',
-  'Snow', 'Freezing Rain', 'High Wind'
-];
+const EXCAVATION_TYPES = ['Trench', 'Bell-Bottom Pier Hole', 'Shaft', 'Open Excavation', 'Other']
+const SOIL_CLASSIFICATIONS = ['Type A - Stable Rock', 'Type A - Clay', 'Type B - Silt', 'Type B - Medium Clay', 'Type B - Unstable Rock', 'Type C - Gravel', 'Type C - Sand', 'Type C - Submerged Soil', 'Layered - Multiple Types']
+const PROTECTIVE_SYSTEMS = ['Sloping', 'Benching', 'Shoring - Timber', 'Shoring - Aluminum Hydraulic', 'Shielding - Trench Box', 'Shielding - Steel Plate', 'Combination', 'None Required (<4ft)']
+const WEATHER_CONDITIONS = ['Clear/Sunny', 'Partly Cloudy', 'Overcast', 'Light Rain', 'Heavy Rain', 'Snow', 'Freezing Rain', 'High Wind']
 
 export default function CompetentPersonForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [inspectionNumber, setInspectionNumber] = useState('');
-  const [showAtmosphereReadings, setShowAtmosphereReadings] = useState(false);
-  
   const [formData, setFormData] = useState({
-    inspection_date: new Date().toISOString().split('T')[0],
-    inspection_time: new Date().toTimeString().slice(0, 5),
-    competent_person: '',
-    company: '',
-    location: '',
-    specific_location: '',
-    excavation_type: '',
-    depth_ft: '',
-    length_ft: '',
-    width_ft: '',
-    soil_classification: '',
-    protective_system: '',
-    weather_conditions: '',
-    rain_last_24hrs: '',
-    freeze_thaw: '',
-    cave_in_potential: '',
-    soil_stability: '',
-    water_accumulation: '',
-    protective_system_condition: '',
-    shoring_secure: '',
-    slope_angle: '',
-    spoil_pile_setback: '',
-    ladder_access_ok: '',
-    ladder_within_25ft: '',
-    ramp_stairs_ok: '',
-    traffic_controls_ok: '',
-    barricades_ok: '',
-    warning_signs_ok: '',
-    adjacent_structures_ok: '',
-    utilities_protected: '',
-    atmosphere_tested: '',
-    o2_level: '',
-    lel_level: '',
-    h2s_level: '',
-    co_level: '',
-    ventilation_adequate: '',
-    surface_encumbrances: '',
-    equipment_setback: '',
-    ppe_in_use: '',
-    emergency_equipment: '',
-    work_authorized: '',
-    corrective_actions: '',
-    inspector_signature: '',
-  });
+    inspectionDate: new Date().toISOString().split('T')[0],
+    inspectionTime: new Date().toTimeString().slice(0, 5),
+    competentPerson: '', company: '', location: '', specificLocation: '',
+    excavationType: '', depthFt: '', lengthFt: '', widthFt: '',
+    soilClassification: '', protectiveSystem: '', weatherConditions: '',
+    rainLast24hrs: '', freezeThaw: '', caveInPotential: '', soilStability: '',
+    waterAccumulation: '', protectiveSystemCondition: '', shoringSecure: '',
+    slopeAngle: '', spoilPileSetback: '', ladderAccessOk: '', ladderWithin25ft: '',
+    rampStairsOk: '', trafficControlsOk: '', barricadesOk: '', warningSignsOk: '',
+    adjacentStructuresOk: '', utilitiesProtected: '', atmosphereTested: '',
+    o2Level: '', lelLevel: '', h2sLevel: '', coLevel: '', ventilationAdequate: '',
+    surfaceEncumbrances: '', equipmentSetback: '', ppeInUse: '', emergencyEquipment: '',
+    workAuthorized: '', correctiveActions: '', inspectorSignature: ''
+  })
+
+  const [submitting, setSubmitting] = useState(false)
+  const [message, setMessage] = useState({ type: '', text: '' })
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    if (name === 'atmosphere_tested') {
-      setShowAtmosphereReadings(value === 'Yes - Tested');
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const timestamp = new Date().toISOString();
-      const inspNum = `CP-${Date.now()}`;
-      
-      const { error } = await supabase
-        .from('competent_person_inspections')
-        .insert([{
-          ...formData,
-          inspection_number: inspNum,
-          depth_ft: formData.depth_ft ? parseFloat(formData.depth_ft) : null,
-          length_ft: formData.length_ft ? parseFloat(formData.length_ft) : null,
-          width_ft: formData.width_ft ? parseFloat(formData.width_ft) : null,
-          created_at: timestamp,
-        }]);
-
-      if (error) throw error;
-
-      setInspectionNumber(inspNum);
-      setSubmitSuccess(true);
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('Error submitting inspection. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      inspection_date: new Date().toISOString().split('T')[0],
-      inspection_time: new Date().toTimeString().slice(0, 5),
-      competent_person: '',
-      company: '',
-      location: '',
-      specific_location: '',
-      excavation_type: '',
-      depth_ft: '',
-      length_ft: '',
-      width_ft: '',
-      soil_classification: '',
-      protective_system: '',
-      weather_conditions: '',
-      rain_last_24hrs: '',
-      freeze_thaw: '',
-      cave_in_potential: '',
-      soil_stability: '',
-      water_accumulation: '',
-      protective_system_condition: '',
-      shoring_secure: '',
-      slope_angle: '',
-      spoil_pile_setback: '',
-      ladder_access_ok: '',
-      ladder_within_25ft: '',
-      ramp_stairs_ok: '',
-      traffic_controls_ok: '',
-      barricades_ok: '',
-      warning_signs_ok: '',
-      adjacent_structures_ok: '',
-      utilities_protected: '',
-      atmosphere_tested: '',
-      o2_level: '',
-      lel_level: '',
-      h2s_level: '',
-      co_level: '',
-      ventilation_adequate: '',
-      surface_encumbrances: '',
-      equipment_setback: '',
-      ppe_in_use: '',
-      emergency_equipment: '',
-      work_authorized: '',
-      corrective_actions: '',
-      inspector_signature: '',
-    });
-    setSubmitSuccess(false);
-    setShowAtmosphereReadings(false);
-  };
-
-  if (submitSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl shadow-xl p-8 text-center text-white">
-            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-bold mb-2">Inspection Submitted Successfully!</h2>
-            <p className="text-green-100 text-lg mb-6">Inspection Number: {inspectionNumber}</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={resetForm}
-                className="px-6 py-3 bg-white text-green-700 font-semibold rounded-lg hover:bg-green-50 transition-colors"
-              >
-                Submit Another Inspection
-              </button>
-              <Link
-                href="/"
-                className="px-6 py-3 bg-green-800 text-white font-semibold rounded-lg hover:bg-green-900 transition-colors"
-              >
-                Back to Portal
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const setField = (name, value) => setFormData(prev => ({ ...prev, [name]: value }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    setMessage({ type: '', text: '' })
+
+    try {
+      const inspectionNumber = `CP-${Date.now()}`
+      const { error } = await supabase.from('competent_person_inspections').insert([{
+        inspection_number: inspectionNumber,
+        inspection_date: formData.inspectionDate,
+        inspection_time: formData.inspectionTime,
+        competent_person: formData.competentPerson,
+        company: formData.company,
+        location: formData.location,
+        specific_location: formData.specificLocation || null,
+        excavation_type: formData.excavationType,
+        depth_ft: formData.depthFt ? parseFloat(formData.depthFt) : null,
+        length_ft: formData.lengthFt ? parseFloat(formData.lengthFt) : null,
+        width_ft: formData.widthFt ? parseFloat(formData.widthFt) : null,
+        soil_classification: formData.soilClassification,
+        protective_system: formData.protectiveSystem,
+        weather_conditions: formData.weatherConditions,
+        rain_last_24hrs: formData.rainLast24hrs,
+        freeze_thaw: formData.freezeThaw,
+        cave_in_potential: formData.caveInPotential,
+        soil_stability: formData.soilStability,
+        water_accumulation: formData.waterAccumulation,
+        protective_system_condition: formData.protectiveSystemCondition,
+        shoring_secure: formData.shoringSecure,
+        slope_angle: formData.slopeAngle,
+        spoil_pile_setback: formData.spoilPileSetback,
+        ladder_access_ok: formData.ladderAccessOk,
+        ladder_within_25ft: formData.ladderWithin25ft,
+        ramp_stairs_ok: formData.rampStairsOk,
+        traffic_controls_ok: formData.trafficControlsOk,
+        barricades_ok: formData.barricadesOk,
+        warning_signs_ok: formData.warningSignsOk,
+        adjacent_structures_ok: formData.adjacentStructuresOk,
+        utilities_protected: formData.utilitiesProtected,
+        atmosphere_tested: formData.atmosphereTested,
+        o2_level: formData.o2Level || null,
+        lel_level: formData.lelLevel || null,
+        h2s_level: formData.h2sLevel || null,
+        co_level: formData.coLevel || null,
+        ventilation_adequate: formData.ventilationAdequate || null,
+        surface_encumbrances: formData.surfaceEncumbrances,
+        equipment_setback: formData.equipmentSetback,
+        ppe_in_use: formData.ppeInUse,
+        emergency_equipment: formData.emergencyEquipment,
+        work_authorized: formData.workAuthorized,
+        corrective_actions: formData.correctiveActions || null,
+        inspector_signature: formData.inspectorSignature
+      }])
+
+      if (error) throw error
+      setMessage({ type: 'success', text: `Inspection submitted successfully! Inspection #: ${inspectionNumber}` })
+      setFormData({
+        inspectionDate: new Date().toISOString().split('T')[0],
+        inspectionTime: new Date().toTimeString().slice(0, 5),
+        competentPerson: '', company: '', location: '', specificLocation: '',
+        excavationType: '', depthFt: '', lengthFt: '', widthFt: '',
+        soilClassification: '', protectiveSystem: '', weatherConditions: '',
+        rainLast24hrs: '', freezeThaw: '', caveInPotential: '', soilStability: '',
+        waterAccumulation: '', protectiveSystemCondition: '', shoringSecure: '',
+        slopeAngle: '', spoilPileSetback: '', ladderAccessOk: '', ladderWithin25ft: '',
+        rampStairsOk: '', trafficControlsOk: '', barricadesOk: '', warningSignsOk: '',
+        adjacentStructuresOk: '', utilitiesProtected: '', atmosphereTested: '',
+        o2Level: '', lelLevel: '', h2sLevel: '', coLevel: '', ventilationAdequate: '',
+        surfaceEncumbrances: '', equipmentSetback: '', ppeInUse: '', emergencyEquipment: '',
+        workAuthorized: '', correctiveActions: '', inspectorSignature: ''
+      })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (error) {
+      console.error('Error:', error)
+      setMessage({ type: 'error', text: 'Error submitting form: ' + error.message })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const YesNo = ({ field, options = ['Yes', 'No'] }) => (
+    <div className="yes-no-group">
+      {options.map(opt => (
+        <div key={opt} className={`yes-no-option ${formData[field] === opt ? 'selected' : ''}`}
+          onClick={() => setField(field, opt)}>{opt}</div>
+      ))}
+    </div>
+  )
+
+  const CheckItem = ({ label, field, options = ['Yes', 'No', 'N/A'] }) => (
+    <div className="checklist-item">
+      <label>{label} *</label>
+      <YesNo field={field} options={options} />
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-red-800 to-red-700 rounded-t-2xl shadow-xl p-8 text-center text-white">
-          <div className="flex justify-center mb-4">
-            <img src="/slp-logo.png" alt="SLP Alaska" className="h-16" />
-          </div>
-          <h1 className="text-3xl font-bold mb-2">Competent Person Daily Inspection</h1>
-          <p className="text-red-100">Trench & Excavation Safety Inspection</p>
-          <span className="inline-block mt-3 px-4 py-1.5 bg-white/20 rounded-full text-sm font-medium">
-            OSHA 1926 Subpart P Compliant
-          </span>
+    <div className="cp-form-page">
+      <style jsx global>{`
+        .cp-form-page { 
+          min-height: 100vh; 
+          background: #b91c1c;
+          padding: 20px; 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        .back-link { display: inline-block; margin-bottom: 20px; color: white; text-decoration: none; font-weight: 600; padding: 10px 20px; background: #1e3a8a; border-radius: 6px; transition: background 0.3s; }
+        .back-link:hover { background: #1e40af; }
+        .cp-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); padding: 0; overflow: hidden; border: 4px solid #1e3a8a; }
+        
+        .cp-header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-bottom: 6px solid #1e3a8a; }
+        .cp-header img { max-height: 80px; margin-bottom: 15px; }
+        .cp-header h1 { color: white; margin: 0 0 10px 0; font-size: 28px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .cp-header .subtitle { color: #fecaca; font-size: 16px; font-weight: 600; }
+        .osha-badge { display: inline-block; background: #1e3a8a; color: white; padding: 8px 20px; border-radius: 20px; font-size: 12px; margin-top: 15px; font-weight: 600; border: 2px solid white; }
+        
+        .form-content { padding: 30px 40px 40px 40px; }
+        
+        .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 25px; border-radius: 0 8px 8px 0; font-size: 14px; color: #92400e; }
+        .message { padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: 500; }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        .section-header { background: #1e3a8a; color: white; padding: 12px 20px; margin: 30px -40px 20px -40px; font-weight: 600; font-size: 16px; }
+        .section-header.red { background: #dc2626; }
+        .section-header.green { background: #15803d; }
+        .section-header:first-of-type { margin-top: 0; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #1e3a8a; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; box-sizing: border-box; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #1e3a8a; box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1); }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-row { display: flex; gap: 20px; }
+        .form-row .form-group { flex: 1; }
+        .form-row-3 { display: flex; gap: 20px; }
+        .form-row-3 .form-group { flex: 1; }
+        
+        .checklist-item { background: #f1f5f9; border-radius: 8px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-left: 4px solid #1e3a8a; }
+        .checklist-item label { font-weight: 600; color: #1e3a8a; flex: 1; min-width: 200px; margin: 0; }
+        .yes-no-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .yes-no-option { padding: 8px 16px; border: 2px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-weight: 600; text-align: center; background: white; }
+        .yes-no-option:hover { border-color: #1e3a8a; background: #eff6ff; }
+        .yes-no-option.selected { background: #1e3a8a; color: white; border-color: #1e3a8a; }
+        
+        .atmosphere-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; background: #f1f5f9; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid #1e3a8a; }
+        .atmosphere-item label { display: block; font-size: 14px; color: #1e3a8a; margin-bottom: 5px; font-weight: 600; }
+        .atmosphere-item input { width: 100%; padding: 10px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        
+        .authorization-section { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 3px solid #1e3a8a; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .authorization-section h3 { color: #1e3a8a; margin: 0 0 15px 0; font-size: 18px; }
+        .auth-options { display: flex; gap: 15px; flex-wrap: wrap; }
+        .auth-option { flex: 1; min-width: 200px; padding: 20px; border: 3px solid #cbd5e1; border-radius: 8px; cursor: pointer; text-align: center; transition: all 0.2s; background: white; }
+        .auth-option:hover { border-color: #1e3a8a; }
+        .auth-option.selected-yes { background: #15803d; color: white; border-color: #15803d; }
+        .auth-option.selected-no { background: #dc2626; color: white; border-color: #dc2626; }
+        .auth-option .icon { font-size: 28px; margin-bottom: 8px; }
+        .auth-option .title { font-weight: 700; font-size: 16px; }
+        
+        .submit-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; border: 3px solid #1e3a8a; }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(185, 28, 28, 0.4); }
+        .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; border-color: #6b7280; }
+        
+        .footer { text-align: center; margin-top: 30px; padding: 20px; border-top: 3px solid #1e3a8a; color: #1e3a8a; font-size: 14px; font-weight: 600; background: #f1f5f9; }
+        
+        @media (max-width: 600px) {
+          .form-content { padding: 20px; }
+          .section-header { margin-left: -20px; margin-right: -20px; }
+          .form-row, .form-row-3 { flex-direction: column; gap: 0; }
+          .checklist-item { flex-direction: column; align-items: flex-start; }
+          .auth-options { flex-direction: column; }
+        }
+      `}</style>
+
+      <Link href="/" className="back-link">← Back to Safety Portal</Link>
+      
+      <div className="cp-container">
+        <div className="cp-header">
+          <img src="/Logo.png" alt="SLP Alaska Logo" />
+          <h1>Competent Person Daily Inspection</h1>
+          <p className="subtitle">Trench & Excavation Safety Inspection</p>
+          <span className="osha-badge">OSHA 1926 Subpart P Compliant</span>
         </div>
+        
+        <div className="form-content">
+          {message.text && <div className={`message ${message.type}`}>{message.text}</div>}
+          
+          <form onSubmit={handleSubmit}>
+            <div className="section-header">📋 Basic Information</div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Inspection Date *</label>
+                <input type="date" name="inspectionDate" value={formData.inspectionDate} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label>Inspection Time *</label>
+                <input type="time" name="inspectionTime" value={formData.inspectionTime} onChange={handleChange} required />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Competent Person Name *</label>
+              <input type="text" name="competentPerson" value={formData.competentPerson} onChange={handleChange} required />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Company *</label>
+                <select name="company" value={formData.company} onChange={handleChange} required>
+                  <option value="">-- Select Company --</option>
+                  {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Location *</label>
+                <select name="location" value={formData.location} onChange={handleChange} required>
+                  <option value="">-- Select Location --</option>
+                  {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Specific Location / Description</label>
+              <input type="text" name="specificLocation" value={formData.specificLocation} onChange={handleChange} placeholder="e.g., Pad A - East side of tank farm" />
+            </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-b-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="section-header">🔍 Excavation Details</div>
+            <div className="form-group">
+              <label>Excavation Type *</label>
+              <select name="excavationType" value={formData.excavationType} onChange={handleChange} required>
+                <option value="">-- Select Type --</option>
+                {EXCAVATION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-row-3">
+              <div className="form-group">
+                <label>Depth (ft) *</label>
+                <input type="number" name="depthFt" value={formData.depthFt} onChange={handleChange} step="0.1" required />
+              </div>
+              <div className="form-group">
+                <label>Length (ft)</label>
+                <input type="number" name="lengthFt" value={formData.lengthFt} onChange={handleChange} step="0.1" />
+              </div>
+              <div className="form-group">
+                <label>Width (ft)</label>
+                <input type="number" name="widthFt" value={formData.widthFt} onChange={handleChange} step="0.1" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Soil Classification *</label>
+                <select name="soilClassification" value={formData.soilClassification} onChange={handleChange} required>
+                  <option value="">-- Select Classification --</option>
+                  {SOIL_CLASSIFICATIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Protective System *</label>
+                <select name="protectiveSystem" value={formData.protectiveSystem} onChange={handleChange} required>
+                  <option value="">-- Select System --</option>
+                  {PROTECTIVE_SYSTEMS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="section-header">🌤️ Environmental Conditions</div>
+            <div className="form-group">
+              <label>Current Weather Conditions *</label>
+              <select name="weatherConditions" value={formData.weatherConditions} onChange={handleChange} required>
+                <option value="">-- Select Conditions --</option>
+                {WEATHER_CONDITIONS.map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </div>
+            <CheckItem label="Rain in Last 24 Hours?" field="rainLast24hrs" options={['Yes', 'No']} />
+            <CheckItem label="Freeze/Thaw Conditions?" field="freezeThaw" options={['Yes', 'No']} />
+
+            <div className="section-header red">⚠️ Hazard Assessment</div>
+            <div className="warning-box">
+              <strong>⚠️ Critical Safety Checks</strong><br />
+              Answer carefully. Any "Yes" to hazards or "No" to safety measures requires immediate corrective action.
+            </div>
+            <CheckItem label="Evidence of Cave-In Potential?" field="caveInPotential" options={['Yes', 'No']} />
+            <CheckItem label="Soil Stability Acceptable?" field="soilStability" options={['Yes', 'Marginal', 'No']} />
+            <CheckItem label="Water Accumulation Present?" field="waterAccumulation" options={['Yes - Action Required', 'Minor', 'No']} />
+
+            <div className="section-header">🛡️ Protective System Inspection</div>
+            <CheckItem label="Protective System Condition" field="protectiveSystemCondition" options={['Good', 'Acceptable', 'Deficient']} />
+            <CheckItem label="Shoring/Shielding Properly Secured?" field="shoringSecure" />
+            <CheckItem label="Slope Angle Properly Maintained?" field="slopeAngle" />
+            <CheckItem label="Spoil Pile 2ft+ From Edge?" field="spoilPileSetback" options={['Yes', 'No']} />
+
+            <div className="section-header green">🪜 Access & Egress</div>
+            <CheckItem label="Ladder Access Adequate?" field="ladderAccessOk" />
+            <CheckItem label="Ladder Within 25ft of Workers?" field="ladderWithin25ft" />
+            <CheckItem label="Ramps/Stairs Safe Condition?" field="rampStairsOk" />
+
+            <div className="section-header">🚧 Site Controls</div>
+            <CheckItem label="Traffic Controls in Place?" field="trafficControlsOk" />
+            <CheckItem label="Barricades Adequate?" field="barricadesOk" options={['Yes', 'No']} />
+            <CheckItem label="Warning Signs Posted?" field="warningSignsOk" options={['Yes', 'No']} />
+            <CheckItem label="Adjacent Structures Stable?" field="adjacentStructuresOk" />
+            <CheckItem label="Underground Utilities Protected?" field="utilitiesProtected" />
+
+            <div className="section-header red">💨 Atmosphere Testing</div>
+            <CheckItem label="Atmosphere Testing Required/Performed?" field="atmosphereTested" options={['Yes - Tested', 'Not Required', 'Required - Not Done']} />
             
-            {/* Basic Information */}
-            <section>
-              <div className="bg-gradient-to-r from-red-800 to-red-700 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">📋</span>
-                <h2 className="text-lg font-semibold">Basic Information</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Inspection Date <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="inspection_date"
-                    value={formData.inspection_date}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Inspection Time <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="time"
-                    name="inspection_time"
-                    value={formData.inspection_time}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Competent Person Name <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="competent_person"
-                  value={formData.competent_person}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company <span className="text-red-600">*</span>
-                  </label>
-                  <select
-                    name="company"
-                    value={formData.company}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                  >
-                    <option value="">-- Select Company --</option>
-                    {COMPANIES.map(company => (
-                      <option key={company} value={company}>{company}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location <span className="text-red-600">*</span>
-                  </label>
-                  <select
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                  >
-                    <option value="">-- Select Location --</option>
-                    {LOCATIONS.map(location => (
-                      <option key={location} value={location}>{location}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Specific Location / Description
-                </label>
-                <input
-                  type="text"
-                  name="specific_location"
-                  value={formData.specific_location}
-                  onChange={handleChange}
-                  placeholder="e.g., Pad A - East side of tank farm"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                />
-              </div>
-            </section>
-
-            {/* Excavation Details */}
-            <section>
-              <div className="bg-gradient-to-r from-blue-800 to-blue-700 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">🔍</span>
-                <h2 className="text-lg font-semibold">Excavation Details</h2>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Excavation Type <span className="text-red-600">*</span>
-                </label>
-                <select
-                  name="excavation_type"
-                  value={formData.excavation_type}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                >
-                  <option value="">-- Select Type --</option>
-                  {EXCAVATION_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Depth (ft) <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    name="depth_ft"
-                    value={formData.depth_ft}
-                    onChange={handleChange}
-                    step="0.1"
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Length (ft)
-                  </label>
-                  <input
-                    type="number"
-                    name="length_ft"
-                    value={formData.length_ft}
-                    onChange={handleChange}
-                    step="0.1"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Width (ft)
-                  </label>
-                  <input
-                    type="number"
-                    name="width_ft"
-                    value={formData.width_ft}
-                    onChange={handleChange}
-                    step="0.1"
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Soil Classification <span className="text-red-600">*</span>
-                  </label>
-                  <select
-                    name="soil_classification"
-                    value={formData.soil_classification}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                  >
-                    <option value="">-- Select Classification --</option>
-                    {SOIL_CLASSIFICATIONS.map(soil => (
-                      <option key={soil} value={soil}>{soil}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Protective System <span className="text-red-600">*</span>
-                  </label>
-                  <select
-                    name="protective_system"
-                    value={formData.protective_system}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                  >
-                    <option value="">-- Select System --</option>
-                    {PROTECTIVE_SYSTEMS.map(system => (
-                      <option key={system} value={system}>{system}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </section>
-
-            {/* Environmental Conditions */}
-            <section>
-              <div className="bg-gradient-to-r from-red-800 to-red-700 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">🌤️</span>
-                <h2 className="text-lg font-semibold">Environmental Conditions</h2>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Weather Conditions <span className="text-red-600">*</span>
-                </label>
-                <select
-                  name="weather_conditions"
-                  value={formData.weather_conditions}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                >
-                  <option value="">-- Select Conditions --</option>
-                  {WEATHER_CONDITIONS.map(weather => (
-                    <option key={weather} value={weather}>{weather}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Rain in Last 24 Hours? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-4">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`flex-1 flex items-center justify-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.rain_last_24hrs === option 
-                          ? option === 'Yes' ? 'border-amber-500 bg-amber-50' : 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="rain_last_24hrs"
-                          value={option}
-                          checked={formData.rain_last_24hrs === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
+            {formData.atmosphereTested === 'Yes - Tested' && (
+              <>
+                <div className="atmosphere-grid">
+                  <div className="atmosphere-item">
+                    <label>O2 Level (%)</label>
+                    <input type="text" name="o2Level" value={formData.o2Level} onChange={handleChange} placeholder="19.5-23.5%" />
+                  </div>
+                  <div className="atmosphere-item">
+                    <label>LEL Level (%)</label>
+                    <input type="text" name="lelLevel" value={formData.lelLevel} onChange={handleChange} placeholder="<10%" />
+                  </div>
+                  <div className="atmosphere-item">
+                    <label>H2S Level (ppm)</label>
+                    <input type="text" name="h2sLevel" value={formData.h2sLevel} onChange={handleChange} placeholder="<10 ppm" />
+                  </div>
+                  <div className="atmosphere-item">
+                    <label>CO Level (ppm)</label>
+                    <input type="text" name="coLevel" value={formData.coLevel} onChange={handleChange} placeholder="<25 ppm" />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Freeze/Thaw Conditions? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-4">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`flex-1 flex items-center justify-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.freeze_thaw === option 
-                          ? option === 'Yes' ? 'border-amber-500 bg-amber-50' : 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="freeze_thaw"
-                          value={option}
-                          checked={formData.freeze_thaw === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
+                <CheckItem label="Ventilation Adequate?" field="ventilationAdequate" />
+              </>
+            )}
+
+            <div className="section-header green">✅ General Safety</div>
+            <CheckItem label="Surface Encumbrances Removed/Supported?" field="surfaceEncumbrances" />
+            <CheckItem label="Equipment Set Back From Edge?" field="equipmentSetback" />
+            <CheckItem label="Required PPE in Use?" field="ppeInUse" options={['Yes', 'No']} />
+            <CheckItem label="Emergency/Rescue Equipment Available?" field="emergencyEquipment" options={['Yes', 'No']} />
+
+            <div className="section-header green">📝 Authorization</div>
+            <div className="authorization-section">
+              <h3>Work Authorization Decision</h3>
+              <div className="auth-options">
+                <div className={`auth-option ${formData.workAuthorized === 'Yes' ? 'selected-yes' : ''}`} onClick={() => setField('workAuthorized', 'Yes')}>
+                  <div className="icon">✅</div>
+                  <div className="title">Yes - Work Authorized</div>
+                </div>
+                <div className={`auth-option ${formData.workAuthorized === 'No' ? 'selected-no' : ''}`} onClick={() => setField('workAuthorized', 'No')}>
+                  <div className="icon">🛑</div>
+                  <div className="title">No - Work Stopped</div>
                 </div>
               </div>
-            </section>
+            </div>
+            <div className="form-group">
+              <label>Corrective Actions Required (if any)</label>
+              <textarea name="correctiveActions" value={formData.correctiveActions} onChange={handleChange} placeholder="Describe any corrective actions needed..." />
+            </div>
+            <div className="form-group">
+              <label>Inspector Signature (Type Full Name) *</label>
+              <input type="text" name="inspectorSignature" value={formData.inspectorSignature} onChange={handleChange} placeholder="Type your full name as signature" required />
+            </div>
 
-            {/* Hazard Assessment */}
-            <section>
-              <div className="bg-gradient-to-r from-red-600 to-red-500 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">⚠️</span>
-                <h2 className="text-lg font-semibold">Hazard Assessment</h2>
-              </div>
-
-              <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">⚠️</span>
-                  <div>
-                    <h4 className="font-semibold text-amber-800">Critical Safety Checks</h4>
-                    <p className="text-amber-700 text-sm">Answer the following questions carefully. Any "Yes" to hazards or "No" to safety measures requires immediate corrective action.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                {/* Cave-In Potential */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Evidence of Cave-In Potential? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`px-6 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.cave_in_potential === option 
-                          ? option === 'Yes' ? 'border-red-500 bg-red-50 text-red-700' : 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="cave_in_potential"
-                          value={option}
-                          checked={formData.cave_in_potential === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Soil Stability */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Soil Stability Acceptable? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'Marginal', 'No'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.soil_stability === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'Marginal' ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="soil_stability"
-                          value={option}
-                          checked={formData.soil_stability === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Water Accumulation */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Water Accumulation Present? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3 flex-wrap">
-                    {['Yes - Action Required', 'Minor', 'No'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.water_accumulation === option 
-                          ? option === 'No' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'Minor' ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="water_accumulation"
-                          value={option}
-                          checked={formData.water_accumulation === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium text-sm">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Protective System Inspection */}
-            <section>
-              <div className="bg-gradient-to-r from-blue-800 to-blue-700 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">🛡️</span>
-                <h2 className="text-lg font-semibold">Protective System Inspection</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {/* Protective System Condition */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Protective System Condition <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Good', 'Acceptable', 'Deficient'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.protective_system_condition === option 
-                          ? option === 'Good' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'Acceptable' ? 'border-amber-500 bg-amber-50 text-amber-700'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="protective_system_condition"
-                          value={option}
-                          checked={formData.protective_system_condition === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Shoring Secure */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Shoring/Shielding Properly Secured? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.shoring_secure === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="shoring_secure"
-                          value={option}
-                          checked={formData.shoring_secure === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Slope Angle */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Slope Angle Properly Maintained? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.slope_angle === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="slope_angle"
-                          value={option}
-                          checked={formData.slope_angle === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Spoil Pile Setback */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Spoil Pile 2ft+ From Edge? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`px-6 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.spoil_pile_setback === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="spoil_pile_setback"
-                          value={option}
-                          checked={formData.spoil_pile_setback === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Access & Egress */}
-            <section>
-              <div className="bg-gradient-to-r from-green-700 to-green-600 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">🪜</span>
-                <h2 className="text-lg font-semibold">Access & Egress</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {/* Ladder Access */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Ladder Access Adequate? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.ladder_access_ok === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="ladder_access_ok"
-                          value={option}
-                          checked={formData.ladder_access_ok === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Ladder Within 25ft */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Ladder Within 25ft of Workers? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.ladder_within_25ft === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="ladder_within_25ft"
-                          value={option}
-                          checked={formData.ladder_within_25ft === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Ramps/Stairs */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Ramps/Stairs Safe Condition? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.ramp_stairs_ok === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="ramp_stairs_ok"
-                          value={option}
-                          checked={formData.ramp_stairs_ok === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Site Controls */}
-            <section>
-              <div className="bg-gradient-to-r from-red-800 to-red-700 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">🚧</span>
-                <h2 className="text-lg font-semibold">Site Controls</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {/* Traffic Controls */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Traffic Controls in Place? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.traffic_controls_ok === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="traffic_controls_ok"
-                          value={option}
-                          checked={formData.traffic_controls_ok === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Barricades */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Barricades Adequate? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`px-6 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.barricades_ok === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="barricades_ok"
-                          value={option}
-                          checked={formData.barricades_ok === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Warning Signs */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Warning Signs Posted? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`px-6 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.warning_signs_ok === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="warning_signs_ok"
-                          value={option}
-                          checked={formData.warning_signs_ok === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Adjacent Structures */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Adjacent Structures Stable? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.adjacent_structures_ok === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="adjacent_structures_ok"
-                          value={option}
-                          checked={formData.adjacent_structures_ok === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Utilities Protected */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Underground Utilities Protected? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.utilities_protected === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="utilities_protected"
-                          value={option}
-                          checked={formData.utilities_protected === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Atmosphere Testing */}
-            <section>
-              <div className="bg-gradient-to-r from-red-600 to-red-500 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">💨</span>
-                <h2 className="text-lg font-semibold">Atmosphere Testing</h2>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Atmosphere Testing Required/Performed? <span className="text-red-600">*</span>
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {['Yes - Tested', 'Not Required', 'Required - Not Done'].map(option => (
-                    <label key={option} className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.atmosphere_tested === option 
-                        ? option === 'Yes - Tested' ? 'border-green-500 bg-green-50 text-green-700' 
-                          : option === 'Not Required' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                          : 'border-red-500 bg-red-50 text-red-700'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}>
-                      <input
-                        type="radio"
-                        name="atmosphere_tested"
-                        value={option}
-                        checked={formData.atmosphere_tested === option}
-                        onChange={handleChange}
-                        required
-                        className="sr-only"
-                      />
-                      <span className="font-medium text-sm text-center">{option}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {showAtmosphereReadings && (
-                <div className="mt-6 p-6 bg-gray-50 rounded-xl">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">O2 Level (%)</label>
-                      <input
-                        type="text"
-                        name="o2_level"
-                        value={formData.o2_level}
-                        onChange={handleChange}
-                        placeholder="19.5-23.5%"
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">LEL Level (%)</label>
-                      <input
-                        type="text"
-                        name="lel_level"
-                        value={formData.lel_level}
-                        onChange={handleChange}
-                        placeholder="<10%"
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">H2S Level (ppm)</label>
-                      <input
-                        type="text"
-                        name="h2s_level"
-                        value={formData.h2s_level}
-                        onChange={handleChange}
-                        placeholder="<10 ppm"
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">CO Level (ppm)</label>
-                      <input
-                        type="text"
-                        name="co_level"
-                        value={formData.co_level}
-                        onChange={handleChange}
-                        placeholder="<25 ppm"
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Ventilation Adequate? <span className="text-red-600">*</span>
-                    </label>
-                    <div className="flex gap-3">
-                      {['Yes', 'No', 'N/A'].map(option => (
-                        <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                          formData.ventilation_adequate === option 
-                            ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                              : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                              : 'border-red-500 bg-red-50 text-red-700'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}>
-                          <input
-                            type="radio"
-                            name="ventilation_adequate"
-                            value={option}
-                            checked={formData.ventilation_adequate === option}
-                            onChange={handleChange}
-                            className="sr-only"
-                          />
-                          <span className="font-medium">{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* General Safety */}
-            <section>
-              <div className="bg-gradient-to-r from-green-700 to-green-600 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">✅</span>
-                <h2 className="text-lg font-semibold">General Safety</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {/* Surface Encumbrances */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Surface Encumbrances Removed/Supported? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.surface_encumbrances === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="surface_encumbrances"
-                          value={option}
-                          checked={formData.surface_encumbrances === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Equipment Setback */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Equipment Set Back From Edge? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No', 'N/A'].map(option => (
-                      <label key={option} className={`px-4 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.equipment_setback === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : option === 'N/A' ? 'border-gray-400 bg-gray-100 text-gray-600'
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="equipment_setback"
-                          value={option}
-                          checked={formData.equipment_setback === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* PPE In Use */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Required PPE in Use? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`px-6 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.ppe_in_use === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="ppe_in_use"
-                          value={option}
-                          checked={formData.ppe_in_use === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Emergency Equipment */}
-                <div className="bg-gray-50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <label className="font-medium text-gray-700">
-                    Emergency/Rescue Equipment Available? <span className="text-red-600">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    {['Yes', 'No'].map(option => (
-                      <label key={option} className={`px-6 py-2 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.emergency_equipment === option 
-                          ? option === 'Yes' ? 'border-green-500 bg-green-50 text-green-700' 
-                            : 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}>
-                        <input
-                          type="radio"
-                          name="emergency_equipment"
-                          value={option}
-                          checked={formData.emergency_equipment === option}
-                          onChange={handleChange}
-                          required
-                          className="sr-only"
-                        />
-                        <span className="font-medium">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Authorization */}
-            <section>
-              <div className="bg-gradient-to-r from-green-700 to-green-600 text-white px-6 py-3 -mx-8 mb-6 flex items-center gap-3">
-                <span className="text-xl">📝</span>
-                <h2 className="text-lg font-semibold">Authorization</h2>
-              </div>
-              
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-400 rounded-xl p-6 mb-6">
-                <h3 className="text-lg font-semibold text-green-800 mb-4">Work Authorization Decision</h3>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <label className={`flex-1 flex items-center justify-center gap-3 p-5 border-2 rounded-xl cursor-pointer transition-all ${
-                    formData.work_authorized === 'Yes' 
-                      ? 'border-green-500 bg-green-100 text-green-800' 
-                      : 'border-gray-200 hover:border-green-300'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="work_authorized"
-                      value="Yes"
-                      checked={formData.work_authorized === 'Yes'}
-                      onChange={handleChange}
-                      required
-                      className="sr-only"
-                    />
-                    <span className="text-2xl">✅</span>
-                    <span className="font-semibold">Yes - Work Authorized</span>
-                  </label>
-                  <label className={`flex-1 flex items-center justify-center gap-3 p-5 border-2 rounded-xl cursor-pointer transition-all ${
-                    formData.work_authorized === 'No' 
-                      ? 'border-red-500 bg-red-100 text-red-800' 
-                      : 'border-gray-200 hover:border-red-300'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="work_authorized"
-                      value="No"
-                      checked={formData.work_authorized === 'No'}
-                      onChange={handleChange}
-                      className="sr-only"
-                    />
-                    <span className="text-2xl">🛑</span>
-                    <span className="font-semibold">No - Work Stopped</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Corrective Actions Required (if any)
-                </label>
-                <textarea
-                  name="corrective_actions"
-                  value={formData.corrective_actions}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="Describe any corrective actions needed before work can continue or resume..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Inspector Signature (Type Full Name) <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="inspector_signature"
-                  value={formData.inspector_signature}
-                  onChange={handleChange}
-                  required
-                  placeholder="Type your full name as signature"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-0 transition-colors"
-                />
-              </div>
-            </section>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full py-4 px-6 rounded-xl text-white font-semibold text-lg transition-all ${
-                isSubmitting 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-red-700 to-red-600 hover:from-red-800 hover:to-red-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-              }`}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center gap-3">
-                  <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Submitting Inspection...
-                </span>
-              ) : (
-                'Submit Daily Inspection'
-              )}
+            <button type="submit" className="submit-btn" disabled={submitting}>
+              {submitting ? 'Submitting...' : 'Submit Daily Inspection'}
             </button>
           </form>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center py-6 text-sm text-gray-500">
-          <span className="font-medium text-gray-600">Powered by Predictive Safety Analytics™</span>
-          <span className="mx-2">|</span>
-          <span>© 2025 SLP Alaska</span>
+          
+          <div className="footer">
+            <span>Powered by Predictive Safety Analytics™</span> | <span>© 2025 SLP Alaska</span>
+          </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
