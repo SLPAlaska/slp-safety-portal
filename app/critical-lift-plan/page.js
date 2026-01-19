@@ -379,20 +379,49 @@ export default function CriticalLiftPlanForm() {
                 <input type="text" name="liftDescription" value={formData.liftDescription} onChange={handleChange} placeholder="Brief description of lift" required />
               </div>
             </div>
+// Add to your state management section
+const [criticalCriteria, setCriticalCriteria] = useState([]);
 
-            <div className="section-header red">⚠️ Critical Lift Criteria</div>
-            <div className="info-box">Select all criteria that make this lift CRITICAL. A lift is critical if ANY of these apply.</div>
-            <div className="form-group">
-              <label>Why is this lift classified as CRITICAL? *</label>
-              <div className="checkbox-group">
-                {CRITICAL_CRITERIA.map(criteria => (
-                  <label key={criteria} className={`checkbox-option ${formData.criticalCriteria.includes(criteria) ? 'checked' : ''}`} onClick={() => toggleCriteria(criteria)}>
-                    <input type="checkbox" checked={formData.criticalCriteria.includes(criteria)} readOnly />
-                    <span>{criteria}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+// The checkbox section - replace your current one with this:
+<div className="space-y-2">
+  <label className="block text-sm font-medium text-gray-700">
+    ⚠️ Critical Lift Criteria
+  </label>
+  <p className="text-sm text-gray-600 mb-2">
+    Select all criteria that make this lift CRITICAL. A lift is critical if ANY of these apply.
+  </p>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Why is this lift classified as CRITICAL? *
+  </label>
+  <div className="space-y-2">
+    {[
+      'Over 75% of crane capacity',
+      'Two crane lift',
+      'Personnel being lifted',
+      'Lift over live equipment',
+      'Load cannot be re-lifted if dropped',
+      'Blind lift',
+      'Near power lines',
+      'Unusual load characteristics'
+    ].map((criterion) => (
+      <label key={criterion} className="flex items-start space-x-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={criticalCriteria.includes(criterion)}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setCriticalCriteria([...criticalCriteria, criterion]);
+            } else {
+              setCriticalCriteria(criticalCriteria.filter(c => c !== criterion));
+            }
+          }}
+          className="mt-1 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+        />
+        <span className="text-sm text-gray-700">{criterion}</span>
+      </label>
+    ))}
+  </div>
+</div>
 
             <div className="section-header orange">📦 Load Information</div>
             <div className="form-group">
