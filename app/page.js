@@ -493,15 +493,17 @@ export default function SafetyPortal() {
               </div>
               <div className="folder-content">
                 {category.forms.map((form, idx) => (
-                  form.isLocal ? (
-                    <Link key={idx} href={form.href} className="form-link">
-                      ⚡ {form.name}
-                    </Link>
-                  ) : (
-                    <a key={idx} href={form.href} target="_blank" rel="noopener noreferrer" className="form-link">
-                      📄 {form.name}
-                    </a>
-                  )
+                  <div key={idx} style={{ display: 'block', width: '100%' }}>
+                    {form.isLocal ? (
+                      <Link href={form.href} className="form-link">
+                        ⚡ {form.name}
+                      </Link>
+                    ) : (
+                      <a href={form.href} target="_blank" rel="noopener noreferrer" className="form-link">
+                        📄 {form.name}
+                      </a>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
