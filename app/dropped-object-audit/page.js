@@ -149,6 +149,7 @@ export default function DroppedObjectAuditForm() {
 
       <div className="container">
         <div className="header">
+          <img src="/Logo.png" alt="SLP Alaska Logo" style={{ maxWidth: '180px', height: 'auto', marginBottom: '15px', display: 'block', margin: '0 auto 15px auto' }} />
           <h1>Dropped Object Prevention Audit</h1>
           <p>Identify and Document Potential Drop Hazards</p>
           <div className="drops-badge">⚠️ DROPS Prevention Program</div>
