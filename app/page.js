@@ -125,217 +125,148 @@ const FORM_CATEGORIES = [
     forms: [
       { name: 'Incident Investigation Form', href: 'https://script.google.com/macros/s/AKfycbxSaiG_z2j6pr1mryb1cngLLaMBKkUppYaFnaL15uNfYXYoaadDzr5ZdJK3byXf4zyM/exec' },
       { name: 'Property Damage Report', href: 'https://script.google.com/macros/s/AKfycbwTxdpgiZy9TVZlJxTBaT-gIZAdIQH3g8cLuBTnKQsOyeGGOXyIQfgiCUyFitmsJSk/exec' },
-      { name: 'Witness Statement', href: 'https://script.google.com/macros/s/AKfycbx5S-hLUojKV7XTgXNpM3Aole8Uc3oZvuI8fb39x80oa2k1E3W-ooQQ4QTOfNjBoMl7Hg/exec' },
     ]
   },
   {
-    id: 'ash-book',
-    title: '2026 ASH Book',
-    icon: '📘',
-    forms: [
-      { name: '2026 Alaska Safety Handbook', href: 'https://drive.google.com/file/d/11daeYCQKbR1rHdg7cRC_WdamJSBla7ge/view?usp=sharing' },
-    ]
-  },
-  {
-    id: 'moc',
-    title: 'Management of Change',
-    icon: '🔄',
-    forms: [
-      { name: 'Management of Change', href: 'https://script.google.com/macros/s/AKfycbym5ygxScecaXmWnOuQYUlYGWXIxynumBrgyS_FuL6NXxmErAyzPO7F7QQIP1JLM-jY/exec' },
-    ]
-  },
-  {
-    id: 'hse-log',
-    title: 'HSE & Manager Daily Activity Log',
-    icon: '📊',
-    forms: [
-      { name: 'HSE & Manager Daily Activity Log', href: 'https://script.google.com/macros/s/AKfycbxXu8hF2hRERz_aNPZGT9jY8t6heUDT-pYcgTrxfxuOZxQfgXhQPcaKcMj47NqWW5-G/exec' },
-    ]
-  },
-  {
-    id: 'lift-plans',
-    title: 'Critical Lift Plans',
+    id: 'critical-lift',
+    title: 'Critical Lift Planning',
     icon: '🏗️',
     forms: [
-      { name: 'Critical Lift Plans', href: '/critical-lift-plan', isLocal: true },
+      { name: 'Critical Lift Plan', href: '/critical-lift-plan', isLocal: true },
     ]
-  },
-  {
-    id: 'fall-protection-plan',
-    title: 'Fall Protection Plan',
-    icon: '🪢',
-    forms: [
-      { name: 'Fall Protection Plan', href: 'https://script.google.com/macros/s/AKfycbxHyt7snMiiN9fq4fH69u5UuYJIj6cSMRVTC_v0vIx1Zj0ax1LDTBFITB7S7jXVf6ll/exec' },
-    ]
-  },
-  {
-    id: 'sse',
-    title: 'Short Service Employee Evaluation',
-    icon: '👷',
-    forms: [
-      { name: 'Short Service Employee Evaluation', href: 'https://script.google.com/macros/s/AKfycbz98upjxlZHW9i29jm-M0GHjRIArazPVvWRJdwtLJLdbZpiU3DWpEtEON3DJm4noIBOdA/exec' },
-    ]
-  },
-  {
-    id: 'seasonal',
-    title: 'Seasonal Inspections',
-    icon: '🌨️',
-    forms: [
-      { name: 'Spill Kit Inspection Form', href: 'https://script.google.com/macros/s/AKfycbwmre18ewqS254jsjUPJjlyxoY46hsATzONOTE1lXqxqIBBopt5Ne7EU6QvZCNEqcJ3/exec' },
-    ]
-  },
-  {
-    id: 'safety-meeting',
-    title: 'Safety Meeting Form',
-    icon: '👥',
-    forms: [
-      { name: 'Safety Meeting Form', href: 'https://script.google.com/macros/s/AKfycbyi_NKqRvL3Ohmw3T-9rFsIyyp7qw_N2HYi2C_BPTKc7EblqcO_fDycRp-zlLf6aHgR9g/exec' },
-    ]
-  },
-  {
-    id: 'ppe',
-    title: 'PPE Inspection Form',
-    icon: '🦺',
-    forms: [
-      { name: 'PPE Inspection Form', href: 'https://script.google.com/macros/s/AKfycbzvoTWJdCivaYY0ub9TY4sNuR_pHqx2ExtI7yH3HR-sdcYUUB-X0GoR8mB-4BbrNnmX2g/exec' },
-    ]
-  },
+  }
 ]
 
 export default function SafetyPortal() {
-  const [openFolders, setOpenFolders] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [openFolders, setOpenFolders] = useState({})
 
-  const toggleFolder = (folderId) => {
-    setOpenFolders(prev => ({
-      ...prev,
-      [folderId]: !prev[folderId]
+  const totalForms = FORM_CATEGORIES.reduce((sum, category) => sum + category.forms.length, 0)
+
+  const filteredCategories = FORM_CATEGORIES
+    .map(category => ({
+      ...category,
+      forms: category.forms.filter(form => 
+        form.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
     }))
+    .filter(category => category.forms.length > 0)
+
+  const toggleFolder = (id) => {
+    setOpenFolders(prev => ({ ...prev, [id]: !prev[id] }))
   }
-
-  // Filter forms based on search
-  const filteredCategories = FORM_CATEGORIES.map(category => {
-    const filteredForms = category.forms.filter(form =>
-      form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      category.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    return { ...category, forms: filteredForms, hasMatches: filteredForms.length > 0 }
-  }).filter(category => category.hasMatches || searchQuery === '')
-
-  const totalForms = FORM_CATEGORIES.reduce((acc, cat) => acc + cat.forms.length, 0)
 
   return (
     <div className="portal-page">
-      <style jsx global>{`
+      <style jsx>{`
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { height: 100%; }
+        
         .portal-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           padding: 20px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
         .container {
-          max-width: 900px;
+          max-width: 1200px;
           margin: 0 auto;
         }
         
         .header {
           text-align: center;
-          padding: 20px;
-          background: rgba(255,255,255,0.95);
-          border-radius: 16px;
-          margin-bottom: 25px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          color: white;
+          margin-bottom: 30px;
         }
         
         .logo {
           max-width: 200px;
-          margin-bottom: 10px;
+          height: auto;
+          margin-bottom: 20px;
+          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
         }
         
         .header h1 {
-          color: #c41e3a;
-          font-size: 28px;
-          margin-bottom: 5px;
+          font-size: 32px;
           font-weight: 700;
+          margin-bottom: 10px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
         .subtitle {
-          color: #1e3a5f;
-          font-size: 14px;
-          font-weight: 500;
+          font-size: 18px;
+          margin-bottom: 5px;
+          opacity: 0.95;
         }
         
         .tagline {
-          color: #ea580c;
-          font-size: 12px;
+          font-size: 14px;
+          opacity: 0.85;
           font-style: italic;
-          margin-top: 8px;
         }
         
         .stats-bar {
           display: flex;
           justify-content: center;
           gap: 30px;
-          margin-bottom: 20px;
-          flex-wrap: wrap;
+          margin-bottom: 30px;
         }
         
         .stat-item {
-          background: rgba(255,255,255,0.1);
-          padding: 10px 20px;
-          border-radius: 8px;
+          background: rgba(255,255,255,0.15);
+          backdrop-filter: blur(10px);
+          padding: 15px 30px;
+          border-radius: 10px;
           text-align: center;
+          color: white;
         }
         
         .stat-number {
-          font-size: 24px;
+          font-size: 32px;
           font-weight: 700;
-          color: #fbbf24;
         }
         
         .stat-label {
-          font-size: 11px;
-          color: rgba(255,255,255,0.7);
-          text-transform: uppercase;
+          font-size: 12px;
+          opacity: 0.9;
+          margin-top: 5px;
         }
         
         .search-box {
           width: 100%;
-          padding: 12px 20px;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 14px;
-          margin-bottom: 20px;
-          background: rgba(255,255,255,0.95);
+          padding: 15px 20px;
+          font-size: 16px;
+          border: none;
+          border-radius: 10px;
+          margin-bottom: 30px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         
         .search-box:focus {
-          outline: none;
-          border-color: #ea580c;
-          box-shadow: 0 0 0 3px rgba(234,88,12,0.2);
+          outline: 3px solid #fbbf24;
         }
         
         .folders-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 15px;
+          gap: 20px;
         }
         
         .folder {
-          background: rgba(255,255,255,0.95);
-          border-radius: 12px;
+          background: white;
+          border-radius: 10px;
           overflow: hidden;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           transition: transform 0.2s, box-shadow 0.2s;
         }
         
         .folder:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
         
         .folder-header {
-          background: linear-gradient(135deg, #ea580c 0%, #c41e3a 100%);
+          background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
           color: white;
           padding: 15px 20px;
           cursor: pointer;
@@ -343,43 +274,33 @@ export default function SafetyPortal() {
           align-items: center;
           justify-content: space-between;
           font-weight: 600;
-          font-size: 14px;
-        }
-        
-        .folder-header:hover {
-          background: linear-gradient(135deg, #c41e3a 0%, #9a1830 100%);
+          font-size: 15px;
         }
         
         .folder-header.training {
-          background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        }
-        
-        .folder-header.training:hover {
-          background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-        }
-        
-        .folder-icon {
-          font-size: 20px;
-          margin-right: 10px;
+          background: linear-gradient(135deg, #059669 0%, #10b981 100%);
         }
         
         .folder-title {
           display: flex;
           align-items: center;
-          flex: 1;
+          gap: 10px;
+        }
+        
+        .folder-icon {
+          font-size: 20px;
         }
         
         .folder-count {
           background: rgba(255,255,255,0.2);
-          padding: 3px 10px;
-          border-radius: 12px;
-          font-size: 11px;
-          margin-right: 10px;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
         }
         
         .folder-arrow {
-          font-size: 12px;
           transition: transform 0.3s;
+          font-size: 12px;
         }
         
         .folder.open .folder-arrow {
@@ -389,8 +310,7 @@ export default function SafetyPortal() {
         .folder-content {
           max-height: 0;
           overflow: hidden;
-          transition: max-height 0.3s ease-out;
-          background: #f8fafc;
+          transition: max-height 0.3s ease;
         }
         
         .folder.open .folder-content {
@@ -400,21 +320,19 @@ export default function SafetyPortal() {
         .form-link {
           display: block;
           padding: 12px 20px;
-          color: #1e3a5f;
+          color: #1e3a8a;
           text-decoration: none;
-          border-bottom: 1px solid #e2e8f0;
-          font-size: 13px;
-          transition: background 0.2s, padding-left 0.2s;
-        }
-        
-        .form-link:hover {
-          background: #e0f2fe;
-          padding-left: 28px;
-          color: #c41e3a;
+          border-bottom: 1px solid #f3f4f6;
+          transition: background 0.2s;
+          font-size: 14px;
         }
         
         .form-link:last-child {
           border-bottom: none;
+        }
+        
+        .form-link:hover {
+          background: #f8fafc;
         }
         
         .form-link::before {
