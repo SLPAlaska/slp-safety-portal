@@ -394,8 +394,8 @@ export default function SafetyPortal() {
         .form-link {
           display: block !important;
           padding: 12px 20px;
-          color: #1e3a5f;
-          text-decoration: none;
+          color: #1e3a5f !important;
+          text-decoration: none !important;
           border-bottom: 1px solid #e2e8f0;
           font-size: 13px;
           transition: background 0.2s, padding-left 0.2s;
@@ -403,6 +403,8 @@ export default function SafetyPortal() {
         
         a.form-link {
           display: block !important;
+          color: #1e3a5f !important;
+          text-decoration: none !important;
         }
         
         .form-link:hover {
