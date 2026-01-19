@@ -220,27 +220,22 @@ export default function SafetyPortal() {
   }
 
   return (
-    <div>
+    <div className="page-wrapper">
       <style jsx>{`
-
-       * { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
-  min-height: 100vh;
-  margin: 0;
-  padding: 0;
-}
-
-div:first-child {
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  min-height: 100vh;
-  padding: 20px;
-}
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        .page-wrapper {
+          font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+          min-height: 100vh;
+          padding: 20px;
+        }
+        
         .container { 
           max-width: 900px; 
           margin: 0 auto; 
         }
+        
         .header {
           text-align: center;
           padding: 20px;
@@ -249,47 +244,55 @@ div:first-child {
           margin-bottom: 25px;
           box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
+        
         .logo { 
           max-width: 200px; 
           margin-bottom: 10px;
         }
+        
         h1 { 
           color: #c41e3a; 
           font-size: 28px; 
           margin-bottom: 5px;
           font-weight: 700;
         }
+        
         .subtitle { 
           color: #1e3a5f; 
           font-size: 14px;
           font-weight: 500;
         }
+        
         .tagline {
           color: #ea580c;
           font-size: 12px;
           font-style: italic;
           margin-top: 8px;
         }
+        
         .stats-bar {
           display: flex;
           justify-content: center;
           gap: 30px;
           margin-top: 15px;
-          flex-wrap: wrap;
         }
+        
         .stat-item {
           text-align: center;
         }
+        
         .stat-number {
           font-size: 24px;
           font-weight: 700;
           color: #1e3a5f;
         }
+        
         .stat-label {
           font-size: 11px;
           color: #64748b;
           text-transform: uppercase;
         }
+        
         .search-box {
           width: 100%;
           padding: 12px 20px;
@@ -299,16 +302,19 @@ div:first-child {
           margin-bottom: 20px;
           background: rgba(255,255,255,0.95);
         }
+        
         .search-box:focus {
           outline: none;
           border-color: #ea580c;
           box-shadow: 0 0 0 3px rgba(234,88,12,0.2);
         }
+        
         .folders-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
           gap: 15px;
         }
+        
         .folder {
           background: rgba(255,255,255,0.95);
           border-radius: 12px;
@@ -316,10 +322,12 @@ div:first-child {
           box-shadow: 0 4px 20px rgba(0,0,0,0.2);
           transition: transform 0.2s, box-shadow 0.2s;
         }
+        
         .folder:hover {
           transform: translateY(-3px);
           box-shadow: 0 8px 30px rgba(0,0,0,0.3);
         }
+        
         .folder-header {
           background: linear-gradient(135deg, #ea580c 0%, #c41e3a 100%);
           color: white;
@@ -331,24 +339,30 @@ div:first-child {
           font-weight: 600;
           font-size: 14px;
         }
+        
         .folder-header:hover {
           background: linear-gradient(135deg, #c41e3a 0%, #9a1830 100%);
         }
+        
         .training-header {
           background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         }
+        
         .training-header:hover {
           background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
         }
+        
         .folder-icon {
           font-size: 20px;
           margin-right: 10px;
         }
+        
         .folder-title {
           display: flex;
           align-items: center;
           flex: 1;
         }
+        
         .folder-count {
           background: rgba(255,255,255,0.2);
           padding: 3px 10px;
@@ -356,22 +370,27 @@ div:first-child {
           font-size: 11px;
           margin-right: 10px;
         }
+        
         .folder-arrow {
           font-size: 12px;
           transition: transform 0.3s;
         }
+        
         .folder.open .folder-arrow {
           transform: rotate(180deg);
         }
+        
         .folder-content {
           max-height: 0;
           overflow: hidden;
           transition: max-height 0.3s ease-out;
           background: #f8fafc;
         }
+        
         .folder.open .folder-content {
           max-height: 1500px;
         }
+        
         .form-link {
           display: block;
           padding: 12px 20px;
@@ -381,47 +400,54 @@ div:first-child {
           font-size: 13px;
           transition: background 0.2s, padding-left 0.2s;
         }
+        
         .form-link:hover {
           background: #e0f2fe;
           padding-left: 28px;
           color: #c41e3a;
         }
+        
         .form-link:last-child {
           border-bottom: none;
         }
+        
         .form-link::before {
           content: "📄 ";
           margin-right: 8px;
         }
+        
         .footer {
           text-align: center;
           margin-top: 30px;
-          color: rgba(255,255,255,0.7);
+          color: rgba(255,255,255,0.9);
           font-size: 11px;
         }
+        
         .footer a {
           color: #fbbf24;
           text-decoration: none;
         }
+        
         .footer .powered-by {
           margin-top: 10px;
           padding-top: 10px;
           border-top: 1px solid rgba(255,255,255,0.2);
           font-size: 10px;
-          color: rgba(255,255,255,0.5);
+          color: rgba(255,255,255,0.7);
         }
+        
         .no-results {
           text-align: center;
           padding: 40px;
           color: rgba(255,255,255,0.7);
         }
+        
         @media (max-width: 600px) {
-          body { padding: 10px; }
+          .page-wrapper { padding: 10px; }
           h1 { font-size: 22px; }
           .folder-header { padding: 12px 15px; font-size: 13px; }
           .form-link { padding: 10px 15px; font-size: 12px; }
           .stats-bar { gap: 15px; }
-          .stat-item { padding: 0; }
         }
       `}</style>
 
