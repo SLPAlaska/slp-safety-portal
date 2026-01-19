@@ -165,38 +165,42 @@ export default function CriticalLiftPlanForm() {
     setMessage({ type: '', text: '' })
 
     try {
-      const { error } = await supabase.from('critical_lift_plans').insert([{
+      if (formData.criticalCriteria.length === 0) {
+        setMessage({ type: 'error', text: 'Please select at least one critical lift criterion.' })
+        setSubmitting(false)
+        return
+      }
+
+      const { data, error } = await supabase.from('critical_lift_plans').insert([{
         lift_plan_number: formData.liftPlanNumber,
-        plan_date: formData.date,
+        date: formData.date,
         prepared_by: formData.preparedBy,
         company: formData.company,
         location: formData.location,
         lift_description: formData.liftDescription,
-        critical_criteria: formData.criticalCriteria.join(', '),
+        critical_criteria: formData.criticalCriteria,
         load_description: formData.loadDescription,
-        load_weight: parseFloat(formData.loadWeight) || null,
-        rigging_weight: parseFloat(formData.riggingWeight) || null,
-        total_load: calculations.totalLoad,
-        total_load_tons: parseFloat(calculations.totalLoadTons),
+        load_weight: parseFloat(formData.loadWeight) || 0,
+        rigging_weight: parseFloat(formData.riggingWeight) || 0,
         weight_source: formData.weightSource,
-        load_length: formData.loadLength || null,
-        load_width: formData.loadWidth || null,
-        load_height: formData.loadHeight || null,
-        center_of_gravity: formData.centerOfGravity || null,
+        load_length: formData.loadLength,
+        load_width: formData.loadWidth,
+        load_height: formData.loadHeight,
+        center_of_gravity: formData.centerOfGravity,
         crane_number: formData.craneNumber,
         crane_type: formData.craneType,
-        crane_make: formData.craneMake || null,
-        crane_model: formData.craneModel || null,
-        crane_capacity: parseFloat(formData.craneCapacity) || null,
-        boom_length: parseFloat(formData.boomLength) || null,
-        operating_radius: parseFloat(formData.operatingRadius) || null,
-        capacity_at_radius: parseFloat(formData.capacityAtRadius) || null,
-        counterweight: formData.counterweight || null,
+        crane_make: formData.craneMake,
+        crane_model: formData.craneModel,
+        crane_capacity: formData.craneCapacity,
+        boom_length: formData.boomLength,
+        operating_radius: formData.operatingRadius,
+        capacity_at_radius: parseFloat(formData.capacityAtRadius) || 0,
+        counterweight: formData.counterweight,
         wind_speed: formData.windSpeed,
-        wind_derating: calculations.windDerating,
         temperature: formData.temperature,
-        cold_derating: calculations.coldDerating,
         other_derating: parseFloat(formData.otherDerating) || 0,
+        total_load: calculations.totalLoad,
+        total_load_tons: parseFloat(calculations.totalLoadTons),
         net_capacity: parseFloat(calculations.netCapacity),
         percent_capacity: parseFloat(calculations.percentCapacity),
         capacity_status: calculations.capacityStatus,
@@ -204,35 +208,34 @@ export default function CriticalLiftPlanForm() {
         sling_size: formData.slingSize,
         number_of_legs: parseInt(formData.numberOfLegs),
         sling_angle: parseInt(formData.slingAngle),
-        sling_wll: parseFloat(formData.slingWLL) || null,
+        sling_wll: parseFloat(formData.slingWLL) || 0,
         sling_capacity_at_angle: calculations.slingCapacityAtAngle,
-        shackle_size: formData.shackleSize || null,
-        shackle_wll: parseFloat(formData.shackleWLL) || null,
         rigging_adequate: calculations.riggingAdequate,
+        shackle_size: formData.shackleSize,
+        shackle_wll: parseFloat(formData.shackleWLL) || 0,
         ground_conditions: formData.groundConditions,
         weather_conditions: formData.weatherConditions,
-        overhead_hazards: formData.overheadHazards || null,
-        underground_hazards: formData.undergroundHazards || null,
+        overhead_hazards: formData.overheadHazards,
+        underground_hazards: formData.undergroundHazards,
         power_lines: formData.powerLines,
-        exclusion_zone: parseFloat(formData.exclusionZone) || null,
+        exclusion_zone: parseFloat(formData.exclusionZone) || 0,
         crane_operator: formData.craneOperator,
         signal_person: formData.signalPerson,
         riggers: formData.riggers,
         lift_director: formData.liftDirector,
-        spotters: formData.spotters || null,
+        spotters: formData.spotters,
         communication_method: formData.communicationMethod,
-        backup_communication: formData.backupCommunication || null,
-        radio_channel: formData.radioChannel || null,
-        emergency_procedures: formData.emergencyProcedures || null,
-        comments: formData.comments || null
+        backup_communication: formData.backupCommunication,
+        radio_channel: formData.radioChannel,
+        emergency_procedures: formData.emergencyProcedures,
+        comments: formData.comments
       }])
 
       if (error) throw error
-      setMessage({ type: 'success', text: `Critical Lift Plan submitted! Capacity: ${calculations.percentCapacity}% - ${calculations.capacityStatus}` })
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      setMessage({ type: 'success', text: `Critical Lift Plan ${formData.liftPlanNumber} successfully saved!` })
     } catch (error) {
       console.error('Error:', error)
-      setMessage({ type: 'error', text: 'Error: ' + error.message })
+      setMessage({ type: 'error', text: `Error: ${error.message}` })
     } finally {
       setSubmitting(false)
     }
@@ -257,79 +260,71 @@ export default function CriticalLiftPlanForm() {
       emergencyProcedures: '', comments: ''
     })
     setMessage({ type: '', text: '' })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
-    <div className="lift-form-page">
-      <style jsx global>{`
-        .lift-form-page { min-height: 100vh; background: #1e3a8a; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: white; text-decoration: none; font-weight: 600; padding: 10px 20px; background: #dc2626; border-radius: 6px; }
-        .back-link:hover { background: #b91c1c; }
-        .lift-container { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden; border: 4px solid #dc2626; }
-        .lift-header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-bottom: 6px solid #1e3a8a; }
-        .lift-header img { max-height: 80px; margin-bottom: 15px; }
-        .lift-header h1 { color: white; margin: 0 0 10px 0; font-size: 32px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-        .lift-header .subtitle { color: #fecaca; font-size: 16px; }
-        .critical-badge { display: inline-block; background: #1e3a8a; color: white; padding: 8px 25px; border-radius: 25px; font-size: 14px; margin-top: 15px; font-weight: 700; border: 3px solid white; text-transform: uppercase; letter-spacing: 1px; }
-        .form-content { padding: 30px 40px 40px 40px; }
-        .message { padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 600; }
-        .message.success { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
-        .message.error { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
-        .section-header { background: #1e3a8a; color: white; padding: 12px 20px; margin: 30px -40px 20px -40px; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 10px; }
-        .section-header.red { background: #dc2626; }
-        .section-header.green { background: #15803d; }
-        .section-header.orange { background: #ea580c; }
-        .section-header:first-of-type { margin-top: 0; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; color: #1e3a8a; font-weight: 600; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #1e3a8a; box-shadow: 0 0 0 3px rgba(30,58,138,0.1); }
-        .form-group textarea { min-height: 80px; resize: vertical; }
-        .form-row { display: flex; gap: 20px; }
-        .form-row .form-group { flex: 1; }
-        .form-row-3 { display: flex; gap: 20px; }
-        .form-row-3 .form-group { flex: 1; }
-        .form-row-4 { display: flex; gap: 15px; }
-        .form-row-4 .form-group { flex: 1; }
-        .info-box { background: #eff6ff; border-left: 4px solid #1e3a8a; padding: 12px 15px; margin-bottom: 20px; font-size: 14px; color: #1e3a8a; }
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
-        .checkbox-option { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer; transition: all 0.2s; background: white; }
-        .checkbox-option:hover { border-color: #1e3a8a; }
-        .checkbox-option.checked { border-color: #dc2626; background: #fef2f2; }
-        .checkbox-option input { display: none; }
-        .calc-panel { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 3px solid #1e3a8a; border-radius: 12px; padding: 20px; margin: 25px 0; }
-        .calc-panel h3 { color: #1e3a8a; margin: 0 0 15px; font-size: 18px; display: flex; align-items: center; gap: 10px; }
-        .calc-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(30,58,138,0.15); }
-        .calc-row:last-of-type { border-bottom: none; }
-        .calc-label { color: #475569; font-weight: 500; }
-        .calc-value { font-weight: 700; color: #1e3a8a; }
-        .calc-highlight { font-size: 28px; color: #dc2626; }
-        .status-box { padding: 15px; border-radius: 8px; text-align: center; font-weight: 700; margin-top: 15px; font-size: 16px; }
-        .status-blue { background: #dbeafe; color: #1e3a8a; border: 2px solid #1e3a8a; }
-        .status-green { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
-        .status-yellow { background: #fef3c7; color: #92400e; border: 2px solid #f59e0b; }
-        .status-orange { background: #ffedd5; color: #9a3412; border: 2px solid #f97316; }
-        .status-red { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
-        .rigging-display { padding: 12px; border-radius: 8px; font-weight: 700; text-align: center; }
-        .rigging-ok { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
-        .rigging-bad { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
-        .rigging-neutral { background: #f1f5f9; color: #475569; border: 2px solid #cbd5e1; }
-        .submit-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; border: 3px solid #1e3a8a; }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
-        .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; border-color: #6b7280; }
-        .reset-btn { width: 100%; padding: 14px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .footer { text-align: center; margin-top: 30px; padding: 20px; border-top: 3px solid #1e3a8a; color: #1e3a8a; font-size: 14px; font-weight: 600; background: #f1f5f9; }
-        @media (max-width: 768px) {
-          .form-content { padding: 20px; }
-          .section-header { margin-left: -20px; margin-right: -20px; }
-          .form-row, .form-row-3, .form-row-4 { flex-direction: column; gap: 0; }
-          .checkbox-group { flex-direction: column; }
-        }
-      `}</style>
+    <div>
+      <style jsx>{`
+       * { margin: 0; padding: 0; box-sizing: border-box; }
+       body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; }
+       .lift-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+       .back-link { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #1e3a8a; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+       .back-link:hover { background: #1e40af; }
+       .lift-header { background: linear-gradient(135deg, #991b1b 0%, #c41e3a 100%); color: white; padding: 40px; text-align: center; border-radius: 12px 12px 0 0; border: 4px solid #1e3a8a; }
+       .lift-header img { height: 80px; margin-bottom: 15px; }
+       .lift-header h1 { font-size: 42px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+       .subtitle { font-size: 18px; font-weight: 300; margin-top: 8px; }
+       .critical-badge { display: inline-block; margin-top: 15px; padding: 12px 24px; background: #fbbf24; color: #78350f; font-weight: 700; font-size: 16px; border-radius: 30px; border: 3px solid #78350f; }
+       .form-content { background: white; padding: 40px; border: 4px solid #1e3a8a; border-top: none; border-radius: 0 0 12px 12px; }
+       .message { padding: 15px; margin-bottom: 20px; border-radius: 8px; font-weight: 600; }
+       .message.success { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
+       .message.error { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+       .section-header { background: #1e3a8a; color: white; padding: 15px 20px; margin: 30px -40px 20px -40px; font-size: 20px; font-weight: 700; border-left: 6px solid #dc2626; }
+       .section-header.red { background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%); }
+       .section-header.orange { background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%); }
+       .section-header.green { background: linear-gradient(135deg, #065f46 0%, #059669 100%); }
+       .info-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; color: #78350f; font-weight: 600; border-radius: 4px; }
+       .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
+       .form-row-3 { display: flex; gap: 20px; margin-bottom: 20px; }
+       .form-row-3 .form-group { flex: 1; }
+       .form-row-4 { display: flex; gap: 15px; margin-bottom: 20px; }
+       .form-row-4 .form-group { flex: 1; }
+       .form-group { flex: 1; margin-bottom: 20px; }
+       .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #1e3a8a; font-size: 15px; }
+       .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 15px; }
+       .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #dc2626; }
+       .form-group textarea { min-height: 100px; resize: vertical; font-family: inherit; }
+       .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; }
+       .checkbox-option { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border: 2px solid #cbd5e1; border-radius: 8px; cursor: pointer; background: white; transition: all 0.2s; }
+       .checkbox-option:hover { border-color: #dc2626; background: #fef2f2; }
+       .checkbox-option.checked { background: #fee2e2; border-color: #dc2626; font-weight: 600; }
+       .checkbox-option input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+       .calc-display { background: #f1f5f9; padding: 15px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 16px; font-weight: 600; color: #1e3a8a; text-align: center; }
+       .capacity-status { padding: 20px; border-radius: 10px; text-align: center; font-size: 20px; font-weight: 700; margin: 20px 0; border: 3px solid; }
+       .status-red { background: #fee2e2; color: #991b1b; border-color: #dc2626; }
+       .status-orange { background: #fed7aa; color: #9a3412; border-color: #ea580c; }
+       .status-yellow { background: #fef3c7; color: #78350f; border-color: #f59e0b; }
+       .status-green { background: #d1fae5; color: #065f46; border-color: #10b981; }
+       .status-blue { background: #dbeafe; color: #1e3a8a; border-color: #3b82f6; }
+       .rigging-display { padding: 15px; border-radius: 8px; font-size: 18px; font-weight: 700; text-align: center; }
+       .rigging-ok { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
+       .rigging-bad { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
+       .rigging-neutral { background: #f1f5f9; color: #475569; border: 2px solid #cbd5e1; }
+       .submit-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; border: 3px solid #1e3a8a; }
+       .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
+       .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; border-color: #6b7280; }
+       .reset-btn { width: 100%; padding: 14px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+       .footer { text-align: center; margin-top: 30px; padding: 20px; border-top: 3px solid #1e3a8a; color: #1e3a8a; font-size: 14px; font-weight: 600; background: #f1f5f9; }
+       @media (max-width: 768px) {
+         .form-content { padding: 20px; }
+         .section-header { margin-left: -20px; margin-right: -20px; }
+         .form-row, .form-row-3, .form-row-4 { flex-direction: column; gap: 0; }
+         .checkbox-group { flex-direction: column; }
+       }
+     `}</style>
 
       <Link href="/" className="back-link">← Back to Safety Portal</Link>
-      
+
       <div className="lift-container">
         <div className="lift-header">
           <img src="/Logo.png" alt="SLP Alaska Logo" />
@@ -337,10 +332,10 @@ export default function CriticalLiftPlanForm() {
           <p className="subtitle">Comprehensive Lift Planning with Auto-Calculations</p>
           <span className="critical-badge">⚠️ Critical Lift Documentation Required</span>
         </div>
-        
+
         <div className="form-content">
           {message.text && <div className={`message ${message.type}`}>{message.text}</div>}
-          
+
           <form onSubmit={handleSubmit}>
             <div className="section-header">📋 Lift Plan Information</div>
             <div className="form-row">
@@ -379,54 +374,34 @@ export default function CriticalLiftPlanForm() {
                 <input type="text" name="liftDescription" value={formData.liftDescription} onChange={handleChange} placeholder="Brief description of lift" required />
               </div>
             </div>
-// Add to your state management section
-const [criticalCriteria, setCriticalCriteria] = useState([]);
 
-// The checkbox section - replace your current one with this:
-<div className="space-y-2">
-  <label className="block text-sm font-medium text-gray-700">
-    ⚠️ Critical Lift Criteria
-  </label>
-  <p className="text-sm text-gray-600 mb-2">
-    Select all criteria that make this lift CRITICAL. A lift is critical if ANY of these apply.
-  </p>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Why is this lift classified as CRITICAL? *
-  </label>
-  <div className="space-y-2">
-    {[
-      'Over 75% of crane capacity',
-      'Two crane lift',
-      'Personnel being lifted',
-      'Lift over live equipment',
-      'Load cannot be re-lifted if dropped',
-      'Blind lift',
-      'Near power lines',
-      'Unusual load characteristics'
-    ].map((criterion) => (
-      <label key={criterion} className="flex items-start space-x-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={criticalCriteria.includes(criterion)}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setCriticalCriteria([...criticalCriteria, criterion]);
-            } else {
-              setCriticalCriteria(criticalCriteria.filter(c => c !== criterion));
-            }
-          }}
-          className="mt-1 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-        />
-        <span className="text-sm text-gray-700">{criterion}</span>
-      </label>
-    ))}
-  </div>
-</div>
+            <div className="section-header red">⚠️ Critical Lift Criteria</div>
+            <div className="info-box">Select all criteria that make this lift CRITICAL. A lift is critical if ANY of these apply.</div>
+            <div className="form-group">
+              <label>Why is this lift classified as CRITICAL? *</label>
+              <div className="checkbox-group">
+                {CRITICAL_CRITERIA.map(criteria => (
+                  <label key={criteria} className={`checkbox-option ${formData.criticalCriteria.includes(criteria) ? 'checked' : ''}`} onClick={() => toggleCriteria(criteria)}>
+                    <input type="checkbox" checked={formData.criticalCriteria.includes(criteria)} readOnly />
+                    <span>{criteria}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
             <div className="section-header orange">📦 Load Information</div>
-            <div className="form-group">
-              <label>Load Description *</label>
-              <textarea name="loadDescription" value={formData.loadDescription} onChange={handleChange} placeholder="Detailed description of load being lifted" required />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Load Description *</label>
+                <input type="text" name="loadDescription" value={formData.loadDescription} onChange={handleChange} placeholder="What is being lifted?" required />
+              </div>
+              <div className="form-group">
+                <label>Weight Source *</label>
+                <select name="weightSource" value={formData.weightSource} onChange={handleChange} required>
+                  <option value="">-- Select --</option>
+                  {WEIGHT_SOURCES.map(w => <option key={w} value={w}>{w}</option>)}
+                </select>
+              </div>
             </div>
             <div className="form-row-3">
               <div className="form-group">
@@ -438,37 +413,34 @@ const [criticalCriteria, setCriticalCriteria] = useState([]);
                 <input type="number" name="riggingWeight" value={formData.riggingWeight} onChange={handleChange} required />
               </div>
               <div className="form-group">
-                <label>Weight Source *</label>
-                <select name="weightSource" value={formData.weightSource} onChange={handleChange} required>
-                  <option value="">-- Select --</option>
-                  {WEIGHT_SOURCES.map(w => <option key={w} value={w}>{w}</option>)}
-                </select>
+                <label>Total Load</label>
+                <div className="calc-display">{calculations.totalLoad.toLocaleString()} lbs ({calculations.totalLoadTons} tons)</div>
               </div>
             </div>
             <div className="form-row-4">
               <div className="form-group">
-                <label>Length (in)</label>
-                <input type="number" name="loadLength" value={formData.loadLength} onChange={handleChange} step="0.1" />
+                <label>Length (ft)</label>
+                <input type="text" name="loadLength" value={formData.loadLength} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label>Width (in)</label>
-                <input type="number" name="loadWidth" value={formData.loadWidth} onChange={handleChange} step="0.1" />
+                <label>Width (ft)</label>
+                <input type="text" name="loadWidth" value={formData.loadWidth} onChange={handleChange} />
               </div>
               <div className="form-group">
-                <label>Height (in)</label>
-                <input type="number" name="loadHeight" value={formData.loadHeight} onChange={handleChange} step="0.1" />
+                <label>Height (ft)</label>
+                <input type="text" name="loadHeight" value={formData.loadHeight} onChange={handleChange} />
               </div>
               <div className="form-group">
                 <label>Center of Gravity</label>
-                <input type="text" name="centerOfGravity" value={formData.centerOfGravity} onChange={handleChange} placeholder="Location/offset" />
+                <input type="text" name="centerOfGravity" value={formData.centerOfGravity} onChange={handleChange} placeholder="e.g., Center, Offset 2ft left" />
               </div>
             </div>
 
             <div className="section-header">🏗️ Crane Information</div>
-            <div className="form-row-3">
+            <div className="form-row">
               <div className="form-group">
-                <label>Crane Number/ID *</label>
-                <input type="text" name="craneNumber" value={formData.craneNumber} onChange={handleChange} required />
+                <label>Crane Number *</label>
+                <input type="text" name="craneNumber" value={formData.craneNumber} onChange={handleChange} placeholder="e.g., C-101" required />
               </div>
               <div className="form-group">
                 <label>Crane Type *</label>
@@ -477,107 +449,80 @@ const [criticalCriteria, setCriticalCriteria] = useState([]);
                   {CRANE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
+            </div>
+            <div className="form-row">
               <div className="form-group">
-                <label>Max Capacity (tons) *</label>
-                <input type="number" name="craneCapacity" value={formData.craneCapacity} onChange={handleChange} step="0.1" required />
+                <label>Make *</label>
+                <input type="text" name="craneMake" value={formData.craneMake} onChange={handleChange} placeholder="e.g., Grove" required />
+              </div>
+              <div className="form-group">
+                <label>Model *</label>
+                <input type="text" name="craneModel" value={formData.craneModel} onChange={handleChange} placeholder="e.g., GMK5250L" required />
+              </div>
+            </div>
+            <div className="form-row-3">
+              <div className="form-group">
+                <label>Crane Capacity (tons) *</label>
+                <input type="text" name="craneCapacity" value={formData.craneCapacity} onChange={handleChange} placeholder="e.g., 300 tons" required />
+              </div>
+              <div className="form-group">
+                <label>Boom Length (ft) *</label>
+                <input type="text" name="boomLength" value={formData.boomLength} onChange={handleChange} required />
+              </div>
+              <div className="form-group">
+                <label>Operating Radius (ft) *</label>
+                <input type="text" name="operatingRadius" value={formData.operatingRadius} onChange={handleChange} required />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Crane Make</label>
-                <input type="text" name="craneMake" value={formData.craneMake} onChange={handleChange} placeholder="e.g., Liebherr, Grove" />
-              </div>
-              <div className="form-group">
-                <label>Crane Model</label>
-                <input type="text" name="craneModel" value={formData.craneModel} onChange={handleChange} placeholder="e.g., LTM 1100" />
-              </div>
-            </div>
-            <div className="form-row-3">
-              <div className="form-group">
-                <label>Boom Length (ft) *</label>
-                <input type="number" name="boomLength" value={formData.boomLength} onChange={handleChange} step="0.1" required />
-              </div>
-              <div className="form-group">
-                <label>Operating Radius (ft) *</label>
-                <input type="number" name="operatingRadius" value={formData.operatingRadius} onChange={handleChange} step="0.1" required />
-              </div>
-              <div className="form-group">
                 <label>Capacity at Radius (tons) *</label>
-                <input type="number" name="capacityAtRadius" value={formData.capacityAtRadius} onChange={handleChange} step="0.01" required />
+                <input type="number" step="0.1" name="capacityAtRadius" value={formData.capacityAtRadius} onChange={handleChange} placeholder="From load chart" required />
               </div>
-            </div>
-            <div className="form-group">
-              <label>Counterweight (lbs)</label>
-              <input type="text" name="counterweight" value={formData.counterweight} onChange={handleChange} placeholder="Counterweight configuration" />
+              <div className="form-group">
+                <label>Counterweight Configuration</label>
+                <input type="text" name="counterweight" value={formData.counterweight} onChange={handleChange} placeholder="e.g., Full - 120,000 lbs" />
+              </div>
             </div>
 
-            <div className="section-header red">📉 De-rating Factors</div>
+            <div className="section-header orange">⚡ Capacity Calculations & Derating</div>
             <div className="form-row-3">
               <div className="form-group">
-                <label>Wind Speed *</label>
-                <select name="windSpeed" value={formData.windSpeed} onChange={handleChange} required>
-                  <option value="Under 20 mph">Under 20 mph (No de-rate)</option>
-                  <option value="20-30 mph">20-30 mph (-10%)</option>
-                  <option value="30-40 mph">30-40 mph (-25%)</option>
+                <label>Wind Speed</label>
+                <select name="windSpeed" value={formData.windSpeed} onChange={handleChange}>
+                  <option value="Under 20 mph">Under 20 mph (0% derate)</option>
+                  <option value="20-30 mph">20-30 mph (10% derate)</option>
+                  <option value="30-40 mph">30-40 mph (25% derate)</option>
                   <option value="Over 40 mph">Over 40 mph (NO LIFT)</option>
                 </select>
               </div>
               <div className="form-group">
-                <label>Temperature *</label>
-                <select name="temperature" value={formData.temperature} onChange={handleChange} required>
-                  <option value="Above 0°F">Above 0°F (No de-rate)</option>
-                  <option value="-20°F to 0°F">-20°F to 0°F (-5%)</option>
-                  <option value="-40°F to -20°F">-40°F to -20°F (-10%)</option>
-                  <option value="Below -40°F">Below -40°F (-15%)</option>
+                <label>Temperature</label>
+                <select name="temperature" value={formData.temperature} onChange={handleChange}>
+                  <option value="Above 0°F">Above 0°F (0% derate)</option>
+                  <option value="-20°F to 0°F">-20°F to 0°F (5% derate)</option>
+                  <option value="-40°F to -20°F">-40°F to -20°F (10% derate)</option>
+                  <option value="Below -40°F">Below -40°F (15% derate)</option>
                 </select>
               </div>
               <div className="form-group">
-                <label>Other De-rating (%)</label>
-                <input type="number" name="otherDerating" value={formData.otherDerating} onChange={handleChange} min="0" max="100" />
+                <label>Other Derating (%)</label>
+                <input type="number" step="0.1" name="otherDerating" value={formData.otherDerating} onChange={handleChange} />
               </div>
             </div>
-
-            {/* CALCULATIONS PANEL */}
-            <div className="calc-panel">
-              <h3>📊 CAPACITY CALCULATIONS</h3>
-              <div className="calc-row">
-                <span className="calc-label">Total Load (Load + Rigging):</span>
-                <span className="calc-value">{calculations.totalLoad.toLocaleString()} lbs ({calculations.totalLoadTons} tons)</span>
-              </div>
-              <div className="calc-row">
-                <span className="calc-label">Gross Capacity at Radius:</span>
-                <span className="calc-value">{calculations.capacityAtRadius} tons</span>
-              </div>
-              <div className="calc-row">
-                <span className="calc-label">Wind De-rating:</span>
-                <span className="calc-value">-{calculations.windDerating}%</span>
-              </div>
-              <div className="calc-row">
-                <span className="calc-label">Cold De-rating:</span>
-                <span className="calc-value">-{calculations.coldDerating}%</span>
-              </div>
-              <div className="calc-row">
-                <span className="calc-label">Other De-rating:</span>
-                <span className="calc-value">-{formData.otherDerating || 0}%</span>
-              </div>
-              <div className="calc-row">
-                <span className="calc-label">NET Available Capacity:</span>
-                <span className="calc-value">{calculations.netCapacity} tons</span>
-              </div>
-              <div className="calc-row" style={{borderTop: '2px solid #1e3a8a', paddingTop: '15px', marginTop: '10px'}}>
-                <span className="calc-label" style={{fontWeight: 700}}>% OF CAPACITY USED:</span>
-                <span className="calc-value calc-highlight">{calculations.percentCapacity}%</span>
-              </div>
-              <div className={`status-box ${getStatusColor()}`}>{calculations.capacityStatus}</div>
+            <div className={`capacity-status ${getStatusColor()}`}>
+              <div style={{fontSize: '24px', marginBottom: '10px'}}>{calculations.capacityStatus}</div>
+              <div style={{fontSize: '18px'}}>Net Capacity: {calculations.netCapacity} tons | Load: {calculations.totalLoadTons} tons | {calculations.percentCapacity}% of capacity</div>
+              <div style={{fontSize: '14px', marginTop: '8px'}}>Total Derating: {calculations.totalDerating}% (Wind: {calculations.windDerating}%, Cold: {calculations.coldDerating}%, Other: {formData.otherDerating}%)</div>
             </div>
 
-            <div className="section-header green">🔗 Rigging Plan</div>
+            <div className="section-header">🔗 Rigging Equipment</div>
             <div className="form-row-3">
               <div className="form-group">
                 <label>Sling Type *</label>
                 <select name="slingType" value={formData.slingType} onChange={handleChange} required>
                   <option value="">-- Select --</option>
-                  {SLING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {SLING_TYPES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div className="form-group">
