@@ -222,13 +222,21 @@ export default function SafetyPortal() {
   return (
     <div>
       <style jsx>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-          font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-          min-height: 100vh;
-          padding: 20px;
-        }
+
+       * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+div:first-child {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
         .container { 
           max-width: 900px; 
           margin: 0 auto; 
