@@ -114,7 +114,7 @@ const FORM_CATEGORIES = [
     icon: '☀️',
     forms: [
       { name: 'Daily Scaffold Inspection', href: 'https://script.google.com/macros/s/AKfycbzq5zwZDZR15CP1YgOF-jKw5b36qgoXl_m8n6zaVnDOkfiIWGkFCe0JfLXlOYl4iHAAIA/exec' },
-      { name: 'Exc. & Trench Competent Person Daily Inspection Form', href: 'https://script.google.com/macros/s/AKfycbwtp42rKkn0AgeQEBl-29Il9f5P6S0FuiVOumppm9qFbkKkqpZCiNASQ_SgdDqCB__cLA/exec' },
+      { name: 'Exc. & Trench Competent Person Daily Inspection Form', href: '/competent-person-form', isLocal: true },
       { name: 'Fillable THA/JSA', href: 'https://script.google.com/macros/s/AKfycbyXG_2TUazwZEqAGdE6ULettW6fXk94XYM0_6mKRwfa8_Jh6mEHFU2j6RyF5_DQE0PP/exec' },
     ]
   },
