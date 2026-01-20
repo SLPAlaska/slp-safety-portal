@@ -79,16 +79,16 @@ export default function FlammableStorageAuditForm() {
     }
   }
 
-  const calculateScores = () => {
-    const calcSection = (fields) => {
-      let total = 0, count = 0
-      fields.forEach(f => {
-        if (formData[f] === 'Yes') { total += 100; count++ }
-        else if (formData[f] === 'No') { count++ }
-        else if (formData[f] !== 'N/A') { count++ }
-      })
-      return count > 0 ? Math.round(total / count) : 100
-    }
+  const calcSection = (fields) => {
+  let total = 0, count = 0
+  fields.forEach(f => {
+    if (formData[f] === 'Yes') { total += 100; count++ }
+    else if (formData[f] === 'No') { total += 0; count++ }
+    else if (formData[f] === 'N/A') { /* skip */ }
+    // Empty strings are skipped
+  })
+  return count > 0 ? Math.round(total / count) : 100
+}
 
     const labeling = calcSection(['flammable_diamond', 'nfpa_label', 'contents_labeled', 'no_smoking_signs', 'emergency_contact', 'sds_available'])
     const cabinet = calcSection(['doors_close', 'self_closing', 'no_rust', 'sump_intact', 'vents_configured', 'no_damage', 'grounding_lug'])
