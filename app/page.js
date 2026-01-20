@@ -26,7 +26,7 @@ const FORM_CATEGORIES = [
       { name: 'Cold Weather Operating Risk Assessment', href: '/cold-weather-form', isLocal: true },
       { name: 'Dropped Object Prevention Audit', href: '/dropped-object-audit', isLocal: true },
       { name: 'E-Line Safety Audit', href: '/e-line-safety-audit', isLocal: true },
-      { name: 'EHS Field Verification', href: 'https://script.google.com/macros/s/AKfycbyjNDMLYDpFTPYdC0dWxVmVeMalG6ycfkHoy0o-cWBmSj0RlcpmPTMl7VVlW2ibzap7/exec' },
+      { name: 'EHS Field Evaluation', href: '/ehs-field-evaluation', isLocal: true },
       { name: 'Field Environmental Audit', href: 'https://script.google.com/macros/s/AKfycbzn7KMeUmMRRbHi1b4oWCXgMB5S19s4jJi-QKUgtunfG19xaXuGf_RfXIDIGGrsjs0EsQ/exec' },
       { name: 'Flammable Locker Audit', href: 'https://script.google.com/macros/s/AKfycbwPZSUDfXSkLsDphPFs9Om8gk-DQdVQx2BHpnuWU09hBYW26Aba4qofVWSqZXScRS8q/exec' },
       { name: 'Fluid Transfer Permit Audit', href: 'https://script.google.com/macros/s/AKfycbwbR8Ap2INqGrenW7Orb6EWmEk76JFqLxocgSnr7msHK3hIar9S6ACEbGo6YJ9aQ7nRQg/exec' },
