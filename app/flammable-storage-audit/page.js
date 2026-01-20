@@ -79,16 +79,17 @@ export default function FlammableStorageAuditForm() {
     }
   }
 
-  const calcSection = (fields) => {
-  let total = 0, count = 0
-  fields.forEach(f => {
-    if (formData[f] === 'Yes') { total += 100; count++ }
-    else if (formData[f] === 'No') { total += 0; count++ }
-    else if (formData[f] === 'N/A') { /* skip */ }
-    // Empty strings are skipped
-  })
-  return count > 0 ? Math.round(total / count) : 100
-}
+  const calculateScores = () => {
+    const calcSection = (fields) => {
+      let total = 0, count = 0
+      fields.forEach(f => {
+        const val = formData[f]
+        if (val === 'Yes') { total += 100; count++ }
+        else if (val === 'No') { total += 0; count++ }
+        // N/A and empty strings are skipped
+      })
+      return count > 0 ? Math.round(total / count) : 100
+    }
 
     const labeling = calcSection(['flammable_diamond', 'nfpa_label', 'contents_labeled', 'no_smoking_signs', 'emergency_contact', 'sds_available'])
     const cabinet = calcSection(['doors_close', 'self_closing', 'no_rust', 'sump_intact', 'vents_configured', 'no_damage', 'grounding_lug'])
@@ -108,38 +109,71 @@ export default function FlammableStorageAuditForm() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
-    setStatus('Submitting...')
+    setStatus('Calculating scores...')
 
     try {
-      const calculatedScores = calculateScores()
-      setScores(calculatedScores)
-      setStatus('Uploading photos...')
+      console.log('Starting submission...')
       
+      const calculatedScores = calculateScores()
+      console.log('Scores calculated:', calculatedScores)
+      setScores(calculatedScores)
+      
+      setStatus('Uploading photos...')
       const photoUrls = []
       for (const photo of photos) {
+        console.log('Uploading photo...')
         const url = await uploadPhoto(photo)
         if (url) photoUrls.push(url)
       }
+      console.log('Photos uploaded:', photoUrls.length)
 
       const generatedAuditId = `FSA-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Date.now().toString().slice(-4)}`
       setAuditId(generatedAuditId)
+      console.log('Audit ID:', generatedAuditId)
+
+      // Convert empty strings to null for all question fields
+      const cleanedFormData = { ...formData }
+      Object.keys(cleanedFormData).forEach(key => {
+        if (cleanedFormData[key] === '') {
+          cleanedFormData[key] = null
+        }
+      })
 
       const dataToSubmit = {
-        ...formData,
+        ...cleanedFormData,
         findings: findings.length > 0 ? findings : null,
         photo_urls: photoUrls.length > 0 ? photoUrls : null,
-        ...calculatedScores
+        labeling_score: calculatedScores.labeling,
+        cabinet_score: calculatedScores.cabinet,
+        storage_score: calculatedScores.storage,
+        safety_score: calculatedScores.safety,
+        electrical_score: calculatedScores.electrical,
+        housekeeping_score: calculatedScores.housekeeping,
+        documentation_score: calculatedScores.documentation,
+        emergency_score: calculatedScores.emergency,
+        overall_score: calculatedScores.overall,
+        grade: calculatedScores.grade
       }
 
-      const { error } = await supabase.from('flammable_storage_audits').insert([dataToSubmit])
-      if (error) throw error
+      console.log('Data to submit:', dataToSubmit)
+      setStatus('Submitting to database...')
 
+      const { data, error } = await supabase.from('flammable_storage_audits').insert([dataToSubmit]).select()
+      
+      console.log('Supabase response:', { data, error })
+
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+
+      console.log('SUCCESS! Data inserted:', data)
       setStatus('✅ Flammable Storage Audit submitted successfully!')
       setTimeout(() => {
         document.getElementById('successBox').scrollIntoView({ behavior: 'smooth' })
       }, 500)
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Submission error:', error)
       setStatus('❌ Error: ' + error.message)
       setIsSubmitting(false)
     }
@@ -170,11 +204,21 @@ export default function FlammableStorageAuditForm() {
               <div style={{ fontSize: '60px', fontWeight: 'bold', lineHeight: 1 }}>{scores.grade}</div>
               <div style={{ fontSize: '16px' }}>{scores.overall}%</div>
             </div>
-            <div id="successBox" style={{ background: '#059669', color: 'white', padding: '30px', borderRadius: '12px', marginTop: '20px' }}>
-              <h2 style={{ margin: '0 0 10px' }}>✓ Audit Submitted Successfully!</h2>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', padding: '12px 24px', borderRadius: '8px', margin: '15px 0', display: 'inline-block' }}>{auditId}</div>
-              <p>Your flammable storage audit has been recorded.</p>
-              <button type="button" onClick={() => window.location.reload()} style={{ background: 'white', color: '#059669', padding: '12px 30px', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', marginTop: '15px' }}>Start New Audit</button>
+            <div id="successBox" style={{ background: status.includes('✅') ? '#059669' : '#dc2626', color: 'white', padding: '30px', borderRadius: '12px', marginTop: '20px' }}>
+              <h2 style={{ margin: '0 0 10px' }}>{status.includes('✅') ? '✓ Audit Submitted Successfully!' : '✗ Submission Error'}</h2>
+              {status.includes('✅') && (
+                <>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', padding: '12px 24px', borderRadius: '8px', margin: '15px 0', display: 'inline-block' }}>{auditId}</div>
+                  <p>Your flammable storage audit has been recorded.</p>
+                </>
+              )}
+              {!status.includes('✅') && <p>{status}</p>}
+              <button type="button" onClick={() => window.location.reload()} style={{ background: 'white', color: status.includes('✅') ? '#059669' : '#dc2626', padding: '12px 30px', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', marginTop: '15px' }}>
+                {status.includes('✅') ? 'Start New Audit' : 'Try Again'}
+              </button>
+            </div>
+            <div style={{ marginTop: '20px', fontSize: '13px', color: '#666' }}>
+              Check browser console (F12) for detailed error information
             </div>
           </div>
         </div>
@@ -335,7 +379,7 @@ export default function FlammableStorageAuditForm() {
             </div>
 
             <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#9ca3af' : '#002868', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 700, cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
-              {isSubmitting ? 'Submitting...' : 'Submit Audit'}
+              {isSubmitting ? status || 'Submitting...' : 'Submit Audit'}
             </button>
 
             {status && !isSubmitting && (
