@@ -160,6 +160,9 @@ export default function ScaffoldInspectionForm() {
       background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
       padding: '20px'
     }}>
+return (
+    <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
+      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '12px', padding: '30px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>

@@ -117,6 +117,9 @@ export default function FieldEnvironmentalAuditForm() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
+return (
+    <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
+      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         
         <div style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>

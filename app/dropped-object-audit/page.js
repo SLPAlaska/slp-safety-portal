@@ -107,6 +107,9 @@ export default function DroppedObjectAuditForm() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
+return (
+    <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
+      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <style jsx>{`
         .container { max-width: 700px; margin: 0 auto; background: white; borderRadius: 12px; boxShadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; padding: 30px; textAlign: center; }
