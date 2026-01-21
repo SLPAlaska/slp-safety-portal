@@ -30,8 +30,8 @@ const FORM_CATEGORIES = [
       { name: 'Field Environmental Audit', href: '/field-environmental-audit', isLocal: true },
       { name: 'Flammable Storage Audit', href: '/flammable-storage-audit', isLocal: true },
       { name: 'Fluid Transfer Permit Audit', href: '/fluid-transfer', isLocal: true}, 
-      { name: 'Good Catch Near Miss Reports', href: '/good-catch'. isLocal: true}, 
-      { name: 'Hazard ID Form', href: '/hazard-id', isLocal:true}, 
+      { name: 'Good Catch / Near Miss', href: '/good-catch', isLocal: true }
+      { name: 'Hazard ID Report', href: '/hazard-id', isLocal: true }
       { name: 'Journey Management', href: 'https://script.google.com/macros/s/AKfycbwnlOQ8Fja8hk0lBnhBGxYNyaIYkmFqRFJBbk1XixhiadfTn8pH1Bq-vfuu4Lz9e0AL/exec' },
       { name: 'Location Audit Report', href: 'https://script.google.com/macros/s/AKfycbwKC5ARuSAGcmPRgj1KSDw-1qlq203QExtv4ItKGkFHToCez4mlvw_A79wxy6aQd6K2cg/exec' },
       { name: 'Manage By Walk Around', href: 'https://script.google.com/macros/s/AKfycbzuohsLesgs4JVIsK9oxqXugFCzTxqhnKS9RvbbwmDNbBishHZZNt_jBvy92bU7sv9u/exec' },
