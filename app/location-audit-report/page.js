@@ -88,7 +88,7 @@ export default function LocationAuditForm() {
       }
       submitData.photo_urls = photoUrls.length > 0 ? photoUrls : null;
 
-      const { error } = await supabase.from('location_audit_report').insert([submitData]).select();
+      const { error } = await supabase.from('location_audit_reports').insert([submitData]).select();
 
       if (error) throw error;
 
