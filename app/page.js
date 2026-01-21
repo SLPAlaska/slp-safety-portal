@@ -29,7 +29,7 @@ const FORM_CATEGORIES = [
       { name: 'EHS Field Evaluation', href: '/ehs-field-evaluation', isLocal: true },
       { name: 'Field Environmental Audit', href: '/field-environmental-audit', isLocal: true },
       { name: 'Flammable Storage Audit', href: '/flammable-storage-audit', isLocal: true },
-      { name: 'Fluid Transfer Permit Audit', href: 'https://script.google.com/macros/s/AKfycbwbR8Ap2INqGrenW7Orb6EWmEk76JFqLxocgSnr7msHK3hIar9S6ACEbGo6YJ9aQ7nRQg/exec' },
+      { name: 'Fluid Transfer Permit Audit', href: '/fluid-transfer', isLocal: true}, 
       { name: 'Good Catch Near Miss Reports', href: 'https://script.google.com/macros/s/AKfycbxk9rghhuIUn0eAQVSMeXxTCJQcKINWKS5zGDngCyQF6jod4O-qWUP60QKwCk3zww2MZQ/exec' },
       { name: 'Hazard ID Form', href: 'https://script.google.com/macros/s/AKfycbzcLbpEMqgpBbegIHT8If48H8TM_fws9T5GA3THd65iobYfPnOlxVvzGmL5Y3n8JQE5WA/exec' },
       { name: 'Journey Management', href: 'https://script.google.com/macros/s/AKfycbwnlOQ8Fja8hk0lBnhBGxYNyaIYkmFqRFJBbk1XixhiadfTn8pH1Bq-vfuu4Lz9e0AL/exec' },
