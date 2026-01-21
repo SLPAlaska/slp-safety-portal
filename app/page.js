@@ -33,7 +33,7 @@ const FORM_CATEGORIES = [
       { name: 'Good Catch / Near Miss', href: '/good-catch', isLocal: true },
       { name: 'Hazard ID Report', href: '/hazard-id', isLocal: true },
       { name: 'Journey Management', href: '/journey-management', isLocal: true },
-      { name: 'Location Audit Report', href: 'https://script.google.com/macros/s/AKfycbwKC5ARuSAGcmPRgj1KSDw-1qlq203QExtv4ItKGkFHToCez4mlvw_A79wxy6aQd6K2cg/exec' },
+      { name: 'Location Audit Report', href: '/location-audit', isLocal: true },
       { name: 'Manage By Walk Around', href: 'https://script.google.com/macros/s/AKfycbzuohsLesgs4JVIsK9oxqXugFCzTxqhnKS9RvbbwmDNbBishHZZNt_jBvy92bU7sv9u/exec' },
       { name: 'Phase Condition Risk Assessment', href: 'https://script.google.com/macros/s/AKfycbzf4gYi3Z88mpAe7blen9qqEjURKGxjRZ6Q35W8gHGXSAzzNwJzvg4y-Qk5NLdhQn_Y/exec' },
       { name: 'Pressure Cross Check', href: 'https://script.google.com/macros/s/AKfycbzkeVL5B-z0vFaUMfG5hdXQSy9AVbAB3J9LhpBLCRXFerQF01aqsMCjYWoCOgDfePsPZg/exec' },
