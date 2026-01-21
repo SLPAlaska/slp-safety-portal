@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc2OTQ4MjAsImV4cCI6MjA2MzI3MDgyMH0.jM5E3xo9FvHBOOn5xt_QOqByqNOheWFq9VUaOdMn0sE'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4'
 );
 
 const COMPANIES = [
