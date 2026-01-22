@@ -149,6 +149,7 @@ export default function LocationAuditForm() {
   if (submitStatus === 'success') {
     return (
       <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
+        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
@@ -166,7 +167,7 @@ export default function LocationAuditForm() {
     );
   }
 
-return (
+  return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
       <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={styles.container}>
@@ -179,7 +180,6 @@ return (
 
         <div style={styles.formContent}>
           <form onSubmit={handleSubmit}>
-            {/* Auditor Information */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#7c3aed', marginTop: 0 }}>👤 Auditor Information</div>
             <div style={styles.row}>
               <div style={styles.formGroup}>
@@ -192,7 +192,6 @@ return (
               </div>
             </div>
 
-            {/* Work Location & Crew */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>📍 Work Location & Crew</div>
             <div style={styles.row}>
               <div style={styles.formGroup}>
@@ -229,7 +228,6 @@ return (
               <textarea name="work_description" value={formData.work_description} onChange={handleChange} placeholder="Describe the work being performed..." required style={styles.textarea} />
             </div>
 
-            {/* Permit Information */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#0891b2' }}>📋 Permit Information</div>
             <div style={styles.fullWidth}>
               <label style={styles.label}>Is there a permit for this work? <span style={{ color: '#dc2626' }}>*</span></label>
@@ -252,7 +250,6 @@ return (
               </div>
             )}
 
-            {/* Safety Audit Questions */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#dc2626' }}>⚠️ Safety Audit Questions</div>
             <div style={styles.infoBox}>Answer each question based on your observations at the work site. Select "Needs Improvement" when partial compliance is observed.</div>
 
@@ -273,14 +270,12 @@ return (
             <RadioGroup label="Adequate PPE being used appropriately?" name="adequate_ppe" />
             <RadioGroup label="Adequate Spill Prevention & Control in Place?" name="spill_prevention" />
 
-            {/* Opportunities for Improvement */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#059669' }}>💡 Opportunities & Recognition</div>
             <div style={styles.fullWidth}>
               <label style={styles.label}>Any opportunities for improvement or recognition?</label>
               <textarea name="opportunities_improvement" value={formData.opportunities_improvement} onChange={handleChange} placeholder="Note any safety improvements needed, positive observations, or recognition for crew members..." style={styles.textarea} />
             </div>
 
-            {/* Photo Documentation */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#1e3a8a' }}>📷 Photo Documentation</div>
             <div style={styles.fullWidth}>
               <label style={styles.label}>Photo (Optional)</label>

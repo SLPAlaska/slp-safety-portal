@@ -74,7 +74,6 @@ export default function GoodCatchNearMissForm() {
     });
   };
 
-  // PSIF Classification Logic
   const updatePSIF = (field, value) => {
     const newData = { ...formData, [field]: value };
     
@@ -138,13 +137,9 @@ export default function GoodCatchNearMissForm() {
     const uploadedUrls = [];
     for (const photo of photos) {
       const fileName = `good-catch/${Date.now()}-${photo.name}`;
-      const { data, error } = await supabase.storage
-        .from('safety-photos')
-        .upload(fileName, photo);
+      const { data, error } = await supabase.storage.from('safety-photos').upload(fileName, photo);
       if (!error) {
-        const { data: { publicUrl } } = supabase.storage
-          .from('safety-photos')
-          .getPublicUrl(fileName);
+        const { data: { publicUrl } } = supabase.storage.from('safety-photos').getPublicUrl(fileName);
         uploadedUrls.push(publicUrl);
       }
     }
@@ -157,15 +152,11 @@ export default function GoodCatchNearMissForm() {
     setSubmitStatus(null);
 
     try {
-      console.log('Starting form submission...');
-      
       let photoUrls = [];
       if (photos.length > 0) {
-        console.log('Uploading photos...');
         photoUrls = await uploadPhotos();
       }
 
-      // Convert empty strings to null and join energy types
       const submitData = {
         reporter_name: formData.reporter_name || null,
         date: formData.date || null,
@@ -186,44 +177,19 @@ export default function GoodCatchNearMissForm() {
         photo_urls: photoUrls.length > 0 ? photoUrls : null
       };
 
-      console.log('Submitting to Supabase:', submitData);
+      const { data, error } = await supabase.from('good_catch_near_miss').insert([submitData]).select();
 
-      const { data, error } = await supabase
-        .from('good_catch_near_miss')
-        .insert([submitData])
-        .select();
+      if (error) throw error;
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-
-      console.log('Success:', data);
       setSubmitStatus('success');
-      
-      // Reset form
       setFormData({
-        reporter_name: '',
-        date: new Date().toISOString().split('T')[0],
-        company: '',
-        location: '',
-        report_type: '',
-        description: '',
-        potential_consequences: '',
-        high_energy_present: '',
-        energy_release_occurred: '',
-        direct_control_present: '',
-        energy_types: [],
-        psif_classification: '',
-        stky_event: '',
-        immediate_actions: '',
-        recommended_actions: '',
-        additional_notes: ''
+        reporter_name: '', date: new Date().toISOString().split('T')[0], company: '', location: '',
+        report_type: '', description: '', potential_consequences: '', high_energy_present: '',
+        energy_release_occurred: '', direct_control_present: '', energy_types: [],
+        psif_classification: '', stky_event: '', immediate_actions: '', recommended_actions: '', additional_notes: ''
       });
       setPhotos([]);
-
     } catch (error) {
-      console.error('Submission error:', error);
       setSubmitStatus('error: ' + error.message);
     } finally {
       setIsSubmitting(false);
@@ -261,6 +227,7 @@ export default function GoodCatchNearMissForm() {
   if (submitStatus === 'success') {
     return (
       <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
+        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
@@ -270,12 +237,7 @@ export default function GoodCatchNearMissForm() {
             <div style={styles.successMessage}>
               <h2>✓ Report Submitted Successfully!</h2>
               <p>Thank you for your safety observation. Your report helps keep everyone safe.</p>
-              <button
-                onClick={() => setSubmitStatus(null)}
-                style={{ ...styles.submitBtn, background: '#fff', color: '#059669', marginTop: '15px' }}
-              >
-                Submit Another Report
-              </button>
+              <button onClick={() => setSubmitStatus(null)} style={{ ...styles.submitBtn, background: '#fff', color: '#059669', marginTop: '15px' }}>Submit Another Report</button>
             </div>
           </div>
         </div>
@@ -283,7 +245,7 @@ export default function GoodCatchNearMissForm() {
     );
   }
 
-return (
+  return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
       <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={styles.container}>
@@ -296,36 +258,17 @@ return (
 
         <div style={styles.formContent}>
           <form onSubmit={handleSubmit}>
-            {/* Reporter Information */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#059669', marginTop: '0' }}>
-              👤 Reporter Information
-            </div>
-
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#059669', marginTop: '0' }}>👤 Reporter Information</div>
             <div style={styles.row}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Your Name <span style={{ color: '#dc2626' }}>*</span></label>
-                <input
-                  type="text"
-                  name="reporter_name"
-                  value={formData.reporter_name}
-                  onChange={handleChange}
-                  required
-                  style={styles.input}
-                />
+                <input type="text" name="reporter_name" value={formData.reporter_name} onChange={handleChange} required style={styles.input} />
               </div>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Date of Observation <span style={{ color: '#dc2626' }}>*</span></label>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                  style={styles.input}
-                />
+                <input type="date" name="date" value={formData.date} onChange={handleChange} required style={styles.input} />
               </div>
             </div>
-
             <div style={styles.row}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Company <span style={{ color: '#dc2626' }}>*</span></label>
@@ -343,280 +286,125 @@ return (
               </div>
             </div>
 
-            {/* Report Type */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#1e3a8a' }}>
-              📋 Report Type
-            </div>
-
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#1e3a8a' }}>📋 Report Type</div>
             <div style={styles.infoBox}>
               <strong>Good Catch:</strong> A potential hazard or unsafe condition that was identified and corrected before an incident occurred.<br />
               <strong>Near Miss:</strong> An unplanned event that did not result in injury or damage but had the potential to do so.
             </div>
-
             <div style={styles.reportTypeSelector}>
-              <div
-                onClick={() => setFormData(prev => ({ ...prev, report_type: 'Good Catch' }))}
-                style={{
-                  ...styles.reportTypeOption,
-                  borderColor: formData.report_type === 'Good Catch' ? '#059669' : '#d1d5db',
-                  background: formData.report_type === 'Good Catch' ? 'rgba(5, 150, 105, 0.05)' : '#fff'
-                }}
-              >
+              <div onClick={() => setFormData(prev => ({ ...prev, report_type: 'Good Catch' }))} style={{ ...styles.reportTypeOption, borderColor: formData.report_type === 'Good Catch' ? '#059669' : '#d1d5db', background: formData.report_type === 'Good Catch' ? 'rgba(5, 150, 105, 0.05)' : '#fff' }}>
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>✅</div>
                 <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '5px' }}>Good Catch</div>
                 <div style={{ fontSize: '12px', color: '#6b7280' }}>Hazard identified & corrected before incident</div>
               </div>
-              <div
-                onClick={() => setFormData(prev => ({ ...prev, report_type: 'Near Miss' }))}
-                style={{
-                  ...styles.reportTypeOption,
-                  borderColor: formData.report_type === 'Near Miss' ? '#f59e0b' : '#d1d5db',
-                  background: formData.report_type === 'Near Miss' ? 'rgba(245, 158, 11, 0.05)' : '#fff'
-                }}
-              >
+              <div onClick={() => setFormData(prev => ({ ...prev, report_type: 'Near Miss' }))} style={{ ...styles.reportTypeOption, borderColor: formData.report_type === 'Near Miss' ? '#f59e0b' : '#d1d5db', background: formData.report_type === 'Near Miss' ? 'rgba(245, 158, 11, 0.05)' : '#fff' }}>
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>⚠️</div>
                 <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '5px' }}>Near Miss</div>
                 <div style={{ fontSize: '12px', color: '#6b7280' }}>Event that could have caused harm but didn't</div>
               </div>
             </div>
 
-            {/* Observation Details */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>
-              📝 Observation Details
-            </div>
-
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>📝 Observation Details</div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Description of Observation <span style={{ color: '#dc2626' }}>*</span></label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe what you observed in detail..."
-                required
-                style={styles.textarea}
-              />
+              <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Describe what you observed in detail..." required style={styles.textarea} />
             </div>
-
             <div style={styles.formGroup}>
               <label style={styles.label}>Potential Consequences <span style={{ color: '#dc2626' }}>*</span></label>
-              <textarea
-                name="potential_consequences"
-                value={formData.potential_consequences}
-                onChange={handleChange}
-                placeholder="What could have happened if this wasn't caught or addressed?"
-                required
-                style={styles.textarea}
-              />
+              <textarea name="potential_consequences" value={formData.potential_consequences} onChange={handleChange} placeholder="What could have happened if this wasn't caught or addressed?" required style={styles.textarea} />
             </div>
 
-            {/* STKY/PSIF Classification */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#dc2626' }}>
-              ⚠️ SIF Potential Assessment
-            </div>
-
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#dc2626' }}>⚠️ SIF Potential Assessment</div>
             <div style={styles.infoBoxWarning}>
               <strong>STKY = Stuff That Kills You</strong><br />
               Help us identify events with serious injury or fatality potential, even if no one was hurt.
             </div>
 
-            {/* Question 1: High Energy */}
             <div style={styles.formGroup}>
               <label style={styles.label}>1. Was HIGH ENERGY present? <span style={{ color: '#dc2626' }}>*</span></label>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 8px 0' }}>
-                (Falls/gravity, vehicles/motion, electrical, pressure, chemical, rotating equipment, temperature extremes)
-              </p>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 8px 0' }}>(Falls/gravity, vehicles/motion, electrical, pressure, chemical, rotating equipment, temperature extremes)</p>
               <div style={{ display: 'flex', gap: '20px' }}>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="radio"
-                    name="high_energy_present"
-                    value="Yes"
-                    checked={formData.high_energy_present === 'Yes'}
-                    onChange={(e) => updatePSIF('high_energy_present', e.target.value)}
-                    required
-                  /> Yes
+                  <input type="radio" name="high_energy_present" value="Yes" checked={formData.high_energy_present === 'Yes'} onChange={(e) => updatePSIF('high_energy_present', e.target.value)} required /> Yes
                 </label>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="radio"
-                    name="high_energy_present"
-                    value="No"
-                    checked={formData.high_energy_present === 'No'}
-                    onChange={(e) => updatePSIF('high_energy_present', e.target.value)}
-                  /> No
+                  <input type="radio" name="high_energy_present" value="No" checked={formData.high_energy_present === 'No'} onChange={(e) => updatePSIF('high_energy_present', e.target.value)} /> No
                 </label>
               </div>
             </div>
 
-            {/* Question 2: Energy Release */}
             <div style={styles.formGroup}>
               <label style={styles.label}>2. Did an uncontrolled energy release occur? <span style={{ color: '#dc2626' }}>*</span></label>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 8px 0' }}>
-                (Object fell, contact made, pressure released, exposure occurred, vehicle struck something, etc.)
-              </p>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 8px 0' }}>(Object fell, contact made, pressure released, exposure occurred, vehicle struck something, etc.)</p>
               <div style={{ display: 'flex', gap: '20px' }}>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="radio"
-                    name="energy_release_occurred"
-                    value="Yes"
-                    checked={formData.energy_release_occurred === 'Yes'}
-                    onChange={(e) => updatePSIF('energy_release_occurred', e.target.value)}
-                    required
-                  /> Yes
+                  <input type="radio" name="energy_release_occurred" value="Yes" checked={formData.energy_release_occurred === 'Yes'} onChange={(e) => updatePSIF('energy_release_occurred', e.target.value)} required /> Yes
                 </label>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="radio"
-                    name="energy_release_occurred"
-                    value="No"
-                    checked={formData.energy_release_occurred === 'No'}
-                    onChange={(e) => updatePSIF('energy_release_occurred', e.target.value)}
-                  /> No
+                  <input type="radio" name="energy_release_occurred" value="No" checked={formData.energy_release_occurred === 'No'} onChange={(e) => updatePSIF('energy_release_occurred', e.target.value)} /> No
                 </label>
               </div>
             </div>
 
-            {/* Question 3: Direct Control */}
             <div style={styles.formGroup}>
               <label style={styles.label}>3. Was a DIRECT CONTROL in place? <span style={{ color: '#dc2626' }}>*</span></label>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 8px 0' }}>
-                Direct Controls = Barriers that work even if someone makes a mistake (guards, lockout, barricades, isolation)
-              </p>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 8px 0' }}>Direct Controls = Barriers that work even if someone makes a mistake (guards, lockout, barricades, isolation)</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="radio"
-                    name="direct_control_present"
-                    value="Yes"
-                    checked={formData.direct_control_present === 'Yes'}
-                    onChange={(e) => updatePSIF('direct_control_present', e.target.value)}
-                    required
-                  /> Yes - Direct control was in place
+                  <input type="radio" name="direct_control_present" value="Yes" checked={formData.direct_control_present === 'Yes'} onChange={(e) => updatePSIF('direct_control_present', e.target.value)} required /> Yes - Direct control was in place
                 </label>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="radio"
-                    name="direct_control_present"
-                    value="No-Alternative"
-                    checked={formData.direct_control_present === 'No-Alternative'}
-                    onChange={(e) => updatePSIF('direct_control_present', e.target.value)}
-                  /> No - Only alternative controls (PPE, procedures, training, warnings)
+                  <input type="radio" name="direct_control_present" value="No-Alternative" checked={formData.direct_control_present === 'No-Alternative'} onChange={(e) => updatePSIF('direct_control_present', e.target.value)} /> No - Only alternative controls (PPE, procedures, training, warnings)
                 </label>
                 <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <input
-                    type="radio"
-                    name="direct_control_present"
-                    value="No-None"
-                    checked={formData.direct_control_present === 'No-None'}
-                    onChange={(e) => updatePSIF('direct_control_present', e.target.value)}
-                  /> No controls were in place
+                  <input type="radio" name="direct_control_present" value="No-None" checked={formData.direct_control_present === 'No-None'} onChange={(e) => updatePSIF('direct_control_present', e.target.value)} /> No controls were in place
                 </label>
               </div>
             </div>
 
-            {/* Energy Types (shown when high energy = Yes) */}
             {formData.high_energy_present === 'Yes' && (
               <div style={styles.formGroup}>
                 <label style={styles.label}>4. What type(s) of energy were involved? (Select all that apply)</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '8px' }}>
                   {ENERGY_TYPES.map(et => (
                     <label key={et.value} style={{ cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <input
-                        type="checkbox"
-                        checked={formData.energy_types.includes(et.value)}
-                        onChange={() => handleEnergyTypeChange(et.value)}
-                      /> {et.label}
+                      <input type="checkbox" checked={formData.energy_types.includes(et.value)} onChange={() => handleEnergyTypeChange(et.value)} /> {et.label}
                     </label>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* PSIF Classification Result */}
             {psifStyle && (
-              <div style={{
-                padding: '15px',
-                borderRadius: '8px',
-                margin: '15px 0',
-                background: psifStyle.bg,
-                border: `2px solid ${psifStyle.border}`
-              }}>
+              <div style={{ padding: '15px', borderRadius: '8px', margin: '15px 0', background: psifStyle.bg, border: `2px solid ${psifStyle.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontWeight: '700',
-                    fontSize: '14px',
-                    background: psifStyle.badgeBg,
-                    color: '#fff'
-                  }}>
-                    {formData.psif_classification}
-                  </span>
+                  <span style={{ padding: '8px 16px', borderRadius: '6px', fontWeight: '700', fontSize: '14px', background: psifStyle.badgeBg, color: '#fff' }}>{formData.psif_classification}</span>
                   <span style={{ fontSize: '13px', color: '#4b5563' }}>{psifStyle.text}</span>
                 </div>
               </div>
             )}
 
-            {/* Actions & Recommendations */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#7c3aed' }}>
-              🔧 Actions & Recommendations
-            </div>
-
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#7c3aed' }}>🔧 Actions & Recommendations</div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Immediate Actions Taken</label>
-              <textarea
-                name="immediate_actions"
-                value={formData.immediate_actions}
-                onChange={handleChange}
-                placeholder="What actions were taken immediately to address the situation?"
-                style={styles.textarea}
-              />
+              <textarea name="immediate_actions" value={formData.immediate_actions} onChange={handleChange} placeholder="What actions were taken immediately to address the situation?" style={styles.textarea} />
             </div>
-
             <div style={styles.formGroup}>
               <label style={styles.label}>Recommended Corrective Actions</label>
-              <textarea
-                name="recommended_actions"
-                value={formData.recommended_actions}
-                onChange={handleChange}
-                placeholder="What additional actions should be taken to prevent recurrence?"
-                style={styles.textarea}
-              />
+              <textarea name="recommended_actions" value={formData.recommended_actions} onChange={handleChange} placeholder="What additional actions should be taken to prevent recurrence?" style={styles.textarea} />
             </div>
 
-            {/* Additional Information */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#1e3a8a' }}>
-              📎 Additional Information
-            </div>
-
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#1e3a8a' }}>📎 Additional Information</div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Additional Notes</label>
-              <textarea
-                name="additional_notes"
-                value={formData.additional_notes}
-                onChange={handleChange}
-                placeholder="Any other relevant information..."
-                style={styles.textarea}
-              />
+              <textarea name="additional_notes" value={formData.additional_notes} onChange={handleChange} placeholder="Any other relevant information..." style={styles.textarea} />
             </div>
 
-            {/* Photo Documentation */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#059669' }}>
-              📷 Photo Documentation
-            </div>
-
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#059669' }}>📷 Photo Documentation</div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Photo (Optional but Recommended)</label>
               <div style={styles.photoUpload}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoChange}
-                  style={{ display: 'none' }}
-                  id="photoInput"
-                />
+                <input type="file" accept="image/*" multiple onChange={handlePhotoChange} style={{ display: 'none' }} id="photoInput" />
                 <label htmlFor="photoInput" style={{ cursor: 'pointer' }}>
                   <p>📷 Tap to take or upload photos</p>
                   <p style={{ fontSize: '12px', color: '#6b7280' }}>Photos help others understand the observation</p>
@@ -627,13 +415,7 @@ return (
                   {photos.map((photo, index) => (
                     <div key={index} style={{ position: 'relative' }}>
                       <img src={URL.createObjectURL(photo)} alt={`Preview ${index + 1}`} style={styles.photoThumb} />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(index)}
-                        style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '12px' }}
-                      >
-                        ×
-                      </button>
+                      <button type="button" onClick={() => removePhoto(index)} style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '12px' }}>×</button>
                     </div>
                   ))}
                 </div>
@@ -652,7 +434,6 @@ return (
           </form>
         </div>
 
-        {/* Footer */}
         <div style={styles.footer}>
           <span style={{ color: '#1e3a5f', fontWeight: '500' }}>Powered by Predictive Safety Analytics™</span>
           <span style={{ color: '#94a3b8', margin: '0 8px' }}>|</span>
