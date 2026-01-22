@@ -166,8 +166,6 @@ export default function LocationAuditForm() {
     );
   }
 
-  return (
-    <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
 return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
       <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>

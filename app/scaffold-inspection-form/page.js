@@ -154,22 +154,16 @@ export default function ScaffoldInspectionForm() {
   const result = getInspectionResult()
   const hasDefects = formData.defects_found.trim().length > 0
 
-  return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-      padding: '20px'
-    }}>
-return (
+ return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
       <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '12px', padding: '30px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
           <h1 style={{ color: '#1e3a8a', fontSize: '28px', marginBottom: '10px' }}>Daily Scaffold Inspection</h1>
           <p style={{ color: '#64748b', fontSize: '14px' }}>OSHA 1926.451 & 1926.452 Compliant</p>
         </div>
-
         <form onSubmit={handleSubmit}>
           
           {/* Basic Information */}
