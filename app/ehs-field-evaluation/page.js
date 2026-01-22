@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  'https://iypezirwdlqpptjpeeyf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4'
 )
 
 const COMPANIES = ['A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services', 'CCI- Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction', 'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West', 'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream', 'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders', 'Nordic-Calista', 'Parker TRS', 'Peninsula Paving', 'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other']
@@ -143,8 +143,6 @@ export default function EHSFieldEvaluationForm() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
-return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
       <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
@@ -159,31 +157,30 @@ return (
         <div style={{ padding: '30px' }}>
           <form onSubmit={handleSubmit}>
             
-            {/* Evaluation Information */}
             <div style={{ background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '0 -30px 20px', fontWeight: 600, fontSize: '15px' }}>📋 Evaluation Information</div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Name of Auditor *</label>
-                <input type="text" name="auditor_name" value={formData.auditor_name} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px' }} />
+                <input type="text" name="auditor_name" value={formData.auditor_name} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Date *</label>
-                <input type="date" name="audit_date" value={formData.audit_date} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px' }} />
+                <input type="date" name="audit_date" value={formData.audit_date} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Company *</label>
-                <select name="company" value={formData.company} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px' }}>
+                <select name="company" value={formData.company} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }}>
                   <option value="">-- Select Company --</option>
                   {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Location *</label>
-                <select name="location" value={formData.location} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px' }}>
+                <select name="location" value={formData.location} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }}>
                   <option value="">-- Select Location --</option>
                   {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
@@ -192,27 +189,25 @@ return (
 
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Specific Location</label>
-              <input type="text" name="specific_location" value={formData.specific_location} onChange={handleChange} placeholder="e.g., Well Pad A, Module 3" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px' }} />
+              <input type="text" name="specific_location" value={formData.specific_location} onChange={handleChange} placeholder="e.g., Well Pad A, Module 3" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
             </div>
 
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Description of Work Being Performed *</label>
-              <textarea name="description_of_work" value={formData.description_of_work} onChange={handleChange} required placeholder="Describe the work activities being evaluated..." style={{ width: '100%', minHeight: '100px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical' }} />
+              <textarea name="description_of_work" value={formData.description_of_work} onChange={handleChange} required placeholder="Describe the work activities being evaluated..." style={{ width: '100%', minHeight: '100px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
 
             <div style={{ marginBottom: '25px' }}>
               <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>General Findings/Observations</label>
-              <textarea name="findings" value={formData.findings} onChange={handleChange} placeholder="Document your overall observations during the evaluation..." style={{ width: '100%', minHeight: '100px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical' }} />
+              <textarea name="findings" value={formData.findings} onChange={handleChange} placeholder="Document your overall observations during the evaluation..." style={{ width: '100%', minHeight: '100px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
 
-            {/* Performance Ratings */}
             <div style={{ background: '#059669', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>⭐ Performance Ratings</div>
             
             <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '15px' }}>Rate each category based on observed performance during the evaluation.</p>
             
             <RatingTable />
 
-            {/* Compliance Checks */}
             <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>✅ Compliance Checks</div>
             
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
@@ -226,7 +221,7 @@ return (
                 <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '12px 10px', fontSize: '14px' }}>PPE Certifications Current</td>
                   <td style={{ padding: '12px 10px' }}>
-                    <select name="ppe_certifications" value={formData.ppe_certifications} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}>
+                    <select name="ppe_certifications" value={formData.ppe_certifications} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}>
                       <option value="">-- Select --</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
@@ -237,7 +232,7 @@ return (
                 <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '12px 10px', fontSize: '14px' }}>Atmospheric Monitors Calibrated & Bump Tested</td>
                   <td style={{ padding: '12px 10px' }}>
-                    <select name="atmospheric_monitors" value={formData.atmospheric_monitors} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}>
+                    <select name="atmospheric_monitors" value={formData.atmospheric_monitors} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}>
                       <option value="">-- Select --</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
@@ -249,7 +244,7 @@ return (
                 <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '12px 10px', fontSize: '14px' }}>Well Entry Guidelines Available & Followed</td>
                   <td style={{ padding: '12px 10px' }}>
-                    <select name="well_entry_guidelines" value={formData.well_entry_guidelines} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}>
+                    <select name="well_entry_guidelines" value={formData.well_entry_guidelines} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}>
                       <option value="">-- Select --</option>
                       <option value="Yes">Yes</option>
                       <option value="No">No</option>
@@ -261,7 +256,7 @@ return (
                 <tr>
                   <td style={{ padding: '12px 10px', fontSize: '14px' }}>Hi/Low Pressure Tests Completed</td>
                   <td style={{ padding: '12px 10px' }}>
-                    <select name="pressure_tests" value={formData.pressure_tests} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}>
+                    <select name="pressure_tests" value={formData.pressure_tests} onChange={handleChange} required style={{ width: '100%', maxWidth: '250px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}>
                       <option value="">-- Select --</option>
                       <option value="Yes- Parameters Documented">Yes - Parameters Documented</option>
                       <option value="No- Parameters Not Documented">No - Parameters Not Documented</option>
@@ -273,7 +268,6 @@ return (
               </tbody>
             </table>
 
-            {/* Action Items */}
             <div style={{ background: '#f59e0b', color: '#000', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📝 Action Items</div>
             
             <div style={{ background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '8px', padding: '20px', margin: '20px 0' }}>
@@ -281,18 +275,18 @@ return (
               
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Action Items Needing Follow Up</label>
-                <textarea name="action_items" value={formData.action_items} onChange={handleChange} placeholder="List any action items identified during the evaluation that require follow-up..." style={{ width: '100%', minHeight: '80px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical' }} />
+                <textarea name="action_items" value={formData.action_items} onChange={handleChange} placeholder="List any action items identified during the evaluation that require follow-up..." style={{ width: '100%', minHeight: '80px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
               </div>
 
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Responsible Party & Due Date</label>
-                <input type="text" name="responsible_party" value={formData.responsible_party} onChange={handleChange} placeholder="e.g., John Smith - 12/15/2024" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px' }} />
+                <input type="text" name="responsible_party" value={formData.responsible_party} onChange={handleChange} placeholder="e.g., John Smith - 12/15/2024" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
               </div>
 
               <div>
                 <label style={{ display: 'block', marginBottom: '10px', fontWeight: 500, fontSize: '14px' }}>Actions Added to SAIL Log? *</label>
                 <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                  {[{ v: 'Yes', l: 'Yes - Added to SAIL', c: 'yes' }, { v: 'No', l: 'No - Not Added', c: 'no' }, { v: 'N/A', l: 'N/A - No Actions', c: '' }].map(({ v, l, c }) => (
+                  {[{ v: 'Yes', l: 'Yes - Added to SAIL' }, { v: 'No', l: 'No - Not Added' }, { v: 'N/A', l: 'N/A - No Actions' }].map(({ v, l }) => (
                     <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 15px', border: '2px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
                       <input type="radio" name="sail_log" value={v} checked={formData.sail_log === v} onChange={handleChange} required />
                       <span>{l}</span>
@@ -302,7 +296,6 @@ return (
               </div>
             </div>
 
-            {/* Photo Documentation */}
             <div style={{ background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📷 Photo Documentation</div>
             
             <div style={{ marginBottom: '25px' }}>
@@ -327,7 +320,7 @@ return (
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', padding: '20px 10px', marginTop: '30px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b' }}>
+      <div style={{ textAlign: 'center', padding: '20px 10px', marginTop: '30px', fontSize: '11px', color: '#64748b' }}>
         <span style={{ color: '#1e3a5f', fontWeight: 500 }}>Powered by Predictive Safety Analytics™</span>
         <span style={{ color: '#94a3b8', margin: '0 8px' }}>|</span>
         <span style={{ color: '#475569' }}>© 2025 SLP Alaska</span>
