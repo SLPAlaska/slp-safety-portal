@@ -34,7 +34,7 @@ const FORM_CATEGORIES = [
       { name: 'Hazard ID Report', href: '/hazard-id', isLocal: true },
       { name: 'Journey Management', href: '/journey-management', isLocal: true },
       { name: 'Location Audit Report', href: '/location-audit-report', isLocal: true },
-      { name: 'Manage By Walk Around', href: 'https://script.google.com/macros/s/AKfycbzuohsLesgs4JVIsK9oxqXugFCzTxqhnKS9RvbbwmDNbBishHZZNt_jBvy92bU7sv9u/exec' },
+      { name: 'Manage By Walk Around', href: '/manage-by-walk-around', isLocal: true },
       { name: 'Phase Condition Risk Assessment', href: 'https://script.google.com/macros/s/AKfycbzf4gYi3Z88mpAe7blen9qqEjURKGxjRZ6Q35W8gHGXSAzzNwJzvg4y-Qk5NLdhQn_Y/exec' },
       { name: 'Pressure Cross Check', href: 'https://script.google.com/macros/s/AKfycbzkeVL5B-z0vFaUMfG5hdXQSy9AVbAB3J9LhpBLCRXFerQF01aqsMCjYWoCOgDfePsPZg/exec' },
       { name: 'Risk Control Conversation', href: 'https://script.google.com/macros/s/AKfycbz4uBfmY5cXBjsxb6UvJiE4l5gJEf6gOegzZEEOF4t0xB2AojWoctWcvajbKmSPWXF45Q/exec' },
