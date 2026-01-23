@@ -42,7 +42,7 @@ const FORM_CATEGORIES = [
       { name: 'Slickline Safety Audit', href: '/slickline-safety-audit', isLocal: true },
       { name: 'STOP & Take 5', href: '/stop-take-5', isLocal: true },
       { name: 'Surface Condition Audit', href: '/surface-condition-audit', isLocal: true },
-      { name: 'SWPPP Inspection Form', href: 'https://script.google.com/macros/s/AKfycbyC9TIg7vFsUBuv-DHi7vJK33ncPMwtrhKO5mDMGPSSrw7MAn3iXWR20NEBx6BUm3_RiQ/exec' },
+      { name: 'SWPPP Inspection', href: '/swppp-inspection', isLocal: true },
       { name: 'Task/Crew Audit', href: 'https://script.google.com/macros/s/AKfycbxoUU-6wbpzFRL4jjhL_hKTCdNlcLSh8OY2Ieku4VGy4YasxF2f6IFuykW4-vlyRUFF/exec' },
       { name: 'Toolbox Meeting Quality Assessment', href: 'https://script.google.com/macros/s/AKfycbzGVoKjw9V7XHS0rwXOU2F_0Cz142hoMdPE13Yy0DjxvJb-Iam4uMUrpwpuGt8NXujt9A/exec' },
       { name: 'Welding/Fab Shop Audit', href: 'https://script.google.com/macros/s/AKfycbzR6WchEksev9SU4UEL73yn-7wVAUa8X2a536KnDZQytV9_N5vhQgwa5B08A4XIcTwu/exec' },
