@@ -79,7 +79,7 @@ export default function PressureCrosscheck() {
 
       if (photo) {
         const fileExt = photo.name.split('.').pop()
-        const fileName = `pressure_crosscheck_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+        const fileName = `pressure-crosscheck-photos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('safety-photos')

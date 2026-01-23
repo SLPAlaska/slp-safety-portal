@@ -125,7 +125,7 @@ export default function PhaseConditionRiskAssessment() {
 
       if (photo) {
         const fileExt = photo.name.split('.').pop()
-        const fileName = `pcra_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+        const fileName = `phase-condition-photos/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('safety-photos')
