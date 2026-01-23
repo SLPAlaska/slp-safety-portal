@@ -36,7 +36,7 @@ const FORM_CATEGORIES = [
       { name: 'Location Audit Report', href: '/location-audit-report', isLocal: true },
       { name: 'Manage By Walk Around', href: '/manage-by-walk-around', isLocal: true },
       { name: 'Phase Condition Risk Assessment', href: '/phase-condition-risk-assessment', isLocal: true },
-      { name: 'Pressure Cross Check', href: 'https://script.google.com/macros/s/AKfycbzkeVL5B-z0vFaUMfG5hdXQSy9AVbAB3J9LhpBLCRXFerQF01aqsMCjYWoCOgDfePsPZg/exec' },
+      { name: 'Pressure Cross Check', href: '/pressure-crosscheck', isLocal: true },
       { name: 'Risk Control Conversation', href: 'https://script.google.com/macros/s/AKfycbz4uBfmY5cXBjsxb6UvJiE4l5gJEf6gOegzZEEOF4t0xB2AojWoctWcvajbKmSPWXF45Q/exec' },
       { name: 'SAIL Log Entry', href: 'https://script.google.com/macros/s/AKfycbxnSfNUSigIihfSTr25QVb8RSGR1QCoavtqt3UY1Wy8FblsN9EWjEEcwdMQ4fqEGkDd/exec' },
       { name: 'Slickline Safety Audit', href: 'https://script.google.com/macros/s/AKfycbz3C5VgSfri5L_VJa5DWUtV0zPLJn3hZkCTbJNsWc1iUzOkMVzcf71MSmtnoB5TkcK7/exec' },
