@@ -56,7 +56,7 @@ const FORM_CATEGORIES = [
     forms: [
       { name: 'Chain Hoist Inspection', href: '/chain-hoist-inspection', isLocal: true },
       { name: 'Emergency Drill Evaluation', href: 'https://script.google.com/macros/s/AKfycbxdMN764DWm0nuU2mqxf-ucpcj3w1pBIhK_f82AJ8Aon2nJAmBRQdA9cez_4CszVHe_sw/exec' },
-      { name: 'Emergency Eyewash Inspection', href: 'https://script.google.com/macros/s/AKfycbxy6RCbdAIk-gyz1EKHJmW8RJqBCCD1kOpz_5nG-WAbeShjMG-WgZP4JWe0lMs9XfH3/exec' },
+      { name: 'Emergency Eyewash Inspection', href: '/eyewash-station-inspection', isLocal: true },
       { name: 'Fall Protection Harness Inspection', href: 'https://script.google.com/macros/s/AKfycbzqimBH2F9Fw5_DA6CoDkhZn_eiBIAcr6K3BrETcb4P4v_rwCvxwxl0W5Bb2mYXOgYvaw/exec' },
       { name: 'Fire Extinguisher Inspection', href: 'https://script.google.com/macros/s/AKfycbyhr-XbN-ltKWYlU93KCb9boBH0r5Vj_LAN4bKkhy041jStZFINbVvDKEdCveX8ad1ExA/exec' },
       { name: 'First Aid Kit Inspection', href: 'https://script.google.com/macros/s/AKfycbwliKpwhkamrbJdB9pdBiShqdcJSs82tjqhbmRLWdT-SP5VqvLq-w5yeIEni-vqgfx7EQ/exec' },
