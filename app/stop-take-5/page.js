@@ -674,11 +674,14 @@ const styles = {
     borderRadius: '8px'
   },
   header: {
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
-    color: 'white',
-    padding: '30px',
-    textAlign: 'center'
-  },
+  background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+  color: 'white',
+  padding: '30px',
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center'  // This ensures all children are centered
+},
   logoContainer: {
     background: 'rgba(255, 255, 255, 0.95)',
     borderRadius: '12px',
@@ -693,18 +696,19 @@ const styles = {
     display: 'block'
   },
   stopBadge: {
-    display: 'inline-block',
-    background: '#dc2626',
-    color: 'white',
-    padding: '8px 20px',
-    borderRadius: '8px',
-    fontWeight: '700',
-    fontSize: '1rem',
-    marginBottom: '15px',
-    border: '3px solid white',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
-    letterSpacing: '2px'
-  },
+  display: 'inline-block',
+  background: '#dc2626',
+  color: 'white',
+  padding: '8px 20px',
+  borderRadius: '8px',
+  fontWeight: '700',
+  fontSize: '1rem',
+  marginBottom: '15px',
+  border: '3px solid white',
+  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
+  letterSpacing: '2px',
+  margin: '0 auto 15px auto'  // Centers the badge
+},
   title: {
     fontSize: '1.5rem',
     marginBottom: '8px',
