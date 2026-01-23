@@ -41,7 +41,7 @@ const FORM_CATEGORIES = [
       { name: 'SAIL Log Entry', href: '/sail-log-entry', isLocal: true },
       { name: 'Slickline Safety Audit', href: '/slickline-safety-audit', isLocal: true },
       { name: 'STOP & Take 5', href: '/stop-take-5', isLocal: true },
-      { name: 'Surface Condition Audit', href: 'https://script.google.com/macros/s/AKfycbxTgMCBCOL22oT3x-2gDuL1pVxDAsOrEVvgKPQe-hy8HqDjm8WKTkSSRacZaqH_fYD0ng/exec' },
+      { name: 'Surface Condition Audit', href: '/surface-condition-audit', isLocal: true },
       { name: 'SWPPP Inspection Form', href: 'https://script.google.com/macros/s/AKfycbyC9TIg7vFsUBuv-DHi7vJK33ncPMwtrhKO5mDMGPSSrw7MAn3iXWR20NEBx6BUm3_RiQ/exec' },
       { name: 'Task/Crew Audit', href: 'https://script.google.com/macros/s/AKfycbxoUU-6wbpzFRL4jjhL_hKTCdNlcLSh8OY2Ieku4VGy4YasxF2f6IFuykW4-vlyRUFF/exec' },
       { name: 'Toolbox Meeting Quality Assessment', href: 'https://script.google.com/macros/s/AKfycbzGVoKjw9V7XHS0rwXOU2F_0Cz142hoMdPE13Yy0DjxvJb-Iam4uMUrpwpuGt8NXujt9A/exec' },
