@@ -442,11 +442,14 @@ const styles = {
     transition: 'all 0.2s'
   },
   header: {
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
-    color: 'white',
-    padding: '30px',
-    textAlign: 'center'
-  },
+  background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+  color: 'white',
+  padding: '30px',
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center'
+},
   logoContainer: {
     background: 'rgba(255, 255, 255, 0.95)',
     borderRadius: '12px',
