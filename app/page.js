@@ -54,7 +54,7 @@ const FORM_CATEGORIES = [
     title: 'Monthly Inspections',
     icon: '📅',
     forms: [
-      { name: 'Chain Hoist Inspection', href: 'https://script.google.com/macros/s/AKfycbwOGv4xCGJ9hVLQdAgFO4EnK-pQj0kO09c1hwda6ien-N51FX1C8tp5nfGilNxbrZkb8A/exec' },
+      { name: 'Chain Hoist Inspection', href: '/chain-hoist-inspection', isLocal: true },
       { name: 'Emergency Drill Evaluation', href: 'https://script.google.com/macros/s/AKfycbxdMN764DWm0nuU2mqxf-ucpcj3w1pBIhK_f82AJ8Aon2nJAmBRQdA9cez_4CszVHe_sw/exec' },
       { name: 'Emergency Eyewash Inspection', href: 'https://script.google.com/macros/s/AKfycbxy6RCbdAIk-gyz1EKHJmW8RJqBCCD1kOpz_5nG-WAbeShjMG-WgZP4JWe0lMs9XfH3/exec' },
       { name: 'Fall Protection Harness Inspection', href: 'https://script.google.com/macros/s/AKfycbzqimBH2F9Fw5_DA6CoDkhZn_eiBIAcr6K3BrETcb4P4v_rwCvxwxl0W5Bb2mYXOgYvaw/exec' },
