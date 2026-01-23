@@ -46,7 +46,7 @@ const FORM_CATEGORIES = [
       { name: 'Task/Crew Audit', href: '/task-crew-audit', isLocal: true },
       { name: 'Toolbox Meeting Quality Assessment', href: '/toolbox-meeting-assessment', isLocal: true },
       { name: 'Welding/Fab Shop Audit', href: '/welding-fab-shop-audit', isLocal: true },
-      { name: 'Welding/Grinding Audit', href: 'https://script.google.com/macros/s/AKfycbwuDgToFoNNtu237LbVaRmbe-umJj0vssRMM86ipFqBV_sYIpN4qFtjj3L0hgOUPx7Qrw/exec' },
+      { name: 'Welding/Grinding Audit', href: '/welding-grinding-audit', isLocal: true },
     ]
   },
   {
