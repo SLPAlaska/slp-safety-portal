@@ -596,10 +596,73 @@ export default function ChainHoistInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 📸 Photo Documentation
               </h3>
-              <input type="file" accept="image/*" onChange={handlePhotoChange}
-                style={{ marginBottom: '10px' }} />
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                {/* Camera Capture Button - Mobile */}
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                  color: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  📷 Take Photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePhotoChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                
+                {/* File Upload Button */}
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 16px',
+                  background: '#6b7280',
+                  color: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  📁 Choose File
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
+              
               {photoPreview && (
-                <img src={photoPreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '8px', display: 'block', marginTop: '10px' }} />
+                <div style={{ marginTop: '10px' }}>
+                  <img src={photoPreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '8px', display: 'block' }} />
+                  <button
+                    type="button"
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                    style={{
+                      marginTop: '8px',
+                      padding: '6px 12px',
+                      background: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✕ Remove Photo
+                  </button>
+                </div>
               )}
             </div>
 
