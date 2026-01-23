@@ -39,7 +39,7 @@ const FORM_CATEGORIES = [
       { name: 'Pressure Cross Check', href: '/pressure-crosscheck', isLocal: true },
       { name: 'Risk Control Conversation', href: '/risk-control-conversation', isLocal: true },
       { name: 'SAIL Log Entry', href: '/sail-log-entry', isLocal: true },
-      { name: 'Slickline Safety Audit', href: 'https://script.google.com/macros/s/AKfycbz3C5VgSfri5L_VJa5DWUtV0zPLJn3hZkCTbJNsWc1iUzOkMVzcf71MSmtnoB5TkcK7/exec' },
+      { name: 'Slickline Safety Audit', href: '/slickline-safety-audit', isLocal: true },
       { name: 'STOP & Take 5 Risk Assessment', href: 'https://script.google.com/macros/s/AKfycbzC9l1K8qWVLbk8dGQU7avM6PHvk1o4kTB8S1CX_-IRUNikWFbXzrm8XtvHmpUpRHaY/exec' },
       { name: 'Surface Condition Audit', href: 'https://script.google.com/macros/s/AKfycbxTgMCBCOL22oT3x-2gDuL1pVxDAsOrEVvgKPQe-hy8HqDjm8WKTkSSRacZaqH_fYD0ng/exec' },
       { name: 'SWPPP Inspection Form', href: 'https://script.google.com/macros/s/AKfycbyC9TIg7vFsUBuv-DHi7vJK33ncPMwtrhKO5mDMGPSSrw7MAn3iXWR20NEBx6BUm3_RiQ/exec' },
