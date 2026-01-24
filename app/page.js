@@ -58,7 +58,7 @@ const FORM_CATEGORIES = [
       { name: 'Emergency Drill Evaluation', href: '/emergency-drill-evaluation', isLocal: true },
       { name: 'Emergency Eyewash Inspection', href: '/eyewash-station-inspection', isLocal: true },
       { name: 'Fall Protection Harness Inspection', href: '/harness-inspection', isLocal: true },
-      { name: 'Fire Extinguisher Inspection', href: 'https://script.google.com/macros/s/AKfycbyhr-XbN-ltKWYlU93KCb9boBH0r5Vj_LAN4bKkhy041jStZFINbVvDKEdCveX8ad1ExA/exec' },
+      { name: 'Fire Extinguisher Inspection', href: '/fire-extinguisher-inspection', isLocal: true },
       { name: 'First Aid Kit Inspection', href: 'https://script.google.com/macros/s/AKfycbwliKpwhkamrbJdB9pdBiShqdcJSs82tjqhbmRLWdT-SP5VqvLq-w5yeIEni-vqgfx7EQ/exec' },
       { name: 'Ladder Inspection', href: 'https://script.google.com/macros/s/AKfycbyX0n6LQ327fZihUaRuAR8A3q_GA68U3BQcI-ASHNa-jxVL-QwPzil7arLlgTyeLoLDzg/exec' },
       { name: 'Lanyard & SRL Inspection', href: 'https://script.google.com/macros/s/AKfycbwBpMpm0ObECgliOGoEkuob0vtzF6UsaMqJKMHRCeHfgSUtHlMZXesBJ_T3mQrcq4H0Ug/exec' },
