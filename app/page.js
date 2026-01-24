@@ -61,7 +61,7 @@ const FORM_CATEGORIES = [
       { name: 'Fire Extinguisher Inspection', href: '/fire-extinguisher-inspection', isLocal: true },
       { name: 'First Aid Kit Inspection', href: '/first-aid-kit-inspection', isLocal: true },
       { name: 'Ladder Inspection', href: '/ladder-inspection', isLocal: true },
-      { name: 'Lanyard & SRL Inspection', href: 'https://script.google.com/macros/s/AKfycbwBpMpm0ObECgliOGoEkuob0vtzF6UsaMqJKMHRCeHfgSUtHlMZXesBJ_T3mQrcq4H0Ug/exec' },
+      { name: 'Lanyard & SRL Inspection', href: '/lanyard-srl-inspection', isLocal: true },
       { name: 'Monthly AED Inspection', href: 'https://script.google.com/macros/s/AKfycby6nfjcuYnc-vpa3bNtd8HknUKO1otRKQAzqBlyRcwXqPaCKoxJtVA1IkrDJGCvhyyd/exec' },
       { name: 'Shackle Inspection', href: 'https://script.google.com/macros/s/AKfycbwllh5m6X__W6js5GbvaBGxM1Bs_txGhMVzFzWLa9LaAoPJnoQ9f6edZnj-h0b3LEvPfw/exec' },
       { name: 'Synthetic Sling Inspection', href: 'https://script.google.com/macros/s/AKfycbzAmCEGrC-LN7S8ZFSpq3FMhPByCvyXE2stzyQvC6RPU7G2ZwOwiL8-GJvKyr_syUXvhA/exec' },
