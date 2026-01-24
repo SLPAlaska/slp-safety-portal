@@ -59,7 +59,7 @@ const FORM_CATEGORIES = [
       { name: 'Emergency Eyewash Inspection', href: '/eyewash-station-inspection', isLocal: true },
       { name: 'Fall Protection Harness Inspection', href: '/harness-inspection', isLocal: true },
       { name: 'Fire Extinguisher Inspection', href: '/fire-extinguisher-inspection', isLocal: true },
-      { name: 'First Aid Kit Inspection', href: 'https://script.google.com/macros/s/AKfycbwliKpwhkamrbJdB9pdBiShqdcJSs82tjqhbmRLWdT-SP5VqvLq-w5yeIEni-vqgfx7EQ/exec' },
+      { name: 'First Aid Kit Inspection', href: '/first-aid-kit-inspection', isLocal: true },
       { name: 'Ladder Inspection', href: 'https://script.google.com/macros/s/AKfycbyX0n6LQ327fZihUaRuAR8A3q_GA68U3BQcI-ASHNa-jxVL-QwPzil7arLlgTyeLoLDzg/exec' },
       { name: 'Lanyard & SRL Inspection', href: 'https://script.google.com/macros/s/AKfycbwBpMpm0ObECgliOGoEkuob0vtzF6UsaMqJKMHRCeHfgSUtHlMZXesBJ_T3mQrcq4H0Ug/exec' },
       { name: 'Monthly AED Inspection', href: 'https://script.google.com/macros/s/AKfycby6nfjcuYnc-vpa3bNtd8HknUKO1otRKQAzqBlyRcwXqPaCKoxJtVA1IkrDJGCvhyyd/exec' },
