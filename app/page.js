@@ -63,7 +63,7 @@ const FORM_CATEGORIES = [
       { name: 'Ladder Inspection', href: '/ladder-inspection', isLocal: true },
       { name: 'Lanyard & SRL Inspection', href: '/lanyard-srl-inspection', isLocal: true },
       { name: 'Monthly AED Inspection', href: '/aed-inspection', isLocal: true },
-      { name: 'Shackle Inspection', href: 'https://script.google.com/macros/s/AKfycbwllh5m6X__W6js5GbvaBGxM1Bs_txGhMVzFzWLa9LaAoPJnoQ9f6edZnj-h0b3LEvPfw/exec' },
+      { name: 'Shackle Inspection', href: '/shackle-inspection', isLocal: true },
       { name: 'Synthetic Sling Inspection', href: 'https://script.google.com/macros/s/AKfycbzAmCEGrC-LN7S8ZFSpq3FMhPByCvyXE2stzyQvC6RPU7G2ZwOwiL8-GJvKyr_syUXvhA/exec' },
       { name: 'Wire Rope Inspection', href: 'https://script.google.com/macros/s/AKfycbz8m_7pS6mvzw_Gn55V1d7pZ9iTQ4Du5P-ugsv3J1FvufhDOHeux1Hfb0zZkRx-bNfZ/exec' },
     ]
