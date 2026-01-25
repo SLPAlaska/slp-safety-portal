@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
+import AddToSailLog from '@/components/AddToSailLog'
 
 const COMPANIES = [
   'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
@@ -55,7 +56,8 @@ export default function BBSObservationForm() {
   })
   
   const [submitting, setSubmitting] = useState(false)
-  const [message, setMessage] = useState({ type: '', text: '' })
+  const [submitted, setSubmitted] = useState(false)
+  const [submittedData, setSubmittedData] = useState(null)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -65,7 +67,6 @@ export default function BBSObservationForm() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
-    setMessage({ type: '', text: '' })
 
     try {
       const { error } = await supabase.from('bbs_observations').insert([{
@@ -88,34 +89,122 @@ export default function BBSObservationForm() {
 
       if (error) throw error
 
-      setMessage({ type: 'success', text: 'BBS Observation submitted successfully! Thank you for your safety observation.' })
-      
-      // Reset form
-      setFormData({
-        clientCompany: '',
-        submitterName: '',
-        date: new Date().toISOString().split('T')[0],
-        location: '',
-        project: '',
-        observationType: '',
-        observationCategory: '',
-        jobStopRequired: '',
-        nearMiss: '',
-        potentialEquipmentDamage: '',
-        stkyEvent: '',
-        whatDidYouSee: '',
-        whatDidYouTalkAbout: '',
-        actionTaken: '',
-        observedAgree: ''
-      })
-
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      // Store submitted data for SAIL Log prefill
+      setSubmittedData({...formData})
+      setSubmitted(true)
     } catch (error) {
       console.error('Error:', error)
-      setMessage({ type: 'error', text: 'Error submitting form: ' + error.message })
+      alert('Error submitting form: ' + error.message)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      clientCompany: '',
+      submitterName: '',
+      date: new Date().toISOString().split('T')[0],
+      location: '',
+      project: '',
+      observationType: '',
+      observationCategory: '',
+      jobStopRequired: '',
+      nearMiss: '',
+      potentialEquipmentDamage: '',
+      stkyEvent: '',
+      whatDidYouSee: '',
+      whatDidYouTalkAbout: '',
+      actionTaken: '',
+      observedAgree: ''
+    })
+    setSubmitted(false)
+    setSubmittedData(null)
+  }
+
+  // Success Screen
+  if (submitted) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #991b1b 100%)', padding: '20px' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
+            <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
+            <h2 style={{ color: '#16a34a', marginBottom: '15px', fontSize: '24px' }}>Observation Submitted!</h2>
+            <p style={{ color: '#6b7280', marginBottom: '25px' }}>BBS Observation recorded successfully. Thank you for your safety observation!</p>
+            
+            {/* SAIL Log Integration */}
+            {submittedData && (submittedData.observationType === 'At-Risk' || submittedData.jobStopRequired === 'Yes' || submittedData.nearMiss === 'Yes' || submittedData.stkyEvent === 'Yes') && (
+              <div style={{ 
+                background: '#fffbeb', 
+                border: '2px solid #f59e0b', 
+                borderRadius: '12px', 
+                padding: '20px', 
+                marginBottom: '25px' 
+              }}>
+                <p style={{ color: '#92400e', marginBottom: '15px', fontSize: '14px' }}>
+                  ⚠️ This observation may need follow-up. Add it to the SAIL Log?
+                </p>
+                <AddToSailLog
+                  sourceForm="bbs-observation"
+                  prefillData={{
+                    company: submittedData.clientCompany,
+                    location: submittedData.location,
+                    reported_by: submittedData.submitterName,
+                    issue_description: `${submittedData.observationType} Observation - ${submittedData.observationCategory}: ${submittedData.whatDidYouSee}`
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Always show SAIL Log option but less prominently for safe observations */}
+            {submittedData && submittedData.observationType === 'Safe' && submittedData.jobStopRequired !== 'Yes' && submittedData.nearMiss !== 'Yes' && submittedData.stkyEvent !== 'Yes' && (
+              <div style={{ 
+                background: '#f0fdf4', 
+                border: '1px solid #86efac', 
+                borderRadius: '12px', 
+                padding: '15px', 
+                marginBottom: '25px' 
+              }}>
+                <p style={{ color: '#166534', marginBottom: '10px', fontSize: '13px' }}>
+                  Need to track a follow-up item?
+                </p>
+                <AddToSailLog
+                  sourceForm="bbs-observation"
+                  prefillData={{
+                    company: submittedData.clientCompany,
+                    location: submittedData.location,
+                    reported_by: submittedData.submitterName,
+                    issue_description: `Safe Observation - ${submittedData.observationCategory}: ${submittedData.whatDidYouSee}`
+                  }}
+                />
+              </div>
+            )}
+            
+            <button
+              onClick={resetForm}
+              style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #991b1b 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 30px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Submit Another Observation
+            </button>
+
+            <div style={{ marginTop: '20px' }}>
+              <Link href="/" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '14px' }}>
+                ← Back to Safety Portal
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -185,36 +274,15 @@ export default function BBSObservationForm() {
           color: #0c4a6e;
         }
         
-        .message {
-          padding: 15px;
-          border-radius: 6px;
-          margin-bottom: 20px;
-          text-align: center;
-          font-weight: 500;
-        }
-        
-        .message.success {
-          background: #d4edda;
-          color: #155724;
-          border: 1px solid #c3e6cb;
-        }
-        
-        .message.error {
-          background: #f8d7da;
-          color: #721c24;
-          border: 1px solid #f5c6cb;
-        }
-        
         .form-group {
-          margin-bottom: 25px;
+          margin-bottom: 20px;
         }
         
         .form-group label {
           display: block;
-          margin-bottom: 8px;
-          color: #333;
           font-weight: 600;
-          font-size: 14px;
+          margin-bottom: 8px;
+          color: #1e3a5f;
         }
         
         .form-group input,
@@ -222,18 +290,17 @@ export default function BBSObservationForm() {
         .form-group textarea {
           width: 100%;
           padding: 12px;
-          border: 2px solid #e0e0e0;
-          border-radius: 6px;
-          font-size: 14px;
-          font-family: inherit;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 15px;
           transition: border-color 0.3s;
         }
         
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
+          border-color: #1e3a8a;
           outline: none;
-          border-color: #991b1b;
         }
         
         .form-group textarea {
@@ -244,69 +311,59 @@ export default function BBSObservationForm() {
         .section-header {
           background: #1e3a8a;
           color: white;
-          padding: 12px 20px;
-          border-radius: 6px;
-          margin: 30px 0 20px 0;
-          font-size: 16px;
+          padding: 12px 18px;
+          margin: 25px -40px;
           font-weight: 600;
+          font-size: 16px;
         }
         
         .section-header.red {
-          background: #dc2626;
+          background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
         }
         
         .type-options {
           display: flex;
-          gap: 20px;
-          flex-wrap: wrap;
+          gap: 15px;
           margin-bottom: 20px;
         }
         
         .type-option {
           flex: 1;
-          min-width: 150px;
           padding: 20px;
-          border: 2px solid #e0e0e0;
-          border-radius: 8px;
+          border: 3px solid #e2e8f0;
+          border-radius: 12px;
+          text-align: center;
           cursor: pointer;
           transition: all 0.3s;
-          text-align: center;
-          background: white;
-        }
-        
-        .type-option:hover {
-          border-color: #1e3a8a;
-          background: #f8fafc;
-        }
-        
-        .type-option.selected.safe {
-          border-color: #22c55e;
-          background: #f0fdf4;
-        }
-        
-        .type-option.selected.at-risk {
-          border-color: #991b1b;
-          background: #fef2f2;
         }
         
         .type-option .icon {
-          font-size: 36px;
+          font-size: 32px;
           margin-bottom: 10px;
         }
         
         .type-option .title {
-          font-weight: 600;
-          font-size: 16px;
+          font-weight: 700;
+          font-size: 18px;
+          margin-bottom: 5px;
         }
         
-        .type-option.safe .title { color: #22c55e; }
-        .type-option.at-risk .title { color: #991b1b; }
+        .type-option.safe:hover,
+        .type-option.safe.selected {
+          border-color: #16a34a;
+          background: #f0fdf4;
+        }
+        
+        .type-option.at-risk:hover,
+        .type-option.at-risk.selected {
+          border-color: #dc2626;
+          background: #fef2f2;
+        }
         
         .flags-section {
-          background: #fef2f2;
+          background: #f8fafc;
           padding: 20px;
           border-radius: 8px;
-          border-left: 4px solid #991b1b;
           margin-bottom: 20px;
         }
         
@@ -314,10 +371,8 @@ export default function BBSObservationForm() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 15px 0;
-          border-bottom: 1px solid #e0e0e0;
-          flex-wrap: wrap;
-          gap: 10px;
+          padding: 12px 0;
+          border-bottom: 1px solid #e2e8f0;
         }
         
         .flag-row:last-child {
@@ -326,7 +381,7 @@ export default function BBSObservationForm() {
         
         .flag-label {
           font-weight: 600;
-          color: #333;
+          color: #1e3a5f;
         }
         
         .yes-no-group {
@@ -335,13 +390,12 @@ export default function BBSObservationForm() {
         }
         
         .yes-no-option {
-          padding: 10px 20px;
-          border: 2px solid #e0e0e0;
+          padding: 8px 20px;
+          border: 2px solid #e2e8f0;
           border-radius: 6px;
           cursor: pointer;
-          transition: all 0.3s;
           font-weight: 500;
-          background: white;
+          transition: all 0.2s;
         }
         
         .yes-no-option:hover {
@@ -349,61 +403,54 @@ export default function BBSObservationForm() {
         }
         
         .yes-no-option.selected {
-          border-color: #991b1b;
-          background: #fef2f2;
-          color: #991b1b;
+          background: #1e3a8a;
+          border-color: #1e3a8a;
+          color: white;
         }
         
         .stky-section {
-          background: #fef2f2;
+          background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+          border: 2px solid #fecaca;
           padding: 20px;
           border-radius: 8px;
-          border-left: 4px solid #dc2626;
           margin-bottom: 20px;
         }
         
         .stky-section .section-label {
-          font-weight: 600;
           color: #991b1b;
-          margin-bottom: 10px;
+          font-weight: 700;
           font-size: 14px;
-        }
-        
-        .stky-section p {
-          font-size: 13px;
-          color: #666;
-          margin-bottom: 15px;
+          margin-bottom: 10px;
         }
         
         .stky-badge {
           margin-top: 15px;
-          padding: 12px 20px;
-          border-radius: 6px;
+          padding: 12px;
+          border-radius: 8px;
+          font-weight: 600;
           text-align: center;
-          font-weight: bold;
-          font-size: 14px;
         }
         
         .stky-badge.yes {
-          background: #fecaca;
+          background: #fee2e2;
           color: #991b1b;
-          border: 2px solid #dc2626;
+          border: 2px solid #fca5a5;
         }
         
         .stky-badge.no {
-          background: #dbeafe;
-          color: #1e40af;
-          border: 2px solid #3b82f6;
+          background: #dcfce7;
+          color: #166534;
+          border: 2px solid #86efac;
         }
         
         .submit-btn {
           width: 100%;
-          padding: 15px;
-          background: linear-gradient(135deg, #991b1b 0%, #1e3a8a 100%);
+          padding: 16px;
+          background: linear-gradient(135deg, #1e3a8a 0%, #991b1b 100%);
           color: white;
           border: none;
-          border-radius: 6px;
-          font-size: 16px;
+          border-radius: 8px;
+          font-size: 18px;
           font-weight: 600;
           cursor: pointer;
           transition: transform 0.2s, box-shadow 0.2s;
@@ -411,22 +458,21 @@ export default function BBSObservationForm() {
         
         .submit-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 5px 20px rgba(153, 27, 27, 0.4);
+          box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
         }
         
         .submit-btn:disabled {
-          background: #ccc;
+          opacity: 0.7;
           cursor: not-allowed;
-          transform: none;
         }
         
         .footer {
           text-align: center;
-          padding: 20px 10px;
           margin-top: 30px;
+          padding-top: 20px;
           border-top: 1px solid #e2e8f0;
-          font-size: 11px;
           color: #64748b;
+          font-size: 12px;
         }
         
         @media (max-width: 600px) {
@@ -434,8 +480,8 @@ export default function BBSObservationForm() {
             padding: 20px;
           }
           
-          .bbs-header h1 {
-            font-size: 24px;
+          .section-header {
+            margin: 25px -20px;
           }
           
           .type-options {
@@ -461,10 +507,6 @@ export default function BBSObservationForm() {
         <div className="info-box">
           <strong>BBS Observations</strong> help identify safe behaviors to reinforce and at-risk behaviors to correct before incidents occur. Your observations make a difference!
         </div>
-        
-        {message.text && (
-          <div className={`message ${message.type}`}>{message.text}</div>
-        )}
         
         <form onSubmit={handleSubmit}>
           {/* Basic Information */}
@@ -640,7 +682,7 @@ export default function BBSObservationForm() {
         </form>
         
         <div className="footer">
-          <span>Powered by Predictive Safety Analytics™</span> | <span>© 2026 SLP Alaska</span>
+          <span>Powered by Predictive Safety Analytics™</span> | <span>© 2025 SLP Alaska</span>
         </div>
       </div>
     </div>
