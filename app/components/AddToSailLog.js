@@ -51,7 +51,7 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
           category: formData.category,
           priority: formData.priority,
           status: 'Open',
-          date_opened: new Date().toISOString().split('T')[0],
+          date: new Date().toISOString().split('T')[0],
           source_form: sourceForm,
           source_id: sourceId
         }]);
