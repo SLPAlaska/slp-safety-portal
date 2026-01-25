@@ -8,34 +8,30 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4'
 );
 
-const CATEGORIES = [
-  'Equipment Deficiency',
-  'Safety Hazard',
-  'Environmental Concern',
-  'Process Improvement',
-  'Training Need',
-  'Documentation Issue',
-  'Compliance Gap',
-  'Near Miss Follow-up',
-  'Audit Finding',
-  'Inspection Deficiency',
-  'Other'
-];
+const PRIORITIES = ['A - Critical', 'B - Moderate', 'C - Best Practice'];
 
 export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  
+  // Default target date is 7 days from now
+  const getDefaultTargetDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().split('T')[0];
+  };
+  
   const [formData, setFormData] = useState({
-    category: '',
-    priority: 'Medium',
     assigned_to: prefillData.reported_by || '',
-    issue_description: prefillData.issue_description || ''
+    target_completion_date: getDefaultTargetDate(),
+    priority: 'B - Moderate',
+    action_item_description: prefillData.issue_description || ''
   });
 
   const handleSubmit = async () => {
-    if (!formData.category || !formData.issue_description.trim() || !formData.assigned_to.trim()) {
-      alert('Please fill in all required fields: Category, Assigned To, and Issue Description.');
+    if (!formData.action_item_description.trim() || !formData.assigned_to.trim()) {
+      alert('Please fill in all required fields.');
       return;
     }
 
@@ -45,17 +41,15 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
       const { error } = await supabase
         .from('sail_log')
         .insert([{
+          submitter_name: prefillData.reported_by || 'Unknown',
+          date: new Date().toISOString().split('T')[0],
           client_company: prefillData.company || '',
           location: prefillData.location || '',
-          submitter_name: prefillData.reported_by || '',
-          action_item_description: formData.issue_description,
-          category: formData.category,
+          action_item_description: formData.action_item_description,
+          assigned_to: formData.assigned_to,
+          target_completion_date: formData.target_completion_date,
           priority: formData.priority,
-          status: 'Open',
-          date: new Date().toISOString().split('T')[0],
-          'assigned_to': formData.assigned_to || prefillData.reported_by || 'Unassigned',
-          source_form: sourceForm,
-          source_id: sourceId
+          status: 'Open'
         }]);
 
       if (error) throw error;
@@ -64,7 +58,12 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
       setTimeout(() => {
         setIsOpen(false);
         setSubmitted(false);
-        setFormData({ category: '', priority: 'Medium', assigned_to: prefillData.reported_by || '', issue_description: prefillData.issue_description || '' });
+        setFormData({
+          assigned_to: prefillData.reported_by || '',
+          target_completion_date: getDefaultTargetDate(),
+          priority: 'B - Moderate',
+          action_item_description: prefillData.issue_description || ''
+        });
       }, 1500);
     } catch (error) {
       console.error('SAIL Log error:', error);
@@ -131,44 +130,14 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
 
       <div style={{ marginBottom: '15px' }}>
         <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', fontSize: '13px', color: '#374151' }}>
-          Category <span style={{ color: '#dc2626' }}>*</span>
+          Action Item Description <span style={{ color: '#dc2626' }}>*</span>
         </label>
-        <select
-          value={formData.category}
-          onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-          style={{ width: '100%', padding: '10px', border: '2px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
-        >
-          <option value="">-- Select Category --</option>
-          {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-        </select>
-      </div>
-
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', fontSize: '13px', color: '#374151' }}>
-          Priority
-        </label>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {['High', 'Medium', 'Low'].map(priority => (
-            <label
-              key={priority}
-              onClick={() => setFormData(prev => ({ ...prev, priority }))}
-              style={{
-                flex: 1,
-                padding: '8px',
-                border: `2px solid ${formData.priority === priority ? (priority === 'High' ? '#dc2626' : priority === 'Medium' ? '#f59e0b' : '#16a34a') : '#d1d5db'}`,
-                borderRadius: '6px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500',
-                background: formData.priority === priority ? (priority === 'High' ? '#fef2f2' : priority === 'Medium' ? '#fffbeb' : '#f0fdf4') : 'white',
-                color: priority === 'High' ? '#dc2626' : priority === 'Medium' ? '#d97706' : '#16a34a'
-              }}
-            >
-              {priority === 'High' ? '🔴' : priority === 'Medium' ? '🟡' : '🟢'} {priority}
-            </label>
-          ))}
-        </div>
+        <textarea
+          value={formData.action_item_description}
+          onChange={(e) => setFormData(prev => ({ ...prev, action_item_description: e.target.value }))}
+          placeholder="Describe the action item that needs follow-up..."
+          style={{ width: '100%', padding: '10px', border: '2px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minHeight: '80px', resize: 'vertical' }}
+        />
       </div>
 
       <div style={{ marginBottom: '15px' }}>
@@ -186,14 +155,34 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
 
       <div style={{ marginBottom: '15px' }}>
         <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', fontSize: '13px', color: '#374151' }}>
-          Issue Description <span style={{ color: '#dc2626' }}>*</span>
+          Target Completion Date <span style={{ color: '#dc2626' }}>*</span>
         </label>
-        <textarea
-          value={formData.issue_description}
-          onChange={(e) => setFormData(prev => ({ ...prev, issue_description: e.target.value }))}
-          placeholder="Describe the issue that needs follow-up..."
-          style={{ width: '100%', padding: '10px', border: '2px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minHeight: '80px', resize: 'vertical' }}
+        <input
+          type="date"
+          value={formData.target_completion_date}
+          onChange={(e) => setFormData(prev => ({ ...prev, target_completion_date: e.target.value }))}
+          style={{ width: '100%', padding: '10px', border: '2px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
         />
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', fontSize: '13px', color: '#374151' }}>
+          Priority <span style={{ color: '#dc2626' }}>*</span>
+        </label>
+        <select
+          value={formData.priority}
+          onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
+          style={{ width: '100%', padding: '10px', border: '2px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
+        >
+          {PRIORITIES.map(p => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
+          <span>🔴 A = Safety/OSHA</span>
+          <span>🟡 B = Operational</span>
+          <span>🟢 C = Improvement</span>
+        </div>
       </div>
 
       <button
