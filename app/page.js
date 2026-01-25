@@ -81,20 +81,21 @@ const FORM_CATEGORIES = [
       { name: 'Opening & Blinding', href: 'https://script.google.com/macros/s/AKfycbyT5tL5gxVhfDdhjEhxiCHzPK3B6qtyVMo1jZJR3o5JVFw1pScf9Sv7riRo_OzNCz2O/exec' },
       { name: 'Unit Work', href: 'https://script.google.com/macros/s/AKfycbx9qgMB2V0VXAeD_MXf9_G00KLCY9xmGZyu5jhjNVUE7JMBGta-_ttWt7iUHL7AvE6KoA/exec' },
     ]
-  },
-  {
-    id: 'lsr-audits',
-    title: 'Lifesaving Rules Audits',
-    icon: '🛡️',
-    forms: [
-      { name: 'LSR- Confined Spaces', href: 'https://script.google.com/macros/s/AKfycbygYWMVhaVv5DHGBiE69b6Snu2LqX8M8lW0Z6_FAYTZ2ve4QzH36JIXCHsI-4HVQ9KdiQ/exec' },
-      { name: 'LSR-Driving Audit', href: '/lsr-driving-audit', isLocal: true },'https://script.google.com/macros/s/AKfycbx1kGrBt3GkOrr8UVpnUXWvJAe9Q3RmlQir_BBc2ew7kksxATtnfkpGcoqnZFqNdL2A/exec' },
-      { name: 'LSR- Fall Protection', href: 'https://script.google.com/macros/s/AKfycbwxgJWfAHkZKn5rpb9CZGxYPXzAfLpT9t3ZY654bnxb-xy4nVMLvKpUDAkwYbY7dgWZ/exec' },
-      { name: 'LSR- Lifting Operations', href: 'https://script.google.com/macros/s/AKfycbxjt7-lP5XW7aHWXkT7zXvwMGsbfIlypXLJ5kyWRoh3TWnjcuVBdm9Z6rPz_eAPuZk/exec' },
-      { name: 'LSR- Line of Fire', href: 'https://script.google.com/macros/s/AKfycbwnvV9vUvROcSm1v50PVViYiWuvt1ERYcuF8ocYs5hh2qBM1ZlkFJ-G1tcpM5xIVmt57g/exec' },
-      { name: 'LSR- Work Permits', href: 'https://script.google.com/macros/s/AKfycbwKRIWLRPA9ORqSb91t_92KRViZZ60Wm5pSHERY7Ykswqcn53UQufW-IV8oUDAOTtoX/exec' },
-    ]
-  },
+},
+{
+  id: 'lsr-audits',
+  title: 'Lifesaving Rules Audits',
+  icon: '🛡️',
+  forms: [
+    { name: 'LSR-Confined Space Audit', href: '/lsr-confined-space-audit', isLocal: true },
+    { name: 'LSR-Driving Audit', href: '/lsr-driving-audit', isLocal: true },
+    { name: 'LSR-Energy Isolation', href: '/lsr-energy-isolation-audit', isLocal: true },
+    { name: 'LSR-Fall Protection', href: '/lsr-fall-protection-audit', isLocal: true },
+    { name: 'LSR-Lifting Operations', href: '/lsr-lifting-operations-audit', isLocal: true },
+    { name: 'LSR-Line of Fire', href: '/lsr-line-of-fire-audit', isLocal: true },
+    { name: 'LSR-Work Permits', href: '/lsr-work-permits-audit', isLocal: true },
+  ]
+},
   {
     id: 'equipment-inspections',
     title: 'Equipment Inspections',
