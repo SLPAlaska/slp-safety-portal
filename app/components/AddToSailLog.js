@@ -29,12 +29,13 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
   const [formData, setFormData] = useState({
     category: '',
     priority: 'Medium',
+    assigned_to: prefillData.reported_by || '',
     issue_description: prefillData.issue_description || ''
   });
 
   const handleSubmit = async () => {
-    if (!formData.category || !formData.issue_description.trim()) {
-      alert('Please select a category and describe the issue.');
+    if (!formData.category || !formData.issue_description.trim() || !formData.assigned_to.trim()) {
+      alert('Please fill in all required fields: Category, Assigned To, and Issue Description.');
       return;
     }
 
@@ -52,6 +53,7 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
           priority: formData.priority,
           status: 'Open',
           date: new Date().toISOString().split('T')[0],
+          'assigned_to': formData.assigned_to || prefillData.reported_by || 'Unassigned',
           source_form: sourceForm,
           source_id: sourceId
         }]);
@@ -62,7 +64,7 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
       setTimeout(() => {
         setIsOpen(false);
         setSubmitted(false);
-        setFormData({ category: '', priority: 'Medium', issue_description: prefillData.issue_description || '' });
+        setFormData({ category: '', priority: 'Medium', assigned_to: prefillData.reported_by || '', issue_description: prefillData.issue_description || '' });
       }, 1500);
     } catch (error) {
       console.error('SAIL Log error:', error);
@@ -167,6 +169,19 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
             </label>
           ))}
         </div>
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500', fontSize: '13px', color: '#374151' }}>
+          Assigned To <span style={{ color: '#dc2626' }}>*</span>
+        </label>
+        <input
+          type="text"
+          value={formData.assigned_to}
+          onChange={(e) => setFormData(prev => ({ ...prev, assigned_to: e.target.value }))}
+          placeholder="Who should follow up on this?"
+          style={{ width: '100%', padding: '10px', border: '2px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
+        />
       </div>
 
       <div style={{ marginBottom: '15px' }}>
