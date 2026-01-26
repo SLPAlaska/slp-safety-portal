@@ -73,7 +73,7 @@ const FORM_CATEGORIES = [
     title: 'Permits',
     icon: '📝',
     forms: [
-      { name: 'Confined Space Entry', href: 'https://script.google.com/macros/s/AKfycbyeB2ZC6nn5cQV9Sz0qUyuSSnGsNXJiGsFgJ2x_zRG-9NDHkUmEEUNZYu8EVzRaleVfPA/exec' },
+      { name: 'Confined Space Entry', href: '/confined-space-entry', isLocal: true },
       { name: 'Energized Electrical Work', href: 'https://script.google.com/macros/s/AKfycbyVGarPGIcDZuGaEh01Qe46HMq1Op3Hv17gkY2fr4VqtwrwxOfzh981RXo0_6K18Ycesw/exec' },
       { name: 'Energy Isolation/LOTO', href: 'https://script.google.com/macros/s/AKfycbzFiwE_fiVhSku3-0YISA1KTVpF8BshNUfe3oIjGNDjKxG-72gUxBistS0UehjjoUf1Zw/exec' },
       { name: 'Excavation & Trenching', href: 'https://script.google.com/macros/s/AKfycbxHKFquYsGlJzidCvpMyp0ABSxsPvoSHwFqx0kN09BIfA_RtAcTsYEDwHBohOmmQGrrfA/exec' },
