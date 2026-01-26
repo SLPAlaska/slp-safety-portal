@@ -196,7 +196,7 @@ const FORM_CATEGORIES = [
     title: 'PPE Inspection Form',
     icon: '🦺',
     forms: [
-      { name: 'PPE Inspection Form', href: 'https://script.google.com/macros/s/AKfycbzvoTWJdCivaYY0ub9TY4sNuR_pHqx2ExtI7yH3HR-sdcYUUB-X0GoR8mB-4BbrNnmX2g/exec' },
+      { name: 'Comprehensive PPE Inspection', href: '/ppe-inspection', isLocal: true },
     ]
   }
 ]
