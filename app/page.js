@@ -101,7 +101,7 @@ const FORM_CATEGORIES = [
     title: 'Equipment Inspections',
     icon: '🚛',
     forms: [
-      { name: 'Heavy Equipment Daily Inspection', href: 'https://script.google.com/macros/s/AKfycbzFGKDv1xRpgWMFDiGQ64ydsA7aJ9Ci8hOKhXQS8yoRDT9XYCR2g836ptxMElrV_6XY/exec' },
+      { name: 'Heavy Equipment', href: '/heavy-equipment-inspection', isLocal: true },
       { name: 'Pre-Shift Crane Inspection', href: 'https://script.google.com/macros/s/AKfycbzwdSq235XV12PxTZXh0ZbZHK7VCRNB0n7wkv5V_B_7YjrmFn8k_9SRHLs3TkVP9ApDFg/exec' },
       { name: 'Pre-Shift Forklift Inspection', href: 'https://script.google.com/macros/s/AKfycbwOYvwcDUoqn2kSFDtqYtA8os2lwj4b7tGiEf06qbP0hA-Grd_X0HNM7sl1c6cPt6Vg/exec' },
       { name: 'Pre-Trip Vehicle Inspection', href: 'https://script.google.com/macros/s/AKfycby7dAiPMAePSi1cOlkKmdvqr7ONKgz9zOorQm-OHLOcjrGh3VLFVdOtjpYn7NWMqwRE/exec' },
