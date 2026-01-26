@@ -114,7 +114,7 @@ const FORM_CATEGORIES = [
     forms: [
       { name: 'Daily Scaffold Inspection', href: '/scaffold-inspection-form', isLocal: true },
       { name: 'Exc. & Trench Competent Person Daily Inspection Form', href: '/competent-person-form', isLocal: true },
-      { name: 'Fillable THA/JSA', href: 'https://script.google.com/macros/s/AKfycbyXG_2TUazwZEqAGdE6ULettW6fXk94XYM0_6mKRwfa8_Jh6mEHFU2j6RyF5_DQE0PP/exec' },
+      { name: 'THA / JSA', href: '/tha-jsa', isLocal: true },
     ]
   },
   {
