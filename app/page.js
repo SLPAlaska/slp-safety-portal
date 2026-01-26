@@ -103,7 +103,7 @@ const FORM_CATEGORIES = [
     forms: [
       { name: 'Heavy Equipment', href: '/heavy-equipment-inspection', isLocal: true },
       { name: 'Crane Inspection', href: '/crane-inspection', isLocal: true },
-      { name: 'Pre-Shift Forklift Inspection', href: 'https://script.google.com/macros/s/AKfycbwOYvwcDUoqn2kSFDtqYtA8os2lwj4b7tGiEf06qbP0hA-Grd_X0HNM7sl1c6cPt6Vg/exec' },
+      { name: 'Forklift Inspection', href: '/forklift-inspection', isLocal: true },
       { name: 'Pre-Trip Vehicle Inspection', href: 'https://script.google.com/macros/s/AKfycby7dAiPMAePSi1cOlkKmdvqr7ONKgz9zOorQm-OHLOcjrGh3VLFVdOtjpYn7NWMqwRE/exec' },
     ]
   },
