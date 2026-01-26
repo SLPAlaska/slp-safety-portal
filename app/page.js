@@ -76,7 +76,7 @@ const FORM_CATEGORIES = [
       { name: 'Confined Space Entry', href: '/confined-space-entry', isLocal: true },
       { name: 'Energized Electrical Work', href: '/energized-electrical-work', isLocal: true },
       { name: 'Energy Isolation / LOTO', href: '/energy-isolation', isLocal: true },
-      { name: 'Excavation & Trenching', href: 'https://script.google.com/macros/s/AKfycbxHKFquYsGlJzidCvpMyp0ABSxsPvoSHwFqx0kN09BIfA_RtAcTsYEDwHBohOmmQGrrfA/exec' },
+      { name: 'Excavation & Trenching', href: '/excavation-trenching', isLocal: true },
       { name: 'Hot Work', href: 'https://script.google.com/macros/s/AKfycbydcL8Rl1gHTRdUMbQ1N2a3El7p1m2mfjQ3esrZV3RoS9V-Ql9IKa4x_3g2-YhcMT0/exec' },
       { name: 'Opening & Blinding', href: 'https://script.google.com/macros/s/AKfycbyT5tL5gxVhfDdhjEhxiCHzPK3B6qtyVMo1jZJR3o5JVFw1pScf9Sv7riRo_OzNCz2O/exec' },
       { name: 'Unit Work', href: 'https://script.google.com/macros/s/AKfycbx9qgMB2V0VXAeD_MXf9_G00KLCY9xmGZyu5jhjNVUE7JMBGta-_ttWt7iUHL7AvE6KoA/exec' },
