@@ -11,7 +11,7 @@ const FORM_CATEGORIES = [
     isTraining: true,
     forms: [
       { name: 'Aerial Lift Practical Evaluation', href: '/aerial-lift-practical', isLocal: true },
-      { name: 'Crane/Boom Truck Practical Evaluation', href: '/crane-boom-practical', isLocal: true },
+      { name: 'Crane/Boom Truck Practical Evaluation', href: '/crane-boom-truck-practical', isLocal: true },
       { name: 'Excavator Practical Evaluation', href:'/excavator-practical', isLocal: true },
       { name: 'Forklift Practical Evaluation', href:'/forklift-practical', isLocal: true },
       { name: 'Loader Practical Evaluation', href: '/loader-practical', isLocal: true},
