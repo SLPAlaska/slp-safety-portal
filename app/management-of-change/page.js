@@ -164,6 +164,9 @@ export default function ManagementOfChange() {
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <a href="/" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
+          <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '12px', padding: '15px', width: 'fit-content', margin: '15px auto', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
+            <img src="https://raw.githubusercontent.com/prior-skills/safety-portal/main/public/slp-logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', height: 'auto' }} />
+          </div>
           <div style={{ display: 'inline-block', background: 'white', color: '#1e3a8a', padding: '6px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '14px', margin: '15px 0', border: '3px solid #b91c1c' }}>
             MANAGEMENT OF CHANGE
           </div>
