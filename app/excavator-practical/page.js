@@ -44,41 +44,50 @@ const FOLLOW_UP_OPTIONS = [
 
 // Evaluation items by section
 const PRE_OPERATION_ITEMS = [
-  { name: 'walk_around_inspection', label: 'Conducted thorough walk-around inspection?', critical: true },
-  { name: 'hydraulic_check', label: 'Checked hydraulic fluid levels and condition?', critical: false },
-  { name: 'backup_alarm', label: 'Verified backup alarm functionality?', critical: true },
-  { name: 'tires_inspection', label: 'Inspected tires/tracks for damage or excessive wear?', critical: false }
+  { name: 'walk_around_inspection', label: 'Conducted walk-around inspection?', critical: true },
+  { name: 'hydraulic_fluid', label: 'Checked hydraulic fluid levels?', critical: false },
+  { name: 'alarm_horn', label: 'Tested backup alarm and horn?', critical: true },
+  { name: 'tracks_undercarriage', label: 'Inspected tracks/undercarriage for damage?', critical: true },
+  { name: 'bucket_attachment', label: 'Checked bucket and attachment condition?', critical: false }
 ];
 
-const OPERATIONAL_ITEMS = [
-  { name: 'personnel_awareness', label: 'Maintains awareness of personnel in work area?', critical: true },
-  { name: 'control_operation', label: 'Operates controls smoothly and precisely?', critical: false },
-  { name: 'load_handling', label: 'Demonstrates proper load handling techniques?', critical: false },
-  { name: 'travel_speed', label: 'Maintains proper travel speed for conditions?', critical: true },
-  { name: 'bucket_position', label: 'Keeps bucket low during travel?', critical: true }
+const EXCAVATION_ITEMS = [
+  { name: 'swing_radius', label: 'Maintains awareness of swing radius?', critical: true },
+  { name: 'no_swing_over_personnel', label: 'Never swings loads over personnel?', critical: true },
+  { name: 'smooth_movements', label: 'Uses smooth, controlled movements?', critical: false },
+  { name: 'excavation_angles', label: 'Maintains proper excavation angles?', critical: true },
+  { name: 'overhead_hazards', label: 'Avoids overhead hazards (power lines, structures)?', critical: true }
+];
+
+const TRAVEL_ITEMS = [
+  { name: 'bucket_position', label: 'Travels with bucket in proper position?', critical: true },
+  { name: 'safe_speed', label: 'Maintains safe travel speed?', critical: false },
+  { name: 'ground_stability', label: 'Checks ground stability before positioning?', critical: true },
+  { name: 'exclusion_zone', label: 'Maintains exclusion zone around equipment?', critical: true }
 ];
 
 const SAFETY_ITEMS = [
   { name: 'proper_ppe', label: 'Uses proper PPE (hard hat, high-vis, safety boots)?', critical: true },
-  { name: 'seatbelt_rops', label: 'Uses seatbelt/ROPS protection?', critical: true },
-  { name: 'loto_procedures', label: 'Follows LOTO procedures when required?', critical: true },
-  { name: 'exclusion_zone', label: 'Maintains exclusion zone/spotter awareness?', critical: true }
+  { name: 'seatbelt_rops', label: 'Uses seatbelt and ROPS protection?', critical: true },
+  { name: 'ground_communication', label: 'Communicates effectively with ground personnel?', critical: false },
+  { name: 'no_passengers', label: 'Never allows passengers on equipment?', critical: true }
 ];
 
 const SHUTDOWN_ITEMS = [
-  { name: 'bucket_to_ground', label: 'Lowers bucket to ground before shutdown?', critical: false },
+  { name: 'bucket_to_ground', label: 'Lowers bucket to ground before shutdown?', critical: true },
   { name: 'parking_brake_key', label: 'Engages parking brake and removes key?', critical: false },
-  { name: 'secure_parking', label: 'Secures equipment in authorized parking area?', critical: true }
+  { name: 'authorized_parking', label: 'Parks in authorized area away from traffic?', critical: true }
 ];
 
 const ALL_CRITICAL_ITEMS = [
   ...PRE_OPERATION_ITEMS.filter(i => i.critical),
-  ...OPERATIONAL_ITEMS.filter(i => i.critical),
+  ...EXCAVATION_ITEMS.filter(i => i.critical),
+  ...TRAVEL_ITEMS.filter(i => i.critical),
   ...SAFETY_ITEMS.filter(i => i.critical),
   ...SHUTDOWN_ITEMS.filter(i => i.critical)
 ];
 
-export default function LoaderPractical() {
+export default function ExcavatorPractical() {
   const [formData, setFormData] = useState({
     employee_name: '',
     evaluator_name: '',
@@ -89,21 +98,26 @@ export default function LoaderPractical() {
     energy_sources: [],
     stky_assessment: '',
     walk_around_inspection: '',
-    hydraulic_check: '',
-    backup_alarm: '',
-    tires_inspection: '',
-    personnel_awareness: '',
-    control_operation: '',
-    load_handling: '',
-    travel_speed: '',
+    hydraulic_fluid: '',
+    alarm_horn: '',
+    tracks_undercarriage: '',
+    bucket_attachment: '',
+    swing_radius: '',
+    no_swing_over_personnel: '',
+    smooth_movements: '',
+    excavation_angles: '',
+    overhead_hazards: '',
     bucket_position: '',
+    safe_speed: '',
+    ground_stability: '',
+    exclusion_zone: '',
     proper_ppe: '',
     seatbelt_rops: '',
-    loto_procedures: '',
-    exclusion_zone: '',
+    ground_communication: '',
+    no_passengers: '',
     bucket_to_ground: '',
     parking_brake_key: '',
-    secure_parking: '',
+    authorized_parking: '',
     overall_assessment: '',
     follow_up_required: 'None - Employee is competent',
     evaluator_comments: ''
@@ -144,7 +158,7 @@ export default function LoaderPractical() {
     const now = new Date();
     const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-    return `LOADER-${dateStr}-${random}`;
+    return `EXCAVATOR-${dateStr}-${random}`;
   };
 
   const handleSubmit = async (e) => {
@@ -165,27 +179,32 @@ export default function LoaderPractical() {
         energy_sources: formData.energy_sources.join(', ') || null,
         stky_assessment: formData.stky_assessment,
         walk_around_inspection: formData.walk_around_inspection,
-        hydraulic_check: formData.hydraulic_check,
-        backup_alarm: formData.backup_alarm,
-        tires_inspection: formData.tires_inspection,
-        personnel_awareness: formData.personnel_awareness,
-        control_operation: formData.control_operation,
-        load_handling: formData.load_handling,
-        travel_speed: formData.travel_speed,
+        hydraulic_fluid: formData.hydraulic_fluid,
+        alarm_horn: formData.alarm_horn,
+        tracks_undercarriage: formData.tracks_undercarriage,
+        bucket_attachment: formData.bucket_attachment,
+        swing_radius: formData.swing_radius,
+        no_swing_over_personnel: formData.no_swing_over_personnel,
+        smooth_movements: formData.smooth_movements,
+        excavation_angles: formData.excavation_angles,
+        overhead_hazards: formData.overhead_hazards,
         bucket_position: formData.bucket_position,
+        safe_speed: formData.safe_speed,
+        ground_stability: formData.ground_stability,
+        exclusion_zone: formData.exclusion_zone,
         proper_ppe: formData.proper_ppe,
         seatbelt_rops: formData.seatbelt_rops,
-        loto_procedures: formData.loto_procedures,
-        exclusion_zone: formData.exclusion_zone,
+        ground_communication: formData.ground_communication,
+        no_passengers: formData.no_passengers,
         bucket_to_ground: formData.bucket_to_ground,
         parking_brake_key: formData.parking_brake_key,
-        secure_parking: formData.secure_parking,
+        authorized_parking: formData.authorized_parking,
         overall_assessment: formData.overall_assessment,
         follow_up_required: formData.follow_up_required,
         evaluator_comments: formData.evaluator_comments || null
       };
 
-      const { error } = await supabase.from('loader_evaluations').insert([submitData]);
+      const { error } = await supabase.from('excavator_evaluations').insert([submitData]);
       if (error) throw error;
 
       setAssessmentId(newAssessmentId);
@@ -209,21 +228,26 @@ export default function LoaderPractical() {
       energy_sources: [],
       stky_assessment: '',
       walk_around_inspection: '',
-      hydraulic_check: '',
-      backup_alarm: '',
-      tires_inspection: '',
-      personnel_awareness: '',
-      control_operation: '',
-      load_handling: '',
-      travel_speed: '',
+      hydraulic_fluid: '',
+      alarm_horn: '',
+      tracks_undercarriage: '',
+      bucket_attachment: '',
+      swing_radius: '',
+      no_swing_over_personnel: '',
+      smooth_movements: '',
+      excavation_angles: '',
+      overhead_hazards: '',
       bucket_position: '',
+      safe_speed: '',
+      ground_stability: '',
+      exclusion_zone: '',
       proper_ppe: '',
       seatbelt_rops: '',
-      loto_procedures: '',
-      exclusion_zone: '',
+      ground_communication: '',
+      no_passengers: '',
       bucket_to_ground: '',
       parking_brake_key: '',
-      secure_parking: '',
+      authorized_parking: '',
       overall_assessment: '',
       follow_up_required: 'None - Employee is competent',
       evaluator_comments: ''
@@ -242,9 +266,9 @@ export default function LoaderPractical() {
           onClick={() => setPassFail(item.name, 'Pass')}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-            border: `2px solid ${formData[item.name] === 'Pass' ? '#f59e0b' : '#e5e7eb'}`,
+            border: `2px solid ${formData[item.name] === 'Pass' ? '#d97706' : '#e5e7eb'}`,
             borderRadius: '8px', cursor: 'pointer',
-            background: formData[item.name] === 'Pass' ? '#fef3c7' : 'white'
+            background: formData[item.name] === 'Pass' ? '#fed7aa' : 'white'
           }}
         >
           <input type="radio" name={item.name} value="Pass" checked={formData[item.name] === 'Pass'} onChange={() => {}} required />
@@ -269,7 +293,7 @@ export default function LoaderPractical() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #92400e 0%, #b45309 50%, #d97706 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -281,7 +305,7 @@ export default function LoaderPractical() {
               </span>
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                 New Evaluation
               </button>
               <a href="/" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
@@ -299,21 +323,21 @@ export default function LoaderPractical() {
     select: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', background: 'white' },
     textarea: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
     label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' },
-    section: { marginBottom: '35px', background: '#f8fafc', borderRadius: '12px', padding: '25px', borderLeft: '4px solid #f59e0b' },
+    section: { marginBottom: '35px', background: '#fef7ed', borderRadius: '12px', padding: '25px', borderLeft: '4px solid #d97706' },
     sectionHeader: { display: 'flex', alignItems: 'center', marginBottom: '20px', fontSize: '18px', fontWeight: '600', color: '#1e293b' },
     safetyCritical: { background: '#fef2f2', border: '2px solid #fca5a5', borderRadius: '8px', padding: '12px', marginBottom: '15px' }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #92400e 0%, #b45309 50%, #d97706 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '700px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <a href="/" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <div style={{ fontSize: '48px', margin: '15px 0' }}>🚜</div>
-          <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>Loader Practical Evaluation</h1>
-          <p style={{ opacity: 0.9, fontSize: '16px' }}>Heavy Equipment Operator Competency Assessment</p>
+          <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>Excavator Practical Evaluation</h1>
+          <p style={{ opacity: 0.9, fontSize: '16px' }}>Heavy Equipment Excavator Operator Assessment</p>
         </div>
 
         {/* Form */}
@@ -354,8 +378,8 @@ export default function LoaderPractical() {
                   <input type="date" name="evaluation_date" value={formData.evaluation_date} onChange={handleChange} required style={styles.input} />
                 </div>
                 <div>
-                  <label style={styles.label}>Equipment ID/Number</label>
-                  <input type="text" name="equipment_id" value={formData.equipment_id} onChange={handleChange} placeholder="e.g., CAT-320-001" style={styles.input} />
+                  <label style={styles.label}>Excavator ID/Model</label>
+                  <input type="text" name="equipment_id" value={formData.equipment_id} onChange={handleChange} placeholder="e.g., CAT-320, JD-210G" style={styles.input} />
                 </div>
               </div>
             </div>
@@ -373,9 +397,9 @@ export default function LoaderPractical() {
                     onClick={() => toggleEnergySource(source.value)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '12px',
-                      border: `2px solid ${formData.energy_sources.includes(source.value) ? '#f59e0b' : '#e5e7eb'}`,
+                      border: `2px solid ${formData.energy_sources.includes(source.value) ? '#d97706' : '#e5e7eb'}`,
                       borderRadius: '8px', cursor: 'pointer',
-                      background: formData.energy_sources.includes(source.value) ? '#fef3c7' : 'white'
+                      background: formData.energy_sources.includes(source.value) ? '#fed7aa' : 'white'
                     }}
                   >
                     <span>{source.icon}</span>
@@ -389,11 +413,11 @@ export default function LoaderPractical() {
             <div style={styles.section}>
               <div style={styles.sectionHeader}>
                 <span style={{ fontSize: '24px', marginRight: '12px' }}>💀</span>
-                STKY (Stuff That Kills You) Assessment
+                STKY Assessment
               </div>
               <div style={styles.safetyCritical}>
                 <label style={{ ...styles.label, color: '#dc2626' }}>
-                  Does this loader operation involve Life-Threatening, Life-Altering, or Life-Ending potential? <span style={{ color: '#ef4444' }}>*</span>
+                  Does this excavator operation involve Life-Threatening, Life-Altering, or Life-Ending potential? <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginTop: '10px' }}>
                   {[
@@ -405,9 +429,9 @@ export default function LoaderPractical() {
                       onClick={() => setFormData(prev => ({ ...prev, stky_assessment: opt.value }))}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-                        border: `2px solid ${formData.stky_assessment === opt.value ? '#f59e0b' : '#e5e7eb'}`,
+                        border: `2px solid ${formData.stky_assessment === opt.value ? '#d97706' : '#e5e7eb'}`,
                         borderRadius: '8px', cursor: 'pointer',
-                        background: formData.stky_assessment === opt.value ? '#fef3c7' : 'white'
+                        background: formData.stky_assessment === opt.value ? '#fed7aa' : 'white'
                       }}
                     >
                       <input type="radio" name="stky_assessment" value={opt.value} checked={formData.stky_assessment === opt.value} onChange={() => {}} required />
@@ -427,13 +451,22 @@ export default function LoaderPractical() {
               {PRE_OPERATION_ITEMS.map(renderPassFailItem)}
             </div>
 
-            {/* Operational Skills */}
+            {/* Excavation Operations */}
             <div style={styles.section}>
               <div style={styles.sectionHeader}>
-                <span style={{ fontSize: '24px', marginRight: '12px' }}>🎯</span>
-                Operational Skills
+                <span style={{ fontSize: '24px', marginRight: '12px' }}>🚧</span>
+                Excavation Operations
               </div>
-              {OPERATIONAL_ITEMS.map(renderPassFailItem)}
+              {EXCAVATION_ITEMS.map(renderPassFailItem)}
+            </div>
+
+            {/* Travel and Positioning */}
+            <div style={styles.section}>
+              <div style={styles.sectionHeader}>
+                <span style={{ fontSize: '24px', marginRight: '12px' }}>🚛</span>
+                Travel and Positioning
+              </div>
+              {TRAVEL_ITEMS.map(renderPassFailItem)}
             </div>
 
             {/* Safety Protocols */}
@@ -449,7 +482,7 @@ export default function LoaderPractical() {
             <div style={styles.section}>
               <div style={styles.sectionHeader}>
                 <span style={{ fontSize: '24px', marginRight: '12px' }}>🛑</span>
-                Shutdown Procedures
+                Shutdown and Parking
               </div>
               {SHUTDOWN_ITEMS.map(renderPassFailItem)}
             </div>
@@ -458,7 +491,7 @@ export default function LoaderPractical() {
             <div style={styles.section}>
               <div style={styles.sectionHeader}>
                 <span style={{ fontSize: '24px', marginRight: '12px' }}>💭</span>
-                Evaluator Comments & Assessment
+                Final Assessment
               </div>
               
               <div style={{ marginBottom: '20px' }}>
@@ -528,7 +561,7 @@ export default function LoaderPractical() {
                   boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
                 }}
               >
-                {isSubmitting ? 'Submitting...' : 'Submit Loader Evaluation'}
+                {isSubmitting ? 'Submitting...' : 'Submit Excavator Evaluation'}
               </button>
             </div>
           </form>
