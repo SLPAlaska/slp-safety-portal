@@ -148,7 +148,7 @@ const FORM_CATEGORIES = [
     title: 'HSE & Manager Daily Activity Log',
     icon: '📊',
     forms: [
-      { name: 'HSE & Manager Daily Activity Log', href: 'https://script.google.com/macros/s/AKfycbxXu8hF2hRERz_aNPZGT9jY8t6heUDT-pYcgTrxfxuOZxQfgXhQPcaKcMj47NqWW5-G/exec' },
+      { name: 'Manager & HSE Activity Log', href: '/daily-activity-log', isLocal: true },
     ]
   },
   {
