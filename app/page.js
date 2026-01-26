@@ -140,7 +140,7 @@ const FORM_CATEGORIES = [
     title: 'Management of Change',
     icon: '🔄',
     forms: [
-      { name: 'Management of Change', href: 'https://script.google.com/macros/s/AKfycbym5ygxScecaXmWnOuQYUlYGWXIxynumBrgyS_FuL6NXxmErAyzPO7F7QQIP1JLM-jY/exec' },
+      { name: 'Management of Change', href: '/management-of-change', isLocal: true },
     ]
   },
   {
