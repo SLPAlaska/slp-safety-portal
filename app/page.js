@@ -164,7 +164,7 @@ const FORM_CATEGORIES = [
     title: 'Fall Protection Plan',
     icon: '🪢',
     forms: [
-      { name: 'Fall Protection Plan', href: 'https://script.google.com/macros/s/AKfycbxHyt7snMiiN9fq4fH69u5UuYJIj6cSMRVTC_v0vIx1Zj0ax1LDTBFITB7S7jXVf6ll/exec' },
+      { name: 'Fall Protection Plan', href: '/fall-protection-plan', isLocal: true },
     ]
   },
   {
