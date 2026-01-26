@@ -12,9 +12,9 @@ const FORM_CATEGORIES = [
     forms: [
       { name: 'Aerial Lift Practical Evaluation', href: '/aerial-lift-practical', isLocal: true },
       { name: 'Crane/Boom Truck Practical Evaluation', href: '/crane-boom-practical', isLocal: true },
-      { name: 'Excavator Practical Evaluation', href: 'https://script.google.com/macros/s/AKfycbyC1OAR4sSVBSWpSbSlFo3r_kmjwbod8DZwY_kwzq82iBN1yPJUKrCC_D4IMh1GGplg8Q/exec' },
-      { name: 'Forklift Practical Evaluation', href: 'https://script.google.com/macros/s/AKfycbyEcFuhiB_iJCITKBUq1T4LZNDFVT0jQTwWQh3wYKpr9ns1Z3tBDYq-uH03vyRAFogHeA/exec' },
-      { name: 'Loader Practical Evaluation', href: 'https://script.google.com/macros/s/AKfycbyOmSAcddYvtvq9JaZqRIyopvYloJjyjWrdaBEy-hH6EMyfb8XGgFhhm-U376Xb-JCv/exec' },
+      { name: 'Excavator Practical Evaluation', href:'/excavator-practical', isLocal: true },
+      { name: 'Forklift Practical Evaluation', href:'/forklift-practical', isLocal: true },
+      { name: 'Loader Practical Evaluation', href: '/loader-practical', isLocal: true},
     ]
   },
   {
