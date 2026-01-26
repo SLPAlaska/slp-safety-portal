@@ -79,7 +79,7 @@ const FORM_CATEGORIES = [
       { name: 'Excavation & Trenching', href: '/excavation-trenching', isLocal: true },
       { name: 'Hot Work', href: '/hot-work', isLocal: true },
       { name: 'Opening & Blinding', href: '/opening-blinding', isLocal: true },
-      { name: 'Unit Work', href: 'https://script.google.com/macros/s/AKfycbx9qgMB2V0VXAeD_MXf9_G00KLCY9xmGZyu5jhjNVUE7JMBGta-_ttWt7iUHL7AvE6KoA/exec' },
+      { name: 'Unit Work Permit', href: '/unit-work', isLocal: true },
     ]
 },
 {
