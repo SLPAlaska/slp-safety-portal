@@ -106,7 +106,7 @@ export default function VehicleInspection(){
       <InspectionSection title="🛡️ Safety Equipment" items={SAFETY_ITEMS} color={s.sectionRed}/>
       
       {/* TIRES */}
-      <InspectionSection title="🛞 Tires & Wheels" items={TIRE_ITEMS} color={s.sectionCyan} critical="Tread depth must be at least 4/32\" on steer tires, 2/32\" on other tires per DOT regulations"/>
+      <InspectionSection title="🛞 Tires & Wheels" items={TIRE_ITEMS} color={s.sectionCyan} critical="Tread depth must be at least 4/32 inch on steer tires, 2/32 inch on other tires per DOT regulations"/>
       
       {/* BRAKES */}
       <InspectionSection title="🛑 Brakes & Air System" items={BRAKE_ITEMS} color={s.sectionOrange}/>
