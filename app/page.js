@@ -81,21 +81,21 @@ const FORM_CATEGORIES = [
       { name: 'Opening & Blinding', href: '/opening-blinding', isLocal: true },
       { name: 'Unit Work Permit', href: '/unit-work', isLocal: true },
     ]
-},
-{
-  id: 'lsr-audits',
-  title: 'Lifesaving Rules Audits',
-  icon: '🛡️',
-  forms: [
-    { name: 'LSR-Confined Space Audit', href: '/lsr-confined-space-audit', isLocal: true },
-    { name: 'LSR-Driving Audit', href: '/lsr-driving-audit', isLocal: true },
-    { name: 'LSR-Energy Isolation', href: '/lsr-energy-isolation-audit', isLocal: true },
-    { name: 'LSR-Fall Protection', href: '/lsr-fall-protection-audit', isLocal: true },
-    { name: 'LSR-Lifting Operations', href: '/lsr-lifting-operations-audit', isLocal: true },
-    { name: 'LSR-Line of Fire', href: '/lsr-line-of-fire-audit', isLocal: true },
-    { name: 'LSR-Work Permits', href: '/lsr-work-permits-audit', isLocal: true },
-  ]
-},
+  },
+  {
+    id: 'lsr-audits',
+    title: 'Lifesaving Rules Audits',
+    icon: '🛡️',
+    forms: [
+      { name: 'LSR-Confined Space Audit', href: '/lsr-confined-space-audit', isLocal: true },
+      { name: 'LSR-Driving Audit', href: '/lsr-driving-audit', isLocal: true },
+      { name: 'LSR-Energy Isolation', href: '/lsr-energy-isolation-audit', isLocal: true },
+      { name: 'LSR-Fall Protection', href: '/lsr-fall-protection-audit', isLocal: true },
+      { name: 'LSR-Lifting Operations', href: '/lsr-lifting-operations-audit', isLocal: true },
+      { name: 'LSR-Line of Fire', href: '/lsr-line-of-fire-audit', isLocal: true },
+      { name: 'LSR-Work Permits', href: '/lsr-work-permits-audit', isLocal: true },
+    ]
+  },
   {
     id: 'equipment-inspections',
     title: 'Equipment Inspections',
@@ -119,16 +119,32 @@ const FORM_CATEGORIES = [
   },
   {
     id: 'incident-forms',
-    title: 'Incident Forms',
+    title: 'Incident & Investigation',
     icon: '🚨',
     forms: [
       { name: 'Incident Report', href: '/incident-report', isLocal: true },
       { name: 'Property Damage Report', href: '/property-damage-report', isLocal: true },
       { name: 'Witness Statement', href: '/witness-statement', isLocal: true },
       { name: 'Investigation Dashboard', href: '/investigation-dashboard', isLocal: true },
-      { name: 'Investigation Workbench', href: '/investigation-workbench', isLocal: true },
       { name: 'Corrective Actions', href: '/corrective-actions', isLocal: true },
       { name: 'Lessons Learned', href: '/lessons-learned', isLocal: true },
+    ]
+  },
+  {
+    id: 'psa-tools',
+    title: 'Predictive Safety Analytics™',
+    icon: '📊',
+    isPSA: true,
+    forms: [
+      { name: 'Investigation Analytics', href: '/investigation-analytics', isLocal: true },
+      { name: 'TrueCost™ Calculator', href: '/truecost', isLocal: true },
+      { name: 'Similar Incident Finder', href: '/similar-incidents', isLocal: true },
+      { name: 'Quality Score', href: '/quality-score', isLocal: true },
+      { name: 'Logic Tree Builder', href: '/logic-tree', isLocal: true },
+      { name: 'Action Calendar', href: '/action-calendar', isLocal: true },
+      { name: 'Report Generator', href: '/report-generator', isLocal: true },
+      { name: 'Notification Center', href: '/notifications', isLocal: true },
+      { name: 'SAIL Log Sync', href: '/sail-sync', isLocal: true },
     ]
   },
   {
@@ -216,69 +232,82 @@ export default function SafetyPortal() {
       form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       category.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    return { ...category, forms: matchingForms }
-  }).filter(category => category.forms.length > 0)
+    
+    if (matchingForms.length === 0) return null
+    
+    return {
+      ...category,
+      forms: matchingForms
+    }
+  }).filter(Boolean)
 
-  const toggleFolder = (id) => {
-    setOpenFolders(prev => ({ ...prev, [id]: !prev[id] }))
+  const toggleFolder = (categoryId) => {
+    setOpenFolders(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }))
   }
 
   return (
     <div className="page-wrapper">
-      <style jsx>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        .page-wrapper {
-          font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-          min-height: 100vh;
-          padding: 20px;
+      <style jsx global>{`
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
         }
         
-        .container { 
-          max-width: 900px; 
-          margin: 0 auto; 
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .page-wrapper {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+          padding: 15px;
+        }
+        
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
         }
         
         .header {
           text-align: center;
-          padding: 20px;
-          background: rgba(255,255,255,0.95);
-          border-radius: 16px;
-          margin-bottom: 25px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+          padding: 25px 0;
         }
         
-        .logo { 
-          max-width: 200px; 
-          margin-bottom: 10px;
+        .logo {
+          max-width: 200px;
+          margin-bottom: 15px;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         }
         
-        h1 { 
-          color: #c41e3a; 
-          font-size: 28px; 
-          margin-bottom: 5px;
+        h1 {
+          color: white;
+          font-size: 28px;
           font-weight: 700;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
-        .subtitle { 
-          color: #1e3a5f; 
+        .subtitle {
+          color: rgba(255,255,255,0.9);
           font-size: 14px;
-          font-weight: 500;
+          margin-top: 5px;
         }
         
         .tagline {
-          color: #ea580c;
-          font-size: 12px;
+          color: #fbbf24;
           font-style: italic;
-          margin-top: 8px;
+          margin-top: 10px;
+          font-size: 15px;
         }
         
         .stats-bar {
           display: flex;
           justify-content: center;
           gap: 30px;
-          margin-top: 15px;
+          margin-top: 20px;
         }
         
         .stat-item {
@@ -286,31 +315,32 @@ export default function SafetyPortal() {
         }
         
         .stat-number {
-          font-size: 24px;
+          color: #fbbf24;
+          font-size: 28px;
           font-weight: 700;
-          color: #1e3a5f;
         }
         
         .stat-label {
+          color: rgba(255,255,255,0.8);
           font-size: 11px;
-          color: #64748b;
           text-transform: uppercase;
         }
         
         .search-box {
           width: 100%;
-          padding: 12px 20px;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 14px;
-          margin-bottom: 20px;
-          background: rgba(255,255,255,0.95);
+          max-width: 500px;
+          margin: 20px auto;
+          display: block;
+          padding: 14px 20px;
+          border: none;
+          border-radius: 25px;
+          font-size: 15px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
         
         .search-box:focus {
           outline: none;
-          border-color: #ea580c;
-          box-shadow: 0 0 0 3px rgba(234,88,12,0.2);
+          box-shadow: 0 4px 25px rgba(196, 30, 58, 0.4);
         }
         
         .folders-grid {
@@ -354,6 +384,14 @@ export default function SafetyPortal() {
         
         .training-header:hover {
           background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+        }
+        
+        .psa-header {
+          background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%) !important;
+        }
+        
+        .psa-header:hover {
+          background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%) !important;
         }
         
         .folder-icon {
@@ -487,7 +525,7 @@ export default function SafetyPortal() {
           {filteredCategories.map(category => (
             <div key={category.id} className={`folder ${openFolders[category.id] ? 'open' : ''}`}>
               <div 
-                className={`folder-header ${category.isTraining ? 'training-header' : ''}`}
+                className={`folder-header ${category.isTraining ? 'training-header' : ''} ${category.isPSA ? 'psa-header' : ''}`}
                 onClick={() => toggleFolder(category.id)}
               >
                 <div className="folder-title">
@@ -523,9 +561,9 @@ export default function SafetyPortal() {
         )}
         
         <div className="footer">
-          <p>© 2025 SLP Alaska | <a href="tel:9072023274">(907) 202-3274</a></p>
+          <p>© 2026 SLP Alaska | <a href="tel:9072023274">(907) 202-3274</a></p>
           <p style={{marginTop: '5px'}}>Safety • Leadership • Performance</p>
-          <p className="powered-by">Powered by Predictive Safety Analytics™ © 2025 SLP Alaska</p>
+          <p className="powered-by">Powered by Predictive Safety Analytics™ © 2026 SLP Alaska, LLC</p>
         </div>
       </div>
     </div>
