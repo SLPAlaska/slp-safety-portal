@@ -122,7 +122,7 @@ const FORM_CATEGORIES = [
     title: 'Incident Forms',
     icon: '🚨',
     forms: [
-      { name: 'Incident Investigation Form', href: 'https://script.google.com/macros/s/AKfycbxSaiG_z2j6pr1mryb1cngLLaMBKkUppYaFnaL15uNfYXYoaadDzr5ZdJK3byXf4zyM/exec' },
+      { name: 'Incident Report', href: '/incident-report', isLocal: true },
       { name: 'Property Damage Report', href: '/property-damage-report', isLocal: true },
       { name: 'Witness Statement', href: '/witness-statement', isLocal: true },
     ]
