@@ -125,6 +125,7 @@ const FORM_CATEGORIES = [
       { name: 'Incident Report', href: '/incident-report', isLocal: true },
       { name: 'Property Damage Report', href: '/property-damage-report', isLocal: true },
       { name: 'Witness Statement', href: '/witness-statement', isLocal: true },
+      { name: 'Investigation Dashboard', href: '/investigation-dashboard', isLocal: true },
     ]
   },
   {
