@@ -123,7 +123,7 @@ const FORM_CATEGORIES = [
     icon: '🚨',
     forms: [
       { name: 'Incident Investigation Form', href: 'https://script.google.com/macros/s/AKfycbxSaiG_z2j6pr1mryb1cngLLaMBKkUppYaFnaL15uNfYXYoaadDzr5ZdJK3byXf4zyM/exec' },
-      { name: 'Property Damage Report', href: 'https://script.google.com/macros/s/AKfycbwTxdpgiZy9TVZlJxTBaT-gIZAdIQH3g8cLuBTnKQsOyeGGOXyIQfgiCUyFitmsJSk/exec' },
+      { name: 'Property Damage Report', href: '/property-damage-report', isLocal: true },
       { name: 'Witness Statement', href: '/witness-statement', isLocal: true },
     ]
   },
