@@ -861,7 +861,7 @@ export default function IncidentReportForm() {
               <p style={{ fontSize: '24px', fontWeight: '700', color: '#991b1b', marginBottom: '20px' }}>
                 {createdIncidentId}
               </p>
-              </p>
+              
               
               <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', flexWrap: 'wrap', marginBottom: '25px' }}>
                 <span style={{ ...styles.badge, background: invDisplay.bg }}>
