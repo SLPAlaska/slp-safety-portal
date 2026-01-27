@@ -180,7 +180,7 @@ const FORM_CATEGORIES = [
     title: 'Seasonal Inspections',
     icon: '🌨️',
     forms: [
-      { name: 'Spill Kit Inspection Form', href: 'https://script.google.com/macros/s/AKfycbwmre18ewqS254jsjUPJjlyxoY46hsATzONOTE1lXqxqIBBopt5Ne7EU6QvZCNEqcJ3/exec' },
+      { name: 'Spill Kit Inspection', href: '/spill-kit-inspection', isLocal: true },
     ]
   },
   {
