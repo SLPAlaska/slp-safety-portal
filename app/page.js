@@ -127,6 +127,7 @@ const FORM_CATEGORIES = [
       { name: 'Witness Statement', href: '/witness-statement', isLocal: true },
       { name: 'Investigation Dashboard', href: '/investigation-dashboard', isLocal: true },
       { name: 'Investigation Workbench', href: '/investigation-workbench', isLocal: true },
+      { name: 'Corrective Actions', href: '/corrective-actions', isLocal: true },
     ]
   },
   {
