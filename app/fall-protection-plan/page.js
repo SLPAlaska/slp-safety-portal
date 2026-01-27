@@ -38,7 +38,7 @@ export default function FallProtectionPlan(){
     anchorPointLocation:'',anchorHorizontalOffset:'',anchorAboveDrings:'',
     userSelectedSystem:'',
     anchorageType:'',anchorageStrength:'',anchorageLocation:'',bodySupportType:'',positioningDRings:'',
-    freeFallDistance:'6',decelerationDistance:'3.5',workerHeight:'6',safetyBuffer:'2',availableClearance:'',
+    freeFallDistance:'6',decelerationDistance:'3.5',workerHeight:'6',safetyBuffer:'3',availableClearance:'',
     controlledAccessZone:'',warningLineSystem:'',safetyMonitorName:'',
     emergencyResponsePlan:'',emergencyPhone:'',emergencyEquipmentDetails:'',
     harnessQty:'0',lanyardQty:'0',srlQty:'0',positioningLanyardQty:'0',restraintLanyardQty:'0',anchorageConnectorQty:'0',connectingDevicesQty:'0',otherEquipment:'',
@@ -154,7 +154,7 @@ export default function FallProtectionPlan(){
     }
 
     // CLEARANCE CHECK
-    const estimatedClearance=parseFloat(formData.freeFallDistance||6)+parseFloat(formData.decelerationDistance||3.5)+parseFloat(formData.workerHeight||6)+parseFloat(formData.safetyBuffer||2);
+    const estimatedClearance=parseFloat(formData.freeFallDistance||6)+parseFloat(formData.decelerationDistance||3.5)+parseFloat(formData.workerHeight||6)+parseFloat(formData.safetyBuffer||3);
     const availClearance=parseFloat(formData.availableClearance)||0;
     if(availClearance>0&&availClearance<estimatedClearance){
       w.push({type:'critical',title:'⚠️ INSUFFICIENT CLEARANCE',message:`Need ${estimatedClearance.toFixed(1)} ft clearance but only ${availClearance} ft available. Worker may strike lower level. Use shorter lanyard, SRL, or different system.`});
@@ -164,7 +164,7 @@ export default function FallProtectionPlan(){
     setWarnings(w);
   };
 
-  const estimatedClearance=parseFloat(formData.freeFallDistance||6)+parseFloat(formData.decelerationDistance||3.5)+parseFloat(formData.workerHeight||6)+parseFloat(formData.safetyBuffer||2);
+  const estimatedClearance=parseFloat(formData.freeFallDistance||6)+parseFloat(formData.decelerationDistance||3.5)+parseFloat(formData.workerHeight||6)+parseFloat(formData.safetyBuffer||3);
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     const newPlanNumber='FPP-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+String(Math.floor(Math.random()*9999)).padStart(4,'0');
@@ -190,19 +190,19 @@ export default function FallProtectionPlan(){
     }catch(e){console.error(e);alert('Error: '+e.message);}finally{setIsSubmitting(false);}
   };
 
-  const resetForm=()=>{setFormData({datesOfWork:'',company:'',location:'',specificLocation:'',workTasks:'',workEnvironment:'',aerialLiftType:'',roofType:'',heightAboveLower:'',landingHazardPresent:'',landingHazardDesc:'',fallHazardTypes:[],fallHazardDetails:'',anchorPointLocation:'',anchorHorizontalOffset:'',anchorAboveDrings:'',userSelectedSystem:'',anchorageType:'',anchorageStrength:'',anchorageLocation:'',bodySupportType:'',positioningDRings:'',freeFallDistance:'6',decelerationDistance:'3.5',workerHeight:'6',safetyBuffer:'2',availableClearance:'',controlledAccessZone:'',warningLineSystem:'',safetyMonitorName:'',emergencyResponsePlan:'',emergencyPhone:'',emergencyEquipmentDetails:'',harnessQty:'0',lanyardQty:'0',srlQty:'0',positioningLanyardQty:'0',restraintLanyardQty:'0',anchorageConnectorQty:'0',connectingDevicesQty:'0',otherEquipment:'',workersProtected:'',additionalWorkers:'',competentPersonName:'',competentPersonSignature:'',qualifiedPersonRequired:'',qualifiedPersonName:'',qualifiedPersonSignature:'',equipmentInspected:false,personnelTrained:false,approvedByCompetent:false,designedByQualified:false});setRecommendation(null);setWarnings([]);setSubmitted(false);};
+  const resetForm=()=>{setFormData({datesOfWork:'',company:'',location:'',specificLocation:'',workTasks:'',workEnvironment:'',aerialLiftType:'',roofType:'',heightAboveLower:'',landingHazardPresent:'',landingHazardDesc:'',fallHazardTypes:[],fallHazardDetails:'',anchorPointLocation:'',anchorHorizontalOffset:'',anchorAboveDrings:'',userSelectedSystem:'',anchorageType:'',anchorageStrength:'',anchorageLocation:'',bodySupportType:'',positioningDRings:'',freeFallDistance:'6',decelerationDistance:'3.5',workerHeight:'6',safetyBuffer:'3',availableClearance:'',controlledAccessZone:'',warningLineSystem:'',safetyMonitorName:'',emergencyResponsePlan:'',emergencyPhone:'',emergencyEquipmentDetails:'',harnessQty:'0',lanyardQty:'0',srlQty:'0',positioningLanyardQty:'0',restraintLanyardQty:'0',anchorageConnectorQty:'0',connectingDevicesQty:'0',otherEquipment:'',workersProtected:'',additionalWorkers:'',competentPersonName:'',competentPersonSignature:'',qualifiedPersonRequired:'',qualifiedPersonName:'',qualifiedPersonSignature:'',equipmentInspected:false,personnelTrained:false,approvedByCompetent:false,designedByQualified:false});setRecommendation(null);setWarnings([]);setSubmitted(false);};
 
   const s={
-    container:{minHeight:'100vh',background:'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',padding:'20px'},
+    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
     formContainer:{maxWidth:'900px',margin:'0 auto',background:'white',borderRadius:'12px',boxShadow:'0 4px 6px rgba(0,0,0,0.1)',overflow:'hidden'},
-    header:{background:'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',color:'white',padding:'30px',textAlign:'center'},
+    header:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',padding:'30px',textAlign:'center'},
     content:{padding:'30px'},
     section:{marginBottom:'25px',padding:'20px',background:'#f8fafc',borderRadius:'12px',border:'1px solid #e5e7eb'},
     sectionHeader:{background:'#1e3a8a',color:'white',padding:'12px 20px',margin:'-20px -20px 20px',fontWeight:'600',fontSize:'15px',display:'flex',alignItems:'center',gap:'10px',borderRadius:'12px 12px 0 0'},
     sectionRed:{background:'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)'},
     sectionGreen:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)'},
     sectionPurple:{background:'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'},
-    sectionOrange:{background:'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)'},
+    sectionOrange:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)'},
     sectionCyan:{background:'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)'},
     formRow:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'15px'},
     formGroup:{marginBottom:'15px'},
@@ -219,7 +219,7 @@ export default function FallProtectionPlan(){
     checkboxSelected:{borderColor:'#1e3a8a',background:'rgba(30,58,138,0.05)'},
     envGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))',gap:'12px'},
     envCard:{padding:'15px',border:'2px solid #e5e7eb',borderRadius:'10px',cursor:'pointer',textAlign:'center',transition:'all 0.2s'},
-    envCardSelected:{borderColor:'#ea580c',background:'#fff7ed'},
+    envCardSelected:{borderColor:'#1e3a8a',background:'#dbeafe'},
     recBox:{padding:'20px',borderRadius:'12px',marginTop:'20px'},
     recCritical:{background:'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',border:'2px solid #dc2626'},
     recRecommended:{background:'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',border:'2px solid #059669'},
@@ -232,7 +232,7 @@ export default function FallProtectionPlan(){
     clearanceResult:{display:'flex',alignItems:'center',gap:'20px',marginTop:'15px',padding:'15px',background:'white',borderRadius:'8px'},
     equipGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))',gap:'15px'},
     equipItem:{background:'#f3f4f6',borderRadius:'8px',padding:'15px',textAlign:'center'},
-    submitBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'18px',fontWeight:'600',cursor:'pointer',marginTop:'20px'},
+    submitBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'18px',fontWeight:'600',cursor:'pointer',marginTop:'20px'},
     successMessage:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',padding:'30px',borderRadius:'8px',textAlign:'center',marginTop:'20px'},
     verifyItem:{display:'flex',alignItems:'center',gap:'10px',padding:'12px',background:'white',border:'1px solid #d1d5db',borderRadius:'8px',marginBottom:'10px'},
     verifyChecked:{borderColor:'#059669',background:'rgba(5,150,105,0.05)'}
@@ -241,7 +241,7 @@ export default function FallProtectionPlan(){
   if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successMessage}><div style={{fontSize:'48px',marginBottom:'15px'}}>✓</div><h2 style={{margin:'0 0 10px'}}>Fall Protection Plan Submitted!</h2><div style={{fontSize:'24px',fontWeight:'700',background:'rgba(255,255,255,0.2)',padding:'10px 20px',borderRadius:'8px',margin:'15px 0',display:'inline-block'}}>{planNumber}</div><p style={{marginBottom:'20px'}}>Keep this plan number for your records.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'14px 30px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>Create New Plan</button><a href="/" style={{padding:'14px 30px',background:'#6b7280',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}
 
   return(<div style={s.container}><div style={s.formContainer}>
-    <div style={s.header}><a href="/" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a><div style={{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'15px auto',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'}}><img src="/Logo.png" alt="SLP Alaska" style={{maxWidth:'180px',height:'auto'}}/></div><h1 style={{margin:'0',fontSize:'26px',fontWeight:'700'}}>Fall Protection Plan</h1><p style={{margin:'10px 0 0',opacity:0.9,fontSize:'14px'}}>OSHA 1926/1910 Compliant Documentation</p><div style={{display:'inline-block',background:'white',color:'#ea580c',padding:'5px 15px',borderRadius:'20px',fontSize:'11px',fontWeight:'600',marginTop:'10px'}}>⚠️ OSHA COMPLIANT</div></div>
+    <div style={s.header}><a href="/" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a><div style={{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'15px auto',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'}}><img src="/Logo.png" alt="SLP Alaska" style={{maxWidth:'180px',height:'auto'}}/></div><h1 style={{margin:'0',fontSize:'26px',fontWeight:'700'}}>Fall Protection Plan</h1><p style={{margin:'10px 0 0',opacity:0.9,fontSize:'14px'}}>OSHA 1926/1910 Compliant Documentation</p><div style={{display:'inline-block',background:'white',color:'#b91c1c',padding:'5px 15px',borderRadius:'20px',fontSize:'11px',fontWeight:'600',marginTop:'10px'}}>⚠️ OSHA COMPLIANT</div></div>
     
     <div style={s.content}><form onSubmit={handleSubmit}>
       {/* General Information */}
@@ -253,7 +253,7 @@ export default function FallProtectionPlan(){
       
       {/* Work Environment Selection - THIS DRIVES RECOMMENDATIONS */}
       <div style={s.section}><div style={{...s.sectionHeader,...s.sectionOrange}}>🏗️ Work Environment - SELECT FIRST</div>
-        <div style={{background:'#fff7ed',border:'1px solid #fed7aa',borderRadius:'8px',padding:'15px',marginBottom:'20px',fontSize:'13px',color:'#c2410c'}}><strong>Important:</strong> Select your work environment first. The system will recommend the most appropriate fall protection based on your selection.</div>
+        <div style={{background:'#eff6ff',border:'1px solid #bfdbfe',borderRadius:'8px',padding:'15px',marginBottom:'20px',fontSize:'13px',color:'#b91c1c'}}><strong>Important:</strong> Select your work environment first. The system will recommend the most appropriate fall protection based on your selection.</div>
         <div style={s.envGrid}>{WORK_ENVIRONMENTS.map(env=>(<div key={env.value} onClick={()=>setFormData(p=>({...p,workEnvironment:env.value}))} style={{...s.envCard,...(formData.workEnvironment===env.value?s.envCardSelected:{})}}><div style={{fontSize:'28px',marginBottom:'8px'}}>{env.icon}</div><div style={{fontWeight:'600',fontSize:'14px'}}>{env.label}</div></div>))}</div>
         
         {formData.workEnvironment==='aerial_lift'&&<div style={{marginTop:'20px'}}><div style={s.formGroup}><label style={s.label}>Aerial Lift Type</label><select name="aerialLiftType" value={formData.aerialLiftType} onChange={handleChange} style={s.select}><option value="">-- Select Lift Type --</option>{AERIAL_LIFT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</select></div></div>}
@@ -305,7 +305,7 @@ export default function FallProtectionPlan(){
             <div style={s.formGroup}><label style={s.label}>Free Fall (ft)</label><input type="number" name="freeFallDistance" value={formData.freeFallDistance} onChange={handleChange} min="0" max="6" step="0.5" style={s.input}/><small style={{color:'#6b7280'}}>Max 6 ft per OSHA</small></div>
             <div style={s.formGroup}><label style={s.label}>Deceleration (ft)</label><input type="number" name="decelerationDistance" value={formData.decelerationDistance} onChange={handleChange} min="0" step="0.5" style={s.input}/><small style={{color:'#6b7280'}}>Typically 3.5 ft</small></div>
             <div style={s.formGroup}><label style={s.label}>Worker Height (ft)</label><input type="number" name="workerHeight" value={formData.workerHeight} onChange={handleChange} min="0" step="0.5" style={s.input}/><small style={{color:'#6b7280'}}>D-ring to feet</small></div>
-            <div style={s.formGroup}><label style={s.label}>Safety Buffer (ft)</label><input type="number" name="safetyBuffer" value={formData.safetyBuffer} onChange={handleChange} min="0" step="0.5" style={s.input}/><small style={{color:'#6b7280'}}>2-3 ft recommended</small></div>
+            <div style={s.formGroup}><label style={s.label}>Safety Buffer (ft)</label><input type="number" name="safetyBuffer" value={formData.safetyBuffer} onChange={handleChange} min="0" step="0.5" style={s.input}/><small style={{color:'#6b7280'}}>3 ft recommended</small></div>
           </div>
           <div style={s.formRow}><div style={s.formGroup}><label style={s.label}>Estimated Required Clearance (ft)</label><input type="text" value={estimatedClearance.toFixed(1)} readOnly style={{...s.input,background:'#f3f4f6',fontWeight:'700',fontSize:'20px'}}/></div><div style={s.formGroup}><label style={s.label}>Available Clearance (ft) <span style={s.required}>*</span></label><input type="number" name="availableClearance" value={formData.availableClearance} onChange={handleChange} min="0" step="0.5" required placeholder="Enter available clearance" style={s.input}/></div></div>
           {formData.availableClearance&&<div style={s.clearanceResult}><div><div style={{fontSize:'32px',fontWeight:'700',color:'#1e3a8a'}}>{estimatedClearance.toFixed(1)} ft</div><div style={{fontSize:'12px',color:'#6b7280'}}>Required Clearance</div></div><div style={{padding:'5px 15px',borderRadius:'20px',fontWeight:'600',fontSize:'13px',...(parseFloat(formData.availableClearance)>=estimatedClearance?{background:'#d1fae5',color:'#065f46'}:{background:'#fecaca',color:'#991b1b'})}}>{parseFloat(formData.availableClearance)>=estimatedClearance?'✓ ADEQUATE':'✗ INADEQUATE - Review Required'}</div></div>}
