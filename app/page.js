@@ -128,6 +128,7 @@ const FORM_CATEGORIES = [
       { name: 'Investigation Dashboard', href: '/investigation-dashboard', isLocal: true },
       { name: 'Investigation Workbench', href: '/investigation-workbench', isLocal: true },
       { name: 'Corrective Actions', href: '/corrective-actions', isLocal: true },
+      { name: 'Lessons Learned', href: '/lessons-learned', isLocal: true },
     ]
   },
   {
