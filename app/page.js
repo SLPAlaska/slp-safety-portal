@@ -188,7 +188,7 @@ const FORM_CATEGORIES = [
     title: 'Safety Meeting Form',
     icon: '👥',
     forms: [
-      { name: 'Safety Meeting Form', href: 'https://script.google.com/macros/s/AKfycbyi_NKqRvL3Ohmw3T-9rFsIyyp7qw_N2HYi2C_BPTKc7EblqcO_fDycRp-zlLf6aHgR9g/exec' },
+      { name: 'Safety Meeting', href: '/safety-meeting', isLocal: true },
     ]
   },
   {
