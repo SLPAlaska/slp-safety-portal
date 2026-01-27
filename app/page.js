@@ -172,7 +172,7 @@ const FORM_CATEGORIES = [
     title: 'Short Service Employee Evaluation',
     icon: '👷',
     forms: [
-      { name: 'Short Service Employee Evaluation', href: 'https://script.google.com/macros/s/AKfycbz98upjxlZHW9i29jm-M0GHjRIArazPVvWRJdwtLJLdbZpiU3DWpEtEON3DJm4noIBOdA/exec' },
+      { name: 'SSE Evaluation', href: '/sse-evaluation', isLocal: true },
     ]
   },
   {
