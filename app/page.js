@@ -132,7 +132,7 @@ const FORM_CATEGORIES = [
     title: '2026 ASH Book',
     icon: '📘',
     forms: [
-      { name: '2026 Alaska Safety Handbook', href: 'https://drive.google.com/file/d/11daeYCQKbR1rHdg7cRC_WdamJSBla7ge/view?usp=sharing' },
+      { name: '2026 ASH Book', href: '/2026-ASH-Book.pdf', isLocal: true }
     ]
   },
   {
