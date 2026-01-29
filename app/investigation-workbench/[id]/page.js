@@ -314,6 +314,38 @@ export default function InvestigationWorkbench() {
       <div style={{ padding: '40px 20px' }}>
         <div style={styles.card}>
           <div style={styles.header}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <a 
+                  href="https://portal.slpalaska.com" 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.2)', 
+                    color: 'white', 
+                    padding: '8px 16px', 
+                    borderRadius: '8px', 
+                    textDecoration: 'none',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  ← Portal
+                </a>
+                <a 
+                  href="/investigation-dashboard" 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.2)', 
+                    color: 'white', 
+                    padding: '8px 16px', 
+                    borderRadius: '8px', 
+                    textDecoration: 'none',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  ← Dashboard
+                </a>
+              </div>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '10px' }}>
               <img 
                 src="/Logo.png" 
