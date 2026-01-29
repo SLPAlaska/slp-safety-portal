@@ -316,13 +316,13 @@ export default function InvestigationWorkbench() {
           <div style={styles.header}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '10px' }}>
               <img 
-                src="/Logo.png" 
+                src="https://heojvwhehrzdvfxbnvcr.supabase.co/storage/v1/object/public/logos/SLP-Alaska-Logo-white-small.png" 
                 alt="SLP Alaska" 
                 style={{ height: '50px' }}
               />
               <h1 style={{ margin: 0, fontSize: '32px' }}>🔍 Investigation Workbench</h1>
             </div>
-            <p style={{ margin: '10px 0 0 0', opacity: 0.9 }}>{incident.incident_number} | {incident.incident_type}</p>
+            <p style={{ margin: '10px 0 0 0', opacity: 0.9 }}>{incident.incident_id} | {incident.investigation_type}</p>
           </div>
 
           <div style={styles.tabBar}>
@@ -349,25 +349,27 @@ export default function InvestigationWorkbench() {
                     <h3>Incident Summary</h3>
                     <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px' }}>
                       <div style={{ marginBottom: '15px' }}>
-                        <strong>Location:</strong> {incident.location || 'Not specified'}
+                        <strong>Location:</strong> {incident.location_name || 'Not specified'}
                       </div>
                       <div style={{ marginBottom: '15px' }}>
                         <strong>Date/Time:</strong> {incident.incident_date ? new Date(incident.incident_date).toLocaleString() : 'Not specified'}
                       </div>
                       <div style={{ marginBottom: '15px' }}>
-                        <strong>Description:</strong> {incident.description || 'No description provided'}
+                        <strong>Description:</strong> {incident.brief_description || incident.detailed_description || 'No description provided'}
                       </div>
                       <div style={{ marginBottom: '15px' }}>
                         <strong>Severity:</strong>{' '}
-                        {incident.severity ? (
+                        {incident.safety_severity ? (
                           <span style={{ 
-                            background: incident.severity === 'High' ? '#fee2e2' : incident.severity === 'Medium' ? '#fef3c7' : '#dbeafe',
-                            color: incident.severity === 'High' ? '#dc2626' : incident.severity === 'Medium' ? '#d97706' : '#2563eb',
+                            background: incident.safety_severity === 'A' || incident.safety_severity === 'B' ? '#fee2e2' : 
+                                       incident.safety_severity === 'C' || incident.safety_severity === 'D' ? '#fef3c7' : '#dbeafe',
+                            color: incident.safety_severity === 'A' || incident.safety_severity === 'B' ? '#dc2626' : 
+                                  incident.safety_severity === 'C' || incident.safety_severity === 'D' ? '#d97706' : '#2563eb',
                             padding: '4px 12px',
                             borderRadius: '6px',
                             fontWeight: '500'
                           }}>
-                            {incident.severity}
+                            {incident.safety_severity} - {incident.safety_severity_description}
                           </span>
                         ) : 'Not specified'}
                       </div>
