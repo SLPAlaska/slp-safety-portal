@@ -145,6 +145,7 @@ const FORM_CATEGORIES = [
       { name: 'Report Generator', href: '/report-generator', isLocal: true },
       { name: 'Notification Center', href: '/notifications', isLocal: true },
       { name: 'SAIL Log Sync', href: '/sail-sync', isLocal: true },
+      { name: 'SAIL Log Management', href: '/sail-management', isLocal: true },
     ]
   },
   {
