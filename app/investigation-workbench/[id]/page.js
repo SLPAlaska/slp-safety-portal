@@ -887,11 +887,11 @@ export default function InvestigationWorkbench() {
                     </div>
                     <h4>Status Actions</h4>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                      {incident.status === 'Draft' && <button onClick={() => updateStatus('Submitted - Awaiting Triage')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Submit for Triage</button>}
-                      {incident.status === 'Submitted - Awaiting Triage' && <button onClick={() => updateStatus('Triage - Investigation Required')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Start Triage</button>}
-                      {incident.status === 'Triage - Investigation Required' && <button onClick={() => updateStatus('Investigation - First Draft')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Begin Investigation</button>}
-                      {incident.status === 'Investigation - First Draft' && <button onClick={() => updateStatus('Under Review - Asset Input')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Submit for Asset Review</button>}
-                      {incident.status === 'Under Review - Asset Input' && <button onClick={() => updateStatus('Under Review - Final Review')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Move to Final Review</button>}
+                      {incident.status === 'Draft' && <button onClick={() => updateStatus('Submitted')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Submit Investigation</button>}
+                      {incident.status === 'Submitted' && <button onClick={() => updateStatus('Under Review - Triage')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Start Triage</button>}
+                      {incident.status === 'Under Review - Triage' && <button onClick={() => updateStatus('Under Review - First Draft')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Begin Investigation</button>}
+                      {incident.status === 'Under Review - First Draft' && <button onClick={() => updateStatus('Under Review - Asset Review')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Submit for Asset Review</button>}
+                      {incident.status === 'Under Review - Asset Review' && <button onClick={() => updateStatus('Under Review - Final Review')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>Move to Final Review</button>}
                       {incident.status === 'Under Review - Final Review' && <button onClick={() => updateStatus('Pending Approval')} style={{ ...styles.actionBtn, ...styles.secondaryBtn }}>Submit for Approval</button>}
                       {incident.status === 'Pending Approval' && <><button onClick={() => updateStatus('Approved')} style={{ ...styles.actionBtn, ...styles.primaryBtn }}>✅ Approve</button><button onClick={() => updateStatus('Under Review - Final Review')} style={{ ...styles.actionBtn, ...styles.outlineBtn }}>Return for Revision</button></>}
                       {incident.status === 'Approved' && <button onClick={() => updateStatus('Closed')} style={{ ...styles.actionBtn, background: '#059669', color: 'white' }}>🔒 Close Investigation</button>}
