@@ -316,7 +316,7 @@ export default function InvestigationWorkbench() {
           <div style={styles.header}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '10px' }}>
               <img 
-                src="/SLP-Alaska-Logo-white-small.png" 
+                src="/Logo.png" 
                 alt="SLP Alaska" 
                 style={{ height: '50px' }}
               />
