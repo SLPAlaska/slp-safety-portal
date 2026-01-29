@@ -149,38 +149,62 @@ export default function TrueCostCalculator() {
   async function loadIncidentCosts(incidentId) {
     setLoading(true);
     
-    // Load incident details
-    const { data: incident } = await supabase
-      .from('incidents')
-      .select('*')
-      .eq('id', incidentId)
-      .single();
-    setSelectedIncident(incident);
+    try {
+      // Load incident details
+      const { data: incident, error: incidentError } = await supabase
+        .from('incidents')
+        .select('*')
+        .eq('id', incidentId)
+        .single();
+      
+      if (incidentError) throw incidentError;
+      setSelectedIncident(incident);
 
-    // Load existing cost data
-    const { data: costData } = await supabase
-      .from('incident_costs')
-      .select('*')
-      .eq('incident_id', incidentId)
-      .single();
+      // Load existing cost data
+      const { data: costData, error: costError } = await supabase
+        .from('incident_costs')
+        .select('*')
+        .eq('incident_id', incidentId)
+        .maybeSingle();
 
-    if (costData) {
-      // Parse stored costs
-      setDirectCosts(costData.direct_costs_breakdown || {});
-      setIndirectCosts(costData.indirect_costs_breakdown || {});
-      setUseAutoCalculate(costData.indirect_auto_calculated || true);
-      setCustomMultiplier(costData.indirect_multiplier || INDIRECT_MULTIPLIERS[incident?.safety_severity] || 3.0);
-      setNotes(costData.cost_notes || '');
-    } else {
-      // Reset to defaults
-      setDirectCosts({});
-      setIndirectCosts({});
-      setUseAutoCalculate(true);
-      setCustomMultiplier(INDIRECT_MULTIPLIERS[incident?.safety_severity] || 3.0);
-      setNotes('');
+      if (costError && costError.code !== 'PGRST116') {
+        console.error('Error loading cost data:', costError);
+      }
+
+      if (costData) {
+        // Load saved costs
+        console.log('Loading existing cost data:', costData);
+        setDirectCosts({
+          medical: costData.cat1_subtotal || 0,
+          workers_comp: costData.cat2_subtotal || 0,
+          property_damage: costData.cat3_subtotal || 0,
+          environmental: costData.cat4_subtotal || 0,
+          legal: costData.cat5_subtotal || 0,
+          emergency: costData.cat6_subtotal || 0
+        });
+        setIndirectCosts({
+          lost_productivity: costData.cat7_subtotal || 0,
+          investigation: costData.cat8_subtotal || 0,
+          training: costData.cat9_subtotal || 0
+        });
+        setNotes(costData.notes || '');
+        setUseAutoCalculate(costData.total_indirect_costs > 0 ? false : true);
+      } else {
+        // Reset to defaults for new calculation
+        console.log('No existing cost data found - starting fresh');
+        setDirectCosts({});
+        setIndirectCosts({});
+        setUseAutoCalculate(true);
+        setCustomMultiplier(INDIRECT_MULTIPLIERS[incident?.safety_severity] || 3.0);
+        setNotes('');
+      }
+      
+    } catch (error) {
+      console.error('Error in loadIncidentCosts:', error);
+      alert('Error loading incident: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   }
 
   function calculateTotals() {
@@ -201,45 +225,94 @@ export default function TrueCostCalculator() {
   }
 
   async function saveCosts() {
-    if (!selectedIncidentId) return;
+    if (!selectedIncidentId) {
+      alert('Please select an incident first');
+      return;
+    }
     setSaving(true);
 
-    const { directTotal, indirectTotal, totalCost, ratio } = calculateTotals();
+    try {
+      const { directTotal, indirectTotal, totalCost, ratio } = calculateTotals();
 
-    const costRecord = {
-      incident_id: selectedIncidentId,
-      direct_costs_total: directTotal,
-      indirect_costs_total: indirectTotal,
-      total_cost: totalCost,
-      indirect_ratio: parseFloat(ratio),
-      indirect_auto_calculated: useAutoCalculate,
-      indirect_multiplier: useAutoCalculate ? INDIRECT_MULTIPLIERS[selectedIncident?.safety_severity] : customMultiplier,
-      direct_costs_breakdown: directCosts,
-      indirect_costs_breakdown: useAutoCalculate ? {} : indirectCosts,
-      cost_notes: notes,
-      calculated_by_email: userEmail,
-      calculated_date: new Date().toISOString()
-    };
+      // Map the costs to the actual database columns
+      const costRecord = {
+        cost_record_id: `COST-${selectedIncident?.incident_id || Date.now()}`,
+        incident_id: selectedIncidentId,
+        entry_date: new Date().toISOString(),
+        entered_by: userEmail,
+        last_updated: new Date().toISOString(),
+        
+        // Direct costs from form (storing in category subtotals)
+        cat1_subtotal: directCosts.medical || 0,
+        cat2_subtotal: directCosts.workers_comp || 0,
+        cat3_subtotal: directCosts.property_damage || 0,
+        cat4_subtotal: directCosts.environmental || 0,
+        cat5_subtotal: directCosts.legal || 0,
+        cat6_subtotal: directCosts.emergency || 0,
+        
+        // Indirect costs
+        cat7_subtotal: indirectCosts.lost_productivity || 0,
+        cat8_subtotal: indirectCosts.investigation || 0,
+        cat9_subtotal: indirectCosts.training || 0,
+        
+        // Totals
+        total_direct_costs: directTotal,
+        total_indirect_costs: indirectTotal,
+        total_all_costs: totalCost,
+        direct_indirect_ratio: `1:${ratio}`,
+        
+        notes: notes,
+        review_status: 'Draft'
+      };
 
-    // Upsert (insert or update)
-    const { data: existing } = await supabase
-      .from('incident_costs')
-      .select('id')
-      .eq('incident_id', selectedIncidentId)
-      .single();
+      // Check if cost record already exists
+      const { data: existing, error: fetchError } = await supabase
+        .from('incident_costs')
+        .select('id')
+        .eq('incident_id', selectedIncidentId)
+        .maybeSingle();
 
-    if (existing) {
-      await supabase.from('incident_costs').update(costRecord).eq('id', existing.id);
-    } else {
-      await supabase.from('incident_costs').insert(costRecord);
+      if (fetchError) {
+        console.error('Error checking existing record:', fetchError);
+        throw fetchError;
+      }
+
+      let result;
+      if (existing) {
+        // Update existing record
+        result = await supabase
+          .from('incident_costs')
+          .update(costRecord)
+          .eq('id', existing.id);
+        console.log('Updated existing cost record');
+      } else {
+        // Insert new record
+        result = await supabase
+          .from('incident_costs')
+          .insert(costRecord);
+        console.log('Inserted new cost record');
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      // Update incident table with total cost
+      await supabase
+        .from('incidents')
+        .update({ total_cost: totalCost })
+        .eq('id', selectedIncidentId);
+
+      setSaving(false);
+      await fetchAggregateStats();
+      alert(`TrueCost™ ${existing ? 'updated' : 'saved'} successfully! Total: ${formatCurrency(totalCost)}`);
+      
+    } catch (error) {
+      console.error('Error saving costs:', error);
+      alert('Error saving costs: ' + error.message);
+      setSaving(false);
     }
-
-    // Update incident with total cost
-    await supabase.from('incidents').update({ total_cost: totalCost }).eq('id', selectedIncidentId);
-
-    setSaving(false);
-    fetchAggregateStats();
-    alert('TrueCost™ saved successfully!');
   }
 
   function handleLogin(e) {
