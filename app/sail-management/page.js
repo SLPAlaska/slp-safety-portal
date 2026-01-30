@@ -37,7 +37,7 @@ export default function SAILManagement() {
         .order('date', { ascending: false });
 
       if (selectedCompany !== 'All') {
-        query = query.eq('company', selectedCompany);
+        query = query.eq('client_company', selectedCompany);
       }
 
       const { data: items, error } = await query;
@@ -105,9 +105,9 @@ export default function SAILManagement() {
   }
 
   const styles = {
-    container: { minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '20px' },
+    container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
     wrapper: { maxWidth: '1400px', margin: '0 auto' },
-    header: { background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+    header: { background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
     card: { background: 'white', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
     statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' },
     statCard: { background: '#f8fafc', borderRadius: '12px', padding: '20px', textAlign: 'center', border: '2px solid #e2e8f0' },
@@ -140,8 +140,13 @@ export default function SAILManagement() {
     <div style={styles.container}>
       <div style={styles.wrapper}>
         <div style={styles.header}>
-          <h1 style={{ margin: 0, fontSize: '28px' }}>📝 SAIL Log Management</h1>
-          <p style={{ margin: '5px 0 0 0', opacity: 0.9 }}>Safety Action Item Log - View and Close Items</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <img src="/Logo.png" alt="SLP Alaska" style={{ height: '50px' }} />
+            <div>
+              <h1 style={{ margin: 0, fontSize: '28px' }}>📝 SAIL Log Management</h1>
+              <p style={{ margin: '5px 0 0 0', opacity: 0.9 }}>Safety Action Item Log - View and Close Items</p>
+            </div>
+          </div>
         </div>
 
         <div style={styles.card}>
@@ -211,12 +216,12 @@ export default function SAILManagement() {
                     return (
                       <tr key={item.id}>
                         <td style={styles.td}>{new Date(item.date).toLocaleDateString()}</td>
-                        <td style={styles.td}>{item.company}</td>
+                        <td style={styles.td}>{item.client_company}</td>
                         <td style={styles.td}>{item.location}</td>
                         <td style={styles.td}>{item.category}</td>
                         <td style={styles.td}>
                           <div style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {item.description}
+                            {item.action_item_description}
                           </div>
                         </td>
                         <td style={styles.td}>
@@ -281,11 +286,11 @@ export default function SAILManagement() {
             <h2 style={{ marginTop: 0 }}>Close SAIL Item</h2>
             <div style={{ marginBottom: '20px', padding: '15px', background: '#f8fafc', borderRadius: '8px' }}>
               <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '5px' }}>
-                {closingItem.company} - {closingItem.location}
+                {closingItem.client_company} - {closingItem.location}
               </div>
               <div style={{ fontWeight: '600' }}>{closingItem.category}</div>
               <div style={{ fontSize: '14px', color: '#475569', marginTop: '5px' }}>
-                {closingItem.description}
+                {closingItem.action_item_description}
               </div>
             </div>
             <div style={{ marginBottom: '20px' }}>
