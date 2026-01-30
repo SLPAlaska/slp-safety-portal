@@ -140,6 +140,22 @@ export default function SAILManagement() {
     <div style={styles.container}>
       <div style={styles.wrapper}>
         <div style={styles.header}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <a 
+              href="https://portal.slpalaska.com" 
+              style={{ 
+                background: 'rgba(255,255,255,0.2)', 
+                color: 'white', 
+                padding: '8px 16px', 
+                borderRadius: '8px', 
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              ← Back to Portal
+            </a>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ height: '50px' }} />
             <div>
