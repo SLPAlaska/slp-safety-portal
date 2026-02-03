@@ -8,14 +8,14 @@ const supabase = createClient(
 );
 
 const COMPANY_CREDENTIALS = {
-  'MAGTEC2026': { company: 'MagTec Alaska', password: 'PSA2026$$SLP' },
-  'POLLARD2026': { company: 'Pollard Wireline', password: 'PSA2026$$SLP' },
-  'AKELINE2026': { company: 'AKE-Line', password: 'PSA2026$$SLP' },
-  'GBR2026': { company: 'GBR Equipment', password: 'PSA2026$$SLP' },
-  'CHOSEN2026': { company: 'Chosen Construction', password: 'PSA2026$$SLP' },
-  'YELLOWJACKET2026': { company: 'Yellowjacket', password: 'PSA2026$$SLP' },
-  'PENINSULA2026': { company: 'Peninsula Paving', password: 'PSA2026$$SLP' },
-  'CINGSA2026': { company: 'CINGSA', password: 'PSA2026$$SLP' }
+  'MAGTEC2026': { company: 'MagTec', searchTerms: ['MagTec', 'Mag Tec'], password: 'PSA2026$$SLP' },
+  'POLLARD2026': { company: 'Pollard', searchTerms: ['Pollard', 'Pollard Wireline'], password: 'PSA2026$$SLP' },
+  'AKELINE2026': { company: 'AKE-Line', searchTerms: ['AKE-Line', 'AKE Line', 'AKELINE'], password: 'PSA2026$$SLP' },
+  'GBR2026': { company: 'GBR', searchTerms: ['GBR', 'GBR Equipment'], password: 'PSA2026$$SLP' },
+  'CHOSEN2026': { company: 'Chosen', searchTerms: ['Chosen', 'Chosen Construction'], password: 'PSA2026$$SLP' },
+  'YELLOWJACKET2026': { company: 'Yellowjacket', searchTerms: ['Yellowjacket', 'Yellow Jacket'], password: 'PSA2026$$SLP' },
+  'PENINSULA2026': { company: 'Peninsula', searchTerms: ['Peninsula', 'Peninsula Paving'], password: 'PSA2026$$SLP' },
+  'CINGSA2026': { company: 'CINGSA', searchTerms: ['CINGSA'], password: 'PSA2026$$SLP' }
 };
 
 const FORM_CATEGORIES = {
@@ -209,13 +209,17 @@ export default function ClientExport() {
 
         let query = supabase.from(tableName).select('*');
 
-        // Try both 'company' and 'client' fields
+        // Get company search term (first one from list)
+        const cred = Object.values(COMPANY_CREDENTIALS).find(c => c.company === companyName);
+        const primarySearch = cred?.searchTerms?.[0] || companyName;
+
+        // Try both 'company' and 'client' fields with fuzzy matching
         const { data: testData } = await supabase.from(tableName).select('*').limit(1);
         if (testData && testData.length > 0) {
           if ('company' in testData[0]) {
-            query = query.eq('company', companyName);
+            query = query.ilike('company', `%${primarySearch}%`);
           } else if ('client' in testData[0]) {
-            query = query.eq('client', companyName);
+            query = query.ilike('client', `%${primarySearch}%`);
           }
         }
 
