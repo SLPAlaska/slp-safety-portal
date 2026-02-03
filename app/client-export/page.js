@@ -20,7 +20,7 @@ const COMPANY_CREDENTIALS = {
 
 const FORM_CATEGORIES = {
   'Investigation & Incidents': {
-    'THA Assessments': 'tha_assessments',
+    'THA Assessments': 'tha_submissions',
     'Incident Reports': 'incidents',
     'Property Damage Reports': 'property_damage_reports',
     'Witness Statements': 'witness_statements',
