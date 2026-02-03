@@ -233,14 +233,11 @@ export default function ClientExport() {
           console.log('Company-related fields found:', companyFields);
         }
 
-        // Filter client-side for fuzzy company matching
+        // Filter client-side for fuzzy company matching AND location
         if (data && data.length > 0) {
           const filtered = data.filter(row => {
-            // Check all fields that might contain company name
-            // Look for: company, client, client_company, company_name, observer_company, etc.
+            // Check company match
             let companyField = '';
-            
-            // Find any field with 'company' or 'client' in the name
             for (const [key, value] of Object.entries(row)) {
               if (key.toLowerCase().includes('company') || key.toLowerCase().includes('client')) {
                 companyField = String(value || '').toLowerCase();
@@ -248,10 +245,14 @@ export default function ClientExport() {
               }
             }
             
-            const matches = searchTerms.some(term => 
+            const companyMatches = searchTerms.some(term => 
               companyField.includes(term.toLowerCase())
             );
-            return matches;
+            
+            // Check location match (if not "All")
+            const locationMatches = selectedLocation === 'All' || row.location === selectedLocation;
+            
+            return companyMatches && locationMatches;
           });
 
           console.log(`Filtered from ${data.length} to ${filtered.length} rows for company`);
