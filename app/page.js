@@ -5,86 +5,62 @@ import Link from 'next/link'
 
 const FORM_CATEGORIES = [
   {
-    id: 'training-competency',
-    title: 'Training & Competency',
-    icon: '🎯',
-    isTraining: true,
+    id: 'cat1-incident',
+    title: 'Category 1: Incident Investigation',
+    icon: '🚨',
     forms: [
-      { name: 'Aerial Lift Practical Evaluation', href: '/aerial-lift-practical', isLocal: true },
-      { name: 'Crane/Boom Truck Practical Evaluation', href: '/crane-boom-truck-practical', isLocal: true },
-      { name: 'Excavator Practical Evaluation', href:'/excavator-practical', isLocal: true },
-      { name: 'Forklift Practical Evaluation', href:'/forklift-practical', isLocal: true },
-      { name: 'Loader Practical Evaluation', href: '/loader-practical', isLocal: true},
+      { name: 'Incident Report', href: '/incident-report', isLocal: true },
+      { name: 'Property Damage Report', href: '/property-damage-report', isLocal: true },
+      { name: 'Witness Statement', href: '/witness-statement', isLocal: true },
+      { name: 'Investigation Dashboard', href: '/investigation-dashboard', isLocal: true },
+      { name: 'Corrective Actions', href: '/corrective-actions', isLocal: true },
+      { name: 'Lessons Learned', href: '/lessons-learned', isLocal: true },
+      { name: 'Investigation Analytics', href: '/investigation-analytics', isLocal: true },
+      { name: 'TrueCost Calculator', href: '/truecost', isLocal: true },
+      { name: 'Similar Incident Finder', href: '/similar-incidents', isLocal: true },
+      { name: 'Quality Score', href: '/quality-score', isLocal: true },
+      { name: 'Logic Tree Builder', href: '/logic-tree', isLocal: true },
+      { name: 'Action Calendar', href: '/action-calendar', isLocal: true },
+      { name: 'Report Generator', href: '/report-generator', isLocal: true },
+      { name: 'Notification Center', href: '/notifications', isLocal: true },
+      { name: 'SAIL Log Sync', href: '/sail-sync', isLocal: true },
+      { name: 'SAIL Log Management', href: '/sail-management', isLocal: true },
     ]
   },
   {
-    id: 'field-forms',
-    title: 'Field Forms',
-    icon: '📋',
+    id: 'cat2-stop-cards',
+    title: 'Category 2: STOP Cards & Field Observations',
+    icon: '🛑',
     forms: [
       { name: 'BBS Observation', href: '/bbs-form', isLocal: true },
-      { name: 'Cold Weather Operating Risk Assessment', href: '/cold-weather-form', isLocal: true },
-      { name: 'Dropped Object Prevention Audit', href: '/dropped-object-audit', isLocal: true },
-      { name: 'E-Line Safety Audit', href: '/e-line-safety-audit', isLocal: true },
       { name: 'EHS Field Evaluation', href: '/ehs-field-evaluation', isLocal: true },
+      { name: 'Exclusion Zone Audit', href: '/exclusion-zone-audit', isLocal: true },
       { name: 'Field Environmental Audit', href: '/field-environmental-audit', isLocal: true },
-      { name: 'Flammable Storage Audit', href: '/flammable-storage-audit', isLocal: true },
-      { name: 'Fluid Transfer Permit Audit', href: '/fluid-transfer', isLocal: true}, 
-      { name: 'Good Catch / Near Miss', href: '/good-catch', isLocal: true },
-      { name: 'Hazard ID Report', href: '/hazard-id', isLocal: true },
-      { name: 'Journey Management', href: '/journey-management', isLocal: true },
+      { name: 'Good Catch/Near Miss Report', href: '/good-catch', isLocal: true },
+      { name: 'Hazard ID Form', href: '/hazard-id', isLocal: true },
       { name: 'Location Audit Report', href: '/location-audit-report', isLocal: true },
-      { name: 'Manage By Walk Around', href: '/manage-by-walk-around', isLocal: true },
-      { name: 'Phase Condition Risk Assessment', href: '/phase-condition-risk-assessment', isLocal: true },
-      { name: 'Pressure Cross Check', href: '/pressure-crosscheck', isLocal: true },
+      { name: 'Manage by Walk Around', href: '/manage-by-walk-around', isLocal: true },
+      { name: 'Comprehensive PPE Inspection', href: '/ppe-inspection', isLocal: true },
       { name: 'Risk Control Conversation', href: '/risk-control-conversation', isLocal: true },
-      { name: 'SAIL Log Entry', href: '/sail-log-entry', isLocal: true },
-      { name: 'Slickline Safety Audit', href: '/slickline-safety-audit', isLocal: true },
-      { name: 'STOP & Take 5', href: '/stop-take-5', isLocal: true },
+      { name: 'STOP & Take 5 Risk Assessment', href: '/stop-take-5', isLocal: true },
       { name: 'Surface Condition Audit', href: '/surface-condition-audit', isLocal: true },
-      { name: 'SWPPP Inspection', href: '/swppp-inspection', isLocal: true },
       { name: 'Task/Crew Audit', href: '/task-crew-audit', isLocal: true },
-      { name: 'Toolbox Meeting Quality Assessment', href: '/toolbox-meeting-assessment', isLocal: true },
-      { name: 'Welding/Fab Shop Audit', href: '/welding-fab-shop-audit', isLocal: true },
-      { name: 'Welding/Grinding Audit', href: '/welding-grinding-audit', isLocal: true },
     ]
   },
   {
-    id: 'monthly-inspections',
-    title: 'Monthly Inspections',
-    icon: '📅',
+    id: 'cat3-safety-meetings',
+    title: 'Category 3: Safety Meetings & Management Engagement',
+    icon: '👥',
     forms: [
-      { name: 'Chain Hoist Inspection', href: '/chain-hoist-inspection', isLocal: true },
-      { name: 'Emergency Drill Evaluation', href: '/emergency-drill-evaluation', isLocal: true },
-      { name: 'Emergency Eyewash Inspection', href: '/eyewash-station-inspection', isLocal: true },
-      { name: 'Fall Protection Harness Inspection', href: '/harness-inspection', isLocal: true },
-      { name: 'Fire Extinguisher Inspection', href: '/fire-extinguisher-inspection', isLocal: true },
-      { name: 'First Aid Kit Inspection', href: '/first-aid-kit-inspection', isLocal: true },
-      { name: 'Ladder Inspection', href: '/ladder-inspection', isLocal: true },
-      { name: 'Lanyard & SRL Inspection', href: '/lanyard-srl-inspection', isLocal: true },
-      { name: 'Monthly AED Inspection', href: '/aed-inspection', isLocal: true },
-      { name: 'Shackle Inspection', href: '/shackle-inspection', isLocal: true },
-      { name: 'Synthetic Sling Inspection', href: '/synthetic-sling-inspection', isLocal: true },
-      { name: 'Wire Rope Inspection', href: '/wire-rope-inspection', isLocal: true },
+      { name: 'Emergency Drill and Evaluation Form', href: '/emergency-drill-evaluation', isLocal: true },
+      { name: 'Fall Protection Plan', href: '/fall-protection-plan', isLocal: true },
+      { name: 'Safety Meeting Form', href: '/safety-meeting-form', isLocal: true },
+      { name: 'Toolbox Talk', href: '/toolbox-meeting-assessment', isLocal: true },
     ]
   },
   {
-    id: 'permits',
-    title: 'Permits',
-    icon: '📝',
-    forms: [
-      { name: 'Confined Space Entry', href: '/confined-space-entry', isLocal: true },
-      { name: 'Energized Electrical Work', href: '/energized-electrical-work', isLocal: true },
-      { name: 'Energy Isolation / LOTO', href: '/energy-isolation', isLocal: true },
-      { name: 'Excavation & Trenching', href: '/excavation-trenching', isLocal: true },
-      { name: 'Hot Work', href: '/hot-work', isLocal: true },
-      { name: 'Opening & Blinding', href: '/opening-blinding', isLocal: true },
-      { name: 'Unit Work Permit', href: '/unit-work', isLocal: true },
-    ]
-  },
-  {
-    id: 'lsr-audits',
-    title: 'Lifesaving Rules Audits',
+    id: 'cat4-lsr-audits',
+    title: 'Category 4: Lifesaving Rules Audits',
     icon: '🛡️',
     forms: [
       { name: 'LSR-Confined Space Audit', href: '/lsr-confined-space-audit', isLocal: true },
@@ -97,150 +73,107 @@ const FORM_CATEGORIES = [
     ]
   },
   {
-    id: 'equipment-inspections',
-    title: 'Equipment Inspections',
-    icon: '🚛',
+    id: 'cat5-critical-lift',
+    title: 'Category 5: Critical Lift Plan',
+    icon: '🏗️',
     forms: [
-      { name: 'Heavy Equipment', href: '/heavy-equipment-inspection', isLocal: true },
-      { name: 'Crane Inspection', href: '/crane-inspection', isLocal: true },
-      { name: 'Forklift Inspection', href: '/forklift-inspection', isLocal: true },
-      { name: 'Vehicle Inspection', href: '/vehicle-inspection', isLocal: true },
+      { name: 'Critical Lift Plan', href: '/critical-lift-plans', isLocal: true },
     ]
   },
   {
-    id: 'daily-forms',
-    title: 'Daily Forms',
-    icon: '☀️',
+    id: 'cat6-drilling-equipment',
+    title: 'Category 6: Drilling Equipment Inspections',
+    icon: '🔧',
     forms: [
-      { name: 'Daily Scaffold Inspection', href: '/scaffold-inspection-form', isLocal: true },
-      { name: 'Exc. & Trench Competent Person Daily Inspection Form', href: '/competent-person-form', isLocal: true },
+      { name: 'Accumulator Test', href: '/accumulator-test', isLocal: true },
+      { name: 'BOP Daily Visual Inspection', href: '/bop-inspection', isLocal: true },
+      { name: 'Crown/Traveling Block Inspection', href: '/crown-block-inspection', isLocal: true },
+      { name: 'Draw-works Inspection', href: '/drawworks-inspection', isLocal: true },
+      { name: 'Iron Roughneck Inspection', href: '/iron-roughneck-inspection', isLocal: true },
+      { name: 'Mud System Inspection', href: '/mud-system-inspection', isLocal: true },
+      { name: 'Power System Inspection', href: '/power-system-inspection', isLocal: true },
+      { name: 'Rig Floor Daily Inspection', href: '/rig-floor-inspection', isLocal: true },
+      { name: 'Top Drive Inspection', href: '/top-drive-inspection', isLocal: true },
+    ]
+  },
+  {
+    id: 'cat7-daily-mobile',
+    title: 'Category 7: Daily Mobile Equipment Inspections',
+    icon: '🚛',
+    forms: [
+      { name: 'Aerial Lift Inspection', href: '/aerial-lift-inspection', isLocal: true },
+      { name: 'Forklift Pre-Shift Inspection', href: '/forklift-inspection', isLocal: true },
+      { name: 'Pickup/Crew Van Inspection', href: '/vehicle-inspection', isLocal: true },
+      { name: 'Daily Scaffold Inspection', href: '/scaffold-inspection', isLocal: true },
       { name: 'THA / JSA', href: '/tha-jsa', isLocal: true },
     ]
   },
   {
-    id: 'incident-forms',
-    title: 'Incident & Investigation',
-    icon: '🚨',
+    id: 'cat8-monthly',
+    title: 'Category 8: General Monthly Inspections',
+    icon: '📅',
     forms: [
-      { name: 'Incident Report', href: '/incident-report', isLocal: true },
-      { name: 'Property Damage Report', href: '/property-damage-report', isLocal: true },
-      { name: 'Witness Statement', href: '/witness-statement', isLocal: true },
-      { name: 'Investigation Dashboard', href: '/investigation-dashboard', isLocal: true },
-      { name: 'Corrective Actions', href: '/corrective-actions', isLocal: true },
-      { name: 'Lessons Learned', href: '/lessons-learned', isLocal: true },
-    ]
-  },
-  {
-    id: 'psa-tools',
-    title: 'Predictive Safety Analytics™',
-    icon: '📊',
-    isPSA: true,
-    forms: [
-      { name: 'Investigation Analytics', href: '/investigation-analytics', isLocal: true },
-      { name: 'TrueCost™ Calculator', href: '/truecost', isLocal: true },
-      { name: 'Similar Incident Finder', href: '/similar-incidents', isLocal: true },
-      { name: 'Quality Score', href: '/quality-score', isLocal: true },
-      { name: 'Logic Tree Builder', href: '/logic-tree', isLocal: true },
-      { name: 'Action Calendar', href: '/action-calendar', isLocal: true },
-      { name: 'Report Generator', href: '/report-generator', isLocal: true },
-      { name: 'Notification Center', href: '/notifications', isLocal: true },
-      { name: 'SAIL Log Sync', href: '/sail-sync', isLocal: true },
-      { name: 'SAIL Log Management', href: '/sail-management', isLocal: true },
-    ]
-  },
-  {
-    id: 'ash-book',
-    title: '2026 ASH Book',
-    icon: '📘',
-    forms: [
-      { name: '2026 ASH Book', href: '/2026-ASH-Book.pdf', isLocal: true }
-    ]
-  },
-  {
-    id: 'moc',
-    title: 'Management of Change',
-    icon: '🔄',
-    forms: [
-      { name: 'Management of Change', href: '/management-of-change', isLocal: true },
-    ]
-  },
-  {
-    id: 'hse-log',
-    title: 'HSE & Manager Daily Activity Log',
-    icon: '📊',
-    forms: [
-      { name: 'Manager & HSE Activity Log', href: '/daily-activity-log', isLocal: true },
-    ]
-  },
-  {
-    id: 'lift-plans',
-    title: 'Critical Lift Plans',
-    icon: '🏗️',
-    forms: [
-      { name: 'Critical Lift Plans', href: '/critical-lift-plan', isLocal: true },
-    ]
-  },
-  {
-    id: 'fall-protection-plan',
-    title: 'Fall Protection Plan',
-    icon: '🪢',
-    forms: [
-      { name: 'Fall Protection Plan', href: '/fall-protection-plan', isLocal: true },
-    ]
-  },
-  {
-    id: 'sse',
-    title: 'Short Service Employee Evaluation',
-    icon: '👷',
-    forms: [
-      { name: 'SSE Evaluation', href: '/sse-evaluation', isLocal: true },
-    ]
-  },
-  {
-    id: 'seasonal',
-    title: 'Seasonal Inspections',
-    icon: '🌨️',
-    forms: [
+      { name: 'Fire Extinguisher Inspection', href: '/fire-extinguisher-inspection', isLocal: true },
+      { name: 'Emergency Eyewash Inspection', href: '/eyewash-station-inspection', isLocal: true },
+      { name: 'First Aid Kit Inspection', href: '/first-aid-kit-inspection', isLocal: true },
+      { name: 'Monthly AED Inspection', href: '/aed-inspection', isLocal: true },
+      { name: 'Ladder Inspection', href: '/ladder-inspection', isLocal: true },
+      { name: 'Fall Protection Harness Inspection', href: '/harness-inspection', isLocal: true },
+      { name: 'Lanyard & SRL Inspection', href: '/lanyard-srl-inspection', isLocal: true },
+      { name: 'Shackle Inspection', href: '/shackle-inspection', isLocal: true },
+      { name: 'Synthetic Sling Inspection', href: '/synthetic-sling-inspection', isLocal: true },
+      { name: 'Wire Rope Inspection', href: '/wire-rope-inspection', isLocal: true },
+      { name: 'Chain Hoist Inspection', href: '/chain-hoist-inspection', isLocal: true },
+      { name: 'Emergency Drill Evaluation', href: '/emergency-drill-evaluation', isLocal: true },
       { name: 'Spill Kit Inspection', href: '/spill-kit-inspection', isLocal: true },
     ]
   },
   {
-    id: 'safety-meeting',
-    title: 'Safety Meeting Form',
-    icon: '👥',
+    id: 'cat9-permits',
+    title: 'Category 9: Permit to Work',
+    icon: '📝',
     forms: [
-      { name: 'Safety Meeting', href: '/safety-meeting', isLocal: true },
+      { name: 'Hot Work', href: '/hot-work', isLocal: true },
+      { name: 'Confined Space Entry', href: '/confined-space-entry', isLocal: true },
+      { name: 'Energy Isolation / LOTO', href: '/energy-isolation', isLocal: true },
+      { name: 'Excavation & Trenching', href: '/excavation-trenching', isLocal: true },
+      { name: 'Energized Electrical Work', href: '/energized-electrical-work', isLocal: true },
+      { name: 'Opening & Blinding', href: '/opening-blinding', isLocal: true },
     ]
   },
   {
-    id: 'ppe',
-    title: 'PPE Inspection Form',
-    icon: '🦺',
+    id: 'cat10-training',
+    title: 'Category 10: Training & Competency',
+    icon: '🎯',
+    isTraining: true,
     forms: [
-      { name: 'Comprehensive PPE Inspection', href: '/ppe-inspection', isLocal: true },
+      { name: 'Aerial Lift Practical Evaluation', href: '/aerial-lift-practical', isLocal: true },
+      { name: 'Forklift Practical Evaluation', href: '/forklift-practical', isLocal: true },
+      { name: 'Loader Practical Evaluation', href: '/loader-practical', isLocal: true },
     ]
-  }
+  },
+  {
+    id: 'cat11-client-export',
+    title: 'Category 11: Client Data Export',
+    icon: '🔐',
+    forms: [
+      { name: 'Client Data Export Portal', href: '/client-export', isLocal: true },
+    ]
+  },
 ]
 
-export default function SafetyPortal() {
+export default function SafetyPortalHomepage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [openFolders, setOpenFolders] = useState({})
 
-  const totalForms = FORM_CATEGORIES.reduce((sum, category) => sum + category.forms.length, 0)
+  const totalForms = FORM_CATEGORIES.reduce((sum, cat) => sum + cat.forms.length, 0)
 
-  const filteredCategories = FORM_CATEGORIES.map(category => {
-    const matchingForms = category.forms.filter(form => 
-      form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      category.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredCategories = FORM_CATEGORIES.map(category => ({
+    ...category,
+    forms: category.forms.filter(form =>
+      form.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    
-    if (matchingForms.length === 0) return null
-    
-    return {
-      ...category,
-      forms: matchingForms
-    }
-  }).filter(Boolean)
+  })).filter(category => category.forms.length > 0)
 
   const toggleFolder = (categoryId) => {
     setOpenFolders(prev => ({
@@ -250,65 +183,58 @@ export default function SafetyPortal() {
   }
 
   return (
-    <div className="page-wrapper">
-      <style jsx global>{`
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .page-wrapper {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-          padding: 15px;
-        }
-        
+    <div>
+      <style jsx>{`
         .container {
-          max-width: 1200px;
-          margin: 0 auto;
+          min-height: 100vh;
+          background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
         }
         
         .header {
+          background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+          padding: 40px 20px 50px 20px;
           text-align: center;
-          padding: 25px 0;
+          position: relative;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .header::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%);
         }
         
         .logo {
-          max-width: 200px;
-          margin-bottom: 15px;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+          height: 100px;
+          margin-bottom: 25px;
+          filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
         }
         
         h1 {
-          color: white;
-          font-size: 28px;
+          font-size: 3rem;
+          margin: 0 0 12px 0;
           font-weight: 700;
-          text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+          color: #ffffff;
+          letter-spacing: -0.5px;
         }
         
         .subtitle {
-          color: rgba(255,255,255,0.9);
-          font-size: 14px;
-          margin-top: 5px;
-        }
-        
-        .tagline {
-          color: #fbbf24;
+          font-size: 1.1rem;
           font-style: italic;
-          margin-top: 10px;
-          font-size: 15px;
+          margin: 0 0 30px 0;
+          color: #d1d5db;
+          font-weight: 400;
         }
         
         .stats-bar {
           display: flex;
           justify-content: center;
-          gap: 30px;
-          margin-top: 20px;
+          gap: 50px;
+          margin-top: 30px;
         }
         
         .stat-item {
@@ -316,67 +242,80 @@ export default function SafetyPortal() {
         }
         
         .stat-number {
-          color: #fbbf24;
-          font-size: 28px;
+          font-size: 3rem;
           font-weight: 700;
+          color: #ffffff;
+          line-height: 1;
         }
         
         .stat-label {
-          color: rgba(255,255,255,0.8);
-          font-size: 11px;
+          font-size: 0.75rem;
           text-transform: uppercase;
+          letter-spacing: 2px;
+          color: #9ca3af;
+          margin-top: 8px;
+          font-weight: 600;
         }
         
         .search-box {
-          width: 100%;
-          max-width: 500px;
-          margin: 20px auto;
+          width: 90%;
+          max-width: 600px;
+          padding: 16px 24px;
+          margin: -25px auto 40px auto;
           display: block;
-          padding: 14px 20px;
           border: none;
-          border-radius: 25px;
-          font-size: 15px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+          border-radius: 50px;
+          font-size: 16px;
+          background: white;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          position: relative;
+          z-index: 10;
         }
         
         .search-box:focus {
           outline: none;
-          box-shadow: 0 4px 25px rgba(196, 30, 58, 0.4);
+          box-shadow: 0 8px 32px rgba(127, 29, 29, 0.2);
         }
         
         .folders-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 15px;
+          grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+          gap: 20px;
+          padding: 20px;
+          max-width: 1400px;
+          margin: 0 auto;
         }
         
         .folder {
-          background: rgba(255,255,255,0.95);
+          background: white;
           border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-          transition: transform 0.2s, box-shadow 0.2s;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          transition: all 0.3s ease;
+          border: 1px solid #e5e7eb;
         }
         
         .folder:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          border-color: #7f1d1d;
         }
         
         .folder-header {
-          background: linear-gradient(135deg, #ea580c 0%, #c41e3a 100%);
+          background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
           color: white;
-          padding: 15px 20px;
+          padding: 16px 20px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: space-between;
           font-weight: 600;
           font-size: 14px;
+          transition: background 0.3s;
         }
         
         .folder-header:hover {
-          background: linear-gradient(135deg, #c41e3a 0%, #9a1830 100%);
+          background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
         }
         
         .training-header {
@@ -387,31 +326,25 @@ export default function SafetyPortal() {
           background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
         }
         
-        .psa-header {
-          background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%) !important;
-        }
-        
-        .psa-header:hover {
-          background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%) !important;
-        }
-        
         .folder-icon {
-          font-size: 20px;
-          margin-right: 10px;
+          font-size: 22px;
+          margin-right: 12px;
         }
         
         .folder-title {
           display: flex;
           align-items: center;
           flex: 1;
+          font-size: 15px;
         }
         
         .folder-count {
-          background: rgba(255,255,255,0.2);
-          padding: 3px 10px;
+          background: rgba(255,255,255,0.25);
+          padding: 4px 12px;
           border-radius: 12px;
-          font-size: 11px;
-          margin-right: 10px;
+          font-size: 12px;
+          margin-right: 12px;
+          font-weight: 700;
         }
         
         .folder-arrow {
@@ -426,34 +359,36 @@ export default function SafetyPortal() {
         .folder-content {
           max-height: 0;
           overflow: hidden;
-          transition: max-height 0.3s ease-out;
-          background: #f8fafc;
+          transition: max-height 0.4s ease-out;
+          background: #fafafa;
         }
         
         .folder.open .folder-content {
-          max-height: 1500px;
+          max-height: 2000px;
         }
         
         .form-link {
           display: block !important;
-          padding: 12px 20px;
-          color: #1e3a5f !important;
+          padding: 14px 20px;
+          color: #374151 !important;
           text-decoration: none !important;
-          border-bottom: 1px solid #e2e8f0;
-          font-size: 13px;
-          transition: background 0.2s, padding-left 0.2s;
+          border-bottom: 1px solid #e5e7eb;
+          font-size: 14px;
+          transition: all 0.2s;
+          font-weight: 500;
         }
         
         a.form-link {
           display: block !important;
-          color: #1e3a5f !important;
+          color: #374151 !important;
           text-decoration: none !important;
         }
         
         .form-link:hover {
-          background: #e0f2fe;
-          padding-left: 28px;
-          color: #c41e3a;
+          background: #f3f4f6;
+          padding-left: 32px;
+          color: #7f1d1d !important;
+          border-left: 4px solid #7f1d1d;
         }
         
         .form-link:last-child {
@@ -462,45 +397,51 @@ export default function SafetyPortal() {
         
         .footer {
           text-align: center;
-          margin-top: 30px;
-          color: rgba(255,255,255,0.9);
-          font-size: 11px;
+          padding: 40px 20px;
+          color: #6b7280;
+          font-size: 13px;
+          background: #f8f9fa;
+          border-top: 1px solid #e5e7eb;
         }
         
-        .footer a {
-          color: #fbbf24;
-          text-decoration: none;
+        .footer-highlight {
+          font-weight: 600;
+          color: #dc2626;
+          font-size: 14px;
+          margin-bottom: 15px;
+          display: block;
         }
         
         .footer .powered-by {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(255,255,255,0.2);
-          font-size: 10px;
-          color: rgba(255,255,255,0.7);
+          margin-top: 15px;
+          padding-top: 15px;
+          border-top: 1px solid #e5e7eb;
+          font-size: 11px;
+          color: #9ca3af;
         }
         
         .no-results {
           text-align: center;
-          padding: 40px;
-          color: rgba(255,255,255,0.7);
+          padding: 60px 20px;
+          color: #6b7280;
         }
         
-        @media (max-width: 600px) {
-          .page-wrapper { padding: 10px; }
-          h1 { font-size: 22px; }
-          .folder-header { padding: 12px 15px; font-size: 13px; }
-          .form-link { padding: 10px 15px; font-size: 12px; }
-          .stats-bar { gap: 15px; }
+        @media (max-width: 768px) {
+          h1 { font-size: 2rem; }
+          .subtitle { font-size: 0.95rem; }
+          .stat-number { font-size: 2.5rem; }
+          .stats-bar { gap: 30px; }
+          .folders-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
 
       <div className="container">
         <div className="header">
-          <img src="/Logo.png" alt="SLP Alaska Logo" className="logo" />
-          <h1>SLP Safety Portal</h1>
-          <p className="subtitle">Safety • Leadership • Performance</p>
-          <p className="tagline">"Safety isn't expensive, it's PRICELESS!"</p>
+          <img src="/Logo.png" alt="Ridgeline Logo" className="logo" />
+          <h1>Ridgeline Safety Portal</h1>
+          <p className="subtitle">"No Heroes. No Shortcuts. Just Safe Work — The Ridgeline Standard."</p>
           
           <div className="stats-bar">
             <div className="stat-item">
@@ -526,7 +467,7 @@ export default function SafetyPortal() {
           {filteredCategories.map(category => (
             <div key={category.id} className={`folder ${openFolders[category.id] ? 'open' : ''}`}>
               <div 
-                className={`folder-header ${category.isTraining ? 'training-header' : ''} ${category.isPSA ? 'psa-header' : ''}`}
+                className={`folder-header ${category.isTraining ? 'training-header' : ''}`}
                 onClick={() => toggleFolder(category.id)}
               >
                 <div className="folder-title">
@@ -562,8 +503,9 @@ export default function SafetyPortal() {
         )}
         
         <div className="footer">
-          <p>© 2026 SLP Alaska | <a href="tel:9072023274">(907) 202-3274</a></p>
-          <p style={{marginTop: '5px'}}>Safety • Leadership • Performance</p>
+          <span className="footer-highlight">
+            For ANY incidents, contact Ridgeline HSE immediately
+          </span>
           <p className="powered-by">Powered by Predictive Safety Analytics™ © 2026 SLP Alaska, LLC</p>
         </div>
       </div>
