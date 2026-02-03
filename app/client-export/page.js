@@ -196,6 +196,11 @@ export default function ClientExport() {
       const allData = [];
       let fetchedCount = 0;
 
+      // Get company search terms once
+      const cred = Object.values(COMPANY_CREDENTIALS).find(c => c.company === companyName);
+      const searchTerms = cred?.searchTerms || [companyName];
+      console.log('Searching for company:', companyName, 'using terms:', searchTerms);
+
       for (const formName of formsToExport) {
         // Find the table name
         let tableName = null;
@@ -207,38 +212,36 @@ export default function ClientExport() {
 
         setExportStatus(`Fetching ${formName}... (${++fetchedCount}/${formsToExport.length})`);
 
+        // TEMPORARILY: Fetch ALL data with no filters to see what's there
         let query = supabase.from(tableName).select('*');
-
-        // Get company search term for matching
-        const cred = Object.values(COMPANY_CREDENTIALS).find(c => c.company === companyName);
-        const searchTerms = cred?.searchTerms || [companyName];
-
-        if (selectedLocation !== 'All') {
-          query = query.eq('location', selectedLocation);
-        }
-
-        if (startDate) {
-          query = query.gte('date', startDate.toISOString().split('T')[0]);
-        }
-        if (endDate) {
-          query = query.lte('date', endDate.toISOString().split('T')[0]);
-        }
 
         const { data, error } = await query;
 
         if (error) {
           console.error(`Error fetching ${formName}:`, error);
+          setExportStatus(`Error: ${error.message}`);
           continue;
+        }
+
+        console.log(`${tableName} returned ${data?.length || 0} total rows`);
+        
+        // Show sample data for debugging
+        if (data && data.length > 0) {
+          console.log('Sample row:', data[0]);
+          console.log('Company field:', data[0].company || data[0].client || 'NONE');
         }
 
         // Filter client-side for fuzzy company matching
         if (data && data.length > 0) {
           const filtered = data.filter(row => {
-            const companyField = row.company || row.client || '';
-            return searchTerms.some(term => 
-              companyField.toLowerCase().includes(term.toLowerCase())
+            const companyField = (row.company || row.client || '').toLowerCase();
+            const matches = searchTerms.some(term => 
+              companyField.includes(term.toLowerCase())
             );
+            return matches;
           });
+
+          console.log(`Filtered from ${data.length} to ${filtered.length} rows for company`);
 
           filtered.forEach(row => {
             allData.push({
@@ -309,10 +312,11 @@ export default function ClientExport() {
     dashboardContainer: {
       maxWidth: '1400px',
       margin: '0 auto',
-      background: 'white',
+      background: 'linear-gradient(to bottom, #ffffff 0%, #f0f4f8 100%)',
       borderRadius: '16px',
       padding: '40px',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+      border: '3px solid #1e3a8a'
     },
     header: {
       textAlign: 'center',
@@ -374,11 +378,11 @@ export default function ClientExport() {
     },
     categorySection: {
       marginBottom: '30px',
-      background: '#f9fafb',
-      border: '1px solid #e5e7eb',
+      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+      border: '2px solid #3b82f6',
       borderRadius: '12px',
       padding: '25px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.1)'
     },
     categoryHeader: {
       display: 'flex',
@@ -565,15 +569,28 @@ export default function ClientExport() {
   return (
     <div style={styles.container}>
       <div style={styles.dashboardContainer}>
-        <div style={{ textAlign: 'center', marginBottom: '25px' }}>
-          <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px' }} />
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', marginBottom: '15px' }} />
+          <div style={{ fontSize: '20px', fontWeight: '600', color: '#1e3a8a', marginBottom: '5px' }}>
+            Safety • Leadership • Performance
+          </div>
+          <div style={{ fontSize: '16px', fontStyle: 'italic', color: '#b91c1c', fontWeight: '600' }}>
+            "Safety isn't expensive, it's PRICELESS!"
+          </div>
         </div>
         
         <div style={styles.topBar}>
           <div style={styles.companyBadge}>{companyName}</div>
-          <button onClick={handleLogout} style={styles.logoutButton}>
-            🚪 Logout
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <a href="/" style={{ textDecoration: 'none' }}>
+              <button style={{ ...styles.logoutButton, background: '#3b82f6' }}>
+                ← Back to Portal
+              </button>
+            </a>
+            <button onClick={handleLogout} style={styles.logoutButton}>
+              🚪 Logout
+            </button>
+          </div>
         </div>
 
         <div style={styles.filterSection}>
