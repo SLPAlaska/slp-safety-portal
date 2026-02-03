@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  'https://mnxxvoqombrvpaafawbf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ueHh2b3FvbWJydnBhYWZhd2JmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyOTk3NjEsImV4cCI6MjA1MTg3NTc2MX0.z7VyWA8s7L_cfAu3-Lx03X0Y3ZkxYfGxTa5OWBFsPvI'
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const COMPANY_CREDENTIALS = {
@@ -212,7 +212,6 @@ export default function ClientExport() {
 
         setExportStatus(`Fetching ${formName}... (${++fetchedCount}/${formsToExport.length})`);
 
-        // TEMPORARILY: Fetch ALL data with no filters to see what's there
         let query = supabase.from(tableName).select('*');
 
         const { data, error } = await query;
@@ -228,7 +227,10 @@ export default function ClientExport() {
         // Show sample data for debugging
         if (data && data.length > 0) {
           console.log('Sample row:', data[0]);
-          console.log('Company field:', data[0].company || data[0].client || 'NONE');
+          const companyFields = Object.keys(data[0]).filter(k => 
+            k.toLowerCase().includes('company') || k.toLowerCase().includes('client')
+          );
+          console.log('Company-related fields found:', companyFields);
         }
 
         // Filter client-side for fuzzy company matching
