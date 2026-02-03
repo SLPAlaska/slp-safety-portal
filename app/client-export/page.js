@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  'https://mnxxvoqombrvpaafawbf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ueHh2b3FvbWJydnBhYWZhd2JmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyOTk3NjEsImV4cCI6MjA1MTg3NTc2MX0.z7VyWA8s7L_cfAu3-Lx03X0Y3ZkxYfGxTa5OWBFsPvI'
 );
 
 const COMPANY_CREDENTIALS = {
@@ -234,7 +234,18 @@ export default function ClientExport() {
         // Filter client-side for fuzzy company matching
         if (data && data.length > 0) {
           const filtered = data.filter(row => {
-            const companyField = (row.company || row.client || '').toLowerCase();
+            // Check all fields that might contain company name
+            // Look for: company, client, client_company, company_name, observer_company, etc.
+            let companyField = '';
+            
+            // Find any field with 'company' or 'client' in the name
+            for (const [key, value] of Object.entries(row)) {
+              if (key.toLowerCase().includes('company') || key.toLowerCase().includes('client')) {
+                companyField = String(value || '').toLowerCase();
+                break;
+              }
+            }
+            
             const matches = searchTerms.some(term => 
               companyField.includes(term.toLowerCase())
             );
@@ -711,4 +722,3 @@ export default function ClientExport() {
     </div>
   );
 }
-"// force rebuild" 
