@@ -18,36 +18,68 @@ const COMPANY_CREDENTIALS = {
   'CINGSA2026': { company: 'CINGSA', password: 'PSA2026$$SLP' }
 };
 
-const FORM_TABLES = {
-  'THA Assessments': 'tha_assessments',
-  'Incident Reports': 'incident_reports',
-  'Property Damage Reports': 'property_damage_reports',
-  'Witness Statements': 'witness_statements',
-  'Corrective Actions': 'corrective_actions',
-  'BBS Observations': 'bbs_observations',
-  'Good Catch Reports': 'good_catch_reports',
-  'Hazard ID Forms': 'hazard_id_forms',
-  'Hot Work Permits': 'hot_work_permits',
-  'Confined Space Permits': 'confined_space_permits',
-  'LOTO Permits': 'loto_permits',
-  'Excavation Permits': 'excavation_permits',
-  'Opening/Blinding Permits': 'opening_blinding_permits',
-  'Crane Inspections': 'crane_inspections',
-  'Equipment Inspections': 'equipment_inspections',
-  'Fire Extinguisher Inspections': 'fire_extinguisher_inspections'
+const FORM_CATEGORIES = {
+  'Investigation & Incidents': {
+    'THA Assessments': 'tha_assessments',
+    'Incident Reports': 'incidents',
+    'Property Damage Reports': 'property_damage_reports',
+    'Witness Statements': 'witness_statements',
+    'Corrective Actions': 'corrective_actions',
+    'Lessons Learned': 'lessons_learned',
+  },
+  'Observations & Field Forms': {
+    'BBS Observations': 'bbs_observations',
+    'Good Catch/Near Miss': 'good_catch_near_miss',
+    'Hazard ID Reports': 'hazard_id_reports',
+    'EHS Field Evaluations': 'ehs_field_evaluations',
+    'Risk Control Conversations': 'risk_control_conversations',
+    'STOP & Take 5': 'stop_take_5',
+  },
+  'Permits': {
+    'Hot Work Permits': 'hot_work_permits',
+    'Confined Space (CSE) Permits': 'cse_permits',
+    'Excavation Permits': 'excavation_permits',
+    'Opening/Blinding Permits': 'opening_blinding_permits',
+    'Unit Work Permits': 'unit_work_permits',
+    'Energy Isolation (EI) Permits': 'ei_permits',
+  },
+  'Equipment Inspections': {
+    'Crane Inspections': 'crane_inspections',
+    'Forklift Inspections': 'forklift_inspections',
+    'Vehicle Inspections': 'vehicle_inspections',
+    'Heavy Equipment Inspections': 'heavy_equipment_inspections',
+    'Fire Extinguisher Inspections': 'fire_extinguisher_inspections',
+    'AED Inspections': 'aed_inspections',
+  },
+  'LSR Audits': {
+    'LSR Audits': 'lsr_audits',
+    'Confined Space Audits': 'lsr_confined_space_audits',
+    'Driving Audits': 'lsr_driving_audits',
+    'Energy Isolation Audits': 'lsr_energy_isolation_audits',
+    'Fall Protection Audits': 'lsr_fall_protection_audits',
+    'Line of Fire Audits': 'lsr_line_of_fire_audits',
+  },
+  'Training & Evaluations': {
+    'Aerial Lift Evaluations': 'aerial_lift_evaluations',
+    'Forklift Evaluations': 'forklift_evaluations',
+    'Loader Evaluations': 'loader_evaluations',
+    'Excavator Evaluations': 'excavator_evaluations',
+    'Short Service Employee Evaluations': 'see_evaluations',
+  },
+  'Other Forms': {
+    'Safety Meetings': 'safety_meetings',
+    'Management of Change': 'management_of_change',
+    'Critical Lift Plans': 'critical_lift_plans',
+    'Fall Protection Plans': 'fall_protection_plans',
+    'Daily Activity Logs': 'daily_activity_logs',
+    'PPE Inspections': 'ppe_inspections',
+  }
 };
 
-const DATE_RANGES = {
-  'Last Week': 7,
-  'Last Month': 30,
-  'Last Year': 365,
-  'Year to Date': 'ytd',
-  'Custom Range': 'custom'
-};
+const DATE_RANGES = ['Last Week', 'Last Month', 'Last 3 Months', 'Last Year', 'Year to Date', 'Custom Range'];
 
 const LOCATIONS = [
-  'All',
-  'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
+  'All', 'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 
   'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'Other North Slope'
 ];
@@ -60,12 +92,12 @@ export default function ClientExport() {
   const [error, setError] = useState('');
   
   const [selectedForms, setSelectedForms] = useState({});
-  const [dateRange, setDateRange] = useState('Last Month');
+  const [dateRange, setDateRange] = useState('Year to Date');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('All');
-  const [exportFormat, setExportFormat] = useState('csv');
   const [exporting, setExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState('');
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -102,9 +134,20 @@ export default function ClientExport() {
     }));
   };
 
+  const selectAllInCategory = (category) => {
+    const categoryForms = FORM_CATEGORIES[category];
+    setSelectedForms(prev => {
+      const updated = { ...prev };
+      Object.keys(categoryForms).forEach(form => updated[form] = true);
+      return updated;
+    });
+  };
+
   const selectAllForms = () => {
     const all = {};
-    Object.keys(FORM_TABLES).forEach(form => all[form] = true);
+    Object.values(FORM_CATEGORIES).forEach(category => {
+      Object.keys(category).forEach(form => all[form] = true);
+    });
     setSelectedForms(all);
   };
 
@@ -120,6 +163,8 @@ export default function ClientExport() {
       startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     } else if (dateRange === 'Last Month') {
       startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    } else if (dateRange === 'Last 3 Months') {
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     } else if (dateRange === 'Last Year') {
       startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
     } else if (dateRange === 'Year to Date') {
@@ -144,27 +189,44 @@ export default function ClientExport() {
     }
 
     setExporting(true);
+    setExportStatus('Gathering data...');
 
     try {
       const { startDate, endDate } = getDateFilter();
       const allData = [];
+      let fetchedCount = 0;
 
       for (const formName of formsToExport) {
-        const tableName = FORM_TABLES[formName];
-        
-        let query = supabase
-          .from(tableName)
-          .select('*')
-          .eq('company', companyName);
+        // Find the table name
+        let tableName = null;
+        Object.values(FORM_CATEGORIES).forEach(category => {
+          if (category[formName]) tableName = category[formName];
+        });
+
+        if (!tableName) continue;
+
+        setExportStatus(`Fetching ${formName}... (${++fetchedCount}/${formsToExport.length})`);
+
+        let query = supabase.from(tableName).select('*');
+
+        // Try both 'company' and 'client' fields
+        const { data: testData } = await supabase.from(tableName).select('*').limit(1);
+        if (testData && testData.length > 0) {
+          if ('company' in testData[0]) {
+            query = query.eq('company', companyName);
+          } else if ('client' in testData[0]) {
+            query = query.eq('client', companyName);
+          }
+        }
 
         if (selectedLocation !== 'All') {
           query = query.eq('location', selectedLocation);
         }
 
-        if (startDate) {
+        if (startDate && 'date' in (testData?.[0] || {})) {
           query = query.gte('date', startDate.toISOString().split('T')[0]);
         }
-        if (endDate) {
+        if (endDate && 'date' in (testData?.[0] || {})) {
           query = query.lte('date', endDate.toISOString().split('T')[0]);
         }
 
@@ -179,6 +241,7 @@ export default function ClientExport() {
           data.forEach(row => {
             allData.push({
               'Form Type': formName,
+              'Table': tableName,
               ...row
             });
           });
@@ -186,16 +249,20 @@ export default function ClientExport() {
       }
 
       if (allData.length === 0) {
-        alert('No data found for selected criteria');
+        setExportStatus('');
+        alert('No data found for selected criteria. Try:\n\n1. Selecting different date range\n2. Checking if forms use your company name exactly\n3. Selecting "All" locations');
         setExporting(false);
         return;
       }
 
+      setExportStatus(`Preparing download (${allData.length} records)...`);
       downloadCSV(allData);
+      setExportStatus('');
 
     } catch (err) {
       console.error(err);
       alert('Export failed: ' + err.message);
+      setExportStatus('');
     } finally {
       setExporting(false);
     }
@@ -207,10 +274,10 @@ export default function ClientExport() {
       headers.join(','),
       ...data.map(row => headers.map(h => {
         const value = row[h] || '';
-        // Escape quotes and wrap in quotes if contains comma
-        return typeof value === 'string' && (value.includes(',') || value.includes('"'))
-          ? `"${value.replace(/"/g, '""')}"`
-          : value;
+        const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        return stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')
+          ? `"${stringValue.replace(/"/g, '""')}"`
+          : stringValue;
       }).join(','))
     ].join('\n');
 
@@ -227,151 +294,212 @@ export default function ClientExport() {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #1e3a8a 0%, #7f1d1d 100%)',
-      padding: '20px'
+      padding: '30px 20px'
     },
     loginBox: {
-      maxWidth: '400px',
-      margin: '100px auto',
+      maxWidth: '450px',
+      margin: '80px auto',
       background: 'white',
-      borderRadius: '12px',
-      padding: '40px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+      borderRadius: '16px',
+      padding: '50px',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
     },
     dashboardContainer: {
-      maxWidth: '1200px',
+      maxWidth: '1400px',
       margin: '0 auto',
       background: 'white',
-      borderRadius: '12px',
-      padding: '30px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+      borderRadius: '16px',
+      padding: '40px',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
     },
     header: {
       textAlign: 'center',
-      marginBottom: '30px'
+      marginBottom: '35px'
     },
     title: {
-      fontSize: '24px',
+      fontSize: '28px',
       fontWeight: '700',
       color: '#1f2937',
-      margin: '10px 0'
+      margin: '15px 0 8px'
     },
     subtitle: {
-      fontSize: '14px',
-      color: '#6b7280'
+      fontSize: '15px',
+      color: '#6b7280',
+      lineHeight: '1.5'
     },
     inputGroup: {
-      marginBottom: '20px'
+      marginBottom: '25px'
     },
     label: {
       display: 'block',
-      marginBottom: '8px',
-      fontSize: '14px',
+      marginBottom: '10px',
+      fontSize: '15px',
       fontWeight: '600',
       color: '#374151'
     },
     input: {
       width: '100%',
-      padding: '12px',
+      padding: '14px',
       border: '2px solid #d1d5db',
-      borderRadius: '6px',
+      borderRadius: '8px',
       fontSize: '15px',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      transition: 'border-color 0.2s'
     },
     button: {
       width: '100%',
-      padding: '14px',
+      padding: '16px',
       background: 'linear-gradient(135deg, #1e3a8a 0%, #7f1d1d 100%)',
       color: 'white',
       border: 'none',
-      borderRadius: '8px',
-      fontSize: '16px',
+      borderRadius: '10px',
+      fontSize: '17px',
       fontWeight: '600',
       cursor: 'pointer',
-      marginTop: '10px'
+      marginTop: '10px',
+      transition: 'transform 0.2s',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
     },
     error: {
-      background: '#fef2f2',
-      border: '1px solid #fecaca',
+      background: '#fee2e2',
+      border: '2px solid #fca5a5',
       color: '#dc2626',
-      padding: '12px',
-      borderRadius: '6px',
+      padding: '14px',
+      borderRadius: '8px',
       marginBottom: '20px',
-      fontSize: '14px'
+      fontSize: '14px',
+      fontWeight: '500'
     },
-    section: {
+    categorySection: {
       marginBottom: '30px',
-      padding: '20px',
+      background: '#f9fafb',
       border: '1px solid #e5e7eb',
-      borderRadius: '8px'
+      borderRadius: '12px',
+      padding: '25px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
     },
-    sectionTitle: {
-      fontSize: '18px',
-      fontWeight: '600',
-      color: '#1f2937',
-      marginBottom: '15px'
+    categoryHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '20px',
+      paddingBottom: '15px',
+      borderBottom: '2px solid #e5e7eb'
+    },
+    categoryTitle: {
+      fontSize: '20px',
+      fontWeight: '700',
+      color: '#1e3a8a'
     },
     formGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-      gap: '10px'
+      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+      gap: '12px'
     },
     checkbox: {
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
-      padding: '10px',
-      border: '1px solid #e5e7eb',
-      borderRadius: '6px',
+      gap: '10px',
+      padding: '14px',
+      border: '2px solid #e5e7eb',
+      borderRadius: '8px',
       cursor: 'pointer',
-      fontSize: '14px'
+      fontSize: '15px',
+      fontWeight: '500',
+      transition: 'all 0.2s',
+      background: 'white'
+    },
+    filterSection: {
+      background: '#eff6ff',
+      border: '2px solid #bfdbfe',
+      borderRadius: '12px',
+      padding: '25px',
+      marginBottom: '30px'
+    },
+    filterTitle: {
+      fontSize: '20px',
+      fontWeight: '700',
+      color: '#1e3a8a',
+      marginBottom: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px'
     },
     filterRow: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '15px',
-      marginBottom: '20px'
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '20px'
     },
     select: {
       width: '100%',
-      padding: '10px',
+      padding: '12px',
       border: '2px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px',
-      background: 'white'
+      borderRadius: '8px',
+      fontSize: '15px',
+      background: 'white',
+      fontWeight: '500'
     },
     exportButton: {
-      padding: '16px 32px',
+      padding: '20px 40px',
       background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
       color: 'white',
       border: 'none',
-      borderRadius: '8px',
-      fontSize: '18px',
-      fontWeight: '600',
+      borderRadius: '12px',
+      fontSize: '20px',
+      fontWeight: '700',
       cursor: 'pointer',
       width: '100%',
-      marginTop: '20px'
+      boxShadow: '0 6px 20px rgba(5, 150, 105, 0.3)',
+      transition: 'transform 0.2s'
+    },
+    smallButton: {
+      padding: '10px 18px',
+      background: '#3b82f6',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'background 0.2s'
     },
     logoutButton: {
-      padding: '8px 16px',
+      padding: '10px 20px',
       background: '#6b7280',
       color: 'white',
       border: 'none',
-      borderRadius: '6px',
-      fontSize: '14px',
+      borderRadius: '8px',
+      fontSize: '15px',
+      fontWeight: '600',
       cursor: 'pointer'
     },
     topBar: {
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: '20px',
-      paddingBottom: '20px',
-      borderBottom: '2px solid #e5e7eb'
+      marginBottom: '30px',
+      paddingBottom: '25px',
+      borderBottom: '3px solid #e5e7eb'
     },
-    companyName: {
-      fontSize: '20px',
+    companyBadge: {
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #7f1d1d 100%)',
+      color: 'white',
+      padding: '12px 24px',
+      borderRadius: '10px',
+      fontSize: '22px',
+      fontWeight: '700',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+    },
+    statusBar: {
+      background: '#fef3c7',
+      border: '2px solid #fbbf24',
+      borderRadius: '8px',
+      padding: '12px 20px',
+      marginTop: '15px',
+      fontSize: '15px',
       fontWeight: '600',
-      color: '#1e3a8a'
+      color: '#92400e',
+      textAlign: 'center'
     }
   };
 
@@ -380,10 +508,10 @@ export default function ClientExport() {
       <div style={styles.container}>
         <div style={styles.loginBox}>
           <div style={styles.header}>
-            <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', marginBottom: '20px' }} />
-            <div style={{ fontSize: '48px', marginBottom: '10px' }}>🔐</div>
+            <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '220px', marginBottom: '25px' }} />
+            <div style={{ fontSize: '56px', marginBottom: '15px' }}>🔐</div>
             <h1 style={styles.title}>Client Data Export</h1>
-            <p style={styles.subtitle}>Enter your company credentials</p>
+            <p style={styles.subtitle}>Secure access to your safety data<br/>Enter your company credentials below</p>
           </div>
 
           {error && <div style={styles.error}>⚠️ {error}</div>}
@@ -413,20 +541,20 @@ export default function ClientExport() {
             </div>
 
             <button type="submit" style={styles.button}>
-              Login
+              🔓 Login to Dashboard
             </button>
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
-            <a href="/" style={{ color: '#3b82f6', fontSize: '14px', textDecoration: 'none' }}>
+          <div style={{ textAlign: 'center', marginTop: '25px' }}>
+            <a href="/" style={{ color: '#3b82f6', fontSize: '15px', textDecoration: 'none', fontWeight: '600' }}>
               ← Back to Portal
             </a>
           </div>
         </div>
         
-        <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.8)', fontSize: '12px', marginTop: '40px' }}>
-          <div style={{ fontWeight: '500', marginBottom: '5px' }}>Powered by Predictive Safety Analytics™</div>
-          <div>© 2026 SLP Alaska, LLC</div>
+        <div style={{ textAlign: 'center', padding: '25px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginTop: '40px' }}>
+          <div style={{ fontWeight: '600', marginBottom: '6px' }}>Powered by Predictive Safety Analytics™</div>
+          <div style={{ fontWeight: '500' }}>© 2026 SLP Alaska, LLC</div>
         </div>
       </div>
     );
@@ -435,53 +563,19 @@ export default function ClientExport() {
   return (
     <div style={styles.container}>
       <div style={styles.dashboardContainer}>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px' }} />
+        <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+          <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px' }} />
         </div>
         
         <div style={styles.topBar}>
-          <div>
-            <div style={styles.companyName}>{companyName}</div>
-            <div style={{ fontSize: '14px', color: '#6b7280' }}>Data Export Dashboard</div>
-          </div>
+          <div style={styles.companyBadge}>{companyName}</div>
           <button onClick={handleLogout} style={styles.logoutButton}>
-            Logout
+            🚪 Logout
           </button>
         </div>
 
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>📊 Select Forms to Export</div>
-          <div style={{ marginBottom: '15px', display: 'flex', gap: '10px' }}>
-            <button onClick={selectAllForms} style={{ ...styles.logoutButton, background: '#3b82f6' }}>
-              Select All
-            </button>
-            <button onClick={deselectAllForms} style={styles.logoutButton}>
-              Deselect All
-            </button>
-          </div>
-          <div style={styles.formGrid}>
-            {Object.keys(FORM_TABLES).map(formName => (
-              <label
-                key={formName}
-                style={{
-                  ...styles.checkbox,
-                  background: selectedForms[formName] ? '#dbeafe' : 'white',
-                  borderColor: selectedForms[formName] ? '#3b82f6' : '#e5e7eb'
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedForms[formName] || false}
-                  onChange={() => toggleFormSelection(formName)}
-                />
-                <span>{formName}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>📅 Filters</div>
+        <div style={styles.filterSection}>
+          <div style={styles.filterTitle}>📅 Filter Your Data</div>
           <div style={styles.filterRow}>
             <div>
               <label style={styles.label}>Date Range</label>
@@ -490,7 +584,7 @@ export default function ClientExport() {
                 onChange={(e) => setDateRange(e.target.value)}
                 style={styles.select}
               >
-                {Object.keys(DATE_RANGES).map(range => (
+                {DATE_RANGES.map(range => (
                   <option key={range} value={range}>{range}</option>
                 ))}
               </select>
@@ -534,22 +628,66 @@ export default function ClientExport() {
           </div>
         </div>
 
+        <div style={{ marginBottom: '20px', display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <button onClick={selectAllForms} style={styles.smallButton}>
+            ✅ Select All Forms
+          </button>
+          <button onClick={deselectAllForms} style={{ ...styles.smallButton, background: '#6b7280' }}>
+            ❌ Deselect All
+          </button>
+        </div>
+
+        {Object.entries(FORM_CATEGORIES).map(([categoryName, forms]) => (
+          <div key={categoryName} style={styles.categorySection}>
+            <div style={styles.categoryHeader}>
+              <div style={styles.categoryTitle}>{categoryName}</div>
+              <button onClick={() => selectAllInCategory(categoryName)} style={styles.smallButton}>
+                Select All
+              </button>
+            </div>
+            <div style={styles.formGrid}>
+              {Object.keys(forms).map(formName => (
+                <label
+                  key={formName}
+                  style={{
+                    ...styles.checkbox,
+                    background: selectedForms[formName] ? '#dbeafe' : 'white',
+                    borderColor: selectedForms[formName] ? '#3b82f6' : '#e5e7eb',
+                    transform: selectedForms[formName] ? 'scale(1.02)' : 'scale(1)'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedForms[formName] || false}
+                    onChange={() => toggleFormSelection(formName)}
+                    style={{ width: '18px', height: '18px' }}
+                  />
+                  <span>{formName}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+
         <button
           onClick={exportData}
           disabled={exporting}
           style={{
             ...styles.exportButton,
-            opacity: exporting ? 0.5 : 1,
-            cursor: exporting ? 'not-allowed' : 'pointer'
+            opacity: exporting ? 0.6 : 1,
+            cursor: exporting ? 'not-allowed' : 'pointer',
+            transform: exporting ? 'scale(0.98)' : 'scale(1)'
           }}
         >
-          {exporting ? '⏳ Exporting...' : '📥 Export Data (CSV)'}
+          {exporting ? '⏳ Exporting...' : '📥 Export Selected Data (CSV)'}
         </button>
+
+        {exportStatus && <div style={styles.statusBar}>⚙️ {exportStatus}</div>}
       </div>
       
-      <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.8)', fontSize: '12px', marginTop: '20px' }}>
-        <div style={{ fontWeight: '500', marginBottom: '5px' }}>Powered by Predictive Safety Analytics™</div>
-        <div>© 2026 SLP Alaska, LLC</div>
+      <div style={{ textAlign: 'center', padding: '25px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginTop: '25px' }}>
+        <div style={{ fontWeight: '600', marginBottom: '6px' }}>Powered by Predictive Safety Analytics™</div>
+        <div style={{ fontWeight: '500' }}>© 2026 SLP Alaska, LLC</div>
       </div>
     </div>
   );
