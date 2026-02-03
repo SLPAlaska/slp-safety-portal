@@ -220,6 +220,15 @@ const FORM_CATEGORIES = [
       { name: 'Comprehensive PPE Inspection', href: '/ppe-inspection', isLocal: true },
     ]
   }
+,
+  {
+    id: 'client-export',
+    title: 'Client Data Export',
+    icon: '🔐',
+    forms: [
+      { name: 'Client Data Export Portal', href: '/client-export', isLocal: true },
+    ]
+  }
 ]
 
 export default function SafetyPortal() {
