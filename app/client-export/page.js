@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://mnxxvoqombrvpaafawbf.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ueHh2b3FvbWJydnBhYWZhd2JmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyOTk3NjEsImV4cCI6MjA1MTg3NTc2MX0.z7VyWA8s7L_cfAu3-Lx03X0Y3ZkxYfGxTa5OWBFsPvI';
 
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const COMPANY_CREDENTIALS = {
   'MAGTEC2026': { company: 'MagTec', searchTerms: ['MagTec', 'Mag Tec'], password: 'PSA2026$$SLP' },
