@@ -209,28 +209,18 @@ export default function ClientExport() {
 
         let query = supabase.from(tableName).select('*');
 
-        // Get company search term (first one from list)
+        // Get company search term for matching
         const cred = Object.values(COMPANY_CREDENTIALS).find(c => c.company === companyName);
-        const primarySearch = cred?.searchTerms?.[0] || companyName;
-
-        // Try both 'company' and 'client' fields with fuzzy matching
-        const { data: testData } = await supabase.from(tableName).select('*').limit(1);
-        if (testData && testData.length > 0) {
-          if ('company' in testData[0]) {
-            query = query.ilike('company', `%${primarySearch}%`);
-          } else if ('client' in testData[0]) {
-            query = query.ilike('client', `%${primarySearch}%`);
-          }
-        }
+        const searchTerms = cred?.searchTerms || [companyName];
 
         if (selectedLocation !== 'All') {
           query = query.eq('location', selectedLocation);
         }
 
-        if (startDate && 'date' in (testData?.[0] || {})) {
+        if (startDate) {
           query = query.gte('date', startDate.toISOString().split('T')[0]);
         }
-        if (endDate && 'date' in (testData?.[0] || {})) {
+        if (endDate) {
           query = query.lte('date', endDate.toISOString().split('T')[0]);
         }
 
@@ -241,8 +231,16 @@ export default function ClientExport() {
           continue;
         }
 
+        // Filter client-side for fuzzy company matching
         if (data && data.length > 0) {
-          data.forEach(row => {
+          const filtered = data.filter(row => {
+            const companyField = row.company || row.client || '';
+            return searchTerms.some(term => 
+              companyField.toLowerCase().includes(term.toLowerCase())
+            );
+          });
+
+          filtered.forEach(row => {
             allData.push({
               'Form Type': formName,
               'Table': tableName,
@@ -254,7 +252,7 @@ export default function ClientExport() {
 
       if (allData.length === 0) {
         setExportStatus('');
-        alert('No data found for selected criteria. Try:\n\n1. Selecting different date range\n2. Checking if forms use your company name exactly\n3. Selecting "All" locations');
+        alert('No data found for selected criteria. This could mean:\n\n1. No records exist for your company in these forms\n2. The date range has no data\n3. The location filter is too restrictive\n\nTry selecting "All" locations and "Year to Date"');
         setExporting(false);
         return;
       }
