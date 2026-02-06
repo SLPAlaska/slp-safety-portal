@@ -678,7 +678,7 @@ export default function CriticalLiftPlanForm() {
           </form>
           
           <div className="footer">
-            <span>Powered by Predictive Safety Analytics™</span> | <span>© 2025 SLP Alaska</span>
+            <span>AnthroSafe™ Powered by Field Driven Data™</span> | <span>© 2025 SLP Alaska</span>
           </div>
         </div>
       </div>

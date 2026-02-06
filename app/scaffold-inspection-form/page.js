@@ -540,7 +540,7 @@ export default function ScaffoldInspectionForm() {
             <button style={styles.newFormBtn} onClick={resetForm}>Submit Another Inspection</button>
           </div>
           <div style={styles.footer}>
-            <span style={styles.trademark}>Powered by Predictive Safety Analytics™</span>
+            <span style={styles.trademark}>AnthroSafe™ Powered by Field Driven Data™</span>
             <span style={styles.divider}>|</span>
             <span style={styles.copyright}>© 2025 SLP Alaska</span>
           </div>
@@ -784,7 +784,7 @@ export default function ScaffoldInspectionForm() {
         </div>
 
         <div style={styles.footer}>
-          <span style={styles.trademark}>Powered by Predictive Safety Analytics™</span>
+          <span style={styles.trademark}>AnthroSafe™ Powered by Field Driven Data™</span>
           <span style={styles.divider}>|</span>
           <span style={styles.copyright}>© 2025 SLP Alaska</span>
         </div>

@@ -502,7 +502,7 @@ export default function ToolboxMeetingAssessment() {
             <button style={styles.newFormBtn} onClick={resetForm}>Submit Another Assessment</button>
           </div>
           <div style={styles.footer}>
-            <span style={styles.trademark}>Powered by Predictive Safety Analytics™</span>
+            <span style={styles.trademark}>AnthroSafe™ Powered by Field Driven Data™</span>
             <span style={styles.divider}>|</span>
             <span style={styles.copyright}>© 2025 SLP Alaska</span>
           </div>
@@ -800,7 +800,7 @@ export default function ToolboxMeetingAssessment() {
         </div>
 
         <div style={styles.footer}>
-          <span style={styles.trademark}>Powered by Predictive Safety Analytics™</span>
+          <span style={styles.trademark}>AnthroSafe™ Powered by Field Driven Data™</span>
           <span style={styles.divider}>|</span>
           <span style={styles.copyright}>© 2025 SLP Alaska</span>
         </div>

@@ -573,7 +573,7 @@ export default function ClientExport() {
         </div>
         
         <div style={{ textAlign: 'center', padding: '25px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginTop: '40px' }}>
-          <div style={{ fontWeight: '600', marginBottom: '6px' }}>Powered by Predictive Safety Analytics™</div>
+          <div style={{ fontWeight: '600', marginBottom: '6px' }}>AnthroSafe™ Powered by Field Driven Data™</div>
           <div style={{ fontWeight: '500' }}>© 2026 SLP Alaska, LLC</div>
         </div>
       </div>
@@ -719,7 +719,7 @@ export default function ClientExport() {
       </div>
       
       <div style={{ textAlign: 'center', padding: '25px', color: 'rgba(255,255,255,0.9)', fontSize: '13px', marginTop: '25px' }}>
-        <div style={{ fontWeight: '600', marginBottom: '6px' }}>Powered by Predictive Safety Analytics™</div>
+        <div style={{ fontWeight: '600', marginBottom: '6px' }}>AnthroSafe™ Powered by Field Driven Data™</div>
         <div style={{ fontWeight: '500' }}>© 2026 SLP Alaska, LLC</div>
       </div>
     </div>

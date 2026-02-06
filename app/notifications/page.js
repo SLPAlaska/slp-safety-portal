@@ -516,7 +516,7 @@ export default function NotificationCenter() {
 
         <div style={styles.footer}>
           <div style={{ marginBottom: '5px' }}>
-            <strong>Powered by Predictive Safety Analytics™</strong>
+            <strong>AnthroSafe™ Powered by Field Driven Data™</strong>
           </div>
           <div>© 2026 SLP Alaska, LLC. All rights reserved.</div>
         </div>

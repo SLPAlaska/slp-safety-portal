@@ -516,7 +516,7 @@ export default function InvestigationAnalytics() {
             <div>
               <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '150px', marginBottom: '10px' }} />
               <div style={styles.headerTitle}>📊 Investigation Analytics</div>
-              <div style={styles.headerSubtitle}>Powered by Predictive Safety Analytics™</div>
+              <div style={styles.headerSubtitle}>AnthroSafe™ Powered by Field Driven Data™</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '14px', opacity: 0.9 }}>{userEmail}</div>
@@ -696,7 +696,7 @@ export default function InvestigationAnalytics() {
 
         <div style={styles.footer}>
           <div style={{ marginBottom: '5px' }}>
-            <strong>Powered by Predictive Safety Analytics™</strong>
+            <strong>AnthroSafe™ Powered by Field Driven Data™</strong>
           </div>
           <div>© 2026 SLP Alaska, LLC. All rights reserved.</div>
         </div>

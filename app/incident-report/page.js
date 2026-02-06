@@ -948,7 +948,7 @@ export default function IncidentReportForm() {
             </div>
           </div>
           <div style={styles.footer}>
-            <span style={{ fontWeight: '500' }}>Powered by Predictive Safety Analytics™</span>
+            <span style={{ fontWeight: '500' }}>AnthroSafe™ Powered by Field Driven Data™</span>
             <span style={{ margin: '0 8px' }}>|</span>
             <span>© 2025 SLP Alaska</span>
           </div>
@@ -2079,7 +2079,7 @@ export default function IncidentReportForm() {
 
         {/* Footer */}
         <div style={styles.footer}>
-          <span style={{ fontWeight: '500' }}>Powered by Predictive Safety Analytics™</span>
+          <span style={{ fontWeight: '500' }}>AnthroSafe™ Powered by Field Driven Data™</span>
           <span style={{ margin: '0 8px' }}>|</span>
           <span>© 2025 SLP Alaska</span>
         </div>

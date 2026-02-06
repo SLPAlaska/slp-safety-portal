@@ -638,7 +638,7 @@ export default function StopTake5Page() {
 
         {/* SLP TRADEMARK FOOTER */}
         <div style={styles.footer}>
-          <span style={styles.trademark}>Powered by Predictive Safety Analytics™</span>
+          <span style={styles.trademark}>AnthroSafe™ Powered by Field Driven Data™</span>
           <span style={styles.divider}>|</span>
           <span style={styles.copyright}>© 2025 SLP Alaska</span>
         </div>

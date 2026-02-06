@@ -389,7 +389,7 @@ export default function FlammableStorageAuditForm() {
         </div>
 
         <div style={{ textAlign: 'center', padding: '20px', marginTop: '30px', borderTop: '3px solid #BF0A30', background: '#f8fafc', fontSize: '12px', color: '#64748b' }}>
-          <span style={{ color: '#002868', fontWeight: 600 }}>Powered by Predictive Safety Analytics™</span> | © 2025 SLP Alaska
+          <span style={{ color: '#002868', fontWeight: 600 }}>AnthroSafe™ Powered by Field Driven Data™</span> | © 2025 SLP Alaska
         </div>
       </div>
     </div>
