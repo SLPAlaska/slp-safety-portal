@@ -82,13 +82,19 @@ export default function SAILLogEntry() {
         photoUrl = publicUrl
       }
 
+      const submitData = {
+        ...formData,
+        date: formData.date || null,
+        target_completion_date: formData.target_completion_date || null,
+        closure_date: formData.closure_date || null,
+        immediate_action: formData.immediate_action || null,
+        photo_url: photoUrl,
+        created_at: new Date().toISOString()
+      }
+
       const { error } = await supabase
         .from('sail_log')
-        .insert([{
-          ...formData,
-          photo_url: photoUrl,
-          created_at: new Date().toISOString()
-        }])
+        .insert([submitData])
 
       if (error) throw error
 
