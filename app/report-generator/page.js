@@ -120,7 +120,7 @@ td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:10pt}.page-break{page-
 <p><strong>Date:</strong> ${formatDate(incident.incident_date)}</p>
 <p><strong>Type:</strong> ${incident.investigation_type || 'N/A'}</p>
 </div>
-<div class="cover-footer"><strong>CONFIDENTIAL</strong><br>AnthroSafe™ Powered by Field Driven Data™ | © 2026 SLP Alaska, LLC</div>
+<div class="cover-footer"><strong>CONFIDENTIAL</strong><br>AnthroSafe™ Field Driven Safety | © 2026 SLP Alaska, LLC</div>
 </div>
 
 <h1>1. Executive Summary</h1>
@@ -219,7 +219,7 @@ ${l.key_takeaway ? `<div class="takeaway"><strong>Key Takeaway:</strong> ${l.key
 
 <div class="footer">
 <p><strong>Report Generated:</strong> ${formatDate(new Date())} by ${userEmail}</p>
-<p><strong>AnthroSafe™ Powered by Field Driven Data™</strong></p>
+<p><strong>AnthroSafe™ Field Driven Safety</strong></p>
 <p>© 2026 SLP Alaska, LLC. All rights reserved.</p>
 </div>
 </body></html>`;
@@ -303,7 +303,7 @@ ${l.key_takeaway ? `<div class="takeaway"><strong>Key Takeaway:</strong> ${l.key
           <p style={{ color: '#64748b', fontSize: '13px', marginTop: '10px' }}>Opens in new window. Use Print → Save as PDF.</p>
         </div>
       </div>
-      <div style={styles.footer}><strong>AnthroSafe™ Powered by Field Driven Data™</strong><br/>© 2026 SLP Alaska, LLC</div>
+      <div style={styles.footer}><strong>AnthroSafe™ Field Driven Safety</strong><br/>© 2026 SLP Alaska, LLC</div>
     </div></div>
   );
 }

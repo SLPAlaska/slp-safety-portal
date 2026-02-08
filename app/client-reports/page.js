@@ -745,7 +745,7 @@ export default function ClientReports() {
         )}
         
         <div className="footer">
-          <p>© 2026 SLP Alaska | AnthroSafe™ Powered by Field Driven Data™</p>
+          <p>© 2026 SLP Alaska | AnthroSafe™ Field Driven Safety</p>
         </div>
       </div>
     </div>

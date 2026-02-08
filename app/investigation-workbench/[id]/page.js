@@ -955,7 +955,7 @@ export default function InvestigationWorkbench() {
         </div>
 
         <div style={styles.footer}>
-          <span style={{ fontWeight: '500' }}>AnthroSafe™ Powered by Field Driven Data™</span> | © 2025 SLP Alaska
+          <span style={{ fontWeight: '500' }}>AnthroSafe™ Field Driven Safety</span> | © 2026 SLP Alaska, LLC
         </div>
       </div>
     </div>

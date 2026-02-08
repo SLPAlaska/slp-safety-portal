@@ -584,9 +584,9 @@ export default function InvestigationDashboard() {
           </div>
           
           <div style={styles.footer}>
-            <span style={{ fontWeight: '500' }}>AnthroSafe™ Powered by Field Driven Data™</span>
+            <span style={{ fontWeight: '500' }}>AnthroSafe™ Field Driven Safety</span>
             <span style={{ margin: '0 8px' }}>|</span>
-            <span>© 2025 SLP Alaska</span>
+            <span>© 2026 SLP Alaska, LLC</span>
           </div>
         </div>
       </div>
@@ -848,9 +848,9 @@ export default function InvestigationDashboard() {
 
         {/* Footer */}
         <div style={styles.footer}>
-          <span style={{ fontWeight: '500' }}>AnthroSafe™ Powered by Field Driven Data™</span>
+          <span style={{ fontWeight: '500' }}>AnthroSafe™ Field Driven Safety</span>
           <span style={{ margin: '0 8px' }}>|</span>
-          <span>© 2025 SLP Alaska</span>
+          <span>© 2026 SLP Alaska, LLC</span>
         </div>
       </div>
 

@@ -408,7 +408,7 @@ export default function LessonsLearnedBulletins() {
   }).join('')}
 
   <div class="footer">
-    <strong>SLP Alaska</strong> • AnthroSafe™ Powered by Field Driven Data™<br>
+    <strong>SLP Alaska</strong> • AnthroSafe™ Field Driven Safety<br>
     This bulletin is for internal distribution. Share with your team during safety meetings.
   </div>
 </body>
@@ -653,7 +653,7 @@ export default function LessonsLearnedBulletins() {
         </div>
 
         <div style={styles.footer}>
-          <span style={{ fontWeight: '500' }}>AnthroSafe™ Powered by Field Driven Data™</span> | © 2025 SLP Alaska
+          <span style={{ fontWeight: '500' }}>AnthroSafe™ Field Driven Safety</span> | © 2026 SLP Alaska, LLC
         </div>
       </div>
 

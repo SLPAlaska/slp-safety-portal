@@ -674,9 +674,9 @@ export default function FireExtinguisherInspection() {
 
           {/* Footer */}
           <div style={{ textAlign: 'center', padding: '20px 10px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b', background: 'linear-gradient(to bottom, #f8fafc, #ffffff)' }}>
-            <span style={{ color: '#1e3a5f', fontWeight: '500' }}>AnthroSafe™ Powered by Field Driven Data™</span>
+            <span style={{ color: '#1e3a5f', fontWeight: '500' }}>AnthroSafe™ Field Driven Safety</span>
             <span style={{ color: '#94a3b8', margin: '0 8px' }}>|</span>
-            <span style={{ color: '#475569' }}>© 2025 SLP Alaska</span>
+            <span style={{ color: '#475569' }}>© 2026 SLP Alaska, LLC</span>
           </div>
         </div>
       </div>

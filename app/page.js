@@ -573,7 +573,7 @@ export default function SafetyPortal() {
         <div className="footer">
           <p>© 2026 SLP Alaska | <a href="tel:9072023274">(907) 202-3274</a></p>
           <p style={{marginTop: '5px'}}>Safety • Leadership • Performance</p>
-          <p className="powered-by">AnthroSafe™ Powered by Field Driven Data™ © 2026 SLP Alaska, LLC</p>
+          <p className="powered-by">AnthroSafe™ Field Driven Safety © 2026 SLP Alaska, LLC</p>
         </div>
       </div>
     </div>

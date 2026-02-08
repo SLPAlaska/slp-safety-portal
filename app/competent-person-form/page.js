@@ -414,7 +414,7 @@ export default function CompetentPersonForm() {
           </form>
           
           <div className="footer">
-            <span>AnthroSafe™ Powered by Field Driven Data™</span> | <span>© 2025 SLP Alaska</span>
+            <span>AnthroSafe™ Field Driven Safety</span> | <span>© 2026 SLP Alaska, LLC</span>
           </div>
         </div>
       </div>
