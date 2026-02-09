@@ -253,6 +253,203 @@ export default function InvestigationWorkbench() {
     setNewLesson({ title: '', description: '', keyTakeaway: '' });
   }
 
+  // Print PDF Function
+  function generatePDF() {
+    const sortedTimeline = [...timelineEvents].sort((a, b) => new Date(a.date + ' ' + (a.time || '00:00')) - new Date(b.date + ' ' + (b.time || '00:00')));
+    
+    const severityDesc = {
+      'A': 'Fatality or permanent total disability',
+      'B': 'Permanent partial disability or hospitalization',
+      'C': 'Lost workday case',
+      'D': 'Restricted duty or medical treatment',
+      'E': 'First aid',
+      'F': 'Near miss with high potential',
+      'G': 'Near miss or exposure potential'
+    };
+
+    const html = `<!DOCTYPE html>
+<html><head><title>Investigation Report - ${incident.incident_id || 'Unknown'}</title>
+<style>
+  @page { margin: 0.6in; size: letter; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #1a1a1a; line-height: 1.4; }
+  .header { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 20px 25px; margin: -0.6in -0.6in 20px -0.6in; }
+  .header-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .header-subtitle { font-size: 13px; opacity: 0.9; }
+  .header-meta { display: flex; gap: 20px; margin-top: 10px; font-size: 11px; opacity: 0.85; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+  .section { margin-bottom: 18px; page-break-inside: avoid; }
+  .section-title { background: #1e3a5f; color: white; padding: 7px 14px; font-size: 13px; font-weight: 700; border-radius: 4px 4px 0 0; }
+  .section-body { border: 1px solid #d1d5db; border-top: none; padding: 14px; border-radius: 0 0 4px 4px; }
+  .row { display: flex; gap: 15px; margin-bottom: 8px; }
+  .row .label { font-weight: 700; min-width: 130px; color: #374151; }
+  .row .value { flex: 1; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { background: #f3f4f6; padding: 6px 10px; text-align: left; font-size: 10px; font-weight: 700; border: 1px solid #d1d5db; color: #374151; }
+  td { padding: 6px 10px; border: 1px solid #d1d5db; font-size: 11px; vertical-align: top; }
+  .critical-row { background: #fef3c7; }
+  .hierarchy-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 9px; font-weight: 700; color: white; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 9px; font-weight: 600; }
+  .analysis-text { white-space: pre-wrap; background: #f9fafb; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 11px; line-height: 1.5; }
+  .footer { margin-top: 25px; padding-top: 10px; border-top: 2px solid #1e3a5f; text-align: center; font-size: 9px; color: #6b7280; }
+  .footer strong { color: #1e3a5f; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .checklist-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .check-yes { width: 16px; height: 16px; border-radius: 50%; background: #22c55e; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .check-no { width: 16px; height: 16px; border-radius: 50%; background: #e2e8f0; }
+  .takeaway { background: #fef3c7; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #f59e0b; margin-top: 6px; font-size: 11px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+
+<div class="header">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div class="header-title">${incident.incident_id || 'Investigation Report'}</div>
+      <div class="header-subtitle">${incident.investigation_type || ''} Investigation Report</div>
+    </div>
+    <div style="text-align:right;">
+      ${incident.safety_severity ? `<span class="badge" style="background:${incident.safety_severity <= 'B' ? '#dc2626' : incident.safety_severity <= 'D' ? '#f97316' : '#3b82f6'};color:white;">Severity ${incident.safety_severity}</span>` : ''}
+      ${incident.psif_classification ? `<span class="badge" style="background:#1f2937;color:white;margin-left:6px;">${incident.psif_classification}</span>` : ''}
+    </div>
+  </div>
+  <div class="header-meta">
+    <span>📅 ${incident.incident_date ? new Date(incident.incident_date).toLocaleDateString() : 'N/A'}</span>
+    <span>🏢 ${incident.company_name || 'N/A'}</span>
+    <span>📍 ${incident.location_name || 'N/A'}</span>
+    <span>📋 Status: ${incident.status || 'N/A'}</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">📋 Incident Summary</div>
+  <div class="section-body">
+    <div class="two-col">
+      <div>
+        <div class="row"><span class="label">Incident ID:</span><span class="value">${incident.incident_id || 'N/A'}</span></div>
+        <div class="row"><span class="label">Date/Time:</span><span class="value">${incident.incident_date ? new Date(incident.incident_date).toLocaleString() : 'N/A'}</span></div>
+        <div class="row"><span class="label">Company:</span><span class="value">${incident.company_name || 'N/A'}</span></div>
+        <div class="row"><span class="label">Location:</span><span class="value">${incident.location_name || 'N/A'}</span></div>
+      </div>
+      <div>
+        <div class="row"><span class="label">Investigation Type:</span><span class="value">${incident.investigation_type || 'N/A'}</span></div>
+        <div class="row"><span class="label">Severity:</span><span class="value">${incident.safety_severity ? incident.safety_severity + ' - ' + (incident.safety_severity_description || severityDesc[incident.safety_severity] || '') : 'N/A'}</span></div>
+        <div class="row"><span class="label">PSIF Classification:</span><span class="value">${incident.psif_classification || 'N/A'}</span></div>
+        <div class="row"><span class="label">Status:</span><span class="value">${incident.status || 'N/A'}</span></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="row"><span class="label">Description:</span></div>
+      <div style="margin-top:4px;">${incident.brief_description || incident.detailed_description || 'No description provided'}</div>
+    </div>
+  </div>
+</div>
+
+${sortedTimeline.length > 0 ? `
+<div class="section">
+  <div class="section-title">⏱️ Timeline of Events (${sortedTimeline.length})</div>
+  <div class="section-body">
+    <table>
+      <thead><tr><th style="width:90px;">Date</th><th style="width:70px;">Time</th><th>Description</th><th style="width:60px;">Critical</th></tr></thead>
+      <tbody>${sortedTimeline.map(e => `<tr class="${e.critical ? 'critical-row' : ''}"><td>${e.date || 'N/A'}</td><td>${e.time || '-'}</td><td>${e.description || ''}</td><td style="text-align:center;">${e.critical ? '⚠️ Yes' : 'No'}</td></tr>`).join('')}</tbody>
+    </table>
+  </div>
+</div>` : ''}
+
+${evidence.length > 0 ? `
+<div class="section">
+  <div class="section-title">📷 Evidence (${evidence.length} items)</div>
+  <div class="section-body">
+    <table>
+      <thead><tr><th style="width:80px;">Type</th><th>Description</th><th style="width:100px;">Source</th><th style="width:130px;">Uploaded</th></tr></thead>
+      <tbody>${evidence.map(e => `<tr><td>${e.type || 'N/A'}</td><td>${e.description || 'No description'}</td><td>${e.source || '-'}</td><td>${e.uploaded_at ? new Date(e.uploaded_at).toLocaleDateString() : '-'}</td></tr>`).join('')}</tbody>
+    </table>
+  </div>
+</div>` : ''}
+
+${witnesses.length > 0 ? `
+<div class="section">
+  <div class="section-title">👥 Witness Statements (${witnesses.length})</div>
+  <div class="section-body">
+    ${witnesses.map(w => `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <strong>${w.name || 'Unknown'}</strong>
+        <span style="color:#6b7280;">${w.position || ''} ${w.company ? '- ' + w.company : ''}</span>
+      </div>
+      <div>${w.statement || 'No statement recorded'}</div>
+    </div>`).join('')}
+  </div>
+</div>` : ''}
+
+${(localReview || fiveWhy || rcaAnalysis) ? `
+<div class="section">
+  <div class="section-title">🔍 Analysis</div>
+  <div class="section-body">
+    ${incident.investigation_type === 'Local Review' && localReview ? `<div><strong>Local Review:</strong><div class="analysis-text" style="margin-top:6px;">${localReview}</div></div>` : ''}
+    ${incident.investigation_type === '5-Why Analysis' && fiveWhy ? `<div><strong>5-Why Analysis:</strong><div class="analysis-text" style="margin-top:6px;">${fiveWhy}</div></div>` : ''}
+    ${incident.investigation_type === 'Full RCA' && rcaAnalysis ? `<div><strong>Root Cause Analysis:</strong><div class="analysis-text" style="margin-top:6px;">${rcaAnalysis}</div></div>` : ''}
+  </div>
+</div>` : ''}
+
+${correctiveActions.length > 0 ? `
+<div class="section">
+  <div class="section-title">✅ Corrective Actions (${correctiveActions.length})</div>
+  <div class="section-body">
+    <table>
+      <thead><tr><th style="width:50px;">#</th><th>Action</th><th style="width:100px;">Control Level</th><th style="width:90px;">Owner</th><th style="width:80px;">Due Date</th><th style="width:80px;">Status</th></tr></thead>
+      <tbody>${correctiveActions.map((ca, i) => {
+        const hierarchy = ca.hierarchy || 'N/A';
+        const hColor = hierarchy === 'Elimination' ? '#166534' : hierarchy === 'Substitution' ? '#15803d' : hierarchy === 'Engineering' ? '#ca8a04' : hierarchy === 'Administrative' ? '#ea580c' : '#dc2626';
+        const sColor = ca.status === 'Completed' ? '#166534' : ca.status === 'In Progress' ? '#d97706' : '#dc2626';
+        const sBg = ca.status === 'Completed' ? '#dcfce7' : ca.status === 'In Progress' ? '#fef3c7' : '#fee2e2';
+        return `<tr><td>${i + 1}</td><td>${ca.action || ''}</td><td><span class="hierarchy-badge" style="background:${hColor};">${hierarchy}</span></td><td>${ca.owner || '-'}</td><td>${ca.dueDate || '-'}</td><td><span class="status-badge" style="background:${sBg};color:${sColor};">${ca.status || 'Open'}</span></td></tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>
+</div>` : ''}
+
+${lessonsLearned.length > 0 ? `
+<div class="section">
+  <div class="section-title">💡 Lessons Learned (${lessonsLearned.length})</div>
+  <div class="section-body">
+    ${lessonsLearned.map(l => `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
+      <strong>${l.title || 'Untitled'}</strong>
+      <div style="margin-top:4px;">${l.description || ''}</div>
+      ${l.keyTakeaway ? `<div class="takeaway"><strong>Key Takeaway:</strong> ${l.keyTakeaway}</div>` : ''}
+    </div>`).join('')}
+  </div>
+</div>` : ''}
+
+<div class="section">
+  <div class="section-title">📝 Investigation Checklist</div>
+  <div class="section-body">
+    <div class="two-col">
+      <div>
+        <div class="checklist-item"><span class="${timelineEvents.length > 0 ? 'check-yes' : 'check-no'}">${timelineEvents.length > 0 ? '✓' : ''}</span> Timeline developed (${timelineEvents.length})</div>
+        <div class="checklist-item"><span class="${evidence.length > 0 ? 'check-yes' : 'check-no'}">${evidence.length > 0 ? '✓' : ''}</span> Evidence collected (${evidence.length})</div>
+        <div class="checklist-item"><span class="${witnesses.length > 0 ? 'check-yes' : 'check-no'}">${witnesses.length > 0 ? '✓' : ''}</span> Witnesses interviewed (${witnesses.length})</div>
+      </div>
+      <div>
+        <div class="checklist-item"><span class="${(localReview || fiveWhy || rcaAnalysis) ? 'check-yes' : 'check-no'}">${(localReview || fiveWhy || rcaAnalysis) ? '✓' : ''}</span> Analysis completed</div>
+        <div class="checklist-item"><span class="${correctiveActions.length > 0 ? 'check-yes' : 'check-no'}">${correctiveActions.length > 0 ? '✓' : ''}</span> Corrective actions (${correctiveActions.length})</div>
+        <div class="checklist-item"><span class="${lessonsLearned.length > 0 ? 'check-yes' : 'check-no'}">${lessonsLearned.length > 0 ? '✓' : ''}</span> Lessons documented (${lessonsLearned.length})</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>AnthroSafe™ Field Driven Safety</strong> | © 2026 SLP Alaska, LLC<br/>
+  Report generated: ${new Date().toLocaleString()} | <em>CONFIDENTIAL - For internal use only</em>
+</div>
+
+</body></html>`;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 500);
+  }
+
   const styles = {
     container: { minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
     card: { background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', maxWidth: '1400px', margin: '0 auto', overflow: 'hidden' },
@@ -344,6 +541,21 @@ export default function InvestigationWorkbench() {
                 >
                   ← Dashboard
                 </a>
+                <button
+                  onClick={generatePDF}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🖨️ Print PDF
+                </button>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '10px' }}>
