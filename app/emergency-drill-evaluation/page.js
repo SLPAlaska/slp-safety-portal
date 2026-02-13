@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -77,8 +78,7 @@ export default function EmergencyDrillEvaluation() {
     follow_up_date: ''
   });
 
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const photoRef = useRef();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -101,47 +101,18 @@ export default function EmergencyDrillEvaluation() {
     }
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadPhoto = async () => {
-    if (!photoFile) return null;
-    
-    const fileExt = photoFile.name.split('.').pop();
-    const fileName = `drill-${Date.now()}.${fileExt}`;
-    const filePath = `emergency-drill-evaluation/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('safety-photos')
-      .upload(filePath, photoFile);
-
-    if (error) {
-      console.error('Photo upload error:', error);
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('safety-photos')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      let photoUrl = null;
-      if (photoFile) {
-        photoUrl = await uploadPhoto();
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const { error } = await supabase
@@ -151,7 +122,7 @@ export default function EmergencyDrillEvaluation() {
           total_participants: formData.total_participants ? parseInt(formData.total_participants) : null,
           total_duration: formData.total_duration ? parseInt(formData.total_duration) : null,
           headcount_time: formData.headcount_time ? parseInt(formData.headcount_time) : null,
-          photo_url: photoUrl
+          photo_urls: photoUrls.length > 0 ? photoUrls : null
         }]);
 
       if (error) throw error;
@@ -206,8 +177,7 @@ export default function EmergencyDrillEvaluation() {
       corrective_actions: '',
       follow_up_date: ''
     });
-    setPhotoFile(null);
-    setPhotoPreview(null);
+    if (photoRef.current) photoRef.current.reset();
     setSubmitted(false);
   };
 
@@ -587,79 +557,8 @@ export default function EmergencyDrillEvaluation() {
             </div>
 
             {/* Photo Documentation */}
-            <div style={{ background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
-              📷 Photo Documentation
-            </div>
+            <MultiPhotoUpload ref={photoRef} formType="emergency-drill-evaluation" />
 
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <label style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
-                  color: 'white',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}>
-                  📷 Take Photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handlePhotoChange}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-                
-                <label style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  background: '#6b7280',
-                  color: 'white',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500'
-                }}>
-                  📁 Choose File
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              </div>
-              <p style={{ fontSize: '12px', color: '#6b7280', margin: '5px 0' }}>Document drill activities or issues observed</p>
-              
-              {photoPreview && (
-                <div style={{ marginTop: '10px' }}>
-                  <img src={photoPreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '8px', display: 'block' }} />
-                  <button
-                    type="button"
-                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
-                    style={{
-                      marginTop: '8px',
-                      padding: '6px 12px',
-                      background: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ✕ Remove Photo
-                  </button>
-                </div>
-              )}
-            </div>
 
             {/* Submit Button */}
             <button type="submit" disabled={submitting}

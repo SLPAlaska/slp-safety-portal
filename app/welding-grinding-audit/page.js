@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -65,8 +66,7 @@ export default function WeldingGrindingAudit() {
     corrective_actions: '',
     overall_score: ''
   })
-  const [photoFile, setPhotoFile] = useState(null)
-  const [photoPreview, setPhotoPreview] = useState(null)
+  const photoRef = useRef();
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
@@ -75,46 +75,25 @@ export default function WeldingGrindingAudit() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setPhotoFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setPhotoPreview(reader.result)
-      reader.readAsDataURL(file)
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
 
     try {
-      let photoUrl = null
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-      if (photoFile) {
-        const fileExt = photoFile.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `welding-grinding-audit/${fileName}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('safety-photos')
-          .upload(filePath, photoFile)
-
-        if (uploadError) throw uploadError
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('safety-photos')
-          .getPublicUrl(filePath)
-
-        photoUrl = publicUrl
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const { error } = await supabase
         .from('welding_grinding_audit')
         .insert([{
           ...formData,
-          photo_url: photoUrl
+          photo_urls: photoUrls.length > 0 ? photoUrls : null
         }])
 
       if (error) throw error
@@ -156,8 +135,7 @@ export default function WeldingGrindingAudit() {
       corrective_actions: '',
       overall_score: ''
     })
-    setPhotoFile(null)
-    setPhotoPreview(null)
+    if (photoRef.current) photoRef.current.reset();
     setIsSuccess(false)
   }
 
@@ -388,34 +366,6 @@ export default function WeldingGrindingAudit() {
     gradeDescSelected: {
       fontSize: '0.65rem',
       color: 'white'
-    },
-    photoUpload: {
-      border: '2px dashed #d1d5db',
-      borderRadius: '8px',
-      padding: '25px',
-      textAlign: 'center',
-      background: 'white',
-      cursor: 'pointer',
-      transition: 'all 0.2s'
-    },
-    photoUploadHasPhoto: {
-      border: '2px dashed #059669',
-      borderRadius: '8px',
-      padding: '25px',
-      textAlign: 'center',
-      background: 'rgba(5, 150, 105, 0.05)',
-      cursor: 'pointer'
-    },
-    photoIcon: {
-      fontSize: '2rem',
-      marginBottom: '8px'
-    },
-    photoPreview: {
-      maxWidth: '180px',
-      maxHeight: '120px',
-      margin: '10px auto',
-      borderRadius: '8px',
-      display: 'block'
     },
     submitBtn: {
       width: '100%',
@@ -794,31 +744,8 @@ export default function WeldingGrindingAudit() {
             </div>
 
             {/* PHOTO SECTION */}
-            <div style={styles.section}>
-              <div style={styles.sectionHeaderOrange}>📸 Photo Documentation</div>
-              <div style={styles.sectionBody}>
-                <div style={styles.formRow}>
-                  <div style={styles.formGroupFull}>
-                    <label style={styles.label}>Photo (Optional)</label>
-                    <div 
-                      style={photoPreview ? styles.photoUploadHasPhoto : styles.photoUpload}
-                      onClick={() => document.getElementById('photoInput').click()}
-                    >
-                      <div style={styles.photoIcon}>📷</div>
-                      <p>{photoPreview ? 'Photo selected - Click to change' : 'Click to upload photo'}</p>
-                      {photoPreview && <img src={photoPreview} alt="Preview" style={styles.photoPreview} />}
-                    </div>
-                    <input
-                      type="file"
-                      id="photoInput"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      style={{ display: 'none' }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <MultiPhotoUpload ref={photoRef} formType="welding-grinding-audit" />
+
 
             <button
               type="submit"

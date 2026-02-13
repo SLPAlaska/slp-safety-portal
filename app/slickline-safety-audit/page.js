@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -59,8 +60,7 @@ export default function SlicklineSafetyAuditPage() {
     improvements: ''
   })
 
-  const [photoFile, setPhotoFile] = useState(null)
-  const [photoPreview, setPhotoPreview] = useState(null)
+  const photoRef = useRef();
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -73,46 +73,25 @@ export default function SlicklineSafetyAuditPage() {
     setFormData(prev => ({ ...prev, [questionId]: value }))
   }
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setPhotoFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setPhotoPreview(reader.result)
-      reader.readAsDataURL(file)
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
 
     try {
-      let photoUrl = ''
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-      if (photoFile) {
-        const fileExt = photoFile.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `slickline-safety-audit/${fileName}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('safety-photos')
-          .upload(filePath, photoFile)
-
-        if (uploadError) throw uploadError
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('safety-photos')
-          .getPublicUrl(filePath)
-
-        photoUrl = publicUrl
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const { error } = await supabase
         .from('slickline_safety_audit')
         .insert([{
           ...formData,
-          photo_url: photoUrl,
+          photo_urls: photoUrls.length > 0 ? photoUrls : null,
           created_at: new Date().toISOString()
         }])
 
@@ -149,8 +128,7 @@ export default function SlicklineSafetyAuditPage() {
       jsa_personnel: '',
       improvements: ''
     })
-    setPhotoFile(null)
-    setPhotoPreview(null)
+    if (photoRef.current) photoRef.current.reset();
     setSubmitted(false)
   }
 
@@ -357,39 +335,8 @@ export default function SlicklineSafetyAuditPage() {
           </div>
 
           {/* PHOTO SECTION */}
-          <div style={styles.section}>
-            <div style={{...styles.sectionHeader, ...styles.sectionHeaderSlate}}>
-              📸 Photo Documentation
-            </div>
-            <div style={styles.sectionBody}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Photo (Optional)</label>
-                <div
-                  style={{
-                    ...styles.photoUpload,
-                    ...(photoPreview ? styles.photoUploadHasPhoto : {})
-                  }}
-                  onClick={() => document.getElementById('photoInput').click()}
-                >
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="Preview" style={styles.photoPreview} />
-                  ) : (
-                    <>
-                      <div style={styles.photoIcon}>📷</div>
-                      <p>Click to upload photo</p>
-                    </>
-                  )}
-                </div>
-                <input
-                  type="file"
-                  id="photoInput"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  style={{ display: 'none' }}
-                />
-              </div>
-            </div>
-          </div>
+          <MultiPhotoUpload ref={photoRef} formType="slickline-safety-audit" />
+
 
           <button
             type="submit"
@@ -620,28 +567,6 @@ const styles = {
     borderColor: '#6b7280',
     background: '#6b7280',
     color: 'white'
-  },
-  photoUpload: {
-    border: '2px dashed #d1d5db',
-    borderRadius: '8px',
-    padding: '30px',
-    textAlign: 'center',
-    background: 'white',
-    cursor: 'pointer',
-    transition: 'all 0.2s'
-  },
-  photoUploadHasPhoto: {
-    borderColor: '#059669',
-    background: 'rgba(5, 150, 105, 0.05)'
-  },
-  photoIcon: {
-    fontSize: '2.5rem',
-    marginBottom: '10px'
-  },
-  photoPreview: {
-    maxWidth: '200px',
-    maxHeight: '150px',
-    borderRadius: '8px'
   },
   submitBtn: {
     width: '100%',

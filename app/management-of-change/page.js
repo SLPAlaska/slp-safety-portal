@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -36,8 +37,7 @@ export default function ManagementOfChange() {
     describe_change: ''
   });
 
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState('');
+  const photoRef = useRef();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -46,47 +46,18 @@ export default function ManagementOfChange() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadPhoto = async (file) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `moc_${Date.now()}.${fileExt}`;
-    const filePath = `management-of-change/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('safety-photos')
-      .upload(filePath, file);
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      return null;
-    }
-
-    const { data } = supabase.storage
-      .from('safety-photos')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      let photoUrl = null;
-      if (photoFile) {
-        photoUrl = await uploadPhoto(photoFile);
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const submitData = {
@@ -97,7 +68,7 @@ export default function ManagementOfChange() {
         type_of_change: formData.type_of_change,
         policy_procedure_num: formData.policy_procedure_num || null,
         describe_change: formData.describe_change,
-        photo_url: photoUrl
+        photo_urls: photoUrls.length > 0 ? photoUrls : null
       };
 
       const { error } = await supabase.from('management_of_change').insert([submitData]);
@@ -122,8 +93,7 @@ export default function ManagementOfChange() {
       policy_procedure_num: '',
       describe_change: ''
     });
-    setPhotoFile(null);
-    setPhotoPreview('');
+    if (photoRef.current) photoRef.current.reset();
     setSubmitted(false);
   };
 
@@ -275,38 +245,7 @@ export default function ManagementOfChange() {
                 Supporting Documentation
               </div>
               <div style={{ padding: '20px', background: '#fafafa' }}>
-                <label style={styles.label}>Upload Photo (optional)</label>
-                <div 
-                  onClick={() => document.getElementById('photo-input').click()}
-                  style={{ 
-                    border: `2px dashed ${photoPreview ? '#059669' : '#d1d5db'}`, 
-                    borderRadius: '12px', 
-                    padding: '30px', 
-                    textAlign: 'center', 
-                    cursor: 'pointer',
-                    background: photoPreview ? '#ecfdf5' : 'white',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <input 
-                    type="file" 
-                    id="photo-input" 
-                    accept="image/*" 
-                    onChange={handlePhotoChange}
-                    style={{ display: 'none' }}
-                  />
-                  {photoPreview ? (
-                    <div>
-                      <img src={photoPreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '8px', marginBottom: '10px' }} />
-                      <p style={{ color: '#059669', fontWeight: '600' }}>{photoFile?.name}</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ fontSize: '40px', marginBottom: '10px' }}>📷</div>
-                      <p style={{ color: '#6b7280', fontSize: '15px' }}>Click or tap to upload a photo</p>
-                    </div>
-                  )}
-                </div>
+                <MultiPhotoUpload ref={photoRef} formType="management-of-change" />
               </div>
             </div>
 

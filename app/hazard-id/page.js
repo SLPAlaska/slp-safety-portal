@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -62,8 +63,7 @@ export default function HazardIDForm() {
     suggested_corrective_action: ''
   });
 
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const photoRef = useRef();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -117,33 +117,18 @@ export default function HazardIDForm() {
     setFormData({ ...newData, psif_classification: classification, stky_event: stky });
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadPhoto = async () => {
-    if (!photoFile) return null;
-    const fileName = `hazard-id/${Date.now()}-${photoFile.name}`;
-    const { error } = await supabase.storage.from('safety-photos').upload(fileName, photoFile);
-    if (error) return null;
-    const { data: { publicUrl } } = supabase.storage.from('safety-photos').getPublicUrl(fileName);
-    return publicUrl;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      let photoUrl = null;
-      if (photoFile) {
-        photoUrl = await uploadPhoto();
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const submitData = {
@@ -164,7 +149,7 @@ export default function HazardIDForm() {
         energy_types: formData.energy_types.length > 0 ? formData.energy_types.join(', ') : null,
         psif_classification: formData.psif_classification || null,
         stky_event: formData.stky_event || null,
-        photo_url: photoUrl
+        photo_urls: photoUrls.length > 0 ? photoUrls : null
       };
 
       const { error } = await supabase.from('hazard_id_reports').insert([submitData]);
@@ -199,8 +184,7 @@ export default function HazardIDForm() {
       additional_action_necessary: '',
       suggested_corrective_action: ''
     });
-    setPhotoFile(null);
-    setPhotoPreview(null);
+    if (photoRef.current) photoRef.current.reset();
     setSubmitted(false);
   };
 
@@ -447,27 +431,9 @@ export default function HazardIDForm() {
             )}
 
             {/* Photo */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#1e3a8a' }}>📷 Photo Documentation</div>
-            
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Photo (Recommended)</label>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#dc2626', color: 'white', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                  📷 Take Photo
-                  <input type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} style={{ display: 'none' }} />
-                </label>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#6b7280', color: 'white', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
-                  📁 Choose File
-                  <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
-                </label>
-              </div>
-              {photoPreview && (
-                <div>
-                  <img src={photoPreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '8px' }} />
-                  <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} style={{ display: 'block', marginTop: '8px', padding: '6px 12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}>✕ Remove</button>
-                </div>
-              )}
-            </div>
+            {/* Photo Documentation */}
+            <MultiPhotoUpload ref={photoRef} formType="hazard-id" />
+
 
             {/* Submit */}
             <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>

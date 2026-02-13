@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -32,8 +33,7 @@ export default function SWPPPInspectionPage() {
     non_compliance_obs: '', any_spills: '', erosion_events: '', habitat_disturbances: '',
     inspection_results: '', non_compliance_status: '', swppp_on_site: ''
   })
-  const [photoFile, setPhotoFile] = useState(null)
-  const [photoPreview, setPhotoPreview] = useState(null)
+  const photoRef = useRef();
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -42,31 +42,19 @@ export default function SWPPPInspectionPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setPhotoFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setPhotoPreview(reader.result)
-      reader.readAsDataURL(file)
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     try {
-      let photoUrl = ''
-      if (photoFile) {
-        const fileExt = photoFile.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `swppp-inspection/${fileName}`
-        const { error: uploadError } = await supabase.storage.from('safety-photos').upload(filePath, photoFile)
-        if (uploadError) throw uploadError
-        const { data: { publicUrl } } = supabase.storage.from('safety-photos').getPublicUrl(filePath)
-        photoUrl = publicUrl
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
-      const { error } = await supabase.from('swppp_inspection').insert([{ ...formData, photo_url: photoUrl, created_at: new Date().toISOString() }])
+      const { error } = await supabase.from('swppp_inspection').insert([{ ...formData, photo_urls: photoUrls.length > 0 ? photoUrls : null, created_at: new Date().toISOString() }])
       if (error) throw error
       setSubmitted(true)
     } catch (error) {
@@ -89,8 +77,7 @@ export default function SWPPPInspectionPage() {
       non_compliance_obs: '', any_spills: '', erosion_events: '', habitat_disturbances: '',
       inspection_results: '', non_compliance_status: '', swppp_on_site: ''
     })
-    setPhotoFile(null)
-    setPhotoPreview(null)
+    if (photoRef.current) photoRef.current.reset();
     setSubmitted(false)
   }
 
@@ -302,18 +289,8 @@ export default function SWPPPInspectionPage() {
           </div>
 
           {/* PHOTO */}
-          <div style={styles.section}>
-            <div style={{...styles.sectionHeader, ...styles.sectionHeaderCyan}}>📸 Photo Documentation</div>
-            <div style={styles.sectionBody}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Photo (Optional)</label>
-                <div style={{...styles.photoUpload, ...(photoPreview ? styles.photoUploadHasPhoto : {})}} onClick={() => document.getElementById('photoInput').click()}>
-                  {photoPreview ? <img src={photoPreview} alt="Preview" style={styles.photoPreview} /> : <><div style={styles.photoIcon}>📷</div><p>Click to upload photo</p></>}
-                </div>
-                <input type="file" id="photoInput" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
-              </div>
-            </div>
-          </div>
+          <MultiPhotoUpload ref={photoRef} formType="swppp-inspection" />
+
 
           <button type="submit" disabled={submitting} style={{...styles.submitBtn, ...(submitting ? styles.submitBtnDisabled : {})}}>
             {submitting ? 'Submitting...' : 'Submit SWPPP Inspection'}
@@ -361,10 +338,6 @@ const styles = {
   checklistItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 15px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '8px' },
   checklistLabel: { flex: '1', fontWeight: '500', color: '#374151', fontSize: '0.85rem', marginBottom: 0 },
   checklistSelect: { width: '140px', padding: '6px 8px', fontSize: '0.8rem', border: '2px solid #d1d5db', borderRadius: '6px', background: 'white' },
-  photoUpload: { border: '2px dashed #d1d5db', borderRadius: '8px', padding: '25px', textAlign: 'center', background: 'white', cursor: 'pointer' },
-  photoUploadHasPhoto: { borderColor: '#059669', background: 'rgba(5, 150, 105, 0.05)' },
-  photoIcon: { fontSize: '2rem', marginBottom: '8px' },
-  photoPreview: { maxWidth: '180px', maxHeight: '120px', borderRadius: '8px' },
   submitBtn: { width: '100%', padding: '14px 28px', background: 'linear-gradient(135deg, #1e3a8a, #1e40af)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1.05rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 15px rgba(30, 58, 138, 0.3)' },
   submitBtnDisabled: { background: '#9ca3af', cursor: 'not-allowed', boxShadow: 'none' },
   successMessage: { textAlign: 'center', padding: '60px 40px' },

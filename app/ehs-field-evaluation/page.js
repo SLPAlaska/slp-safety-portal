@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -38,38 +39,12 @@ export default function EHSFieldEvaluationForm() {
     sail_log: ''
   })
 
-  const [photoFile, setPhotoFile] = useState(null)
-  const [photoPreview, setPhotoPreview] = useState(null)
+  const photoRef = useRef();
   const [status, setStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setPhotoFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => setPhotoPreview(e.target.result)
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const uploadPhoto = async (file) => {
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `ehs-photos/${fileName}`
-      const { error } = await supabase.storage.from('safety-photos').upload(filePath, file)
-      if (error) throw error
-      const { data: urlData } = supabase.storage.from('safety-photos').getPublicUrl(filePath)
-      return urlData.publicUrl
-    } catch (error) {
-      console.error('Photo upload error:', error)
-      return null
-    }
   }
 
   const handleSubmit = async (e) => {
@@ -78,15 +53,18 @@ export default function EHSFieldEvaluationForm() {
     setStatus('Submitting...')
 
     try {
-      let photoUrl = ''
-      if (photoFile) {
-        setStatus('Uploading photo...')
-        photoUrl = await uploadPhoto(photoFile)
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const dataToSubmit = {
         ...formData,
-        photo_url: photoUrl || null
+        photo_urls: photoUrls.length > 0 ? photoUrls : null
       }
 
       const { error } = await supabase.from('ehs_field_evaluations').insert([dataToSubmit])
@@ -296,16 +274,9 @@ export default function EHSFieldEvaluationForm() {
               </div>
             </div>
 
-            <div style={{ background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📷 Photo Documentation</div>
-            
-            <div style={{ marginBottom: '25px' }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Photo (Optional)</label>
-              <div onClick={() => document.getElementById('photoInput').click()} style={{ border: photoPreview ? '2px solid #059669' : '2px dashed #d1d5db', borderRadius: '8px', padding: '30px', textAlign: 'center', cursor: 'pointer' }}>
-                <input type="file" id="photoInput" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-                {!photoPreview && <><p>📷 Tap to take or upload photo</p><p style={{ fontSize: '12px', color: '#6b7280' }}>Document observations or issues found</p></>}
-                {photoPreview && <img src={photoPreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '10px', borderRadius: '4px' }} />}
-              </div>
-            </div>
+            {/* Photo Documentation */}
+            <MultiPhotoUpload ref={photoRef} formType="ehs-field-evaluation" />
+
 
             <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
               {isSubmitting ? 'Submitting...' : 'Submit EHS Field Evaluation'}

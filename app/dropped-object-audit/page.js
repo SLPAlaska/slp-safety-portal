@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -22,11 +23,9 @@ export default function DroppedObjectAuditForm() {
     potential_dropped_object: '',
     corrective_action: '',
     further_assistance_needed: '',
-    photo_url: ''
   })
 
-  const [photoFile, setPhotoFile] = useState(null)
-  const [photoPreview, setPhotoPreview] = useState(null)
+  const photoRef = useRef();
   const [status, setStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -37,48 +36,24 @@ export default function DroppedObjectAuditForm() {
     })
   }
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setPhotoFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => setPhotoPreview(e.target.result)
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const uploadPhoto = async (file) => {
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `dropped-object-photos/${fileName}`
-
-      const { error } = await supabase.storage.from('safety-photos').upload(filePath, file)
-      if (error) throw error
-
-      const { data: urlData } = supabase.storage.from('safety-photos').getPublicUrl(filePath)
-      return urlData.publicUrl
-    } catch (error) {
-      console.error('Error uploading photo:', error)
-      return null
-    }
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     setStatus('Submitting...')
 
     try {
-      let photoUrl = ''
-      if (photoFile) {
-        setStatus('Uploading photo...')
-        photoUrl = await uploadPhoto(photoFile)
+      // Generate a unique submission ID for photo storage path
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      // Upload photos if any were staged
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const dataToSubmit = {
         ...formData,
-        photo_url: photoUrl || null
+        photo_urls: photoUrls.length > 0 ? photoUrls : null
       }
 
       const { error } = await supabase.from('dropped_object_audits').insert([dataToSubmit])
@@ -108,7 +83,6 @@ export default function DroppedObjectAuditForm() {
     textarea: { width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
     radioGroup: { display: 'flex', gap: '15px', flexWrap: 'wrap' },
     radioOption: { display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', border: '2px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', flex: '1', minWidth: '120px', justifyContent: 'center' },
-    photoUpload: { border: '2px dashed #d1d5db', borderRadius: '8px', padding: '30px', textAlign: 'center', cursor: 'pointer' },
     submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: 'pointer', marginTop: '20px' },
     footer: { textAlign: 'center', padding: '20px 10px', marginTop: '30px', fontSize: '11px', color: '#64748b' }
   }
@@ -201,16 +175,8 @@ export default function DroppedObjectAuditForm() {
               </div>
             </div>
 
-            <div style={styles.sectionHeader}>📷 Photo Documentation</div>
+            <MultiPhotoUpload ref={photoRef} formType="dropped-object-audit" />
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Photo Evidence (Recommended)</label>
-              <div style={{ ...styles.photoUpload, borderColor: photoPreview ? '#059669' : '#d1d5db', borderStyle: photoPreview ? 'solid' : 'dashed' }} onClick={() => document.getElementById('photoInput').click()}>
-                <input type="file" id="photoInput" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-                {!photoPreview && <><p>📷 Tap to take or upload photo</p><p style={{ fontSize: '12px', color: '#6b7280' }}>Photo documentation helps track hazards and verify corrections</p></>}
-                {photoPreview && <img src={photoPreview} style={{ maxWidth: '200px', maxHeight: '150px', marginTop: '10px', borderRadius: '4px' }} alt="Preview" />}
-              </div>
-            </div>
 
             <button type="submit" style={{ ...styles.submitBtn, background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', cursor: isSubmitting ? 'not-allowed' : 'pointer' }} disabled={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Submit Dropped Object Audit'}
