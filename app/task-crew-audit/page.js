@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
+import { safeSubmit } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -103,25 +104,21 @@ export default function TaskCrewAudit() {
 
     try {
       // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const result = await safeSubmit({
+        table: 'task_crew_audit',
+        data: { ...formData },
+        photoRef: photoRef,
+        formType: 'task-crew-audit'
+      });
 
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
+      if (result.success) {
+        setIsSuccess(true);
+        if (result.photoWarning) {
+          console.warn(result.photoWarning);
+        }
+      } else {
+        alert(result.error || 'Submission failed. Please try again.');
       }
-
-      const { error } = await supabase
-        .from('task_crew_audit')
-        .insert([{
-          ...formData,
-          total_personnel: formData.total_personnel ? parseInt(formData.total_personnel) : null,
-          photo_urls: photoUrls.length > 0 ? photoUrls : null
-        }])
-
-      if (error) throw error
-
-      setIsSuccess(true)
     } catch (error) {
       console.error('Error submitting form:', error)
       alert('Error submitting form: ' + error.message)

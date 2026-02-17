@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
+import { safeSubmit } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -122,40 +123,21 @@ export default function HazardIDForm() {
     setIsSubmitting(true);
 
     try {
-      // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const result = await safeSubmit({
+        table: 'hazard_id_reports',
+        data: { ...formData },
+        photoRef: photoRef,
+        formType: 'hazard-id'
+      });
 
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
-      }
-
-      const submitData = {
-        submitter_name: formData.submitter_name,
-        email_address: formData.email_address || null,
-        company: formData.company,
-        location: formData.location,
-        date: formData.date,
-        identified_hazard: formData.identified_hazard,
-        near_miss: formData.near_miss,
-        threat_level: formData.threat_level,
-        corrective_action_taken: formData.corrective_action_taken || null,
-        additional_action_necessary: formData.additional_action_necessary,
-        suggested_corrective_action: formData.suggested_corrective_action || null,
-        high_energy_present: formData.high_energy_present || null,
-        energy_release_potential: formData.energy_release_potential || null,
-        direct_control_status: formData.direct_control_status || null,
-        energy_types: formData.energy_types.length > 0 ? formData.energy_types.join(', ') : null,
-        psif_classification: formData.psif_classification || null,
-        stky_event: formData.stky_event || null,
-        photo_urls: photoUrls.length > 0 ? photoUrls : null
+      if (result.success) {
+        setSubmitted(true);
+        if (result.photoWarning) {
+          console.warn(result.photoWarning);
+        }
+      } else {
+        alert(result.error || 'Submission failed. Please try again.');
       };
-
-      const { error } = await supabase.from('hazard_id_reports').insert([submitData]);
-      if (error) throw error;
-
-      setSubmitted(true);
     } catch (error) {
       console.error('Error:', error);
       alert('Error: ' + error.message);

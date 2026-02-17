@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
+import { safeSubmit } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -146,31 +147,21 @@ export default function StopTake5Page() {
     setSubmitting(true)
 
     try {
-      // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const result = await safeSubmit({
+        table: 'stop_take_5',
+        data: { ...formData },
+        photoRef: photoRef,
+        formType: 'stop-take-5'
+      });
 
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
+      if (result.success) {
+        setSubmitted(true);
+        if (result.photoWarning) {
+          console.warn(result.photoWarning);
+        }
+      } else {
+        alert(result.error || 'Submission failed. Please try again.');
       }
-
-      const calculatedRiskLevel = getRiskLevelText()
-
-      const { error } = await supabase
-        .from('stop_take_5')
-        .insert([{
-          ...formData,
-          energy_types: selectedEnergy.join(', '),
-          control_types: selectedControls.join(', '),
-          risk_level: calculatedRiskLevel,
-          photo_urls: photoUrls.length > 0 ? photoUrls : null,
-          created_at: new Date().toISOString()
-        }])
-
-      if (error) throw error
-
-      setSubmitted(true)
     } catch (error) {
       console.error('Error submitting form:', error)
       alert('Error submitting form: ' + error.message)

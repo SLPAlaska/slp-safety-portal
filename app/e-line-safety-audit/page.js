@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
+import { safeSubmit } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -54,27 +55,22 @@ export default function ELineSafetyAuditForm() {
 
     try {
       // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const result = await safeSubmit({
+        table: 'eline_safety_audits',
+        data: { ...formData },
+        photoRef: photoRef,
+        formType: 'e-line-safety-audit'
+      });
 
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
+      if (result.success) {
+        setStatus('✅ Submitted successfully!');
+        setTimeout(() => window.location.reload(), 2000);
+        if (result.photoWarning) {
+          console.warn(result.photoWarning);
+        }
+      } else {
+        alert(result.error || 'Submission failed. Please try again.');
       }
-
-      const dataToSubmit = {
-        ...formData,
-        crew_size: formData.crew_size ? parseInt(formData.crew_size) : null,
-        low_test_pressure: formData.low_test_pressure ? parseFloat(formData.low_test_pressure) : null,
-        high_test_pressure: formData.high_test_pressure ? parseFloat(formData.high_test_pressure) : null,
-        photo_urls: photoUrls.length > 0 ? photoUrls : null
-      }
-
-      const { error } = await supabase.from('eline_safety_audits').insert([dataToSubmit])
-      if (error) throw error
-
-      setStatus('✅ E-Line Safety Audit submitted successfully!')
-      setTimeout(() => window.location.reload(), 2000)
     } catch (error) {
       console.error('Error:', error)
       setStatus('❌ Error: ' + error.message)

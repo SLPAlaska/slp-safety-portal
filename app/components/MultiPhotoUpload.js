@@ -14,29 +14,44 @@ const MultiPhotoUpload = forwardRef(function MultiPhotoUpload({ formType, maxPho
 
   useImperativeHandle(ref, () => ({
     async uploadAll(submissionId) {
-      if (photos.length === 0) return [];
+      if (photos.length === 0) return { urls: [], failedCount: 0 };
       setUploading(true);
       setUploadError(null);
       const urls = [];
-      try {
-        for (const photo of photos) {
+      let failedCount = 0;
+
+      for (const photo of photos) {
+        try {
           const fileExt = photo.name.split('.').pop().toLowerCase();
           const timestamp = Date.now();
           const randomId = Math.random().toString(36).substring(2, 9);
           const fileName = `${timestamp}-${randomId}.${fileExt}`;
           const filePath = `${formType}/${submissionId}/${fileName}`;
+          
           const { error } = await supabase.storage.from('safety-photos').upload(filePath, photo);
-          if (error) throw new Error(`Photo upload failed: ${error.message}`);
+          if (error) {
+            console.warn(`Photo upload failed for ${photo.name}: ${error.message}`);
+            failedCount++;
+            continue;
+          }
+          
           const { data: { publicUrl } } = supabase.storage.from('safety-photos').getPublicUrl(filePath);
           urls.push(publicUrl);
+        } catch (err) {
+          console.warn(`Photo upload error for ${photo.name}: ${err.message}`);
+          failedCount++;
+          continue;
         }
-        return urls;
-      } catch (err) {
-        setUploadError(err.message);
-        throw err;
-      } finally {
-        setUploading(false);
       }
+
+      if (failedCount > 0 && failedCount < photos.length) {
+        setUploadError(`${failedCount} of ${photos.length} photos failed to upload. The rest were saved.`);
+      } else if (failedCount === photos.length) {
+        setUploadError('All photos failed to upload. Your form data was still saved.');
+      }
+
+      setUploading(false);
+      return { urls, failedCount };
     },
     reset() { setPhotos([]); setUploadError(null); },
     hasPhotos() { return photos.length > 0; }
@@ -97,7 +112,7 @@ const MultiPhotoUpload = forwardRef(function MultiPhotoUpload({ formType, maxPho
         </div>
       )}
       {uploadError && (
-        <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#991b1b', fontSize: '13px' }}>{uploadError}</div>
+        <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fefce8', border: '1px solid #fde68a', borderRadius: '6px', color: '#92400e', fontSize: '13px' }}>{uploadError}</div>
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
+import { safeSubmit } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -130,24 +131,21 @@ export default function FireExtinguisherInspection() {
     setSubmitting(true);
 
     try {
-      // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const result = await safeSubmit({
+        table: 'fire_extinguisher_inspections',
+        data: { ...formData },
+        photoRef: photoRef,
+        formType: 'fire-extinguisher-inspection'
+      });
 
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
-      }
-
-      const { error } = await supabase
-        .from('fire_extinguisher_inspections')
-        .insert([{
-          ...formData,
-          photo_urls: photoUrls.length > 0 ? photoUrls : null
-        }]);
-
-      if (error) throw error;
-      setSubmitted(true);
+      if (result.success) {
+        setSubmitted(true);
+        if (result.photoWarning) {
+          console.warn(result.photoWarning);
+        }
+      } else {
+        alert(result.error || 'Submission failed. Please try again.');
+      };
     } catch (error) {
       console.error('Submission error:', error);
       alert('Error submitting inspection: ' + error.message);

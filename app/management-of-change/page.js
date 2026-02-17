@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
+import { safeSubmit } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -51,30 +52,21 @@ export default function ManagementOfChange() {
     setIsSubmitting(true);
 
     try {
-      // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const result = await safeSubmit({
+        table: 'management_of_change',
+        data: { ...formData },
+        photoRef: photoRef,
+        formType: 'management-of-change'
+      });
 
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
-      }
-
-      const submitData = {
-        requestor_name: formData.requestor_name,
-        date: formData.date,
-        location: formData.location,
-        immediate_supervisor: formData.immediate_supervisor,
-        type_of_change: formData.type_of_change,
-        policy_procedure_num: formData.policy_procedure_num || null,
-        describe_change: formData.describe_change,
-        photo_urls: photoUrls.length > 0 ? photoUrls : null
+      if (result.success) {
+        setSubmitted(true);
+        if (result.photoWarning) {
+          console.warn(result.photoWarning);
+        }
+      } else {
+        alert(result.error || 'Submission failed. Please try again.');
       };
-
-      const { error } = await supabase.from('management_of_change').insert([submitData]);
-      if (error) throw error;
-
-      setSubmitted(true);
     } catch (error) {
       console.error('Error:', error);
       alert('Error submitting MOC request: ' + error.message);

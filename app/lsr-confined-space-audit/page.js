@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import AddToSailLog from '@/components/AddToSailLog';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
+import { safeSubmit } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -80,25 +81,24 @@ export default function LSRConfinedSpaceAudit() {
     setSubmitting(true);
 
     try {
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const result = await safeSubmit({
+        table: 'lsr_confined_space_audits',
+        data: { ...formData },
+        photoRef: photoRef,
+        formType: 'lsr-confined-space-audit'
+      });
 
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
+      if (result.success) {
+        setSubmitted(true);
+        if (result.photoWarning) {
+          console.warn(result.photoWarning);
+        }
+      } else {
+        alert(result.error || 'Submission failed. Please try again.');
       }
-
-      const { error } = await supabase
-        .from('lsr_confined_space_audits')
-        .insert([{
-          ...formData,
-          photo_urls: photoUrls.length > 0 ? photoUrls : null
-        }]);
-
-      if (error) throw error;
-      setSubmitted(true);
     } catch (error) {
       console.error('Submission error:', error);
-      alert('Error submitting audit: ' + error.message);
+      alert('Error submitting: ' + error.message);
     } finally {
       setSubmitting(false);
     }
