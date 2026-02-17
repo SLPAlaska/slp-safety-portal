@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import AddToSailLog from '@/components/AddToSailLog';
+import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -61,8 +62,7 @@ export default function LSRConfinedSpaceAudit() {
     crew_comments: ''
   });
 
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const photoRef = useRef();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -75,54 +75,23 @@ export default function LSRConfinedSpaceAudit() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPhotoPreview(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadPhoto = async () => {
-    if (!photoFile) return null;
-    
-    const fileExt = photoFile.name.split('.').pop();
-    const fileName = `lsr-confined-space-${Date.now()}.${fileExt}`;
-    const filePath = `lsr-confined-space-audit/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('safety-photos')
-      .upload(filePath, photoFile);
-
-    if (error) {
-      console.error('Photo upload error:', error);
-      return null;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('safety-photos')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
 
     try {
-      let photoUrl = null;
-      if (photoFile) {
-        photoUrl = await uploadPhoto();
+      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+      let photoUrls = [];
+      if (photoRef.current && photoRef.current.hasPhotos()) {
+        photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
       const { error } = await supabase
         .from('lsr_confined_space_audits')
         .insert([{
           ...formData,
-          photo_url: photoUrl
+          photo_urls: photoUrls.length > 0 ? photoUrls : null
         }]);
 
       if (error) throw error;
@@ -162,8 +131,7 @@ export default function LSRConfinedSpaceAudit() {
       commentary_no_needs: '',
       crew_comments: ''
     });
-    setPhotoFile(null);
-    setPhotoPreview(null);
+    if (photoRef.current) photoRef.current.reset();
     setSubmitted(false);
   };
 
@@ -447,81 +415,7 @@ export default function LSRConfinedSpaceAudit() {
             </div>
 
             {/* Photo Documentation */}
-            <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', marginBottom: '30px' }}>
-              <SectionHeader color="blue">Photo Documentation</SectionHeader>
-              <div style={{ padding: '20px', background: '#fafafa' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1f2937', fontSize: '14px' }}>
-                  Upload Photo (optional)
-                </label>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  <label style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '12px 20px',
-                    background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
-                    color: 'white',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}>
-                    📷 Take Photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handlePhotoChange}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  
-                  <label style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '12px 20px',
-                    background: '#6b7280',
-                    color: 'white',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500'
-                  }}>
-                    📁 Choose File
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                </div>
-                
-                {photoPreview && (
-                  <div style={{ marginTop: '10px' }}>
-                    <img src={photoPreview} alt="Preview" style={{ maxWidth: '200px', maxHeight: '150px', borderRadius: '8px' }} />
-                    <button
-                      type="button"
-                      onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
-                      style={{
-                        display: 'block',
-                        marginTop: '8px',
-                        padding: '6px 12px',
-                        background: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ✕ Remove Photo
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            <MultiPhotoUpload ref={photoRef} formType="lsr-confined-space-audit" />
 
             {/* Submit Button */}
             <button
