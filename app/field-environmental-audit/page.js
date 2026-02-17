@@ -133,11 +133,11 @@ export default function FieldEnvironmentalAuditForm() {
     footer: { textAlign: 'center', padding: '20px 10px', marginTop: '30px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b' }
   };
 
-  const RadioGroup = ({ label, name, notesName, options = AUDIT_OPTIONS, required = true }) => (
-    <div style={styles.auditQuestion}>
+  const renderAuditQuestion = (label, name, notesName, required = true) => (
+    <div key={name} style={styles.auditQuestion}>
       <label style={{ ...styles.label, marginBottom: '10px', fontSize: '14px' }}>{label} {required && <span style={{ color: '#dc2626' }}>*</span>}</label>
       <div style={styles.radioGroup}>
-        {options.map(opt => (
+        {AUDIT_OPTIONS.map(opt => (
           <label key={opt} style={{ ...styles.radioOption, borderColor: formData[name] === opt ? '#059669' : '#d1d5db', background: formData[name] === opt ? 'rgba(5,150,105,0.05)' : '#fff' }}>
             <input type="radio" name={name} value={opt} checked={formData[name] === opt} onChange={handleChange} required={required} style={{ width: '16px', height: '16px' }} />
             <span>{opt}</span>
@@ -146,7 +146,7 @@ export default function FieldEnvironmentalAuditForm() {
       </div>
       {notesName && (formData[name] === 'No' || formData[name] === 'Needs Improvement') && (
         <div style={{ marginTop: '10px' }}>
-          <input type="text" name={notesName} value={formData[notesName]} onChange={handleChange} placeholder="Describe the issue..." style={styles.input} />
+          <textarea name={notesName} value={formData[notesName]} onChange={handleChange} placeholder="Describe the issue..." rows={2} style={{ ...styles.input, minHeight: '60px', resize: 'vertical' }} />
         </div>
       )}
     </div>
@@ -229,14 +229,14 @@ export default function FieldEnvironmentalAuditForm() {
             <div style={{ ...styles.sectionHeader, backgroundColor: '#1e3a8a' }}>🔍 Environmental Audit Questions</div>
             <div style={styles.infoBox}>Answer each question based on your field observations. Select "Needs Improvement" when partial compliance is observed.</div>
 
-            <RadioGroup label="Spill Prevention & Control measures in place?" name="spill_prevention" notesName="spill_prevention_notes" />
-            <RadioGroup label="Waste Management - proper storage, labeling, disposal?" name="waste_management" notesName="waste_management_notes" />
-            <RadioGroup label="Secondary Containment adequate and maintained?" name="secondary_containment" notesName="secondary_containment_notes" />
-            <RadioGroup label="Hazardous Materials properly stored and labeled?" name="hazmat_storage" notesName="hazmat_storage_notes" />
-            <RadioGroup label="Stormwater controls in place and functional?" name="stormwater_controls" notesName="stormwater_controls_notes" />
-            <RadioGroup label="Dust control measures adequate?" name="dust_control" notesName="dust_control_notes" />
-            <RadioGroup label="Wildlife protection measures in place?" name="wildlife_protection" notesName="wildlife_protection_notes" />
-            <RadioGroup label="Environmental permits current and posted?" name="permits_current" notesName="permits_notes" />
+            {renderAuditQuestion("Spill Prevention & Control measures in place?", "spill_prevention", "spill_prevention_notes")}
+            {renderAuditQuestion("Waste Management - proper storage, labeling, disposal?", "waste_management", "waste_management_notes")}
+            {renderAuditQuestion("Secondary Containment adequate and maintained?", "secondary_containment", "secondary_containment_notes")}
+            {renderAuditQuestion("Hazardous Materials properly stored and labeled?", "hazmat_storage", "hazmat_storage_notes")}
+            {renderAuditQuestion("Stormwater controls in place and functional?", "stormwater_controls", "stormwater_controls_notes")}
+            {renderAuditQuestion("Dust control measures adequate?", "dust_control", "dust_control_notes")}
+            {renderAuditQuestion("Wildlife protection measures in place?", "wildlife_protection", "wildlife_protection_notes")}
+            {renderAuditQuestion("Environmental permits current and posted?", "permits_current", "permits_notes")}
 
             <div style={{ ...styles.sectionHeader, backgroundColor: '#059669' }}>💡 Observations & Actions</div>
             <div style={styles.fullWidth}>
