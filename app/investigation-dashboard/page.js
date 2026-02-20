@@ -547,6 +547,48 @@ export default function InvestigationDashboard() {
     window.location.href = `/investigation-workbench/${incident.id}`;
   }
 
+  async function deleteIncident(incident) {
+    const confirmMsg = `⚠️ PERMANENTLY DELETE this incident?\n\n${incident.incident_id}\n${incident.brief_description || ''}\n\nThis will also delete ALL related:\n• Timeline events\n• Evidence records\n• Witness statements\n• Corrective actions\n• Lessons learned\n• Analysis data\n• Activity logs\n\nThis action CANNOT be undone.`;
+    
+    if (!confirm(confirmMsg)) return;
+    
+    // Second confirmation for safety
+    const typed = prompt('Type DELETE to confirm:');
+    if (typed !== 'DELETE') {
+      alert('Deletion cancelled.');
+      return;
+    }
+
+    try {
+      // Delete from incidents table - CASCADE will handle all related tables
+      const { error } = await supabase
+        .from('incidents')
+        .delete()
+        .eq('id', incident.id);
+
+      if (error) throw error;
+
+      // Also clean up storage files if any
+      try {
+        const { data: files } = await supabase.storage
+          .from('evidence')
+          .list(`incidents/${incident.id}`);
+        if (files && files.length > 0) {
+          const filePaths = files.map(f => `incidents/${incident.id}/${f.name}`);
+          await supabase.storage.from('evidence').remove(filePaths);
+        }
+      } catch (storageErr) {
+        console.warn('Storage cleanup:', storageErr);
+      }
+
+      alert(`✅ ${incident.incident_id} deleted successfully.`);
+      fetchIncidents();
+    } catch (error) {
+      console.error('Error deleting incident:', error);
+      alert('Error deleting: ' + error.message);
+    }
+  }
+
   // ============================================================================
   // RENDER - LOGIN SCREEN
   // ============================================================================
@@ -555,7 +597,7 @@ export default function InvestigationDashboard() {
     return (
       <div style={styles.container}>
         <div style={styles.wrapper}>
-          <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
           
           <div style={styles.loginCard}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', margin: '0 auto 25px', display: 'block' }} />
@@ -600,7 +642,7 @@ export default function InvestigationDashboard() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         
         {/* Header */}
         <div style={styles.header}>
@@ -834,6 +876,12 @@ export default function InvestigationDashboard() {
                               style={{ ...styles.actionBtn, ...styles.secondaryBtn }}
                             >
                               Assign
+                            </button>
+                            <button
+                              onClick={() => deleteIncident(incident)}
+                              style={{ ...styles.actionBtn, background: '#dc2626', color: 'white', border: 'none' }}
+                            >
+                              🗑️
                             </button>
                           </div>
                         </td>
