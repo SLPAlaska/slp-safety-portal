@@ -131,9 +131,14 @@ export default function FireExtinguisherInspection() {
     setSubmitting(true);
 
     try {
+      // Convert empty strings to null (PostgreSQL rejects "" for date columns)
+      const cleanedData = Object.fromEntries(
+        Object.entries(formData).map(([key, val]) => [key, val === '' ? null : val])
+      );
+
       const result = await safeSubmit({
         table: 'fire_extinguisher_inspections',
-        data: { ...formData },
+        data: cleanedData,
         photoRef: photoRef,
         formType: 'fire-extinguisher-inspection'
       });
