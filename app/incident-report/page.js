@@ -482,11 +482,19 @@ const INVESTIGATION_TYPE_DISPLAY = {
 // MAIN COMPONENT
 // ============================================================================
 
+// Helper: get today's date in LOCAL timezone (not UTC)
+function getLocalDateString() {
+  const now = new Date();
+  return now.getFullYear() + '-' + 
+    String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+    String(now.getDate()).padStart(2, '0');
+}
+
 export default function IncidentReportForm() {
   // Form State
   const [formData, setFormData] = useState({
     // Basic Info
-    incident_date: new Date().toISOString().split('T')[0],
+    incident_date: getLocalDateString(),
     incident_time: '',
     location_name: '',
     company_name: '',
@@ -565,6 +573,7 @@ export default function IncidentReportForm() {
   const [submitStatus, setSubmitStatus] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdIncidentId, setCreatedIncidentId] = useState('');
+  const [createdIncidentUUID, setCreatedIncidentUUID] = useState('');
 
   // ============================================================================
   // EFFECTS - Auto-calculate classifications
@@ -777,7 +786,8 @@ export default function IncidentReportForm() {
                 file_name: fileName,
                 file_url: urlData.publicUrl,
                 description: `Photo ${i + 1} from initial report`,
-                uploaded_by_email: formData.reported_by_email
+                uploaded_by_email: formData.reported_by_email,
+                source: 'initial_report'
               });
           }
         }
@@ -805,7 +815,38 @@ export default function IncidentReportForm() {
           }
         });
 
+      // Auto-create initial timeline event from incident date/time/description
+      try {
+        await supabase.from('timeline_events').insert({
+          incident_id: data.id,
+          sequence_number: 1,
+          date: formData.incident_date,
+          time: formData.incident_time || null,
+          description: formData.brief_description || formData.detailed_description || 'Incident occurred',
+          critical: isSIF || isSIFP,
+          created_by_email: formData.reported_by_email
+        });
+        await supabase.from('incidents').update({ timeline_event_count: 1, timeline_developed: true }).eq('id', data.id);
+      } catch (tlErr) { console.warn('Timeline auto-create:', tlErr); }
+
+      // Auto-create initial witness statement if witness info was provided
+      if (formData.witness_statement_summary) {
+        try {
+          await supabase.from('witness_statements').insert({
+            incident_id: data.id,
+            witness_number: 1,
+            witness_name: 'Initial Report',
+            position_role: 'Field Reporter',
+            company: formData.company_name || null,
+            statement_summary: formData.witness_statement_summary,
+            created_by_email: formData.reported_by_email
+          });
+          await supabase.from('incidents').update({ witness_count: 1 }).eq('id', data.id);
+        } catch (wErr) { console.warn('Witness auto-create:', wErr); }
+      }
+
       setCreatedIncidentId(data.incident_id);
+      setCreatedIncidentUUID(data.id);
       setShowSuccess(true);
       setSubmitStatus('success');
 
@@ -848,7 +889,7 @@ export default function IncidentReportForm() {
     return (
       <div style={styles.container}>
         <div style={styles.formWrapper}>
-          <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
           
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
@@ -891,9 +932,18 @@ export default function IncidentReportForm() {
 
               <button 
                 onClick={() => {
+                  window.location.href = `/investigation-workbench/${createdIncidentUUID}`;
+                }}
+                style={{ ...styles.submitBtn, background: 'linear-gradient(135deg, #1e40af 0%, #7c3aed 100%)', marginBottom: '15px' }}
+              >
+                🔍 Open Investigation Workbench
+              </button>
+
+              <button 
+                onClick={() => {
                   setShowSuccess(false);
                   setFormData({
-                    incident_date: new Date().toISOString().split('T')[0],
+                    incident_date: getLocalDateString(),
                     incident_time: '',
                     location_name: '',
                     company_name: '',
@@ -967,7 +1017,7 @@ export default function IncidentReportForm() {
   return (
     <div style={styles.container}>
       <div style={styles.formWrapper}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         
         {/* Header */}
         <div style={styles.header}>
