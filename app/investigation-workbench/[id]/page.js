@@ -32,6 +32,8 @@ export default function InvestigationWorkbench() {
   const [editingWitness, setEditingWitness] = useState(null);
   const [editingCA, setEditingCA] = useState(null);
   const [editingLesson, setEditingLesson] = useState(null);
+  const [spellCheckResults, setSpellCheckResults] = useState(null);
+  const [spellChecking, setSpellChecking] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('slp_investigator_email');
@@ -86,6 +88,167 @@ export default function InvestigationWorkbench() {
   async function deleteLesson(item) { if(!confirm('Delete lesson?'))return; try { const{error}=await supabase.from('investigation_lessons_learned').delete().eq('id',item.id); if(error)throw error; const u=lessonsLearned.filter(l=>l.id!==item.id); setLessonsLearned(u); await supabase.from('incidents').update({lessons_learned_count:u.length}).eq('id',id); } catch(e){alert(e.message);} }
 
   async function saveAnalysis(type, text) { setSaving(true); try { const tbl={'Local Review':'local_reviews','5-Why Analysis':'five_why_analyses','Full RCA':'rca_analyses','Root Cause Analysis':'rca_analyses'}[type]; if(!tbl)return; const{data:ex}=await supabase.from(tbl).select('id').eq('incident_id',id).maybeSingle(); const p={incident_id:id,findings:text,analysis_text:text,review_text:text,updated_at:new Date().toISOString()}; if(ex){const{error}=await supabase.from(tbl).update(p).eq('id',ex.id);if(error)throw error;}else{p.created_by_email=userEmail;const{error}=await supabase.from(tbl).insert(p);if(error)throw error;} alert('Saved!'); } catch(e){alert(e.message);} finally{setSaving(false);} }
+
+  // ============================================================================
+  // SPELL CHECK & GRAMMAR (US English)
+  // ============================================================================
+
+  // Common misspellings dictionary (safety/oilfield/investigation terms + general)
+  const DICTIONARY = new Set([
+    // Allow these industry terms (not misspellings)
+    'psif','stky','lopc','loto','lockout','tagout','jsa','jha','tha','ppe','sif','hse',
+    'spud','bop','blowout','wellbore','casing','tubing','annulus','derrick','drawworks',
+    'doghouse','mousehole','rathole','roughneck','roustabout','toolpusher','driller',
+    'floorhand','swamper','hotshot','coiled','wireline','snubbing','workover','frac',
+    'slickline','bradenhead','flowback','kickback','h2s','nfpa','osha','api','ansi',
+    'hilcorp','conocophillips','slp','anthrosafe','supabase','ridgeline','kuparuk',
+    'prudhoe','endicott','badami','nikiski','ninilchik','kenai','pikka','deadhorse'
+  ]);
+
+  // Common misspellings with corrections
+  const MISSPELLINGS = {
+    'recieve':'receive','beleive':'believe','occured':'occurred','occurence':'occurrence',
+    'occurrance':'occurrence','seperate':'separate','definately':'definitely','accomodate':'accommodate',
+    'acheive':'achieve','agressive':'aggressive','apparant':'apparent','calender':'calendar',
+    'catagory':'category','comittee':'committee','concious':'conscious','consistant':'consistent',
+    'develope':'develop','enviroment':'environment','enviromental':'environmental','equiptment':'equipment',
+    'explaination':'explanation','foriegn':'foreign','goverment':'government','gaurd':'guard',
+    'harrass':'harass','immediatly':'immediately','independant':'independent','indispensible':'indispensable',
+    'liason':'liaison','maintenence':'maintenance','maintainance':'maintenance','managment':'management',
+    'manuever':'maneuver','millenium':'millennium','neccessary':'necessary','noticable':'noticeable',
+    'occassion':'occasion','persistant':'persistent','personell':'personnel','personnell':'personnel',
+    'posession':'possession','preceed':'precede','preceeding':'preceding','privledge':'privilege',
+    'proceedure':'procedure','profesional':'professional','publically':'publicly','recomend':'recommend',
+    'refered':'referred','referance':'reference','relevent':'relevant','rythm':'rhythm',
+    'safty':'safety','saftey':'safety','sargent':'sergeant','seize':'seize','similer':'similar',
+    'succesful':'successful','successfull':'successful','supercede':'supersede','surprize':'surprise',
+    'temperture':'temperature','tendancy':'tendency','threshhold':'threshold','tommorow':'tomorrow',
+    'truely':'truly','unforseen':'unforeseen','untill':'until','unusuall':'unusual','useable':'usable',
+    'vehical':'vehicle','wierd':'weird','wellfare':'welfare','wether':'whether','withold':'withhold',
+    'writting':'writing','incidant':'incident','incedent':'incident','investigaton':'investigation',
+    'investagation':'investigation','corective':'corrective','correctve':'corrective','hazardus':'hazardous',
+    'hazzardous':'hazardous','hazzard':'hazard','injurey':'injury','injery':'injury',
+    'fatallity':'fatality','fataliy':'fatality','emergancy':'emergency','emergencey':'emergency',
+    'preventation':'prevention','safegaurd':'safeguard','complience':'compliance','compliancy':'compliance',
+    'mitagation':'mitigation','mitigattion':'mitigation','escallation':'escalation',
+    'containement':'containment','contamanation':'contamination','remidiation':'remediation',
+    'remedation':'remediation','decomissioning':'decommissioning','decomissioned':'decommissioned',
+    'pressurised':'pressurized','unauthorised':'unauthorized','utilised':'utilized','recognised':'recognized',
+    'analysed':'analyzed','minimised':'minimized','neutralised':'neutralized','organisation':'organization',
+    'behaviours':'behaviors','colour':'color','honour':'honor','labour':'labor','favour':'favor',
+    'defence':'defense','licence':'license','practise':'practice','judgement':'judgment',
+    'acknowledgement':'acknowledgment','cancelled':'canceled','modelling':'modeling',
+    'travelling':'traveling','focussed':'focused','fuelling':'fueling','levelling':'leveling',
+    'councillor':'councilor','counsellor':'counselor','fulfil':'fulfill','enrol':'enroll',
+    'instal':'install','skilful':'skillful','wilful':'willful',
+    'dont':'don\'t','cant':'can\'t','wont':'won\'t','didnt':'didn\'t','wasnt':'wasn\'t',
+    'isnt':'isn\'t','arent':'aren\'t','couldnt':'couldn\'t','shouldnt':'shouldn\'t','wouldnt':'wouldn\'t',
+    'hasnt':'hasn\'t','havent':'haven\'t','hadnt':'hadn\'t','doesnt':'doesn\'t',
+    'its':'its (or it\'s if meaning "it is")', 'alot':'a lot','infront':'in front',
+    'eachother':'each other','everytime':'every time','infact':'in fact','alright':'all right',
+    'noone':'no one','aswell':'as well','inbetween':'in between','ontop':'on top',
+    'thier':'their','teh':'the','adn':'and','taht':'that','wiht':'with','hte':'the',
+    'becuase':'because','becasue':'because','beacuse':'because','thn':'then','than':'than',
+    'wich':'which','whcih':'which','htey':'they','jsut':'just','abuot':'about'
+  };
+
+  // Grammar patterns to check
+  const GRAMMAR_RULES = [
+    { pattern: /\bi\b(?![.\-'])/g, fix: 'I', msg: 'Capitalize "I"' },
+    { pattern: /([.!?])\s+[a-z]/g, fix: null, msg: 'Capitalize after sentence-ending punctuation' },
+    { pattern: /\s{2,}/g, fix: ' ', msg: 'Multiple spaces' },
+    { pattern: /\byour\b\s+(a|an|the|going|not|very|really|quite|so|too)\b/gi, fix: null, msg: 'Possible "you\'re" instead of "your"' },
+    { pattern: /\bthere\b\s+(was|were|is|are|will|would|could|should|has|have|had)\b\s+\w+ing\b/gi, fix: null, msg: 'Check: should this be "their" (possessive)?' },
+    { pattern: /\bthen\b\s+(I|we|he|she|they|it)\b/gi, fix: null, msg: 'Check: should this be "than" (comparison)?' },
+    { pattern: /\bcould of\b/gi, fix: 'could have', msg: '"could of" should be "could have"' },
+    { pattern: /\bshould of\b/gi, fix: 'should have', msg: '"should of" should be "should have"' },
+    { pattern: /\bwould of\b/gi, fix: 'would have', msg: '"would of" should be "would have"' },
+    { pattern: /\beffect\b\s+(the|a|an|this|that|our|my|his|her|their|its)\b\s+\w+/gi, fix: null, msg: 'Check: should this be "affect" (verb)?' },
+    { pattern: /[,]\s*$/gm, fix: null, msg: 'Trailing comma at end of line' },
+    { pattern: /\b(very|really|extremely|highly)\s+\1\b/gi, fix: null, msg: 'Repeated word' },
+    { pattern: /\b(\w+)\s+\1\b/gi, fix: null, msg: 'Possible repeated word' }
+  ];
+
+  function runSpellCheck() {
+    setSpellChecking(true);
+    const results = [];
+
+    // Gather all text fields
+    const textSources = [
+      ...timelineEvents.map(e => ({ section: 'Timeline', id: e.id, field: 'description', text: e.description || '' })),
+      ...witnesses.map(w => ({ section: 'Witnesses', id: w.id, field: 'statement_summary', text: w.statement_summary || '' })),
+      ...witnesses.map(w => ({ section: 'Witnesses', id: w.id, field: 'witness_name', text: w.witness_name || '' })),
+      ...correctiveActions.map(c => ({ section: 'Corrective Actions', id: c.id, field: 'action_description', text: c.action_description || '' })),
+      ...lessonsLearned.map(l => ({ section: 'Lessons Learned', id: l.id, field: 'lesson_title', text: l.lesson_title || '' })),
+      ...lessonsLearned.map(l => ({ section: 'Lessons Learned', id: l.id, field: 'lesson_description', text: l.lesson_description || '' })),
+      ...lessonsLearned.map(l => ({ section: 'Lessons Learned', id: l.id, field: 'key_takeaway', text: l.key_takeaway || '' })),
+      { section: 'Analysis', id: 'local', field: 'local_review', text: localReview || '' },
+      { section: 'Analysis', id: '5why', field: 'five_why', text: fiveWhy || '' },
+      { section: 'Analysis', id: 'rca', field: 'rca', text: rcaAnalysis || '' }
+    ];
+
+    textSources.forEach(source => {
+      if (!source.text || source.text.trim().length === 0) return;
+      const words = source.text.replace(/[.,!?;:()"'\/\-]/g, ' ').split(/\s+/).filter(w => w.length > 1);
+
+      // Spelling check
+      words.forEach(word => {
+        const lower = word.toLowerCase();
+        if (DICTIONARY.has(lower)) return;
+        if (/^\d+$/.test(word) || /^[A-Z]{2,}$/.test(word)) return; // numbers and acronyms
+        if (MISSPELLINGS[lower]) {
+          results.push({
+            section: source.section,
+            type: 'spelling',
+            severity: 'error',
+            word: word,
+            suggestion: MISSPELLINGS[lower],
+            context: getWordContext(source.text, word),
+            field: source.field
+          });
+        }
+      });
+
+      // Grammar check
+      GRAMMAR_RULES.forEach(rule => {
+        const matches = source.text.match(rule.pattern);
+        if (matches) {
+          matches.forEach(match => {
+            // Skip repeated word check for common patterns
+            if (rule.msg === 'Possible repeated word') {
+              const repeated = match.trim().split(/\s+/);
+              if (repeated[0].toLowerCase() === repeated[1]?.toLowerCase()) {
+                // Allow "had had", "that that"
+                if (['had','that','is','was'].includes(repeated[0].toLowerCase())) return;
+              } else return;
+            }
+            results.push({
+              section: source.section,
+              type: 'grammar',
+              severity: 'warning',
+              word: match.trim(),
+              suggestion: rule.fix || '(review manually)',
+              context: getWordContext(source.text, match.trim()),
+              msg: rule.msg,
+              field: source.field
+            });
+          });
+        }
+      });
+    });
+
+    // US English check - common British spellings
+    setSpellCheckResults(results);
+    setSpellChecking(false);
+  }
+
+  function getWordContext(text, word) {
+    const idx = text.toLowerCase().indexOf(word.toLowerCase());
+    if (idx === -1) return word;
+    const start = Math.max(0, idx - 30);
+    const end = Math.min(text.length, idx + word.length + 30);
+    return (start > 0 ? '...' : '') + text.slice(start, end) + (end < text.length ? '...' : '');
+  }
 
   function generatePDF() {
     const sorted = [...timelineEvents].sort((a, b) => new Date(a.date + ' ' + (a.time || '00:00')) - new Date(b.date + ' ' + (b.time || '00:00')));
@@ -363,6 +526,40 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
 
         {/* REVIEW */}
         {activeTab==='Review & Approve' && <div>
+          {/* SPELL CHECK SECTION */}
+          <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'25px',border:'2px solid #e2e8f0'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'15px'}}>
+              <h3 style={{margin:0}}>📝 Spell Check & Grammar Review (US English)</h3>
+              <button onClick={runSpellCheck} disabled={spellChecking} style={{...st.primaryBtn,background:'#7c3aed',padding:'10px 24px'}}>{spellChecking?'Checking...':'🔍 Run Spell Check'}</button>
+            </div>
+            {spellCheckResults===null && <p style={{color:'#64748b',margin:0}}>Run spell check before completing the investigation to catch spelling and grammar issues across all text fields.</p>}
+            {spellCheckResults!==null && spellCheckResults.length===0 && <div style={{background:'#f0fdf4',border:'2px solid #22c55e',borderRadius:'8px',padding:'20px',textAlign:'center'}}><span style={{fontSize:'48px',display:'block',marginBottom:'10px'}}>✅</span><strong style={{color:'#15803d',fontSize:'18px'}}>No issues found!</strong><p style={{color:'#166534',margin:'10px 0 0 0'}}>All text fields pass spelling and grammar checks.</p></div>}
+            {spellCheckResults!==null && spellCheckResults.length>0 && <div>
+              <div style={{display:'flex',gap:'15px',marginBottom:'15px',flexWrap:'wrap'}}>
+                <span style={{background:'#fef2f2',color:'#dc2626',padding:'6px 14px',borderRadius:'8px',fontWeight:'500',fontSize:'14px'}}>🔴 {spellCheckResults.filter(r=>r.severity==='error').length} Spelling</span>
+                <span style={{background:'#fefce8',color:'#ca8a04',padding:'6px 14px',borderRadius:'8px',fontWeight:'500',fontSize:'14px'}}>🟡 {spellCheckResults.filter(r=>r.severity==='warning').length} Grammar</span>
+                <span style={{color:'#64748b',fontSize:'14px',padding:'6px 0'}}>Navigate to each tab to fix issues, then re-run check.</span>
+              </div>
+              <div style={{maxHeight:'400px',overflowY:'auto',border:'1px solid #e2e8f0',borderRadius:'8px'}}>
+                {spellCheckResults.map((r,i)=>(
+                  <div key={i} style={{padding:'12px 16px',borderBottom:'1px solid #f1f5f9',background:r.severity==='error'?'#fef2f2':'#fefce8',display:'flex',gap:'12px',alignItems:'flex-start'}}>
+                    <span style={{fontSize:'18px',flexShrink:0}}>{r.severity==='error'?'🔴':'🟡'}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'4px'}}>
+                        <span style={{background:'#dbeafe',color:'#1e40af',padding:'2px 10px',borderRadius:'4px',fontSize:'12px',fontWeight:'500'}}>{r.section}</span>
+                        <span style={{color:'#64748b',fontSize:'12px'}}>{r.field}</span>
+                      </div>
+                      <div style={{fontSize:'14px'}}>
+                        {r.type==='spelling' ? <span><strong style={{color:'#dc2626',textDecoration:'line-through'}}>{r.word}</strong> → <strong style={{color:'#15803d'}}>{r.suggestion}</strong></span> : <span><strong style={{color:'#ca8a04'}}>{r.word}</strong> — {r.msg}{r.suggestion&&r.suggestion!=='(review manually)'?<span> → <strong style={{color:'#15803d'}}>{r.suggestion}</strong></span>:''}</span>}
+                      </div>
+                      <div style={{fontSize:'12px',color:'#94a3b8',marginTop:'4px',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>...{r.context}...</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>}
+          </div>
+
           <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:'20px'}}>
             <div><h3>Status</h3><div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'20px'}}><strong>Current:</strong> <span style={{background:'#dbeafe',color:'#1e40af',padding:'6px 15px',borderRadius:'8px',fontWeight:'500'}}>{incident.status}</span></div>
               <h4>Actions</h4><div style={{display:'flex',flexWrap:'wrap',gap:'10px'}}>
