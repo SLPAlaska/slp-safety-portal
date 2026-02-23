@@ -27,6 +27,7 @@ const SLP_TEAM = [
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Statuses' },
+  { value: 'Draft', label: 'Draft - In Progress' },
   { value: 'Submitted', label: 'Submitted - Needs Triage' },
   { value: 'Under Review - Triage', label: 'Under Review - Triage' },
   { value: 'Under Review - First Draft', label: 'Under Review - First Draft' },
@@ -865,12 +866,21 @@ export default function InvestigationDashboard() {
                         </td>
                         <td style={styles.td}>
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <button
-                              onClick={() => navigateToIncident(incident)}
-                              style={{ ...styles.actionBtn, ...styles.primaryBtn }}
-                            >
-                              Open
-                            </button>
+                            {incident.status === 'Draft' ? (
+                              <button
+                                onClick={() => window.location.href = `/incident-report?draft=${incident.id}`}
+                                style={{ ...styles.actionBtn, background: '#f59e0b', color: 'white', border: 'none' }}
+                              >
+                                ✏️ Resume
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => navigateToIncident(incident)}
+                                style={{ ...styles.actionBtn, ...styles.primaryBtn }}
+                              >
+                                Open
+                              </button>
+                            )}
                             <button
                               onClick={() => openAssignModal(incident)}
                               style={{ ...styles.actionBtn, ...styles.secondaryBtn }}

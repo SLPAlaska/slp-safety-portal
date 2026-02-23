@@ -574,6 +574,8 @@ export default function IncidentReportForm() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdIncidentId, setCreatedIncidentId] = useState('');
   const [createdIncidentUUID, setCreatedIncidentUUID] = useState('');
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [draftId, setDraftId] = useState(null); // tracks if we're editing an existing draft
 
   // ============================================================================
   // EFFECTS - Auto-calculate classifications
@@ -672,6 +674,201 @@ export default function IncidentReportForm() {
   };
 
   // ============================================================================
+  // SAVE DRAFT & LOAD DRAFT
+  // ============================================================================
+
+  // Check URL for draft ID on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('draft');
+    if (editId) {
+      loadDraft(editId);
+    }
+  }, []);
+
+  async function loadDraft(incidentUUID) {
+    try {
+      const { data, error } = await supabase
+        .from('incidents')
+        .select('*')
+        .eq('id', incidentUUID)
+        .eq('status', 'Draft')
+        .single();
+
+      if (error || !data) return;
+
+      setDraftId(data.id);
+      setFormData(prev => ({
+        ...prev,
+        incident_date: data.incident_date || prev.incident_date,
+        incident_time: data.incident_time || '',
+        location_name: data.location_name || '',
+        company_name: data.company_name || '',
+        reported_by_name: data.reported_by_name || '',
+        reported_by_email: data.reported_by_email || '',
+        reported_by_phone: data.reported_by_phone || '',
+        brief_description: data.brief_description || '',
+        detailed_description: data.detailed_description || '',
+        incident_types: data.incident_types || [],
+        injury_occurred: data.injury_occurred ? 'Yes' : data.injury_occurred === false ? 'No' : '',
+        injured_person_name: data.injured_person_name || '',
+        injured_person_company: data.injured_person_company || '',
+        injured_body_parts: data.injured_body_parts || [],
+        injury_nature: data.injury_nature || '',
+        treatment_provided: data.treatment_provided || '',
+        safety_severity: data.safety_severity || '',
+        potential_safety_severity: data.potential_safety_severity || '',
+        high_energy_present: data.high_energy_present ? 'Yes' : data.high_energy_present === false ? 'No' : '',
+        energy_types: data.energy_types || [],
+        energy_release_occurred: data.energy_release_occurred ? 'Yes' : data.energy_release_occurred === false ? 'No' : '',
+        direct_control_status: data.direct_control_status || '',
+        decs_present: data.decs_present || '',
+        environmental_release: data.environmental_release ? 'Yes' : data.environmental_release === false ? 'No' : '',
+        release_material: data.release_material || '',
+        release_volume: data.release_volume ? String(data.release_volume) : '',
+        release_volume_unit: data.release_volume_unit || 'bbl',
+        release_location_type: data.release_location_type || '',
+        environmental_severity: data.environmental_severity || '',
+        spill_contained: data.spill_contained ? 'Yes' : data.spill_contained === false ? 'No' : '',
+        containment_method: data.containment_method || '',
+        property_damage: data.property_damage ? 'Yes' : data.property_damage === false ? 'No' : '',
+        property_damage_description: data.property_damage_description || '',
+        property_damage_cost: data.property_damage_cost ? String(data.property_damage_cost) : '',
+        vehicle_type: data.vehicle_type || '',
+        vehicle_id: data.vehicle_id || '',
+        vehicle_damage_description: data.vehicle_damage_description || '',
+        other_vehicle_involved: data.other_vehicle_involved ? 'Yes' : data.other_vehicle_involved === false ? 'No' : '',
+        is_pse: data.is_pse ? 'Yes' : data.is_pse === false ? 'No' : '',
+        pse_type: data.pse_type || '',
+        ps_tier: data.ps_tier || 'None',
+        witness_statement_summary: data.witness_statement_summary || '',
+        immediate_actions_taken: data.immediate_actions_taken || '',
+        suspected_root_causes: data.suspected_root_causes || '',
+        lessons_learned_initial: data.lessons_learned_initial || ''
+      }));
+    } catch (e) { console.error('Load draft error:', e); }
+  }
+
+  async function saveDraft() {
+    if (!formData.reported_by_name && !formData.brief_description) {
+      alert('Please fill in at least your name or a brief description before saving.');
+      return;
+    }
+
+    setIsSavingDraft(true);
+    try {
+      const deadlineDate = formData.incident_date && investigationType.days
+        ? calculateDeadlineDate(formData.incident_date, investigationType.days) : null;
+
+      const draftData = {
+        incident_date: formData.incident_date || null,
+        incident_time: formData.incident_time || null,
+        location_name: formData.location_name || null,
+        company_name: formData.company_name || null,
+        reported_by_name: formData.reported_by_name || null,
+        reported_by_email: formData.reported_by_email || null,
+        reported_by_phone: formData.reported_by_phone || null,
+        brief_description: formData.brief_description || null,
+        detailed_description: formData.detailed_description || null,
+        incident_types: formData.incident_types.length > 0 ? formData.incident_types : null,
+        incident_types_text: formData.incident_types.join(', ') || null,
+        injury_occurred: formData.injury_occurred === 'Yes' ? true : formData.injury_occurred === 'No' ? false : null,
+        injured_person_name: formData.injured_person_name || null,
+        injured_person_company: formData.injured_person_company || null,
+        injured_body_parts: formData.injured_body_parts.length > 0 ? formData.injured_body_parts : null,
+        injury_nature: formData.injury_nature || null,
+        treatment_provided: formData.treatment_provided || null,
+        safety_severity: formData.safety_severity || null,
+        safety_severity_description: SAFETY_SEVERITY_OPTIONS.find(s => s.value === formData.safety_severity)?.description || null,
+        potential_safety_severity: formData.potential_safety_severity || null,
+        is_sif: isSIF,
+        is_sif_p: isSIFP,
+        high_energy_present: formData.high_energy_present === 'Yes' ? true : formData.high_energy_present === 'No' ? false : null,
+        energy_types: formData.energy_types.length > 0 ? formData.energy_types : null,
+        energy_types_text: formData.energy_types.join(', ') || null,
+        energy_release_occurred: formData.energy_release_occurred === 'Yes' ? true : formData.energy_release_occurred === 'No' ? false : null,
+        direct_control_status: formData.direct_control_status || null,
+        psif_classification: psifClassification || null,
+        stky_event: formData.high_energy_present === 'Yes' ? true : null,
+        decs_present: formData.decs_present || null,
+        environmental_release: formData.environmental_release === 'Yes' ? true : formData.environmental_release === 'No' ? false : null,
+        release_material: formData.release_material || null,
+        release_volume: formData.release_volume ? parseFloat(formData.release_volume) : null,
+        release_volume_unit: formData.release_volume_unit || 'bbl',
+        release_location_type: formData.release_location_type || null,
+        environmental_severity: formData.environmental_severity || null,
+        spill_contained: formData.spill_contained === 'Yes' ? true : formData.spill_contained === 'No' ? false : null,
+        containment_method: formData.containment_method || null,
+        property_damage: formData.property_damage === 'Yes' ? true : formData.property_damage === 'No' ? false : null,
+        property_damage_description: formData.property_damage_description || null,
+        property_damage_cost: formData.property_damage_cost ? parseFloat(formData.property_damage_cost) : null,
+        vehicle_incident: formData.incident_types.includes('Vehicle Incident') || null,
+        vehicle_type: formData.vehicle_type || null,
+        vehicle_id: formData.vehicle_id || null,
+        vehicle_damage_description: formData.vehicle_damage_description || null,
+        other_vehicle_involved: formData.other_vehicle_involved === 'Yes' ? true : formData.other_vehicle_involved === 'No' ? false : null,
+        is_pse: formData.is_pse === 'Yes' ? true : formData.is_pse === 'No' ? false : null,
+        pse_type: formData.pse_type || null,
+        ps_tier: formData.ps_tier || 'None',
+        investigation_type: investigationType.type || null,
+        investigation_deadline: deadlineDate,
+        witness_statement_summary: formData.witness_statement_summary || null,
+        immediate_actions_taken: formData.immediate_actions_taken || null,
+        suspected_root_causes: formData.suspected_root_causes || null,
+        lessons_learned_initial: formData.lessons_learned_initial || null,
+        status: 'Draft',
+        created_by_email: formData.reported_by_email || null,
+        updated_at: new Date().toISOString()
+      };
+
+      if (draftId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('incidents')
+          .update(draftData)
+          .eq('id', draftId);
+        if (error) throw error;
+        alert('✅ Draft updated! You can close this page and finish later from the Investigation Dashboard.');
+      } else {
+        // Create new draft
+        const { data, error } = await supabase
+          .from('incidents')
+          .insert([draftData])
+          .select()
+          .single();
+        if (error) throw error;
+        setDraftId(data.id);
+        // Upload any photos already selected
+        if (photos.length > 0 && data) {
+          for (let i = 0; i < photos.length; i++) {
+            const photo = photos[i];
+            const fileExt = photo.name.split('.').pop();
+            const fileName = `${data.incident_id}_draft_${i + 1}.${fileExt}`;
+            const filePath = `incidents/${data.id}/${fileName}`;
+            const { error: ue } = await supabase.storage.from('evidence').upload(filePath, photo);
+            if (!ue) {
+              const { data: urlData } = supabase.storage.from('evidence').getPublicUrl(filePath);
+              await supabase.from('investigation_evidence').insert({
+                incident_id: data.id, evidence_number: i + 1, evidence_type: 'Photo',
+                evidence_category: 'Incident Scene', file_name: fileName,
+                file_url: urlData.publicUrl, description: `Photo ${i + 1} from draft`,
+                uploaded_by_email: formData.reported_by_email || null, source: 'initial_report'
+              });
+            }
+          }
+          await supabase.from('incidents').update({ evidence_count: photos.length }).eq('id', data.id);
+        }
+        alert('✅ Draft saved! ID: ' + data.incident_id + '\n\nYou can close this page and finish later from the Investigation Dashboard.');
+      }
+    } catch (e) {
+      console.error('Save draft error:', e);
+      alert('Error saving draft: ' + e.message);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  }
+
+  // ============================================================================
   // SUBMIT
   // ============================================================================
 
@@ -748,14 +945,28 @@ export default function IncidentReportForm() {
         created_by_email: formData.reported_by_email
       };
 
-      // Insert into Supabase
-      const { data, error } = await supabase
-        .from('incidents')
-        .insert([incidentData])
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Insert or update (if converting from draft)
+      let data;
+      if (draftId) {
+        // Update existing draft to Submitted
+        const { data: updated, error } = await supabase
+          .from('incidents')
+          .update(incidentData)
+          .eq('id', draftId)
+          .select()
+          .single();
+        if (error) throw error;
+        data = updated;
+      } else {
+        // New insert
+        const { data: inserted, error } = await supabase
+          .from('incidents')
+          .insert([incidentData])
+          .select()
+          .single();
+        if (error) throw error;
+        data = inserted;
+      }
 
       // Upload photos if any
       if (photos.length > 0 && data) {
@@ -2111,17 +2322,43 @@ export default function IncidentReportForm() {
               </div>
             )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                ...styles.submitBtn,
-                opacity: isSubmitting ? 0.6 : 1,
-                cursor: isSubmitting ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {isSubmitting ? '⏳ Submitting...' : '🚨 Submit Incident Report'}
+            {/* Draft & Submit Buttons */}
+            <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={saveDraft}
+                disabled={isSavingDraft || isSubmitting}
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  background: 'linear-gradient(135deg, #475569 0%, #64748b 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  cursor: isSavingDraft ? 'not-allowed' : 'pointer',
+                  opacity: isSavingDraft ? 0.6 : 1,
+                  boxShadow: '0 4px 15px rgba(71, 85, 105, 0.3)'
+                }}
+              >
+                {isSavingDraft ? '💾 Saving...' : '💾 Save Draft'}
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || isSavingDraft}
+                style={{
+                  ...styles.submitBtn,
+                  flex: 2,
+                  marginTop: 0,
+                  opacity: isSubmitting ? 0.6 : 1,
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isSubmitting ? '⏳ Submitting...' : '🚨 Submit Incident Report'}
+              </button>
+            </div>
+            {draftId && <p style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', marginTop: '10px' }}>📝 Editing draft — click Submit when complete</p>}
             </button>
 
           </form>
