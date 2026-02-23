@@ -2359,7 +2359,6 @@ export default function IncidentReportForm() {
               </button>
             </div>
             {draftId && <p style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', marginTop: '10px' }}>📝 Editing draft — click Submit when complete</p>}
-            </button>
 
           </form>
         </div>
