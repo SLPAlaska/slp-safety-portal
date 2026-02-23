@@ -1182,9 +1182,9 @@ export default function IncidentReportForm() {
         await supabase.from('timeline_events').insert({
           incident_id: data.id,
           sequence_number: 1,
-          date: formData.incident_date,
-          time: formData.incident_time || null,
-          description: formData.brief_description || formData.detailed_description || 'Incident occurred',
+          event_date: formData.incident_date,
+          event_time: formData.incident_time || null,
+          event_description: formData.brief_description || formData.detailed_description || 'Incident occurred',
           critical: isSIF || isSIFP,
           created_by_email: formData.reported_by_email
         });
