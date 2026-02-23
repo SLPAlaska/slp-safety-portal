@@ -23,7 +23,7 @@ const LOCATIONS = [
 export default function ColdWeatherAssessment() {
   const [formData, setFormData] = useState({
     assessorName: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     location: '',
     company: '',
     currentTemp: '',
@@ -90,7 +90,7 @@ export default function ColdWeatherAssessment() {
       // Reset form
       setFormData({
         assessorName: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'),
         location: '',
         company: '',
         currentTemp: '',
@@ -370,7 +370,7 @@ export default function ColdWeatherAssessment() {
         }
       `}</style>
 
-      <Link href="/" className="back-link">← Back to Safety Portal</Link>
+      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
       
       <div className="form-container">
         <div className="form-header">

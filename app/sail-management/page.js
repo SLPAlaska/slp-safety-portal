@@ -87,7 +87,7 @@ export default function SAILManagement() {
         .update({
           status: 'Closed',
           corrective_action: closingNotes,
-          date_closed: new Date().toISOString().split('T')[0]
+          date_closed: new Date().toLocaleDateString('en-CA')
         })
         .eq('id', item.id);
 

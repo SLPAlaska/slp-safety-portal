@@ -40,7 +40,7 @@ export default function BBSObservationForm() {
   const [formData, setFormData] = useState({
     clientCompany: '',
     submitterName: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     location: '',
     project: '',
     observationType: '',
@@ -104,7 +104,7 @@ export default function BBSObservationForm() {
     setFormData({
       clientCompany: '',
       submitterName: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       location: '',
       project: '',
       observationType: '',
@@ -197,7 +197,7 @@ export default function BBSObservationForm() {
             </button>
 
             <div style={{ marginTop: '20px' }}>
-              <Link href="/" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '14px' }}>
+              <Link href="https://portal.slpalaska.com" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '14px' }}>
                 ← Back to Safety Portal
               </Link>
             </div>
@@ -495,7 +495,7 @@ export default function BBSObservationForm() {
         }
       `}</style>
 
-      <Link href="/" className="back-link">← Back to Safety Portal</Link>
+      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
       
       <div className="bbs-container">
         <div className="bbs-header">

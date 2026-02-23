@@ -138,7 +138,7 @@ export default function SailDashboard({ companyFilter = null }) {
       .from('sail_log_entries')
       .update({
         status: 'Closed',
-        date_closed: new Date().toISOString().split('T')[0],
+        date_closed: new Date().toLocaleDateString('en-CA'),
         closed_by: closedBy,
         corrective_action: correctiveAction
       })

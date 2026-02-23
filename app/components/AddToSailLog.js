@@ -42,7 +42,7 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
         .from('sail_log')
         .insert([{
           submitter_name: prefillData.reported_by || 'Unknown',
-          date: new Date().toISOString().split('T')[0],
+          date: new Date().toLocaleDateString('en-CA'),
           client_company: prefillData.company || '',
           location: prefillData.location || '',
           action_item_description: formData.action_item_description,

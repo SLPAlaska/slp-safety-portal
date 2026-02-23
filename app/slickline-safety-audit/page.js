@@ -41,7 +41,7 @@ const TRAINING_QUESTIONS = [
 export default function SlicklineSafetyAuditPage() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     client_company: '',
     location: '',
     unit_number: '',
@@ -105,7 +105,7 @@ export default function SlicklineSafetyAuditPage() {
   const resetForm = () => {
     setFormData({
       auditor_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       client_company: '',
       location: '',
       unit_number: '',
@@ -179,7 +179,7 @@ export default function SlicklineSafetyAuditPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <a href="/" style={styles.backButton}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         
         <div style={styles.header}>
           <div style={styles.logoContainer}>

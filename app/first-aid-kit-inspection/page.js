@@ -33,7 +33,7 @@ const KIT_TYPES = [
 export default function FirstAidKitInspection() {
   const [formData, setFormData] = useState({
     inspector_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     kit_id: '',
@@ -153,7 +153,7 @@ export default function FirstAidKitInspection() {
   const resetForm = () => {
     setFormData({
       inspector_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       company: '',
       location: '',
       kit_id: '',
@@ -304,7 +304,7 @@ export default function FirstAidKitInspection() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #002868 0%, #002868 33%, #FFFFFF 33%, #FFFFFF 66%, #BF0A30 66%, #BF0A30 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <a href="/" style={{ color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
+        <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
         </a>
 

@@ -126,7 +126,7 @@ export default function CorrectiveActionsTracker() {
       // Apply filters
       if (statusFilter !== 'all') {
         if (statusFilter === 'Overdue') {
-          query = query.lt('target_date', new Date().toISOString().split('T')[0])
+          query = query.lt('target_date', new Date().toLocaleDateString('en-CA'))
             .not('action_status', 'in', '("Completed","Verified")');
         } else {
           query = query.eq('action_status', statusFilter);
@@ -218,7 +218,7 @@ export default function CorrectiveActionsTracker() {
 
       // If marking complete, add completion date
       if (updateData.action_status === 'Completed' && selectedCA.action_status !== 'Completed') {
-        updates.completed_date = new Date().toISOString().split('T')[0];
+        updates.completed_date = new Date().toLocaleDateString('en-CA');
         updates.completed_by_email = userEmail;
       }
 
@@ -259,7 +259,7 @@ export default function CorrectiveActionsTracker() {
     return (
       <div style={styles.container}>
         <div style={styles.wrapper}>
-          <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
           
           <div style={styles.loginCard}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', margin: '0 auto 25px', display: 'block' }} />
@@ -291,7 +291,7 @@ export default function CorrectiveActionsTracker() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         
         <div style={styles.header}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>

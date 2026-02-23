@@ -27,7 +27,7 @@ const QUALITY_SCORES = [
 export default function ToolboxMeetingAssessment() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     client: '',
     location: '',
     meeting_leader: '',
@@ -86,7 +86,7 @@ export default function ToolboxMeetingAssessment() {
   const resetForm = () => {
     setFormData({
       auditor_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       client: '',
       location: '',
       meeting_leader: '',
@@ -433,7 +433,7 @@ export default function ToolboxMeetingAssessment() {
   if (isSuccess) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #059669 100%)', padding: '20px' }}>
-        <a href="/" style={styles.backButton}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <div style={styles.logoContainer}>
@@ -474,7 +474,7 @@ export default function ToolboxMeetingAssessment() {
         </div>
       )}
 
-      <a href="/" style={styles.backButton}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
       
       <div style={styles.container}>
         <div style={styles.header}>

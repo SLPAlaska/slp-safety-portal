@@ -37,7 +37,7 @@ const ENERGY_TYPES = [
 export default function GoodCatchNearMissForm() {
   const [formData, setFormData] = useState({
     reporter_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     report_type: '',
@@ -183,7 +183,7 @@ export default function GoodCatchNearMissForm() {
 
       setSubmitStatus('success');
       setFormData({
-        reporter_name: '', date: new Date().toISOString().split('T')[0], company: '', location: '',
+        reporter_name: '', date: new Date().toLocaleDateString('en-CA'), company: '', location: '',
         report_type: '', description: '', potential_consequences: '', high_energy_present: '',
         energy_release_occurred: '', direct_control_present: '', energy_types: [],
         psif_classification: '', stky_event: '', immediate_actions: '', recommended_actions: '', additional_notes: ''
@@ -227,7 +227,7 @@ export default function GoodCatchNearMissForm() {
   if (submitStatus === 'success') {
     return (
       <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
@@ -247,7 +247,7 @@ export default function GoodCatchNearMissForm() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={styles.container}>
         <div style={styles.header}>
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />

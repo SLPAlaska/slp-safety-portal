@@ -22,7 +22,7 @@ export default function DailyActivityLog(){
   const [submitted,setSubmitted]=useState(false);
   const [formData,setFormData]=useState({
     name:'',
-    date:new Date().toISOString().split('T')[0],
+    date:new Date().toLocaleDateString('en-CA'),
     company:'',
     locationsVisited:[],
     trainingTopics:'',
@@ -90,7 +90,7 @@ export default function DailyActivityLog(){
 
   const resetForm=()=>{
     setFormData({
-      name:'',date:new Date().toISOString().split('T')[0],company:'',
+      name:'',date:new Date().toLocaleDateString('en-CA'),company:'',
       locationsVisited:[],trainingTopics:'',auditsCompleted:[],
       deficienciesIdentified:'',supportProvided:'',commentsConcerns:'',
       actionItems:'',planAhead:''
@@ -132,7 +132,7 @@ export default function DailyActivityLog(){
             <p style={{marginBottom:'20px'}}>Your Manager & HSE Daily Activity Log has been recorded.</p>
             <div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}>
               <button onClick={resetForm} style={{padding:'12px 24px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer'}}>Submit Another Log</button>
-              <a href="/" style={{padding:'12px 24px',background:'#6b7280',color:'white',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer',textDecoration:'none'}}>Back to Portal</a>
+              <a href="https://portal.slpalaska.com" style={{padding:'12px 24px',background:'#6b7280',color:'white',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer',textDecoration:'none'}}>Back to Portal</a>
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function DailyActivityLog(){
     <div style={s.container}>
       <div style={s.formContainer}>
         <div style={s.header}>
-          <a href="/" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a>
           <div style={{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'15px auto',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'}}>
             <img src="/Logo.png" alt="SLP Alaska" style={{maxWidth:'200px',height:'auto'}}/>
           </div>

@@ -42,7 +42,7 @@ const BACKUP_COMM = ['Hand Signals', 'Radio', 'Voice (Direct)', 'Air Horn (Emerg
 
 export default function CriticalLiftPlanForm() {
   const [formData, setFormData] = useState({
-    liftPlanNumber: '', date: new Date().toISOString().split('T')[0],
+    liftPlanNumber: '', date: new Date().toLocaleDateString('en-CA'),
     preparedBy: '', company: '', location: '', liftDescription: '',
     criticalCriteria: [],
     loadDescription: '', loadWeight: '', riggingWeight: '', weightSource: '',
@@ -243,7 +243,7 @@ export default function CriticalLiftPlanForm() {
 
   const resetForm = () => {
     setFormData({
-      liftPlanNumber: '', date: new Date().toISOString().split('T')[0],
+      liftPlanNumber: '', date: new Date().toLocaleDateString('en-CA'),
       preparedBy: '', company: '', location: '', liftDescription: '',
       criticalCriteria: [],
       loadDescription: '', loadWeight: '', riggingWeight: '', weightSource: '',
@@ -323,7 +323,7 @@ export default function CriticalLiftPlanForm() {
        }
      `}</style>
 
-      <Link href="/" className="back-link">← Back to Safety Portal</Link>
+      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
 
       <div className="lift-container">
         <div className="lift-header">

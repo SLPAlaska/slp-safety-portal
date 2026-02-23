@@ -114,11 +114,11 @@ export default function SSEEvaluation(){
     </div>
   );
 
-  if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successBox}><div style={{fontSize:'4rem',marginBottom:'20px'}}>✅</div><h2 style={{margin:'0 0 10px'}}>Evaluation Submitted Successfully!</h2><p style={{marginBottom:'20px'}}>Your SSE evaluation has been recorded.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'12px 24px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer'}}>Submit Another Evaluation</button><a href="/" style={{padding:'12px 24px',background:'rgba(255,255,255,0.2)',color:'white',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}
+  if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successBox}><div style={{fontSize:'4rem',marginBottom:'20px'}}>✅</div><h2 style={{margin:'0 0 10px'}}>Evaluation Submitted Successfully!</h2><p style={{marginBottom:'20px'}}>Your SSE evaluation has been recorded.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'12px 24px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer'}}>Submit Another Evaluation</button><a href="https://portal.slpalaska.com" style={{padding:'12px 24px',background:'rgba(255,255,255,0.2)',color:'white',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}
 
   return(<div style={s.container}><div style={s.formBox}>
     <div style={s.header}>
-      <a href="/" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a>
       <div style={s.logoBox}><img src="/Logo.png" alt="SLP Alaska" style={{maxWidth:'200px',height:'auto'}}/></div>
       <div style={s.badge}>👷 SSE EVALUATION</div>
       <h1 style={{fontSize:'1.5rem',marginBottom:'8px',textShadow:'2px 2px 4px rgba(0,0,0,0.3)'}}>Short Service Employee Evaluation</h1>

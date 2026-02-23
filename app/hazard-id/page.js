@@ -49,7 +49,7 @@ export default function HazardIDForm() {
     email_address: '',
     company: '',
     location: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     identified_hazard: '',
     near_miss: '',
     threat_level: '',
@@ -152,7 +152,7 @@ export default function HazardIDForm() {
       email_address: '',
       company: '',
       location: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       identified_hazard: '',
       near_miss: '',
       threat_level: '',
@@ -229,7 +229,7 @@ export default function HazardIDForm() {
         
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
-          <a href="/" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '160px', margin: '15px auto', display: 'block' }} />
           <h1 style={{ margin: '0', fontSize: '26px' }}>Hazard ID Report</h1>
           <p style={{ margin: '10px 0 0', opacity: 0.9 }}>Report Identified Hazards to Protect Our Team</p>

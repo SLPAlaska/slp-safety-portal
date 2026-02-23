@@ -17,7 +17,7 @@ const LOCATIONS = ['Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik',
 export default function DroppedObjectAuditForm() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    audit_date: new Date().toISOString().split('T')[0],
+    audit_date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     specific_location: '',
@@ -88,7 +88,7 @@ export default function DroppedObjectAuditForm() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       
       <div style={styles.container}>
         <div style={styles.header}>

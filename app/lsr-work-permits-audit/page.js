@@ -30,7 +30,7 @@ const AUDIT_OPTIONS = ['Yes', 'No', 'Needs Improvement', 'N/A'];
 export default function LSRWorkPermitsAudit() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     // Hazard Identification & Scope
@@ -101,7 +101,7 @@ export default function LSRWorkPermitsAudit() {
   const resetForm = () => {
     setFormData({
       auditor_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       company: '',
       location: '',
       hazards_identified: '',
@@ -254,7 +254,7 @@ export default function LSRWorkPermitsAudit() {
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <a href="/" style={{ color: '#1e3a8a', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
+        <a href="https://portal.slpalaska.com" style={{ color: '#1e3a8a', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
         </a>
 

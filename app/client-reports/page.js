@@ -145,7 +145,7 @@ export default function ClientReports() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${selectedCompany}_${activeCategory.id}_${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `${selectedCompany}_${activeCategory.id}_${new Date().toLocaleDateString('en-CA')}.csv`
     a.click()
     window.URL.revokeObjectURL(url)
   }
@@ -568,7 +568,7 @@ export default function ClientReports() {
       `}</style>
 
       <div className="container">
-        <Link href="/" className="back-link">← Back to Safety Portal</Link>
+        <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
         
         <div className="header">
           <img src="/Logo.png" alt="SLP Alaska Logo" />

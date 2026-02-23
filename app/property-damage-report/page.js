@@ -24,7 +24,7 @@ export default function PropertyDamageReport(){
   const [psifResult,setPsifResult]=useState({classification:'',explanation:'',badgeClass:''});
   const [selectedEnergyTypes,setSelectedEnergyTypes]=useState([]);
   const [formData,setFormData]=useState({
-    personName:'',incidentDate:new Date().toISOString().split('T')[0],company:'',location:'',
+    personName:'',incidentDate:new Date().toLocaleDateString('en-CA'),company:'',location:'',
     securityNotified:'',injuriesInvolved:'',spillInvolved:'',spillVolumeOutside:'',totalSpillVolume:'',
     namesContactInvolved:'',weatherLocation:'',witnessNames:'',
     truckVehicleNumber:'',equipmentId:'',vehiclesEquipmentInvolved:'',priorCondition:'',
@@ -130,7 +130,7 @@ export default function PropertyDamageReport(){
     }catch(e){console.error(e);alert('Error: '+e.message);}finally{setIsSubmitting(false);}
   };
 
-  const resetForm=()=>{setFormData({personName:'',incidentDate:new Date().toISOString().split('T')[0],company:'',location:'',securityNotified:'',injuriesInvolved:'',spillInvolved:'',spillVolumeOutside:'',totalSpillVolume:'',namesContactInvolved:'',weatherLocation:'',witnessNames:'',truckVehicleNumber:'',equipmentId:'',vehiclesEquipmentInvolved:'',priorCondition:'',equipmentAsIntended:'',lastInspection:'',warningsBeforehand:'',unusualSounds:'',priorIncidents:'',describeIncident:'',employeeActivity:'',shortServiceEmployee:'',hazardsCaused:'',drivingFactors:'',driverTraveling:'',hazardType:'',dotRightOfWay:'',precipitatingEvents:'',appropriatePPE:'',describePPE:'',protectiveMethods:'',procedureErrors:'',correctiveActions:'',preTripUrl:'',photoUrl:'',highEnergyPresent:'',energyReleaseOccurred:'',directControlStatus:'',energyTypes:'',psifClassification:'',stkyEvent:''});setPhotoPreview(null);setPreTripPreview(null);setSelectedEnergyTypes([]);setPsifResult({classification:'',explanation:'',badgeClass:''});setSubmitted(false);};
+  const resetForm=()=>{setFormData({personName:'',incidentDate:new Date().toLocaleDateString('en-CA'),company:'',location:'',securityNotified:'',injuriesInvolved:'',spillInvolved:'',spillVolumeOutside:'',totalSpillVolume:'',namesContactInvolved:'',weatherLocation:'',witnessNames:'',truckVehicleNumber:'',equipmentId:'',vehiclesEquipmentInvolved:'',priorCondition:'',equipmentAsIntended:'',lastInspection:'',warningsBeforehand:'',unusualSounds:'',priorIncidents:'',describeIncident:'',employeeActivity:'',shortServiceEmployee:'',hazardsCaused:'',drivingFactors:'',driverTraveling:'',hazardType:'',dotRightOfWay:'',precipitatingEvents:'',appropriatePPE:'',describePPE:'',protectiveMethods:'',procedureErrors:'',correctiveActions:'',preTripUrl:'',photoUrl:'',highEnergyPresent:'',energyReleaseOccurred:'',directControlStatus:'',energyTypes:'',psifClassification:'',stkyEvent:''});setPhotoPreview(null);setPreTripPreview(null);setSelectedEnergyTypes([]);setPsifResult({classification:'',explanation:'',badgeClass:''});setSubmitted(false);};
 
   const s={
     container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
@@ -190,11 +190,11 @@ export default function PropertyDamageReport(){
     }
   };
 
-  if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successBox}><div style={{fontSize:'4rem',marginBottom:'20px'}}>✅</div><h2 style={{margin:'0 0 10px'}}>Report Submitted Successfully!</h2><p style={{marginBottom:'20px'}}>Your property damage report has been recorded.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'12px 24px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer'}}>Submit Another Report</button><a href="/" style={{padding:'12px 24px',background:'rgba(255,255,255,0.2)',color:'white',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}
+  if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successBox}><div style={{fontSize:'4rem',marginBottom:'20px'}}>✅</div><h2 style={{margin:'0 0 10px'}}>Report Submitted Successfully!</h2><p style={{marginBottom:'20px'}}>Your property damage report has been recorded.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'12px 24px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer'}}>Submit Another Report</button><a href="https://portal.slpalaska.com" style={{padding:'12px 24px',background:'rgba(255,255,255,0.2)',color:'white',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}
 
   return(<div style={s.container}><div style={s.formBox}>
     <div style={s.header}>
-      <a href="/" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a>
       <div style={s.logoBox}><img src="/Logo.png" alt="SLP Alaska" style={{maxWidth:'200px',height:'auto'}}/></div>
       <div style={s.badge}>⚠️ PROPERTY DAMAGE REPORT</div>
       <h1 style={{fontSize:'1.5rem',marginBottom:'8px',textShadow:'2px 2px 4px rgba(0,0,0,0.3)'}}>Property Damage Report</h1>

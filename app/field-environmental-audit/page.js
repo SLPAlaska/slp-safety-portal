@@ -16,7 +16,7 @@ const AUDIT_OPTIONS = ['Yes', 'No', 'Needs Improvement', 'N/A'];
 export default function FieldEnvironmentalAuditForm() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     specific_location: '',
@@ -96,7 +96,7 @@ export default function FieldEnvironmentalAuditForm() {
 
       setSubmitStatus('success');
       setFormData({
-        auditor_name: '', date: new Date().toISOString().split('T')[0], company: '', location: '',
+        auditor_name: '', date: new Date().toLocaleDateString('en-CA'), company: '', location: '',
         specific_location: '', weather_conditions: '', spill_prevention: '', spill_prevention_notes: '',
         waste_management: '', waste_management_notes: '', secondary_containment: '', secondary_containment_notes: '',
         hazmat_storage: '', hazmat_storage_notes: '', stormwater_controls: '', stormwater_controls_notes: '',
@@ -155,7 +155,7 @@ export default function FieldEnvironmentalAuditForm() {
   if (submitStatus === 'success') {
     return (
       <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
@@ -175,7 +175,7 @@ export default function FieldEnvironmentalAuditForm() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={styles.container}>
         <div style={styles.header}>
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />

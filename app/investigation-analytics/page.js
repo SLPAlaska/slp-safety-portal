@@ -489,7 +489,7 @@ export default function InvestigationAnalytics() {
     return (
       <div style={styles.container}>
         <div style={styles.wrapper}>
-          <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
           <div style={styles.loginCard}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', margin: '0 auto 25px', display: 'block' }} />
             <h1 style={{ color: '#1e293b', marginBottom: '10px', fontSize: '24px' }}>Investigation Analytics</h1>
@@ -509,7 +509,7 @@ export default function InvestigationAnalytics() {
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
 
         <div style={styles.header}>
           <div style={styles.headerContent}>

@@ -34,7 +34,7 @@ const DRILL_TYPES = [
 export default function EmergencyDrillEvaluation() {
   const [formData, setFormData] = useState({
     evaluator_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     location: '',
     company: '',
     drill_type: '',
@@ -133,7 +133,7 @@ export default function EmergencyDrillEvaluation() {
   const resetForm = () => {
     setFormData({
       evaluator_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       location: '',
       company: '',
       drill_type: '',
@@ -248,7 +248,7 @@ export default function EmergencyDrillEvaluation() {
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <a href="/" style={{ color: '#dc2626', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
+        <a href="https://portal.slpalaska.com" style={{ color: '#dc2626', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
         </a>
 

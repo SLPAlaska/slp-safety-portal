@@ -33,7 +33,7 @@ const JOURNEY_STATUS_OPTIONS = ['Not Started', 'In Progress', 'Completed Safely'
 export default function JourneyManagementForm() {
   const [formData, setFormData] = useState({
     driver_name: '',
-    travel_date: new Date().toISOString().split('T')[0],
+    travel_date: new Date().toLocaleDateString('en-CA'),
     departure_time: '',
     estimated_arrival: '',
     company: '',
@@ -134,7 +134,7 @@ export default function JourneyManagementForm() {
 
       setSubmitStatus('success');
       setFormData({
-        driver_name: '', travel_date: new Date().toISOString().split('T')[0], departure_time: '',
+        driver_name: '', travel_date: new Date().toLocaleDateString('en-CA'), departure_time: '',
         estimated_arrival: '', company: '', origin: '', destination: '', route_description: '',
         alternate_route: '', passengers: '', vehicle_type: '', vehicle_id: '', pre_trip_completed: '',
         weather_conditions: '', road_conditions: '', visibility: '', risk_level: '', travel_approved: '',
@@ -196,7 +196,7 @@ export default function JourneyManagementForm() {
   if (submitStatus === 'success') {
     return (
       <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
@@ -216,7 +216,7 @@ export default function JourneyManagementForm() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={styles.container}>
         <div style={styles.header}>
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />

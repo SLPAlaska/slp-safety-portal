@@ -16,7 +16,7 @@ const STORAGE_TYPES = ['Flammable Cabinet', 'Flammable Room', 'Outdoor Storage',
 
 export default function FlammableStorageAuditForm() {
   const [formData, setFormData] = useState({
-    audit_date: new Date().toISOString().split('T')[0], inspector_name: '', company: '', location: '', building_area: '', storage_area_type: '', cabinet_id: '',
+    audit_date: new Date().toLocaleDateString('en-CA'), inspector_name: '', company: '', location: '', building_area: '', storage_area_type: '', cabinet_id: '',
     flammable_diamond: '', nfpa_label: '', contents_labeled: '', no_smoking_signs: '', emergency_contact: '', sds_available: '',
     doors_close: '', self_closing: '', no_rust: '', sump_intact: '', vents_configured: '', no_damage: '', grounding_lug: '',
     compatible_materials: '', containers_closed: '', no_overfilled: '', proper_containers: '', approved_containers: '', no_leaking: '', separated_from_oxidizers: '', max_quantity: '',
@@ -127,7 +127,7 @@ export default function FlammableStorageAuditForm() {
       }
       console.log('Photos uploaded:', photoUrls.length)
 
-      const generatedAuditId = `FSA-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${Date.now().toString().slice(-4)}`
+      const generatedAuditId = `FSA-${new Date().toLocaleDateString('en-CA').replace(/-/g, '')}-${Date.now().toString().slice(-4)}`
       setAuditId(generatedAuditId)
       console.log('Audit ID:', generatedAuditId)
 
@@ -228,7 +228,7 @@ export default function FlammableStorageAuditForm() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', borderTop: '6px solid #BF0A30', borderBottom: '6px solid #002868' }}>
         <div style={{ textAlign: 'center', padding: '15px', background: 'white' }}>
           <img src="/Logo.png" alt="SLP Alaska Logo" style={{ maxHeight: '80px' }} />

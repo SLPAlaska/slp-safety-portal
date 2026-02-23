@@ -27,7 +27,7 @@ const WEATHER_CONDITIONS = ['Clear/Sunny', 'Partly Cloudy', 'Overcast', 'Light R
 
 export default function CompetentPersonForm() {
   const [formData, setFormData] = useState({
-    inspectionDate: new Date().toISOString().split('T')[0],
+    inspectionDate: new Date().toLocaleDateString('en-CA'),
     inspectionTime: new Date().toTimeString().slice(0, 5),
     competentPerson: '', company: '', location: '', specificLocation: '',
     excavationType: '', depthFt: '', lengthFt: '', widthFt: '',
@@ -109,7 +109,7 @@ export default function CompetentPersonForm() {
       if (error) throw error
       setMessage({ type: 'success', text: `Inspection submitted successfully! Inspection #: ${inspectionNumber}` })
       setFormData({
-        inspectionDate: new Date().toISOString().split('T')[0],
+        inspectionDate: new Date().toLocaleDateString('en-CA'),
         inspectionTime: new Date().toTimeString().slice(0, 5),
         competentPerson: '', company: '', location: '', specificLocation: '',
         excavationType: '', depthFt: '', lengthFt: '', widthFt: '',
@@ -225,7 +225,7 @@ export default function CompetentPersonForm() {
         }
       `}</style>
 
-      <Link href="/" className="back-link">← Back to Safety Portal</Link>
+      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
       
       <div className="cp-container">
         <div className="cp-header">

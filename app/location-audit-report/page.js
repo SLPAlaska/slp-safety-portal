@@ -18,7 +18,7 @@ const AUDIT_OPTIONS = ['Yes', 'No', 'Needs Improvement', 'N/A'];
 export default function LocationAuditForm() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     specific_location: '',
@@ -94,7 +94,7 @@ export default function LocationAuditForm() {
 
       setSubmitStatus('success');
       setFormData({
-        auditor_name: '', date: new Date().toISOString().split('T')[0], company: '', location: '',
+        auditor_name: '', date: new Date().toLocaleDateString('en-CA'), company: '', location: '',
         specific_location: '', crew_supervisor: '', crew_member_names: '', work_description: '',
         is_there_permit: '', type_of_permit: '', hazards_idd: '', unidentified_hazards: '',
         tha_jsa_posted: '', employees_complying_tha: '', fire_extinguishers: '', emergency_eye_wash: '',
@@ -149,7 +149,7 @@ export default function LocationAuditForm() {
   if (submitStatus === 'success') {
     return (
       <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
@@ -169,7 +169,7 @@ export default function LocationAuditForm() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={styles.container}>
         <div style={styles.header}>
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />

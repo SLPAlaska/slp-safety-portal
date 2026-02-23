@@ -523,7 +523,7 @@ export default function ScaffoldInspectionForm() {
   if (isSuccess) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)', padding: '20px' }}>
-        <a href="/" style={styles.backButton}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
             <div style={styles.logoContainer}>
@@ -551,7 +551,7 @@ export default function ScaffoldInspectionForm() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)', padding: '20px' }}>
-      <a href="/" style={styles.backButton}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
       
       <div style={styles.container}>
         <div style={styles.header}>

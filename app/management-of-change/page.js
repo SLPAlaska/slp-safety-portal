@@ -30,7 +30,7 @@ const CHANGE_TYPES = [
 export default function ManagementOfChange() {
   const [formData, setFormData] = useState({
     requestor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     location: '',
     immediate_supervisor: '',
     type_of_change: '',
@@ -78,7 +78,7 @@ export default function ManagementOfChange() {
   const resetForm = () => {
     setFormData({
       requestor_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       location: '',
       immediate_supervisor: '',
       type_of_change: '',
@@ -102,7 +102,7 @@ export default function ManagementOfChange() {
               <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                 Submit Another Request
               </button>
-              <a href="/" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
+              <a href="https://portal.slpalaska.com" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
                 Back to Portal
               </a>
             </div>
@@ -125,7 +125,7 @@ export default function ManagementOfChange() {
         
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
-          <a href="/" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '12px', padding: '15px', width: 'fit-content', margin: '15px auto', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', height: 'auto' }} />
           </div>

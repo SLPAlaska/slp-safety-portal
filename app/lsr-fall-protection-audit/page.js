@@ -30,7 +30,7 @@ const AUDIT_OPTIONS = ['Yes', 'No', 'Needs Improvement', 'N/A'];
 export default function LSRFallProtectionAudit() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     // Work Platforms & Scaffolds
@@ -107,7 +107,7 @@ export default function LSRFallProtectionAudit() {
   const resetForm = () => {
     setFormData({
       auditor_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       company: '',
       location: '',
       fixed_mobile_platform: '',
@@ -263,7 +263,7 @@ export default function LSRFallProtectionAudit() {
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <a href="/" style={{ color: '#1e3a8a', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
+        <a href="https://portal.slpalaska.com" style={{ color: '#1e3a8a', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
         </a>
 

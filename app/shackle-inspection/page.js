@@ -43,7 +43,7 @@ const CAPACITIES = [
 export default function ShackleInspection() {
   const [formData, setFormData] = useState({
     inspector_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     specific_location: '',
@@ -126,7 +126,7 @@ export default function ShackleInspection() {
   const resetForm = () => {
     setFormData({
       inspector_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       company: '',
       location: '',
       specific_location: '',
@@ -224,7 +224,7 @@ export default function ShackleInspection() {
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #b91c1c 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <a href="/" style={{ color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
+        <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
         </a>
 

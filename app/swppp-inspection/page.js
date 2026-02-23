@@ -24,7 +24,7 @@ const INSPECTION_RESULTS = ['Pass - No Issues','Pass - Minor Corrections Made','
 
 export default function SWPPPInspectionPage() {
   const [formData, setFormData] = useState({
-    auditor_name: '', date: new Date().toISOString().split('T')[0], company: '', location: '', stage_of_work: '',
+    auditor_name: '', date: new Date().toLocaleDateString('en-CA'), company: '', location: '', stage_of_work: '',
     access_roads: '', ice_roads_stable: '', bmps_effective: '', bmp_explanation: '',
     evidence_runoff: '', drainage_condition: '', outfalls_condition: '',
     secondary_containment: '', spill_prevention: '', haz_waste_storage: '',
@@ -72,7 +72,7 @@ export default function SWPPPInspectionPage() {
 
   const resetForm = () => {
     setFormData({
-      auditor_name: '', date: new Date().toISOString().split('T')[0], company: '', location: '', stage_of_work: '',
+      auditor_name: '', date: new Date().toLocaleDateString('en-CA'), company: '', location: '', stage_of_work: '',
       access_roads: '', ice_roads_stable: '', bmps_effective: '', bmp_explanation: '',
       evidence_runoff: '', drainage_condition: '', outfalls_condition: '',
       secondary_containment: '', spill_prevention: '', haz_waste_storage: '',
@@ -114,7 +114,7 @@ export default function SWPPPInspectionPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <a href="/" style={styles.backButton}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         
         <div style={styles.header}>
           <div style={styles.logoContainer}>

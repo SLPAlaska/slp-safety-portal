@@ -57,7 +57,7 @@ const EQUIPMENT_QUESTIONS = [
 export default function SurfaceConditionAuditPage() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     weather_conditions: '',
@@ -123,7 +123,7 @@ export default function SurfaceConditionAuditPage() {
   const resetForm = () => {
     setFormData({
       auditor_name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       company: '',
       location: '',
       weather_conditions: '',
@@ -199,7 +199,7 @@ export default function SurfaceConditionAuditPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <a href="/" style={styles.backButton}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         
         <div style={styles.header}>
           <div style={styles.logoContainer}>

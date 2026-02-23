@@ -16,7 +16,7 @@ const LOCATIONS = ['Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik',
 
 export default function ELineSafetyAuditForm() {
   const [formData, setFormData] = useState({
-    auditor_name: '', audit_date: new Date().toISOString().split('T')[0], job_number: '', company: '', location: '', well_name: '', client_rep: '', unit_id: '', crew_size: '',
+    auditor_name: '', audit_date: new Date().toLocaleDateString('en-CA'), job_number: '', company: '', location: '', well_name: '', client_rep: '', unit_id: '', crew_size: '',
     jsa_reviewed: '', work_permit: '', hot_work_permit: '', confined_space_permit: '', emergency_plan: '', client_requirements: '', pre_job_meeting: '',
     crew_training: '', well_control_cert: '', h2s_training: '', first_aid_cpr: '', ppe_appropriate: '', frc_worn: '',
     unit_pre_trip: '', drum_cable: '', measuring_device: '', depth_counter: '', weak_point: '', cable_head: '', tools_inspected: '',
@@ -127,7 +127,7 @@ export default function ELineSafetyAuditForm() {
 
   return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         
         <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>

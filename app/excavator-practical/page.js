@@ -93,7 +93,7 @@ export default function ExcavatorPractical() {
     evaluator_name: '',
     company: '',
     location: '',
-    evaluation_date: new Date().toISOString().split('T')[0],
+    evaluation_date: new Date().toLocaleDateString('en-CA'),
     equipment_id: '',
     energy_sources: [],
     stky_assessment: '',
@@ -223,7 +223,7 @@ export default function ExcavatorPractical() {
       evaluator_name: '',
       company: '',
       location: '',
-      evaluation_date: new Date().toISOString().split('T')[0],
+      evaluation_date: new Date().toLocaleDateString('en-CA'),
       equipment_id: '',
       energy_sources: [],
       stky_assessment: '',
@@ -308,7 +308,7 @@ export default function ExcavatorPractical() {
               <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                 New Evaluation
               </button>
-              <a href="/" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
+              <a href="https://portal.slpalaska.com" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
                 Back to Portal
               </a>
             </div>
@@ -334,7 +334,7 @@ export default function ExcavatorPractical() {
         
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
-          <a href="/" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
+          <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <div style={{ fontSize: '48px', margin: '15px 0' }}>🚜</div>
           <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>Excavator Practical Evaluation</h1>
           <p style={{ opacity: 0.9, fontSize: '16px' }}>Heavy Equipment Excavator Operator Assessment</p>

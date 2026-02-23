@@ -61,7 +61,7 @@ const SAFE_TO_PROCEED_OPTIONS = [
 export default function StopTake5Page() {
   const [formData, setFormData] = useState({
     name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     task_description: '',
@@ -173,7 +173,7 @@ export default function StopTake5Page() {
   const resetForm = () => {
     setFormData({
       name: '',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('en-CA'),
       company: '',
       location: '',
       task_description: '',
@@ -212,7 +212,7 @@ export default function StopTake5Page() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <a href="/" style={styles.backButton}>← Back to Portal</a>
+        <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
 
         <div style={styles.header}>
           <div style={styles.logoContainer}>

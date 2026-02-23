@@ -28,7 +28,7 @@ const RESPONSE_OPTIONS = ['Yes', 'No', 'Needs Improvement', 'N/A'];
 export default function FluidTransferAuditForm() {
   const [formData, setFormData] = useState({
     auditor_name: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     company: '',
     location: '',
     // Permit & Documentation
@@ -129,7 +129,7 @@ export default function FluidTransferAuditForm() {
       // Reset form
       setFormData({
         auditor_name: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'),
         company: '',
         location: '',
         ftp_complete: '',
@@ -229,7 +229,7 @@ export default function FluidTransferAuditForm() {
 
 return (
     <div style={{ padding: '20px', backgroundColor: '#f3f4f6', minHeight: '100vh' }}>
-      <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
+      <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={styles.container}>
         <div style={styles.header}>
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />

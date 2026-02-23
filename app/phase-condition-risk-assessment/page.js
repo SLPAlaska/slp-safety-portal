@@ -155,7 +155,7 @@ export default function PhaseConditionRiskAssessment() {
       setSubmitStatus('success')
       setFormData({
         assessor_name: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'),
         location: '',
         company: '',
         people_at_location: '',
@@ -224,7 +224,7 @@ export default function PhaseConditionRiskAssessment() {
         
         {/* Header */}
 <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <a href="/" style={{ display: 'inline-block', marginBottom: '20px', color: 'white', textDecoration: 'none', fontSize: '0.95rem' }}>
+          <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '20px', color: 'white', textDecoration: 'none', fontSize: '0.95rem' }}>
             ← Back to Portal
           </a>
           <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '12px', padding: '15px', display: 'inline-block', margin: '0 auto 20px auto', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>

@@ -304,7 +304,7 @@ export default function ClientExport() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${companyName.replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `${companyName.replace(/\s+/g, '_')}_export_${new Date().toLocaleDateString('en-CA')}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -566,7 +566,7 @@ export default function ClientExport() {
           </form>
 
           <div style={{ textAlign: 'center', marginTop: '25px' }}>
-            <a href="/" style={{ color: '#3b82f6', fontSize: '15px', textDecoration: 'none', fontWeight: '600' }}>
+            <a href="https://portal.slpalaska.com" style={{ color: '#3b82f6', fontSize: '15px', textDecoration: 'none', fontWeight: '600' }}>
               ← Back to Portal
             </a>
           </div>
@@ -596,7 +596,7 @@ export default function ClientExport() {
         <div style={styles.topBar}>
           <div style={styles.companyBadge}>{companyName}</div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <a href="/" style={{ textDecoration: 'none' }}>
+            <a href="https://portal.slpalaska.com" style={{ textDecoration: 'none' }}>
               <button style={{ ...styles.logoutButton, background: '#3b82f6' }}>
                 ← Back to Portal
               </button>
