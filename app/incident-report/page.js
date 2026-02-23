@@ -558,7 +558,30 @@ export default function IncidentReportForm() {
     witness_statement_summary: '',
     immediate_actions_taken: '',
     suspected_root_causes: '',
-    lessons_learned_initial: ''
+    lessons_learned_initial: '',
+    // Contractor/Employee Info
+    specific_location_onsite: '',
+    operation_type: '',
+    causal_factors: '',
+    jsa_permit_prepared: '',
+    injured_person_position: '',
+    injured_person_work_phone: '',
+    supervisor_name: '',
+    supervisor_title: '',
+    supervisor_contact: '',
+    date_shift_began: '',
+    rotation_length: '',
+    date_of_hire: '',
+    short_service_employee: '',
+    mentor_name: '',
+    // Other Info
+    treating_physician: '',
+    physician_phone: '',
+    wind_speed: '',
+    temperature: '',
+    gps_latitude: '',
+    gps_longitude: '',
+    risk_ranking: ''
   });
 
   // Calculated fields
@@ -569,6 +592,7 @@ export default function IncidentReportForm() {
 
   // UI State
   const [photos, setPhotos] = useState([]);
+  const [jsaFiles, setJsaFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -673,6 +697,15 @@ export default function IncidentReportForm() {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleJsaFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    setJsaFiles(prev => [...prev, ...files]);
+  };
+
+  const removeJsaFile = (index) => {
+    setJsaFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   // ============================================================================
   // SAVE DRAFT & LOAD DRAFT
   // ============================================================================
@@ -683,6 +716,19 @@ export default function IncidentReportForm() {
     const editId = params.get('draft');
     if (editId) {
       loadDraft(editId);
+    }
+    // Auto-detect GPS location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setFormData(prev => ({
+            ...prev,
+            gps_latitude: pos.coords.latitude.toFixed(6),
+            gps_longitude: pos.coords.longitude.toFixed(6)
+          }));
+        },
+        () => {} // silently fail if denied
+      );
     }
   }, []);
 
@@ -744,7 +790,28 @@ export default function IncidentReportForm() {
         witness_statement_summary: data.witness_statement_summary || '',
         immediate_actions_taken: data.immediate_actions_taken || '',
         suspected_root_causes: data.suspected_root_causes || '',
-        lessons_learned_initial: data.lessons_learned_initial || ''
+        lessons_learned_initial: data.lessons_learned_initial || '',
+        specific_location_onsite: data.specific_location_onsite || '',
+        operation_type: data.operation_type || '',
+        causal_factors: data.causal_factors || '',
+        jsa_permit_prepared: data.jsa_permit_prepared || '',
+        injured_person_position: data.injured_person_position || '',
+        injured_person_work_phone: data.injured_person_work_phone || '',
+        supervisor_name: data.supervisor_name || '',
+        supervisor_title: data.supervisor_title || '',
+        supervisor_contact: data.supervisor_contact || '',
+        date_shift_began: data.date_shift_began || '',
+        rotation_length: data.rotation_length || '',
+        date_of_hire: data.date_of_hire || '',
+        short_service_employee: data.short_service_employee === true ? 'Yes' : data.short_service_employee === false ? 'No' : '',
+        mentor_name: data.mentor_name || '',
+        treating_physician: data.treating_physician || '',
+        physician_phone: data.physician_phone || '',
+        wind_speed: data.wind_speed || '',
+        temperature: data.temperature || '',
+        gps_latitude: data.gps_latitude ? String(data.gps_latitude) : '',
+        gps_longitude: data.gps_longitude ? String(data.gps_longitude) : '',
+        risk_ranking: data.risk_ranking || ''
       }));
     } catch (e) { console.error('Load draft error:', e); }
   }
@@ -818,7 +885,29 @@ export default function IncidentReportForm() {
         lessons_learned_initial: formData.lessons_learned_initial || null,
         status: 'Draft',
         created_by_email: formData.reported_by_email || null,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        // New fields
+        specific_location_onsite: formData.specific_location_onsite || null,
+        operation_type: formData.operation_type || null,
+        causal_factors: formData.causal_factors || null,
+        jsa_permit_prepared: formData.jsa_permit_prepared || null,
+        injured_person_position: formData.injured_person_position || null,
+        injured_person_work_phone: formData.injured_person_work_phone || null,
+        supervisor_name: formData.supervisor_name || null,
+        supervisor_title: formData.supervisor_title || null,
+        supervisor_contact: formData.supervisor_contact || null,
+        date_shift_began: formData.date_shift_began || null,
+        rotation_length: formData.rotation_length || null,
+        date_of_hire: formData.date_of_hire || null,
+        short_service_employee: formData.short_service_employee === 'Yes' ? true : formData.short_service_employee === 'No' ? false : null,
+        mentor_name: formData.mentor_name || null,
+        treating_physician: formData.treating_physician || null,
+        physician_phone: formData.physician_phone || null,
+        wind_speed: formData.wind_speed || null,
+        temperature: formData.temperature || null,
+        gps_latitude: formData.gps_latitude ? parseFloat(formData.gps_latitude) : null,
+        gps_longitude: formData.gps_longitude ? parseFloat(formData.gps_longitude) : null,
+        risk_ranking: formData.risk_ranking || null
       };
 
       if (draftId) {
@@ -942,7 +1031,29 @@ export default function IncidentReportForm() {
         suspected_root_causes: formData.suspected_root_causes || null,
         lessons_learned_initial: formData.lessons_learned_initial || null,
         status: 'Submitted',
-        created_by_email: formData.reported_by_email
+        created_by_email: formData.reported_by_email,
+        // New contractor/employee fields
+        specific_location_onsite: formData.specific_location_onsite || null,
+        operation_type: formData.operation_type || null,
+        causal_factors: formData.causal_factors || null,
+        jsa_permit_prepared: formData.jsa_permit_prepared || null,
+        injured_person_position: formData.injured_person_position || null,
+        injured_person_work_phone: formData.injured_person_work_phone || null,
+        supervisor_name: formData.supervisor_name || null,
+        supervisor_title: formData.supervisor_title || null,
+        supervisor_contact: formData.supervisor_contact || null,
+        date_shift_began: formData.date_shift_began || null,
+        rotation_length: formData.rotation_length || null,
+        date_of_hire: formData.date_of_hire || null,
+        short_service_employee: formData.short_service_employee === 'Yes',
+        mentor_name: formData.mentor_name || null,
+        treating_physician: formData.treating_physician || null,
+        physician_phone: formData.physician_phone || null,
+        wind_speed: formData.wind_speed || null,
+        temperature: formData.temperature || null,
+        gps_latitude: formData.gps_latitude ? parseFloat(formData.gps_latitude) : null,
+        gps_longitude: formData.gps_longitude ? parseFloat(formData.gps_longitude) : null,
+        risk_ranking: formData.risk_ranking || null
       };
 
       // Insert or update (if converting from draft)
@@ -1006,7 +1117,47 @@ export default function IncidentReportForm() {
         // Update evidence count
         await supabase
           .from('incidents')
-          .update({ evidence_count: photos.length })
+          .update({ evidence_count: photos.length + jsaFiles.length })
+          .eq('id', data.id);
+      }
+
+      // Upload JSA/Permit files if any
+      if (jsaFiles.length > 0 && data) {
+        for (let i = 0; i < jsaFiles.length; i++) {
+          const file = jsaFiles[i];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${data.incident_id}_jsa_${i + 1}.${fileExt}`;
+          const filePath = `incidents/${data.id}/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('evidence')
+            .upload(filePath, file);
+
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('evidence')
+              .getPublicUrl(filePath);
+
+            await supabase
+              .from('investigation_evidence')
+              .insert({
+                incident_id: data.id,
+                evidence_number: photos.length + i + 1,
+                evidence_type: 'Document',
+                evidence_category: 'Documentation',
+                file_name: fileName,
+                file_url: urlData.publicUrl,
+                description: `JSA/Permit document ${i + 1} from initial report`,
+                uploaded_by_email: formData.reported_by_email,
+                source: 'initial_report'
+              });
+          }
+        }
+
+        // Update evidence count with JSA files
+        await supabase
+          .from('incidents')
+          .update({ evidence_count: photos.length + jsaFiles.length })
           .eq('id', data.id);
       }
 
@@ -1198,9 +1349,31 @@ export default function IncidentReportForm() {
                     witness_statement_summary: '',
                     immediate_actions_taken: '',
                     suspected_root_causes: '',
-                    lessons_learned_initial: ''
+                    lessons_learned_initial: '',
+                    specific_location_onsite: '',
+                    operation_type: '',
+                    causal_factors: '',
+                    jsa_permit_prepared: '',
+                    injured_person_position: '',
+                    injured_person_work_phone: '',
+                    supervisor_name: '',
+                    supervisor_title: '',
+                    supervisor_contact: '',
+                    date_shift_began: '',
+                    rotation_length: '',
+                    date_of_hire: '',
+                    short_service_employee: '',
+                    mentor_name: '',
+                    treating_physician: '',
+                    physician_phone: '',
+                    wind_speed: '',
+                    temperature: '',
+                    gps_latitude: '',
+                    gps_longitude: '',
+                    risk_ranking: ''
                   });
                   setPhotos([]);
+                  setJsaFiles([]);
                 }}
                 style={styles.submitBtn}
               >
@@ -1311,6 +1484,35 @@ export default function IncidentReportForm() {
               </div>
             </div>
 
+            <div style={styles.row}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Specific Location On-site</label>
+                <input
+                  type="text"
+                  name="specific_location_onsite"
+                  value={formData.specific_location_onsite}
+                  onChange={handleChange}
+                  placeholder="e.g., Rig floor, pipe rack, tank battery, wellhead..."
+                  style={styles.input}
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Type of Operation</label>
+                <select
+                  name="operation_type"
+                  value={formData.operation_type}
+                  onChange={handleChange}
+                  style={styles.select}
+                >
+                  <option value="">-- Select Operation --</option>
+                  <option value="OPS">OPS - Operations</option>
+                  <option value="DRL">DRL - Drilling</option>
+                  <option value="WRK">WRK - Workover</option>
+                  <option value="Midstream">Midstream</option>
+                </select>
+              </div>
+            </div>
+
             <div style={{ ...styles.sectionHeader, background: '#475569', marginTop: '10px' }}>
               👤 Reporter Information
             </div>
@@ -1415,6 +1617,56 @@ export default function IncidentReportForm() {
                 placeholder="Provide additional details about the sequence of events, conditions, and circumstances..."
                 style={{ ...styles.textarea, minHeight: '150px' }}
               />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Causal Factors</label>
+              <textarea
+                name="causal_factors"
+                value={formData.causal_factors}
+                onChange={handleChange}
+                placeholder="What caused or contributed to this incident? (e.g., Bolts were insufficiently torqued, Cable broke, Fitting was loose, Wheel chocks not used, Safety latch not pinned...)"
+                style={{ ...styles.textarea, minHeight: '100px' }}
+              />
+            </div>
+
+            <div style={styles.row}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Was a JSA or Permit prepared for this job?</label>
+                <select
+                  name="jsa_permit_prepared"
+                  value={formData.jsa_permit_prepared}
+                  onChange={handleChange}
+                  style={styles.select}
+                >
+                  <option value="">-- Select --</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                  <option value="N/A">N/A</option>
+                </select>
+              </div>
+              {formData.jsa_permit_prepared === 'Yes' && (
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Attach JSA / Permit Documents</label>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={handleJsaFileChange}
+                    style={styles.input}
+                  />
+                  {jsaFiles.length > 0 && (
+                    <div style={{ marginTop: '10px' }}>
+                      {jsaFiles.map((file, index) => (
+                        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', fontSize: '13px', color: '#475569' }}>
+                          <span>📎 {file.name}</span>
+                          <button type="button" onClick={() => removeJsaFile(index)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* ============================================================ */}
@@ -1819,6 +2071,71 @@ export default function IncidentReportForm() {
             )}
 
             {/* ============================================================ */}
+            {/* CONDITIONAL SECTION: EMPLOYEE/CONTRACTOR DETAILS (shows when injury) */}
+            {showInjurySection && (
+              <>
+                <div style={{ ...styles.sectionHeader, background: '#0f766e' }}>
+                  👷 Employee / Contractor Information
+                </div>
+
+                <div style={styles.row}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Position Title</label>
+                    <input type="text" name="injured_person_position" value={formData.injured_person_position} onChange={handleChange} placeholder="e.g., Floorhand, Operator, Mechanic..." style={styles.input} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Work Phone</label>
+                    <input type="tel" name="injured_person_work_phone" value={formData.injured_person_work_phone} onChange={handleChange} placeholder="(907) 555-1234" style={styles.input} />
+                  </div>
+                </div>
+
+                <div style={styles.row3}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Supervisor Name</label>
+                    <input type="text" name="supervisor_name" value={formData.supervisor_name} onChange={handleChange} placeholder="First Last" style={styles.input} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Supervisor Title</label>
+                    <input type="text" name="supervisor_title" value={formData.supervisor_title} onChange={handleChange} placeholder="e.g., Toolpusher, Foreman..." style={styles.input} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Supervisor Contact</label>
+                    <input type="tel" name="supervisor_contact" value={formData.supervisor_contact} onChange={handleChange} placeholder="Phone or email" style={styles.input} />
+                  </div>
+                </div>
+
+                <div style={styles.row}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Date Shift Began</label>
+                    <input type="date" name="date_shift_began" value={formData.date_shift_began} onChange={handleChange} style={styles.input} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Rotation Length</label>
+                    <input type="text" name="rotation_length" value={formData.rotation_length} onChange={handleChange} placeholder="e.g., 2 weeks on / 2 weeks off" style={styles.input} />
+                  </div>
+                </div>
+
+                <div style={styles.row3}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Date of Hire</label>
+                    <input type="date" name="date_of_hire" value={formData.date_of_hire} onChange={handleChange} style={styles.input} />
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Short Service Employee (SSE)?</label>
+                    <select name="short_service_employee" value={formData.short_service_employee} onChange={handleChange} style={styles.select}>
+                      <option value="">-- Select --</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Mentor Name</label>
+                    <input type="text" name="mentor_name" value={formData.mentor_name} onChange={handleChange} placeholder="If SSE, who is the mentor?" style={styles.input} />
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* CONDITIONAL SECTION: ENVIRONMENTAL */}
             {/* ============================================================ */}
             {showEnvironmentalSection && (
@@ -2253,6 +2570,57 @@ export default function IncidentReportForm() {
             </div>
 
             {/* ============================================================ */}
+            {/* SECTION: CONDITIONS & MEDICAL */}
+            <div style={{ ...styles.sectionHeader, background: '#4338ca' }}>
+              🌤️ Conditions, Medical & Risk
+            </div>
+
+            <div style={styles.row3}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Wind Speed</label>
+                <input type="text" name="wind_speed" value={formData.wind_speed} onChange={handleChange} placeholder="e.g., 15 mph, Calm, Gusting 30+" style={styles.input} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Temperature</label>
+                <input type="text" name="temperature" value={formData.temperature} onChange={handleChange} placeholder="e.g., 25°F, -10°F" style={styles.input} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Risk Ranking</label>
+                <select name="risk_ranking" value={formData.risk_ranking} onChange={handleChange} style={styles.select}>
+                  <option value="">-- Select Risk --</option>
+                  <option value="1 - Very Low">1 - Very Low</option>
+                  <option value="2 - Low">2 - Low</option>
+                  <option value="3 - Medium">3 - Medium</option>
+                  <option value="4 - High">4 - High</option>
+                  <option value="5 - Very High">5 - Very High</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={styles.row}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>GPS Latitude</label>
+                <input type="text" name="gps_latitude" value={formData.gps_latitude} onChange={handleChange} placeholder="Auto-detected or enter manually" style={styles.input} />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>GPS Longitude</label>
+                <input type="text" name="gps_longitude" value={formData.gps_longitude} onChange={handleChange} placeholder="Auto-detected or enter manually" style={styles.input} />
+              </div>
+            </div>
+
+            {showInjurySection && (
+              <div style={styles.row}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Treating Physician</label>
+                  <input type="text" name="treating_physician" value={formData.treating_physician} onChange={handleChange} placeholder="Dr. name or facility" style={styles.input} />
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Physician's Phone Number</label>
+                  <input type="tel" name="physician_phone" value={formData.physician_phone} onChange={handleChange} placeholder="(907) 555-1234" style={styles.input} />
+                </div>
+              </div>
+            )}
+
             {/* SECTION: PHOTO UPLOAD */}
             {/* ============================================================ */}
             <div style={{ ...styles.sectionHeader, background: '#1e3a8a' }}>
