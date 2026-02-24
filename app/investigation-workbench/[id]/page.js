@@ -341,9 +341,9 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
           <h3>Timeline</h3>
           <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'20px'}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 2fr auto',gap:'10px',marginBottom:'15px'}}>
-              <input type="date" value={newTimelineEvent.event_date} onChange={e=>setNewTimelineEvent({...newTimelineEvent,date:e.target.value})} style={st.input} />
-              <input type="time" value={newTimelineEvent.event_time} onChange={e=>setNewTimelineEvent({...newTimelineEvent,time:e.target.value})} style={st.input} />
-              <input placeholder="Event description" value={newTimelineEvent.event_description} onChange={e=>setNewTimelineEvent({...newTimelineEvent,description:e.target.value})} style={st.input} />
+              <input type="date" value={newTimelineEvent.event_date} onChange={e=>setNewTimelineEvent({...newTimelineEvent,event_date:e.target.value})} style={st.input} />
+              <input type="time" value={newTimelineEvent.event_time} onChange={e=>setNewTimelineEvent({...newTimelineEvent,event_time:e.target.value})} style={st.input} />
+              <input placeholder="Event description" value={newTimelineEvent.event_description} onChange={e=>setNewTimelineEvent({...newTimelineEvent,event_description:e.target.value})} style={st.input} />
               <label style={{display:'flex',alignItems:'center',gap:'5px',whiteSpace:'nowrap'}}><input type="checkbox" checked={newTimelineEvent.critical} onChange={e=>setNewTimelineEvent({...newTimelineEvent,critical:e.target.checked})} /> Critical</label>
             </div>
             <button onClick={addTimelineEvent} disabled={saving} style={st.primaryBtn}>+ Add Event</button>
@@ -353,9 +353,9 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
               <div key={ev.id} style={{background:ev.critical?'#fef3c7':'white',border:ev.critical?'2px solid #f59e0b':'1px solid #e2e8f0',borderRadius:'8px',padding:'15px'}}>
                 {editingTimeline===ev.id ? <div>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 2fr',gap:'10px',marginBottom:'10px'}}>
-                    <input type="date" value={ev.event_date} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,date:e.target.value}:x))} style={st.input} />
-                    <input type="time" value={ev.event_time||''} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,time:e.target.value}:x))} style={st.input} />
-                    <input value={ev.event_description} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,description:e.target.value}:x))} style={st.input} />
+                    <input type="date" value={ev.event_date} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_date:e.target.value}:x))} style={st.input} />
+                    <input type="time" value={ev.event_time||''} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_time:e.target.value}:x))} style={st.input} />
+                    <input value={ev.event_description} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_description:e.target.value}:x))} style={st.input} />
                   </div>
                   <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
                     <label><input type="checkbox" checked={ev.critical} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,critical:e.target.checked}:x))} /> Critical</label>
