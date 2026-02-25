@@ -47,7 +47,7 @@ const FORM_CATEGORIES = {
       'Journey Management': 'journey_management',
       'Location Audit Report': 'location_audit_reports',
       'Manage By Walk Around': 'mbwa',
-      'Phase Condition Risk Assessment': 'phase_condition_risk_assessments',
+      'Phase Condition Risk Assessment': 'phase_condition_risk_assessment',
       'Pressure Cross Check': 'pressure_crosscheck',
       'Risk Control Conversation': 'risk_control_conversations',
       'SAIL Log Entry': 'sail_log',
@@ -56,7 +56,7 @@ const FORM_CATEGORIES = {
       'Surface Condition Audit': 'surface_condition_audits',
       'SWPPP Inspection': 'swppp_inspection',
       'Task/Crew Audit': 'task_crew_audits',
-      'Toolbox Meeting Quality Assessment': 'toolbox_meeting_assessments',
+      'Toolbox Meeting Quality Assessment': 'toolbox_meeting_assessment',
       'Welding/Fab Shop Audit': 'welding_fab_shop_audits',
       'Welding/Grinding Audit': 'welding_grinding_audits',
     }
@@ -116,7 +116,7 @@ const FORM_CATEGORIES = {
     forms: {
       'Daily Scaffold Inspection': 'scaffold_inspections',
       'Exc. & Trench Competent Person Daily Inspection': 'competent_person_inspections',
-      'THA / JSA': 'tha_submissions',
+      'THA / JSA': 'tha_assessments',
     }
   },
   'Incident & Investigation': {
@@ -138,7 +138,7 @@ const FORM_CATEGORIES = {
   'HSE & Manager Daily Activity Log': {
     icon: '\u{1F4CA}',
     forms: {
-      'Manager & HSE Activity Log': 'daily_activity_logs',
+      'Manager & HSE Activity Log': 'manager_hse_daily_logs',
     }
   },
   'Critical Lift Plans': {
@@ -291,9 +291,12 @@ export default function ClientExport() {
     setExportResults(null);
 
     const { start, end } = getDateRange();
+    console.log('Date range:', start, 'to', end);
+    console.log('Search term:', searchTerms[0]);
+    console.log('Selected forms:', selected.map(([n]) => n));
     const results = {};
     let totalRecords = 0;
-    let errors = [];
+    let errorList = [];
 
     const tableMap = {};
     Object.values(FORM_CATEGORIES).forEach(cat => {
@@ -302,42 +305,52 @@ export default function ClientExport() {
 
     for (const [formName] of selected) {
       const table = tableMap[formName];
-      if (!table) continue;
+      if (!table) { console.log('No table for:', formName); continue; }
 
       try {
         setExportStatus('Querying ' + formName + '...');
-        let query = supabase.from(table).select('*').gte('created_at', start).lte('created_at', end);
+        console.log('Querying table:', table);
 
-        for (const term of searchTerms) {
-          query = query.or('company.ilike.%' + term + '%,contractor.ilike.%' + term + '%,submitted_by.ilike.%' + term + '%');
-        }
+        const { data, error } = await supabase
+          .from(table)
+          .select('*')
+          .gte('created_at', start)
+          .lte('created_at', end)
+          .ilike('company', '%' + searchTerms[0] + '%')
+          .order('created_at', { ascending: false });
 
-        if (selectedLocation !== 'All') {
-          query = query.or('location.ilike.%' + selectedLocation + '%,site.ilike.%' + selectedLocation + '%');
-        }
-
-        const { data, error } = await query.order('created_at', { ascending: false });
+        console.log('Result for', table, ':', data ? data.length : 0, 'rows, error:', error);
 
         if (error) {
-          errors.push(formName + ': ' + error.message);
+          console.error('Query error for', table, ':', error);
+          errorList.push(formName + ': ' + error.message);
         } else if (data && data.length > 0) {
-          results[formName] = data;
-          totalRecords += data.length;
+          if (selectedLocation !== 'All') {
+            const filtered = data.filter(row => row.location && row.location.toLowerCase().includes(selectedLocation.toLowerCase()));
+            if (filtered.length > 0) {
+              results[formName] = filtered;
+              totalRecords += filtered.length;
+            }
+          } else {
+            results[formName] = data;
+            totalRecords += data.length;
+          }
         }
       } catch (err) {
-        errors.push(formName + ': ' + err.message);
+        console.error('Catch error for', formName, ':', err);
+        errorList.push(formName + ': ' + err.message);
       }
     }
 
-    if (totalRecords === 0) {
+    if (totalRecords === 0 && errorList.length === 0) {
       setExportStatus('No records found for ' + companyName + ' in the selected date range and forms.');
+    } else if (totalRecords === 0 && errorList.length > 0) {
+      setExportStatus('Query errors occurred: ' + errorList.join('; '));
     } else {
-      setExportStatus('Found ' + totalRecords + ' records across ' + Object.keys(results).length + ' form types.');
+      let msg = 'Found ' + totalRecords + ' records across ' + Object.keys(results).length + ' form types.';
+      if (errorList.length > 0) { msg += ' (' + errorList.length + ' form types had errors)'; }
+      setExportStatus(msg);
       setExportResults(results);
-    }
-
-    if (errors.length > 0) {
-      setExportStatus(function(prev) { return prev + ' (' + errors.length + ' form types had no matching table yet)'; });
     }
 
     setExporting(false);
