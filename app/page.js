@@ -202,6 +202,7 @@ const FORM_CATEGORIES = [
     icon: '🌨️',
     forms: [
       { name: 'Spill Kit Inspection', href: '/spill-kit-inspection', isLocal: true },
+      { name: 'Weekly Tank Farm Inspection', href: '/weekly-tank-inspection', isLocal: true },
     ]
   },
   {
