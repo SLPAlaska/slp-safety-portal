@@ -356,30 +356,152 @@ export default function ClientExport() {
     setExporting(false);
   };
 
-  const downloadCSV = (formName, data) => {
-    if (!data || data.length === 0) return;
-    const headers = Object.keys(data[0]);
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(h => {
-        const val = row[h] === null ? '' : String(row[h]).replace(/"/g, '""');
-        return '"' + val + '"';
-      }).join(','))
-    ].join('\n');
+  const NICE_HEADERS = {
+    id: 'ID', created_at: 'Created', tha_number: 'THA Number', status: 'Status', date: 'Date',
+    company: 'Company', location: 'Location', work_area: 'Work Area', crew_lead: 'Crew Lead',
+    phone_radio: 'Phone/Radio', task_description: 'Task Description', job_planning_notes: 'Job Planning Notes',
+    procedure_exists: 'Procedure Exists', procedure_reviewed: 'Procedure Reviewed',
+    driving_backing: 'Driving/Backing', walkaround_360: '360 Walkaround', seatbelts_checked: 'Seatbelts',
+    spotter_when_backing: 'Spotter When Backing', load_secured: 'Load Secured',
+    general_items: 'General Items', ppe_requirements: 'PPE Requirements', permits_required: 'Permits Required',
+    potential_hazards: 'Potential Hazards', energy_types: 'Energy Types', control_types: 'Control Types',
+    quality_score: 'Quality Score', quality_grade: 'Grade', quality_notes: 'Quality Notes',
+    good_controls_count: 'Good Controls', awareness_only_count: 'Awareness Only',
+    photo_url: 'Photo', pdf_url: 'PDF', scope_changed: 'Scope Changed',
+    tha_updated_if_changed: 'THA Updated', client_rep_visited: 'Client Rep Visited',
+    hse_visited: 'HSE Visited', job_stopped: 'Job Stopped', housekeeping_complete: 'Housekeeping Complete',
+    all_permits_closed: 'Permits Closed', info_passed_to_oncoming: 'Info to Oncoming',
+    aar_went_well: 'AAR Went Well', aar_didnt_go_as_planned: 'AAR Issues',
+    aar_how_improve: 'AAR Improvements', lessons_learned: 'Lessons Learned',
+    crew_comments: 'Crew Comments', closed_by: 'Closed By', closed_at: 'Closed At',
+    last_modified: 'Last Modified', inspector_name: 'Inspector', inspector_phone: 'Phone',
+    tank_farm_id: 'Tank Farm ID', result: 'Result', notes: 'Notes',
+    submitted_by: 'Submitted By', submitted_at: 'Submitted At',
+  };
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+  const formatHeader = (key) => NICE_HEADERS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+  const formatCell = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    if (typeof val === 'object') {
+      try {
+        const entries = Object.entries(val).filter(([_, v]) => v === true);
+        return entries.map(([k]) => k).join(', ') || JSON.stringify(val);
+      } catch (e) { return String(val); }
+    }
+    return String(val);
+  };
+
+  const SKIP_COLS = ['id', 'photo_url', 'pdf_url', 'last_modified'];
+
+  const getVisibleHeaders = (data) => {
+    if (!data || data.length === 0) return [];
+    return Object.keys(data[0]).filter(h => !SKIP_COLS.includes(h));
+  };
+
+  const downloadExcel = (formName, data) => {
+    if (!data || data.length === 0) return;
+    const headers = getVisibleHeaders(data);
+
+    let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>' + formName + '</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+    html += '<style>td,th{font-family:Calibri;font-size:12pt;text-align:center;vertical-align:middle;border:1px solid #ccc;padding:6px 10px;}th{font-weight:bold;background-color:#1e3a5f;color:white;}.title{font-size:16pt;font-weight:bold;text-align:center;border:none;color:#1e3a5f;}.subtitle{font-size:10pt;text-align:center;border:none;color:#666;}.footer{font-size:9pt;text-align:center;border:none;color:#999;font-style:italic;}</style></head><body>';
+
+    html += '<table>';
+    html += '<tr><td colspan="' + headers.length + '" class="title">SLP Alaska - ' + companyName + '</td></tr>';
+    html += '<tr><td colspan="' + headers.length + '" class="subtitle">' + formName + ' | Exported: ' + new Date().toLocaleDateString() + ' | Records: ' + data.length + '</td></tr>';
+    html += '<tr><td colspan="' + headers.length + '"></td></tr>';
+
+    html += '<tr>';
+    headers.forEach(h => { html += '<th>' + formatHeader(h) + '</th>'; });
+    html += '</tr>';
+
+    data.forEach(row => {
+      html += '<tr>';
+      headers.forEach(h => { html += '<td>' + formatCell(row[h]).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</td>'; });
+      html += '</tr>';
+    });
+
+    html += '<tr><td colspan="' + headers.length + '"></td></tr>';
+    html += '<tr><td colspan="' + headers.length + '" class="footer">AnthroSafe\u2122 Field Driven Safety \u00A9 2026 SLP Alaska, LLC | Safety \u2022 Leadership \u2022 Performance</td></tr>';
+    html += '</table></body></html>';
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = companyName.replace(/\s+/g, '_') + '_' + formName.replace(/[\s\/]+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.download = companyName.replace(/\s+/g, '_') + '_' + formName.replace(/[\s\/]+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.xls';
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const downloadAllCSV = () => {
+  const downloadAllExcel = () => {
     if (!exportResults) return;
-    Object.entries(exportResults).forEach(([formName, data]) => {
-      setTimeout(() => downloadCSV(formName, data), 100);
+    Object.entries(exportResults).forEach(([formName, data], i) => {
+      setTimeout(() => downloadExcel(formName, data), i * 200);
+    });
+  };
+
+  const printPDF = (formName, data) => {
+    if (!data || data.length === 0) return;
+    const headers = getVisibleHeaders(data);
+    const win = window.open('', '_blank');
+    if (!win) { alert('Please allow pop-ups to print reports.'); return; }
+
+    let html = '<!DOCTYPE html><html><head><title>' + companyName + ' - ' + formName + '</title>';
+    html += '<style>';
+    html += '@page{size:landscape;margin:0.5in;}';
+    html += 'body{font-family:Calibri,sans-serif;font-size:10pt;color:#333;margin:0;padding:20px;}';
+    html += '.header{text-align:center;margin-bottom:20px;border-bottom:3px solid #1e3a5f;padding-bottom:15px;}';
+    html += '.header img{height:60px;margin-bottom:8px;}';
+    html += '.header h1{font-size:18pt;color:#1e3a5f;margin:5px 0;}';
+    html += '.header h2{font-size:12pt;color:#b91c1c;margin:3px 0;font-weight:normal;}';
+    html += '.header p{font-size:9pt;color:#666;margin:2px 0;}';
+    html += 'table{width:100%;border-collapse:collapse;margin-top:10px;page-break-inside:auto;}';
+    html += 'tr{page-break-inside:avoid;page-break-after:auto;}';
+    html += 'th{background:#1e3a5f;color:white;font-weight:bold;font-size:9pt;padding:6px 4px;text-align:center;border:1px solid #ccc;}';
+    html += 'td{font-size:9pt;padding:5px 4px;text-align:center;border:1px solid #ddd;word-wrap:break-word;max-width:200px;}';
+    html += 'tr:nth-child(even) td{background:#f8fafc;}';
+    html += '.footer{text-align:center;margin-top:20px;padding-top:10px;border-top:2px solid #1e3a5f;font-size:8pt;color:#999;}';
+    html += '.stats{display:flex;justify-content:center;gap:30px;margin:10px 0;font-size:10pt;}';
+    html += '.stats span{background:#f0f9ff;padding:4px 12px;border-radius:4px;border:1px solid #bae6fd;}';
+    html += '@media print{body{padding:0;}.no-print{display:none !important;}}';
+    html += '</style></head><body>';
+
+    html += '<div class="header">';
+    html += '<img src="/Logo.png" alt="SLP Alaska" onerror="this.style.display=\'none\'">';
+    html += '<h1>SLP Alaska</h1>';
+    html += '<h2>' + formName + ' Report</h2>';
+    html += '<p>' + companyName + ' | ' + (selectedLocation === 'All' ? 'All Locations' : selectedLocation) + ' | ' + dateRange + '</p>';
+    html += '<div class="stats"><span><strong>' + data.length + '</strong> Records</span><span>Exported: ' + new Date().toLocaleDateString() + '</span></div>';
+    html += '</div>';
+
+    html += '<button class="no-print" onclick="window.print()" style="background:#1e3a5f;color:white;border:none;padding:10px 30px;border-radius:6px;font-size:12pt;cursor:pointer;display:block;margin:0 auto 15px;">Print / Save PDF</button>';
+
+    html += '<table><thead><tr>';
+    headers.forEach(h => { html += '<th>' + formatHeader(h) + '</th>'; });
+    html += '</tr></thead><tbody>';
+
+    data.forEach(row => {
+      html += '<tr>';
+      headers.forEach(h => { html += '<td>' + formatCell(row[h]).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</td>'; });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += '<div class="footer">';
+    html += '<p>AnthroSafe\u2122 Field Driven Safety \u00A9 2026 SLP Alaska, LLC</p>';
+    html += '<p>Safety \u2022 Leadership \u2022 Performance | (907) 202-3274</p>';
+    html += '</div></body></html>';
+
+    win.document.write(html);
+    win.document.close();
+  };
+
+  const printAllPDF = () => {
+    if (!exportResults) return;
+    Object.entries(exportResults).forEach(([formName, data], i) => {
+      setTimeout(() => printPDF(formName, data), i * 500);
     });
   };
 
@@ -534,7 +656,10 @@ export default function ClientExport() {
           <div style={{ ...s.section, marginTop: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={s.sectionTitle}>Export Results</div>
-              <button onClick={downloadAllCSV} style={s.btnDownload}>{'\u{1F4E5}'} Download All CSV</button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button onClick={downloadAllExcel} style={s.btnDownload}>{'\u{1F4E5}'} All Excel</button>
+                <button onClick={printAllPDF} style={{ ...s.btnDownload, background: '#b91c1c' }}>{'\u{1F5A8}'} All PDF</button>
+              </div>
             </div>
             {Object.entries(exportResults).map(([formName, data]) => (
               <div key={formName} style={s.resultCard}>
@@ -542,7 +667,10 @@ export default function ClientExport() {
                   <div style={s.resultName}>{formName}</div>
                   <div style={s.resultCount}>{data.length} record{data.length !== 1 ? 's' : ''}</div>
                 </div>
-                <button onClick={() => downloadCSV(formName, data)} style={s.btnDownload}>CSV</button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={() => downloadExcel(formName, data)} style={s.btnDownload}>Excel</button>
+                  <button onClick={() => printPDF(formName, data)} style={{ ...s.btnDownload, background: '#b91c1c' }}>Print/PDF</button>
+                </div>
               </div>
             ))}
           </div>
