@@ -309,7 +309,7 @@ export default function ClientExport() {
         let query = supabase.from(table).select('*').gte('created_at', start).lte('created_at', end);
 
         for (const term of searchTerms) {
-          query = query.or('company.ilike.%' + term + '%,contractor.ilike.%' + term + '%,submitted_by.ilike.%' + term + '%');
+          query = query.ilike('company', '%' + term + '%');
         }
 
         if (selectedLocation !== 'All') {
