@@ -307,9 +307,9 @@ export default function ClientExport() {
       try {
         setExportStatus('Querying ' + formName + '...');
         let query = supabase.from(table).select('*').gte('created_at', start).lte('created_at', end);
+        query = query.ilike('company', '%' + searchTerms[0] + '%');
 
-        for (const term of searchTerms) {
-          query = query.ilike('company', '%' + term + '%');
+
         }
 
         if (selectedLocation !== 'All') {
