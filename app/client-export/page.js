@@ -47,7 +47,7 @@ const FORM_CATEGORIES = {
       'Journey Management': 'journey_management',
       'Location Audit Report': 'location_audit_reports',
       'Manage By Walk Around': 'mbwa',
-      'Phase Condition Risk Assessment': 'phase_condition_risk_assessment',
+      'Phase Condition Risk Assessment': 'phase_condition_risk_assessments',
       'Pressure Cross Check': 'pressure_crosscheck',
       'Risk Control Conversation': 'risk_control_conversations',
       'SAIL Log Entry': 'sail_log',
@@ -56,7 +56,7 @@ const FORM_CATEGORIES = {
       'Surface Condition Audit': 'surface_condition_audits',
       'SWPPP Inspection': 'swppp_inspection',
       'Task/Crew Audit': 'task_crew_audits',
-      'Toolbox Meeting Quality Assessment': 'toolbox_meeting_assessment',
+      'Toolbox Meeting Quality Assessment': 'toolbox_meeting_assessments',
       'Welding/Fab Shop Audit': 'welding_fab_shop_audits',
       'Welding/Grinding Audit': 'welding_grinding_audits',
     }
@@ -116,7 +116,7 @@ const FORM_CATEGORIES = {
     forms: {
       'Daily Scaffold Inspection': 'scaffold_inspections',
       'Exc. & Trench Competent Person Daily Inspection': 'competent_person_inspections',
-      'THA / JSA': 'tha_assessments',
+      'THA / JSA': 'tha_submissions',
     }
   },
   'Incident & Investigation': {
@@ -138,7 +138,7 @@ const FORM_CATEGORIES = {
   'HSE & Manager Daily Activity Log': {
     icon: '\u{1F4CA}',
     forms: {
-      'Manager & HSE Activity Log': 'manager_hse_daily_logs',
+      'Manager & HSE Activity Log': 'daily_activity_logs',
     }
   },
   'Critical Lift Plans': {
@@ -307,9 +307,9 @@ export default function ClientExport() {
       try {
         setExportStatus('Querying ' + formName + '...');
         let query = supabase.from(table).select('*').gte('created_at', start).lte('created_at', end);
-        query = query.ilike('company', '%' + searchTerms[0] + '%');
 
-
+        for (const term of searchTerms) {
+          query = query.or('company.ilike.%' + term + '%,contractor.ilike.%' + term + '%,submitted_by.ilike.%' + term + '%');
         }
 
         if (selectedLocation !== 'All') {
