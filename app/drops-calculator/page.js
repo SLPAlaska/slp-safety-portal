@@ -102,8 +102,10 @@ export default function DropsCalculator() {
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    setResults(null);
-    setSaved(false);
+    if (field !== 'controls' && field !== 'notes') {
+      setResults(null);
+      setSaved(false);
+    }
   };
 
   const selectPreset = (preset) => {
