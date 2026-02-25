@@ -12,7 +12,7 @@ const COMPANIES = [
   'CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction',
   'ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West',
   'GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream',
-  'Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS',
+  'Hilcorp Alaska','MagTec Alaska','Merkes Builders','Nordic-Calista','Parker TRS',
   'Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos',
   'Summit Excavation','Tesoro Refinery','Yellowjacket','Other'
 ];
@@ -244,7 +244,7 @@ export default function WeeklyTankInspection() {
           <div style={{ fontSize: '64px', marginBottom: '20px' }}>✅</div>
           <h2 style={{ color: '#22c55e', marginBottom: '10px' }}>Inspection Submitted Successfully</h2>
           <p style={{ color: '#94a3b8', marginBottom: '30px' }}>
-            Weekly Tank Farm Inspection has been recorded and is now reflected in the Predictive Safety Analytics Dashboard.
+            Weekly Tank Farm Inspection has been recorded and is now reflected in the AnthroSafe™ Dashboard.
           </p>
           <button onClick={() => { setSuccess(false); setFormData({ ...formData, ...INITIAL_STATE, inspector_comments: '', corrective_action_details: '', corrective_actions_needed: '', water_drained_this_week: '', water_drain_volume_gal: '', sheen_present_on_drain: '' }); setPhotoFiles([]); }} style={styles.submitBtn}>
             Submit Another Inspection
@@ -262,7 +262,7 @@ export default function WeeklyTankInspection() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.logoContainer}>
-          <img src="/SLP Logo no background.png" alt="SLP Alaska" style={styles.logo} />
+          <img src="/Logo.png" alt="SLP Alaska" style={styles.logo} />
         </div>
         <div style={styles.badge}>🛢️ WEEKLY TANK FARM INSPECTION</div>
         <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px', marginTop: '5px' }}>
@@ -492,7 +492,7 @@ export default function WeeklyTankInspection() {
 
       {/* Footer */}
       <div style={styles.footer}>
-        <div>Powered by Predictive Safety Analytics™</div>
+        <div>AnthroSafe™ Field Driven Safety</div>
         <div>© 2026 SLP Alaska, LLC</div>
       </div>
     </div>
