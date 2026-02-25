@@ -220,8 +220,15 @@ const FORM_CATEGORIES = [
     forms: [
       { name: 'Comprehensive PPE Inspection', href: '/ppe-inspection', isLocal: true },
     ]
-  }
-,
+  },
+  {
+    id: 'drops',
+    title: 'Dropped Object Prevention',
+    icon: '\u26A0\uFE0F',
+    forms: [
+      { name: 'Dropped Object Energy Assessment', href: '/drops-calculator', isLocal: true },
+    ]
+  },
   {
     id: 'client-export',
     title: 'Client Data Export',
