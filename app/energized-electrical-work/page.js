@@ -8,7 +8,7 @@ const supabase = createClient(
 );
 
 const COMPANIES = ['A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services','CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction','ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West','GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream','Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS','Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos','Summit Excavation','Tesoro Refinery','Yellowjacket','Other'];
-const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami','Other North Slope'];
+const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami',,'West Harrison Bay',,'Other North Slope'];
 const NOMINAL_VOLTAGES = ['≤50V','51-240V','241-480V','481-600V','601-1000V','1001-4160V','4161-13800V','>13800V'];
 const PPE_CATEGORIES = ['Category 1 (4 cal/cm²)','Category 2 (8 cal/cm²)','Category 3 (25 cal/cm²)','Category 4 (40 cal/cm²)'];
 const HAZARD_RISK_CATEGORIES = ['Low (≤1.2 cal/cm²)','Medium (1.2-8 cal/cm²)','High (8-25 cal/cm²)','Extreme (25-40 cal/cm²)','Prohibited (>40 cal/cm²)'];

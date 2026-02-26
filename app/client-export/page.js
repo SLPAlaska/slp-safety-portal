@@ -185,7 +185,7 @@ const DATE_RANGES = ['Last Week', 'Last Month', 'Last 3 Months', 'Last Year', 'Y
 const LOCATIONS = [
   'All', 'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA',
-  'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'Other North Slope'
+  'Point Thompson', 'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
 ];
 
 export default function ClientExport() {

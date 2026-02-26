@@ -17,7 +17,7 @@ const COMPANIES = [
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 'Point Thompson',
-  'North Star Island', 'Endicott', 'Badami', 'Other North Slope'
+  'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
 ]
 
 const EXCAVATION_TYPES = ['Trench', 'Bell-Bottom Pier Hole', 'Shaft', 'Open Excavation', 'Other']

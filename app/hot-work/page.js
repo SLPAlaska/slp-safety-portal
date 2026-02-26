@@ -8,7 +8,7 @@ const supabase = createClient(
 );
 
 const COMPANIES = ['A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services','CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction','ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West','GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream','Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS','Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos','Summit Excavation','Tesoro Refinery','Yellowjacket','Other'];
-const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami','Other North Slope'];
+const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami',,'West Harrison Bay',,'Other North Slope'];
 const HOT_WORK_TYPES = ['Arc Welding','Gas Welding (Oxy-Acetylene)','Cutting (Torch)','Grinding','Brazing','Soldering','Heat Treatment','Thawing Pipe','Hot Tapping','Other'];
 const TOOLS_EQUIPMENT = ['Arc Welder','MIG Welder','TIG Welder','Stick Welder','Oxy-Acetylene Torch','Plasma Cutter','Angle Grinder','Bench Grinder','Chop Saw','Heat Gun','Propane Torch','Multiple Tools','Other'];
 const FIRE_WATCH_DURATIONS = ['30 minutes','60 minutes','Continuous','Other'];
