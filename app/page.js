@@ -230,6 +230,13 @@ const FORM_CATEGORIES = [
     ]
   },
   {
+    id: 'weather',
+    title: 'Weather & Phase Conditions',
+    icon: '🌍',
+    forms: [
+      { name: 'Weather Globe & ASH Book Phases', href: '/weather', isLocal: true },
+    ]
+  },{
     id: 'client-export',
     title: 'Client Data Export',
     icon: '🔐',
