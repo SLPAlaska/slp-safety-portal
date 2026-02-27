@@ -426,12 +426,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-widt
 .analysis-text{white-space:pre-wrap}
 @media print{body{padding:20px} .header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
-<div class="header"><div style="display:flex;justify-content:space-between"><div><div class="header-title">${incident.incident_id||'Report'}</div><div style="font-size:13px;opacity:0.9">${incident.investigation_type||''} Investigation</div></div><div>${incident.safety_severity?`<span class="badge" style="background:${'AB'.includes(incident.safety_severity)?'#dc2626':'CD'.includes(incident.safety_severity)?'#f97316':'#3b82f6'};color:white">Severity ${incident.safety_severity}</span>`:''} ${incident.psif_classification?`<span class="badge" style="background:#1f2937;color:white">${incident.psif_classification}</span>`:''}</div></div><div style="display:flex;gap:20px;margin-top:10px;font-size:11px;opacity:0.85;flex-wrap:wrap"><span>Date: ${incident.incident_date||'N/A'}</span><span>Company: ${incident.company_name||'N/A'}</span><span>Location: ${incident.location_name||'N/A'}</span></div></div>
+<div class="header"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;align-items:center;gap:15px"><img src="${window.location.origin}/Logo.png" style="width:50px;height:50px;border-radius:8px" onerror="this.style.display='none'"/><div><div style="font-size:10px;opacity:0.8;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">AnthroSafe&trade; Field Driven Safety</div><div class="header-title">${incident.incident_id||'Report'}</div><div style="font-size:13px;opacity:0.9">${incident.investigation_type||''} Investigation</div></div></div><div>${incident.safety_severity?`<span class="badge" style="background:${'AB'.includes(incident.safety_severity)?'#dc2626':'CD'.includes(incident.safety_severity)?'#f97316':'#3b82f6'};color:white">Severity ${incident.safety_severity}</span>`:''} ${incident.psif_classification?`<span class="badge" style="background:#1f2937;color:white">${incident.psif_classification}</span>`:''}</div></div><div style="display:flex;gap:20px;margin-top:10px;font-size:11px;opacity:0.85;flex-wrap:wrap"><span>Date: ${incident.incident_date||'N/A'}</span><span>Company: ${incident.company_name||'N/A'}</span><span>Location: ${incident.location_name||'N/A'}</span></div></div>
 <div class="section"><div class="section-title">Incident Summary</div><div class="section-body"><div class="two-col"><div><div class="row"><span class="label">ID:</span>${incident.incident_id||'N/A'}</div><div class="row"><span class="label">Date:</span>${incident.incident_date||'N/A'} ${incident.incident_time||''}</div><div class="row"><span class="label">Company:</span>${incident.company_name||'N/A'}</div></div><div><div class="row"><span class="label">Investigation:</span>${incident.investigation_type||'N/A'}</div><div class="row"><span class="label">Severity:</span>${incident.safety_severity||'N/A'}</div><div class="row"><span class="label">PSIF:</span>${incident.psif_classification||'N/A'}</div></div></div><div style="margin-top:12px"><div class="row"><span class="label">Description:</span></div><div>${incident.brief_description||incident.detailed_description||'None'}</div></div>${incident.witness_statement_summary?`<div style="margin-top:12px"><span class="label">Initial Witness Info:</span><div>${incident.witness_statement_summary}</div></div>`:''}</div></div>
 ${timelineEvents.length?`<div class="section"><div class="section-title">Timeline of Events (${timelineEvents.length})</div><div class="section-body">${timelineEvents.map((e,i)=>`<div class="timeline-item"><strong>${i+1}.</strong> ${e.event_date} ${e.event_time||''} - <span class="${e.critical?'critical':''}">${e.event_description}</span></div>`).join('')}</div></div>`:''}
 ${evidence.length?`<div class="section"><div class="section-title">Evidence (${evidence.length})</div><div class="section-body">${evidence.map((e,i)=>`<div class="row">${i+1}. [${e.evidence_type}] ${e.description||e.file_name}</div>`).join('')}</div></div>`:''}
 ${witnesses.length?`<div class="section"><div class="section-title">Witness Statements (${witnesses.length})</div><div class="section-body">${witnesses.map(w=>`<div style="margin-bottom:12px"><strong>${w.witness_name}</strong> ${w.position_role?`(${w.position_role})`:''} ${w.company?`- ${w.company}`:''}<div style="margin-top:4px">${w.statement_summary}</div></div>`).join('')}</div></div>`:''}
-${(localReview||fiveWhy||rcaAnalysis)?`<div class="section"><div class="section-title">Analysis</div><div class="section-body"><div class="analysis-text">${localReview||fiveWhy||rcaAnalysis}</div></div></div>`:''}
+${(localReview||fiveWhy||rcaAnalysis)?`<div class="section"><div class="section-title">Analysis — ${incident.investigation_type||'N/A'}</div><div class="section-body"><div class="analysis-text">${localReview||fiveWhy||rcaAnalysis}</div></div></div>`:''}
+${(()=>{
+  const factors=[{key:'equipment_factors',label:'Equipment'},{key:'procedure_factors',label:'Procedures'},{key:'training_factors',label:'Training'},{key:'human_factors',label:'Human Factors'},{key:'communication_factors',label:'Communication'},{key:'supervision_factors',label:'Supervision'},{key:'design_factors',label:'Design/Eng.'},{key:'maintenance_factors',label:'Maintenance'},{key:'environmental_factors',label:'Environmental'},{key:'organizational_factors',label:'Organizational'}];
+  const active=factors.filter(f=>rcaData[f.key]&&rcaData[f.key].trim());
+  if(active.length===0)return '';
+  const svgEl=document.getElementById('causal-tree-svg');
+  const svgHTML=svgEl?new XMLSerializer().serializeToString(svgEl):'';
+  return '<div class="section"><div class="section-title">Causal Tree Diagram</div><div class="section-body" style="text-align:center;overflow:auto">'+svgHTML+'</div></div>';
+})()}
 ${correctiveActions.length?`<div class="section"><div class="section-title">Corrective Actions (${correctiveActions.length})</div><div class="section-body">${correctiveActions.map((ca,i)=>`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f1f5f9"><strong>${i+1}. ${ca.action_description}</strong><div style="margin-top:4px"><span class="label">Control:</span>${ca.hierarchy_control} | <span class="label">Owner:</span>${ca.action_owner_name} | <span class="label">Due:</span>${ca.target_date||'—'} | <span class="label">Status:</span>${ca.action_status}</div></div>`).join('')}</div></div>`:''}
 ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons Learned (${lessonsLearned.length})</div><div class="section-body">${lessonsLearned.map(l=>`<div style="margin-bottom:12px"><strong>${l.lesson_title}</strong><div>${l.lesson_description}</div>${l.key_takeaway?`<div style="margin-top:4px;font-style:italic;color:#7c3aed">Key Takeaway: ${l.key_takeaway}</div>`:''}</div>`).join('')}</div></div>`:''}
 <div class="section"><div class="section-title">Checklist</div><div class="section-body"><div class="two-col"><div><div class="checklist-item"><span class="${timelineEvents.length?'check-yes':'check-no'}">${timelineEvents.length?'✓':''}</span> Timeline (${timelineEvents.length})</div><div class="checklist-item"><span class="${evidence.length?'check-yes':'check-no'}">${evidence.length?'✓':''}</span> Evidence (${evidence.length})</div><div class="checklist-item"><span class="${witnesses.length?'check-yes':'check-no'}">${witnesses.length?'✓':''}</span> Witnesses (${witnesses.length})</div></div><div><div class="checklist-item"><span class="${(localReview||fiveWhy||rcaAnalysis)?'check-yes':'check-no'}">${(localReview||fiveWhy||rcaAnalysis)?'✓':''}</span> Analysis</div><div class="checklist-item"><span class="${correctiveActions.length?'check-yes':'check-no'}">${correctiveActions.length?'✓':''}</span> Actions (${correctiveActions.length})</div><div class="checklist-item"><span class="${lessonsLearned.length?'check-yes':'check-no'}">${lessonsLearned.length?'✓':''}</span> Lessons (${lessonsLearned.length})</div></div></div></div></div>
@@ -823,6 +831,146 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
               <textarea value={rcaData.recommendations} onChange={e=>setRcaData({...rcaData,recommendations:e.target.value})} placeholder="List recommendations for preventing recurrence..." style={{...st.input,minHeight:'120px',resize:'vertical'}} />
             </div>
 
+            {/* =============================== */}
+            {/* CAUSAL TREE DIAGRAM (auto-generated) */}
+            {/* =============================== */}
+            {(() => {
+              // Build tree data from RCA fields
+              const factors = [
+                {key:'equipment_factors',icon:'🔧',label:'Equipment',color:'#3b82f6'},
+                {key:'procedure_factors',icon:'📋',label:'Procedures',color:'#8b5cf6'},
+                {key:'training_factors',icon:'🎓',label:'Training',color:'#06b6d4'},
+                {key:'human_factors',icon:'🧠',label:'Human Factors',color:'#f59e0b'},
+                {key:'communication_factors',icon:'💬',label:'Communication',color:'#ec4899'},
+                {key:'supervision_factors',icon:'👷',label:'Supervision',color:'#14b8a6'},
+                {key:'design_factors',icon:'📐',label:'Design/Eng.',color:'#6366f1'},
+                {key:'maintenance_factors',icon:'🔨',label:'Maintenance',color:'#f97316'},
+                {key:'environmental_factors',icon:'🌡️',label:'Environmental',color:'#22c55e'},
+                {key:'organizational_factors',icon:'🏢',label:'Organizational',color:'#ef4444'}
+              ];
+              const activeFactors = factors.filter(f => rcaData[f.key] && rcaData[f.key].trim().length > 0);
+              const hasRootCauses = rcaData.root_causes_identified && rcaData.root_causes_identified.trim().length > 0;
+              const hasSystemic = rcaData.systemic_issues && rcaData.systemic_issues.trim().length > 0;
+              const hasEvent = incident.brief_description || incident.detailed_description;
+
+              if (activeFactors.length === 0 && !hasRootCauses) return null;
+
+              // Layout calculations
+              const nodeW = 150, nodeH = 56, padX = 16, padY = 70;
+              const tier2Count = activeFactors.length;
+              const tier3Items = [];
+              if (hasRootCauses) {
+                const roots = rcaData.root_causes_identified.split(/\n|;|,/).map(s=>s.trim()).filter(s=>s.length>2);
+                roots.forEach(r => tier3Items.push({label:r,color:'#dc2626'}));
+              }
+              if (hasSystemic) {
+                const sys = rcaData.systemic_issues.split(/\n|;|,/).map(s=>s.trim()).filter(s=>s.length>2);
+                sys.forEach(s => tier3Items.push({label:s,color:'#f59e0b'}));
+              }
+              const tier3Count = tier3Items.length;
+              const maxCols = Math.max(tier2Count, tier3Count, 1);
+              const svgW = Math.max(maxCols * (nodeW + padX) + padX, 600);
+              const svgH = 80 + (tier2Count > 0 ? padY + nodeH : 0) + (tier3Count > 0 ? padY + nodeH : 0) + padY + nodeH + 40;
+
+              // Tier positions
+              const eventX = svgW / 2, eventY = 40;
+              const tier2Y = eventY + padY + nodeH;
+              const tier2StartX = (svgW - tier2Count * (nodeW + padX) + padX) / 2;
+              const tier3Y = tier2Count > 0 ? tier2Y + padY + nodeH : eventY + padY + nodeH;
+              const tier3StartX = (svgW - tier3Count * (nodeW + padX) + padX) / 2;
+
+              function truncate(str, max) {
+                if (!str) return '';
+                const s = str.trim();
+                return s.length > max ? s.substring(0, max-2) + '...' : s;
+              }
+
+              function exportCausalTreeSVG() {
+                const svgEl = document.getElementById('causal-tree-svg');
+                if (!svgEl) return;
+                const svgData = new XMLSerializer().serializeToString(svgEl);
+                const blob = new Blob([svgData], {type: 'image/svg+xml'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `causal-tree-${incident.incident_id || 'diagram'}.svg`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }
+
+              return (
+                <div style={{marginTop:'30px'}}>
+                  <div style={{...st.sectionHeader,background:'#1e293b',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span>🌳 Causal Tree Diagram</span>
+                    <button onClick={exportCausalTreeSVG} style={{background:'rgba(255,255,255,0.2)',color:'white',border:'1px solid rgba(255,255,255,0.3)',padding:'4px 14px',borderRadius:'6px',cursor:'pointer',fontSize:'12px'}}>📷 Export SVG</button>
+                  </div>
+                  <p style={{color:'#64748b',marginBottom:'15px',fontSize:'13px'}}>Auto-generated from your analysis. Only categories with content appear. Export as SVG for reports.</p>
+                  <div style={{background:'#fafafa',border:'2px solid #e2e8f0',borderRadius:'12px',padding:'20px',overflow:'auto'}}>
+                    <svg id="causal-tree-svg" width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} xmlns="http://www.w3.org/2000/svg" style={{display:'block',margin:'0 auto',maxWidth:'100%'}}>
+                      {/* Background */}
+                      <rect width={svgW} height={svgH} fill="#fafafa" rx="8"/>
+
+                      {/* TIER 0: EVENT NODE */}
+                      <rect x={eventX - nodeW*0.75} y={eventY - 20} width={nodeW*1.5} height={nodeH} rx="10" fill="#1e293b" stroke="#0f172a" strokeWidth="2"/>
+                      <text x={eventX} y={eventY + 2} textAnchor="middle" fill="white" fontSize="11" fontWeight="600">⚡ INCIDENT EVENT</text>
+                      <text x={eventX} y={eventY + 18} textAnchor="middle" fill="#94a3b8" fontSize="9">{truncate(hasEvent ? (incident.brief_description || incident.detailed_description) : incident.incident_id, 40)}</text>
+
+                      {/* Lines from event to tier 2 */}
+                      {activeFactors.map((f, i) => {
+                        const fx = tier2StartX + i * (nodeW + padX) + nodeW/2;
+                        return <line key={`l1-${i}`} x1={eventX} y1={eventY + nodeH - 20} x2={fx} y2={tier2Y - 20} stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4,3"/>;
+                      })}
+
+                      {/* TIER 1: CONTRIBUTING FACTOR NODES */}
+                      {activeFactors.map((f, i) => {
+                        const fx = tier2StartX + i * (nodeW + padX);
+                        const cx = fx + nodeW/2;
+                        return (
+                          <g key={`t2-${i}`}>
+                            <rect x={fx} y={tier2Y - 20} width={nodeW} height={nodeH} rx="8" fill="white" stroke={f.color} strokeWidth="2.5"/>
+                            <rect x={fx} y={tier2Y - 20} width={nodeW} height={18} rx="8" fill={f.color}/>
+                            <rect x={fx} y={tier2Y - 10} width={nodeW} height={10} fill={f.color}/>
+                            <text x={cx} y={tier2Y - 5} textAnchor="middle" fill="white" fontSize="9" fontWeight="700">{f.icon} {f.label}</text>
+                            <text x={cx} y={tier2Y + 14} textAnchor="middle" fill="#334155" fontSize="8">{truncate(rcaData[f.key], 22)}</text>
+                            <text x={cx} y={tier2Y + 26} textAnchor="middle" fill="#64748b" fontSize="7">{truncate(rcaData[f.key]?.substring(22), 22)}</text>
+                          </g>
+                        );
+                      })}
+
+                      {/* Lines from tier 2 to tier 3 */}
+                      {tier3Items.map((item, i) => {
+                        const tx = tier3StartX + i * (nodeW + padX) + nodeW/2;
+                        // Connect to nearest tier2 node or event
+                        const sourceY = tier2Count > 0 ? tier2Y + nodeH - 20 : eventY + nodeH - 20;
+                        const sourceX = tier2Count > 0 ? tier2StartX + Math.min(i, tier2Count-1) * (nodeW + padX) + nodeW/2 : eventX;
+                        return <line key={`l2-${i}`} x1={sourceX} y1={sourceY} x2={tx} y2={tier3Y - 20} stroke={item.color} strokeWidth="1.5" strokeDasharray="4,3"/>;
+                      })}
+
+                      {/* TIER 2: ROOT CAUSES & SYSTEMIC ISSUES */}
+                      {tier3Items.map((item, i) => {
+                        const tx = tier3StartX + i * (nodeW + padX);
+                        const cx = tx + nodeW/2;
+                        const isSystemic = item.color === '#f59e0b';
+                        return (
+                          <g key={`t3-${i}`}>
+                            <rect x={tx} y={tier3Y - 20} width={nodeW} height={nodeH} rx="8" fill={isSystemic ? '#fffbeb' : '#fef2f2'} stroke={item.color} strokeWidth="2.5"/>
+                            <rect x={tx} y={tier3Y - 20} width={nodeW} height={18} rx="8" fill={item.color}/>
+                            <rect x={tx} y={tier3Y - 10} width={nodeW} height={10} fill={item.color}/>
+                            <text x={cx} y={tier3Y - 5} textAnchor="middle" fill="white" fontSize="9" fontWeight="700">{isSystemic ? '⚠️ SYSTEMIC' : '🎯 ROOT CAUSE'}</text>
+                            <text x={cx} y={tier3Y + 14} textAnchor="middle" fill="#334155" fontSize="8">{truncate(item.label, 22)}</text>
+                            <text x={cx} y={tier3Y + 26} textAnchor="middle" fill="#64748b" fontSize="7">{truncate(item.label?.substring(22), 22)}</text>
+                          </g>
+                        );
+                      })}
+
+                      {/* Watermark */}
+                      <text x={svgW - 10} y={svgH - 8} textAnchor="end" fill="#cbd5e1" fontSize="8">AnthroSafe{'\u2122'} Causal Tree | {incident.incident_id} | {new Date().toLocaleDateString()}</text>
+                    </svg>
+                  </div>
+                </div>
+              );
+            })()}
+
             <button onClick={saveRCAAnalysis} disabled={saving} style={{...st.primaryBtn,marginTop:'20px',padding:'12px 30px',fontSize:'16px'}}>{saving?'Saving...':'💾 Save Comprehensive RCA'}</button>
           </div>}
         </div>}
@@ -959,7 +1107,7 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
       </div>
     </div>
 
-    <div style={st.footer}><span style={{fontWeight:'500'}}>AnthroSafe™ Field Driven Safety</span> | © 2026 SLP Alaska, LLC</div>
+    <div style={st.footer}><span style={{fontWeight:'500'}}>AnthroSafe{'\u2122'} Field Driven Safety</span> | {'\u00A9'} 2026 SLP Alaska, LLC</div>
     </div></div>
   );
 }
