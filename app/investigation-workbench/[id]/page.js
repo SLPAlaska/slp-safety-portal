@@ -451,6 +451,15 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
         {/* ANALYSIS */}
         {activeTab==='Analysis' && <div>
           <h3>Analysis</h3>
+          <div style={{background:'#f0f9ff',padding:'16px',borderRadius:'12px',marginBottom:'20px',border:'1px solid #bae6fd',display:'flex',alignItems:'center',gap:'15px',flexWrap:'wrap'}}>
+            <span style={{fontWeight:'600',color:'#0369a1'}}>Analysis Method:</span>
+            <select value={incident.investigation_type||'Local Review'} onChange={async(e)=>{const newType=e.target.value;try{const{error}=await supabase.from('incidents').update({investigation_type:newType,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;setIncident({...incident,investigation_type:newType});}catch(err){alert(err.message);}}} style={{padding:'8px 12px',borderRadius:'8px',border:'1px solid #0284c7',fontSize:'14px',fontWeight:'500',background:'white',cursor:'pointer',minWidth:'200px'}}>
+              <option value="Local Review">Local Review</option>
+              <option value="5-Why Analysis">5-Why Analysis</option>
+              <option value="Full RCA">Comprehensive RCA</option>
+            </select>
+            <span style={{fontSize:'12px',color:'#64748b',fontStyle:'italic'}}>System recommended: {incident.investigation_type||'N/A'} — override anytime</span>
+          </div>
           {incident.investigation_type==='Local Review' && <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px'}}><h4>Local Review</h4><textarea placeholder="What happened? Immediate causes? What to do differently?" value={localReview} onChange={e=>setLocalReview(e.target.value)} style={{...st.input,minHeight:'200px',resize:'vertical',marginBottom:'15px'}} /><button onClick={()=>saveAnalysis('Local Review',localReview)} disabled={saving} style={st.primaryBtn}>{saving?'Saving...':'💾 Save'}</button></div>}
           {incident.investigation_type==='5-Why Analysis' && <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px'}}><h4>5-Why Analysis</h4><textarea placeholder="Why did this happen? Drill down 5 times" value={fiveWhy} onChange={e=>setFiveWhy(e.target.value)} style={{...st.input,minHeight:'300px',resize:'vertical',marginBottom:'15px'}} /><button onClick={()=>saveAnalysis('5-Why Analysis',fiveWhy)} disabled={saving} style={st.primaryBtn}>{saving?'Saving...':'💾 Save'}</button></div>}
           {(incident.investigation_type==='Full RCA'||incident.investigation_type==='Root Cause Analysis') && <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px'}}><h4>Root Cause Analysis</h4><p style={{marginBottom:'15px',color:'#64748b'}}>Analyze: Equipment, Environment, Materials, Methods, People, Management, Communication, Training, Procedures, Culture</p><textarea placeholder="RCA findings..." value={rcaAnalysis} onChange={e=>setRcaAnalysis(e.target.value)} style={{...st.input,minHeight:'400px',resize:'vertical',marginBottom:'15px'}} /><button onClick={()=>saveAnalysis('Full RCA',rcaAnalysis)} disabled={saving} style={st.primaryBtn}>{saving?'Saving...':'💾 Save'}</button></div>}
