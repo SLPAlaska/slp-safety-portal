@@ -27,8 +27,8 @@ const styles = {
   card: { background: '#fff', borderRadius: '0 0 16px 16px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
   loginCard: { background: '#fff', borderRadius: '16px', padding: '40px', maxWidth: '450px', margin: '50px auto', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', textAlign: 'center' },
   toolbar: { background: '#f8fafc', padding: '15px 20px', borderBottom: '2px solid #e2e8f0', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' },
-  canvas: { minHeight: '600px', background: '#fafafa', position: 'relative', overflow: 'auto' },
-  sidebar: { width: '300px', background: '#fff', borderLeft: '2px solid #e2e8f0', padding: '20px' },
+  canvas: { minHeight: '600px', minWidth: '600px', background: '#fafafa', position: 'relative', overflow: 'auto', flex: 1, border: '2px dashed #d1d5db' },
+  sidebar: { width: '300px', flexShrink: 0, background: '#fff', borderLeft: '2px solid #e2e8f0', padding: '20px', overflowY: 'auto', maxHeight: '600px' },
   input: { width: '100%', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
   select: { padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white', minWidth: '180px' },
   textarea: { width: '100%', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' },
@@ -366,7 +366,7 @@ export default function LogicTreeBuilder() {
             </div>
           </div>
 
-          <div style={{ display: 'flex' }}>
+          <div style={{ display: 'flex', minHeight: '600px' }}>
             {/* Canvas */}
             <div
               ref={canvasRef}
@@ -459,7 +459,7 @@ export default function LogicTreeBuilder() {
             {/* Sidebar */}
             {selectedIncident && (
               <div style={styles.sidebar}>
-                <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#1e293b' }}>Add Node</h3>
+                <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#1e293b' }}>Add Node ({nodes.length} on canvas)</h3>
                 
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Node Type</label>
