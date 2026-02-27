@@ -504,8 +504,8 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#1e3a5f,#2d5a87)' }}>
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-        <a href="/portal" style={{ background: '#1e40af', color: 'white', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px' }}>← Portal</a>
-        <a href="/investigation-dashboard" style={{ background: '#059669', color: 'white', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px' }}>← Dashboard</a>
+        <button onClick={()=>window.location.href='/portal'} style={{ background: '#1e40af', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', textDecoration: 'none', fontSize: '14px' }}>{'\u2190'} Portal</button>
+        <button onClick={()=>window.location.href='/investigation-dashboard'} style={{ background: '#059669', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', textDecoration: 'none', fontSize: '14px' }}>{'\u2190'} Dashboard</button>
         <button onClick={generatePDF} style={{ background: '#7c3aed', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🖨️ Print PDF</button>
       </div>
 
