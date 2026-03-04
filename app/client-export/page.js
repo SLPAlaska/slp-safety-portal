@@ -20,6 +20,12 @@ const COMPANY_CREDENTIALS = {
 };
 
 // Categories mirror portal homepage exactly (excluding PSA tools, ASH Book, Client Export)
+// Tables that use a different column name for company
+const COMPANY_COLUMN_MAP = {
+  'bbs_observations': 'client_company',
+  'pressure_crosscheck': 'client_company'
+};
+
 const FORM_CATEGORIES = {
   'Training & Competency': {
     icon: '\u{1F3AF}',
@@ -311,12 +317,13 @@ export default function ClientExport() {
         setExportStatus('Querying ' + formName + '...');
         console.log('Querying table:', table);
 
+        const companyCol = COMPANY_COLUMN_MAP[table] || 'company';
         const { data, error } = await supabase
           .from(table)
           .select('*')
           .gte('created_at', start)
           .lte('created_at', end)
-          .ilike('company', '%' + searchTerms[0] + '%')
+          .ilike(companyCol, '%' + searchTerms[0] + '%')
           .order('created_at', { ascending: false });
 
         console.log('Result for', table, ':', data ? data.length : 0, 'rows, error:', error);
