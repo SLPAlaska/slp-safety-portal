@@ -23,7 +23,12 @@ const COMPANY_CREDENTIALS = {
 // Tables that use a different column name for company
 const COMPANY_COLUMN_MAP = {
   'bbs_observations': 'client_company',
-  'pressure_crosscheck': 'client_company'
+  'pressure_crosscheck': 'client_company',
+  'sail_log': 'client_company',
+  'toolbox_meeting_assessment': 'client',
+  'incidents': 'company_name',
+  'lessons_learned': 'company_name',
+  'management_of_change': null  // No company column - skip filter
 };
 
 const FORM_CATEGORIES = {
@@ -317,14 +322,20 @@ export default function ClientExport() {
         setExportStatus('Querying ' + formName + '...');
         console.log('Querying table:', table);
 
-        const companyCol = COMPANY_COLUMN_MAP[table] || 'company';
-        const { data, error } = await supabase
+        const companyCol = COMPANY_COLUMN_MAP.hasOwnProperty(table) ? COMPANY_COLUMN_MAP[table] : 'company';
+        
+        let query = supabase
           .from(table)
           .select('*')
           .gte('created_at', start)
-          .lte('created_at', end)
-          .ilike(companyCol, '%' + searchTerms[0] + '%')
-          .order('created_at', { ascending: false });
+          .lte('created_at', end);
+        
+        // Only filter by company if the table has a company column
+        if (companyCol) {
+          query = query.ilike(companyCol, '%' + searchTerms[0] + '%');
+        }
+        
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         console.log('Result for', table, ':', data ? data.length : 0, 'rows, error:', error);
 
