@@ -28,7 +28,7 @@ const COMPANY_COLUMN_MAP = {
   'toolbox_meeting_assessment': 'client',
   'incidents': 'company_name',
   'lessons_learned': 'company_name',
-  'management_of_change': null  // No company column - skip filter
+  'management_of_change': 'company'  // Added company column
 };
 
 const FORM_CATEGORIES = {
