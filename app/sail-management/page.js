@@ -397,11 +397,7 @@ export default function SAILManagement() {
             <div style={s.twoCol}>
               <div style={s.fieldGroup}>
                 <label style={s.fieldLabel}>Assigned To</label>
-                <select value={editData.assigned_to} onChange={e => setEditData({ ...editData, assigned_to: e.target.value })} style={s.input}>
-                  <option value="">-- Unassigned --</option>
-                  {SLP_TEAM.map(name => <option key={name} value={name}>{name}</option>)}
-                </select>
-                <input placeholder="Or type a name..." value={editData.assigned_to} onChange={e => setEditData({ ...editData, assigned_to: e.target.value })} style={{ ...s.input, marginTop: '6px', fontSize: '12px' }} />
+                <input placeholder="Enter name of person responsible..." value={editData.assigned_to} onChange={e => setEditData({ ...editData, assigned_to: e.target.value })} style={s.input} />
               </div>
               <div style={s.fieldGroup}>
                 <label style={s.fieldLabel}>Target Completion Date</label>
