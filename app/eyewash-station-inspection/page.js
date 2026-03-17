@@ -22,7 +22,7 @@ const COMPANIES = [
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA',
-  'Point Thompson', 'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ];
 
 const STATION_TYPES = [
@@ -141,9 +141,15 @@ export default function EyewashStationInspection() {
     setSubmitting(true);
 
     try {
+      const sanitized = {
+        ...formData,
+        install_date: formData.install_date || null,
+        last_annual_cert: formData.last_annual_cert || null,
+      };
+
       const result = await safeSubmit({
         table: 'eyewash_station_inspections',
-        data: { ...formData },
+        data: sanitized,
         photoRef: photoRef,
         formType: 'eyewash-station-inspection'
       });
