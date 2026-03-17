@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
 const COMPANIES = [
@@ -17,7 +16,7 @@ const COMPANIES = [
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 'Point Thompson',
-  'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ]
 
 const EXCAVATION_TYPES = ['Trench', 'Bell-Bottom Pier Hole', 'Shaft', 'Open Excavation', 'Other']
@@ -225,7 +224,7 @@ export default function CompetentPersonForm() {
         }
       `}</style>
 
-      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
+      <a href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</a>
       
       <div className="cp-container">
         <div className="cp-header">
