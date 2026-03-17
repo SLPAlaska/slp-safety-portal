@@ -63,23 +63,27 @@ export default function ReportGenerator() {
   useEffect(() => { if (isAuthenticated) fetchIncidents(); }, [isAuthenticated]);
 
   async function fetchIncidents() {
+    try {
     const { data } = await supabase.from('incidents').select('id, incident_id, brief_description, company_name, incident_date, status, investigation_type').in('status', ['Approved', 'Closed', 'Under Review - Final Review', 'Pending Approval']).order('incident_date', { ascending: false });
-    setIncidents(data || []);
+        setIncidents(data || []);
+    } catch(e) { console.error('fetchIncidents error:', e); }
   }
 
   async function loadIncidentData(incidentId) {
+    try {
     setLoading(true);
-    const { data: incident } = await supabase.from('incidents').select('*').eq('id', incidentId).single();
-    const { data: timeline } = await supabase.from('timeline_events').select('*').eq('incident_id', incidentId).order('sequence_number');
-    const { data: evidence } = await supabase.from('investigation_evidence').select('*').eq('incident_id', incidentId).order('evidence_number');
-    const { data: witnesses } = await supabase.from('witness_statements').select('*').eq('incident_id', incidentId).order('witness_number');
-    const { data: localReview } = await supabase.from('local_reviews').select('*').eq('incident_id', incidentId).single();
-    const { data: fiveWhy } = await supabase.from('five_why_analyses').select('*').eq('incident_id', incidentId).single();
-    const { data: rca } = await supabase.from('rca_analyses').select('*').eq('incident_id', incidentId).single();
-    const { data: cas } = await supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incidentId).order('action_number');
-    const { data: lessons } = await supabase.from('investigation_lessons_learned').select('*').eq('incident_id', incidentId).order('lesson_number');
-    setIncidentData({ incident, timeline: timeline || [], evidence: evidence || [], witnesses: witnesses || [], localReview, fiveWhy, rca, cas: cas || [], lessons: lessons || [] });
-    setLoading(false);
+        const { data: incident } = await supabase.from('incidents').select('*').eq('id', incidentId).single();
+        const { data: timeline } = await supabase.from('timeline_events').select('*').eq('incident_id', incidentId).order('sequence_number');
+        const { data: evidence } = await supabase.from('investigation_evidence').select('*').eq('incident_id', incidentId).order('evidence_number');
+        const { data: witnesses } = await supabase.from('witness_statements').select('*').eq('incident_id', incidentId).order('witness_number');
+        const { data: localReview } = await supabase.from('local_reviews').select('*').eq('incident_id', incidentId).single();
+        const { data: fiveWhy } = await supabase.from('five_why_analyses').select('*').eq('incident_id', incidentId).single();
+        const { data: rca } = await supabase.from('rca_analyses').select('*').eq('incident_id', incidentId).single();
+        const { data: cas } = await supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incidentId).order('action_number');
+        const { data: lessons } = await supabase.from('investigation_lessons_learned').select('*').eq('incident_id', incidentId).order('lesson_number');
+        setIncidentData({ incident, timeline: timeline || [], evidence: evidence || [], witnesses: witnesses || [], localReview, fiveWhy, rca, cas: cas || [], lessons: lessons || [] });
+        setLoading(false);
+    } catch(e) { console.error('loadIncidentData error:', e); }
   }
 
   function generateReport() {

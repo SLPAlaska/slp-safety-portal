@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -158,7 +158,7 @@ export default function FlammableStorageAuditForm() {
 
       setStatus('✅ Flammable Storage Audit submitted successfully!')
       setTimeout(() => {
-        document.getElementById('successBox').scrollIntoView({ behavior: 'smooth' })
+        successBoxRef.current?.scrollIntoView({ behavior: 'smooth' })
       }, 500)
     } catch (error) {
       console.error('Submission error:', error)
@@ -192,7 +192,7 @@ export default function FlammableStorageAuditForm() {
               <div style={{ fontSize: '60px', fontWeight: 'bold', lineHeight: 1 }}>{scores.grade}</div>
               <div style={{ fontSize: '16px' }}>{scores.overall}%</div>
             </div>
-            <div id="successBox" style={{ background: status.includes('✅') ? '#059669' : '#dc2626', color: 'white', padding: '30px', borderRadius: '12px', marginTop: '20px' }}>
+            <div ref={successBoxRef} style={{ background: status.includes('✅') ? '#059669' : '#dc2626', color: 'white', padding: '30px', borderRadius: '12px', marginTop: '20px' }}>
               <h2 style={{ margin: '0 0 10px' }}>{status.includes('✅') ? '✓ Audit Submitted Successfully!' : '✗ Submission Error'}</h2>
               {status.includes('✅') && (
                 <>
@@ -349,8 +349,8 @@ export default function FlammableStorageAuditForm() {
 
             <div style={{ background: '#BF0A30', color: 'white', padding: '12px 18px', margin: '25px 0 15px', fontWeight: 600, fontSize: '15px', borderRadius: '6px' }}>📷 Photo Documentation</div>
             <div style={{ border: '3px dashed #d1d5db', borderRadius: '8px', padding: '30px', textAlign: 'center', margin: '20px 0', background: '#fafafa' }}>
-              <input type="file" id="photoInput" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotoChange} />
-              <button type="button" onClick={() => document.getElementById('photoInput').click()} style={{ padding: '12px 24px', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', background: '#002868', color: 'white' }}>📷 Add Photos</button>
+              <input type="file" ref={photoRef} accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotoChange} />
+              <button type="button" onClick={() => photoRef.current.click()} style={{ padding: '12px 24px', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', background: '#002868', color: 'white' }}>📷 Add Photos</button>
               <p style={{ fontSize: '13px', color: '#666', margin: '12px 0 0' }}>Upload photos of storage areas, findings, or conditions</p>
               {photos.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '12px', marginTop: '20px' }}>

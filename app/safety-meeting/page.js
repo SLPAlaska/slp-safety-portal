@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -139,12 +139,12 @@ export default function SafetyMeeting(){
         <div style={s.section}><div style={{...s.sectionHeader,...s.sectionBlue}}>📸 Documentation</div><div style={s.sectionBody}>
           <div style={s.formGroup}>
             <label style={s.label}>Toolbox Meeting Form Photo (Optional)</label>
-            <div style={{...s.photoUpload,...(photoPreview?s.photoUploadActive:{})}} onClick={()=>document.getElementById('photoInput').click()}>
+            <div style={{...s.photoUpload,...(photoPreview?s.photoUploadActive:{})}} onClick={()=>photoRef.current.click()}>
               <div style={s.photoIcon}>📷</div>
               <p style={{color:'#6b7280'}}>Click to upload photo of signed toolbox meeting form</p>
               {photoPreview&&<img src={photoPreview} alt="Preview" style={s.photoPreview}/>}
             </div>
-            <input type="file" id="photoInput" accept="image/*" onChange={handlePhotoChange} style={{display:'none'}}/>
+            <input type="file" ref={photoRef} accept="image/*" onChange={handlePhotoChange} style={{display:'none'}}/>
           </div>
         </div></div>
         

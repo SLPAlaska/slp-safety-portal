@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -108,7 +108,7 @@ export default function PropertyDamageReport(){
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
       const{error}=await supabase.from('property_damage_reports').insert([{
-        person_name:formData.personName,incident_date:formData.incidentDate || null,company:formData.company,location:formData.location,
+        person_name:formData.personName,incident_date:formData.incidentDat || nulle || null,company:formData.company,location:formData.location,
         security_notified:formData.securityNotified,injuries_involved:formData.injuriesInvolved,
         spill_involved:formData.spillInvolved,spill_volume_outside:formData.spillVolumeOutside||null,total_spill_volume:formData.totalSpillVolume||null,
         names_contact_involved:formData.namesContactInvolved||null,weather_location:formData.weatherLocation,witness_names:formData.witnessNames||null,
@@ -349,21 +349,21 @@ export default function PropertyDamageReport(){
           <div style={s.formRow}>
             <div style={s.formGroup}>
               <label style={s.label}>Pre-Trip Inspection Photo (Optional)</label>
-              <div style={{...s.photoUpload,...(preTripPreview?s.photoUploadActive:{})}} onClick={()=>document.getElementById('preTripInput').click()}>
+              <div style={{...s.photoUpload,...(preTripPreview?s.photoUploadActive:{})}} onClick={()=>preTripRef.current.click()}>
                 <div style={{fontSize:'2.5rem',marginBottom:'10px'}}>📋</div>
                 <p style={{color:'#6b7280'}}>Click to upload Pre-Trip Inspection</p>
                 {preTripPreview&&<img src={preTripPreview} alt="Preview" style={s.photoPreview}/>}
               </div>
-              <input type="file" id="preTripInput" accept="image/*" onChange={(e)=>handlePhotoChange(e,'preTrip')} style={{display:'none'}}/>
+              <input type="file" ref={preTripRef} accept="image/*" onChange={(e)=>handlePhotoChange(e,'preTrip')} style={{display:'none'}}/>
             </div>
             <div style={s.formGroup}>
               <label style={s.label}>Incident Photo (Optional)</label>
-              <div style={{...s.photoUpload,...(photoPreview?s.photoUploadActive:{})}} onClick={()=>document.getElementById('photoInput').click()}>
+              <div style={{...s.photoUpload,...(photoPreview?s.photoUploadActive:{})}} onClick={()=>photoRef.current.click()}>
                 <div style={{fontSize:'2.5rem',marginBottom:'10px'}}>📷</div>
                 <p style={{color:'#6b7280'}}>Click to upload Incident Photo</p>
                 {photoPreview&&<img src={photoPreview} alt="Preview" style={s.photoPreview}/>}
               </div>
-              <input type="file" id="photoInput" accept="image/*" onChange={(e)=>handlePhotoChange(e,'photo')} style={{display:'none'}}/>
+              <input type="file" ref={photoRef} accept="image/*" onChange={(e)=>handlePhotoChange(e,'photo')} style={{display:'none'}}/>
             </div>
           </div>
         </div></div>

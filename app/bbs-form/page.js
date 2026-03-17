@@ -98,7 +98,7 @@ export default function BBSObservationForm() {
       const { error } = await supabase.from('bbs_observations').insert([{
         client_company: formData.clientCompany,
         submitter_name: formData.submitterName,
-        observation_date: formData.date,
+        observation_date: formData.date || null,
         location: formData.location,
         project: formData.project || null,
         observation_type: formData.observationType,

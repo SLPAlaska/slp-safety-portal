@@ -173,40 +173,42 @@ export default function DropsCalculator() {
   };
 
   const saveToDatabase = async () => {
+    try {
     if (!results || !formData.assessor_name || !formData.company || !formData.location) return;
-    setSaving(true);
-    const record = {
-      assessor_name: formData.assessor_name,
-      date: formData.date,
-      company: formData.company,
-      location: formData.location,
-      work_area: formData.work_area,
-      task_description: formData.task_description,
-      object_name: formData.object_name,
-      weight_lbs: parseFloat(formData.weight_lbs),
-      height_ft: parseFloat(formData.height_ft),
-      energy_joules: parseFloat(results.energy_j),
-      energy_ftlbs: parseFloat(results.energy_ftlbs),
-      impact_velocity_fps: parseFloat(results.velocity_fps),
-      impact_force_lbs: parseFloat(results.force_lbs),
-      consequence_level: results.consequence.level,
-      consequence_label: results.consequence.label,
-      likelihood_level: results.likelihood,
-      likelihood_label: LIKELIHOOD_LEVELS[results.likelihood - 1].label,
-      risk_rating: results.riskLabel,
-      exclusion_zone_ft: parseFloat(results.exclusion_ft),
-      controls: formData.controls,
-      notes: formData.notes,
-    };
-
-    const { error } = await supabase.from('drops_calculations').insert([record]);
-    setSaving(false);
-    if (error) {
-      console.error('Save error:', error);
-      alert('Error saving: ' + error.message);
-    } else {
-      setSaved(true);
-    }
+        setSaving(true);
+        const record = {
+          assessor_name: formData.assessor_name,
+          date: formData.date,
+          company: formData.company,
+          location: formData.location,
+          work_area: formData.work_area,
+          task_description: formData.task_description,
+          object_name: formData.object_name,
+          weight_lbs: parseFloat(formData.weight_lbs),
+          height_ft: parseFloat(formData.height_ft),
+          energy_joules: parseFloat(results.energy_j),
+          energy_ftlbs: parseFloat(results.energy_ftlbs),
+          impact_velocity_fps: parseFloat(results.velocity_fps),
+          impact_force_lbs: parseFloat(results.force_lbs),
+          consequence_level: results.consequence.level,
+          consequence_label: results.consequence.label,
+          likelihood_level: results.likelihood,
+          likelihood_label: LIKELIHOOD_LEVELS[results.likelihood - 1].label,
+          risk_rating: results.riskLabel,
+          exclusion_zone_ft: parseFloat(results.exclusion_ft),
+          controls: formData.controls,
+          notes: formData.notes,
+        };
+    
+        const { error } = await supabase.from('drops_calculations').insert([record]);
+        setSaving(false);
+        if (error) {
+          console.error('Save error:', error);
+          alert('Error saving: ' + error.message);
+        } else {
+          setSaved(true);
+        }
+    } catch(e) { console.error('saveToDatabase error:', e); }
   };
 
   const printReport = () => {

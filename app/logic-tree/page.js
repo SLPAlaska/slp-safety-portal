@@ -88,40 +88,44 @@ export default function LogicTreeBuilder() {
   useEffect(() => { if (isAuthenticated) fetchIncidents(); }, [isAuthenticated]);
 
   async function fetchIncidents() {
+    try {
     const { data } = await supabase
-      .from('incidents')
-      .select('id, incident_id, brief_description, company_name, incident_date')
-      .order('incident_date', { ascending: false });
-    setIncidents(data || []);
+          .from('incidents')
+          .select('id, incident_id, brief_description, company_name, incident_date')
+          .order('incident_date', { ascending: false });
+        setIncidents(data || []);
+    } catch(e) { console.error('fetchIncidents error:', e); }
   }
 
   async function loadIncident(incidentId) {
+    try {
     const { data: incident } = await supabase.from('incidents').select('*').eq('id', incidentId).single();
-    setSelectedIncident(incident);
-
-    // Load existing tree if any
-    const { data: treeData } = await supabase
-      .from('incident_logic_trees')
-      .select('*')
-      .eq('incident_id', incidentId)
-      .single();
-
-    if (treeData && treeData.tree_data) {
-      const parsed = typeof treeData.tree_data === 'string' ? JSON.parse(treeData.tree_data) : treeData.tree_data;
-      setNodes(parsed.nodes || []);
-      setConnections(parsed.connections || []);
-    } else {
-      // Initialize with incident as root event
-      setNodes([{
-        id: 'root',
-        type: 'event',
-        text: incident.brief_description || 'Incident Event',
-        x: 400,
-        y: 50,
-        isRoot: true
-      }]);
-      setConnections([]);
-    }
+        setSelectedIncident(incident);
+    
+        // Load existing tree if any
+        const { data: treeData } = await supabase
+          .from('incident_logic_trees')
+          .select('*')
+          .eq('incident_id', incidentId)
+          .single();
+    
+        if (treeData && treeData.tree_data) {
+          const parsed = typeof treeData.tree_data === 'string' ? JSON.parse(treeData.tree_data) : treeData.tree_data;
+          setNodes(parsed.nodes || []);
+          setConnections(parsed.connections || []);
+        } else {
+          // Initialize with incident as root event
+          setNodes([{
+            id: 'root',
+            type: 'event',
+            text: incident.brief_description || 'Incident Event',
+            x: 400,
+            y: 50,
+            isRoot: true
+          }]);
+          setConnections([]);
+        }
+    } catch(e) { console.error('loadIncident error:', e); }
   }
 
   function addNode() {
@@ -198,32 +202,34 @@ export default function LogicTreeBuilder() {
   }
 
   async function saveTree() {
+    try {
     if (!selectedIncidentId) return;
-
-    const treeData = { nodes, connections };
-
-    // Check if exists
-    const { data: existing } = await supabase
-      .from('incident_logic_trees')
-      .select('id')
-      .eq('incident_id', selectedIncidentId)
-      .single();
-
-    if (existing) {
-      await supabase.from('incident_logic_trees').update({
-        tree_data: treeData,
-        updated_by_email: userEmail,
-        updated_at: new Date().toISOString()
-      }).eq('id', existing.id);
-    } else {
-      await supabase.from('incident_logic_trees').insert({
-        incident_id: selectedIncidentId,
-        tree_data: treeData,
-        created_by_email: userEmail
-      });
-    }
-
-    alert('Logic Tree saved!');
+    
+        const treeData = { nodes, connections };
+    
+        // Check if exists
+        const { data: existing } = await supabase
+          .from('incident_logic_trees')
+          .select('id')
+          .eq('incident_id', selectedIncidentId)
+          .single();
+    
+        if (existing) {
+          await supabase.from('incident_logic_trees').update({
+            tree_data: treeData,
+            updated_by_email: userEmail,
+            updated_at: new Date().toISOString()
+          }).eq('id', existing.id);
+        } else {
+          await supabase.from('incident_logic_trees').insert({
+            incident_id: selectedIncidentId,
+            tree_data: treeData,
+            created_by_email: userEmail
+          });
+        }
+    
+        alert('Logic Tree saved!');
+    } catch(e) { console.error('saveTree error:', e); }
   }
 
   function exportAsImage() {
