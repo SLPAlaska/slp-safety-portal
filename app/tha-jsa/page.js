@@ -113,7 +113,6 @@ export default function THAForm(){
     const r=analyzeQuality(filled);setQualityResults(r);setShowQualityPanel(true);if(r.overallScore>=60)setQualityCheckPassed(true);
   };
 
-  const 
   const printTHA = () => {
     const win = window.open('', '_blank');
     if (!win) { alert('Please allow pop-ups to print.'); return; }
