@@ -4,6 +4,9 @@ export const metadata = {
   title: 'SLP Safety Portal',
   description: 'Safety • Leadership • Performance',
   manifest: '/manifest.json',
+}
+
+export const viewport = {
   themeColor: '#ea580c',
 }
 
