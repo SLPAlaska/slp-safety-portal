@@ -429,7 +429,7 @@ export default function FallProtectionPlan(){
   };
 
   // Compliance Grade Component
-  const ComplianceGradeBox=()=>{
+  const renderComplianceGradeBox=()=>{
     if(!formData.workEnvironment)return null;
     const{grade,score,color,issues,suggestions,canSubmit}=complianceGrade;
     const criticalIssues=issues.filter(i=>i.severity==='critical');
@@ -514,7 +514,7 @@ export default function FallProtectionPlan(){
   // ── WIZARD STEP RENDERER ─────────────────────────────────────────────────────
   const STEPS = ['Environment','Height & Task','Protection','Details','Rescue','Submit'];
 
-  const WizardProgress = () => (
+  const renderWizardProgress = () => (
     <div style={s.wizardProgress}>
       {STEPS.map((label,i)=>{
         const num = i+1;
@@ -534,7 +534,7 @@ export default function FallProtectionPlan(){
   );
 
   // STEP 1: Work Environment
-  const Step1 = () => (
+  const renderStep1 = () => (
     <div>
       <div style={{background:'#eff6ff',border:'2px solid #bfdbfe',borderRadius:'10px',padding:'15px',marginBottom:'20px',fontSize:'14px',color:'#1e40af',fontWeight:'600'}}>
         👆 Tap your work environment below. The system will guide you to the safest fall protection for that task.
@@ -583,7 +583,7 @@ export default function FallProtectionPlan(){
     {value:'other',label:'Other',icon:'📋'},
   ];
 
-  const Step2 = () => {
+  const renderStep2 = () => {
     const h = parseFloat(formData.heightAboveLower)||0;
     const triggerHeight = 6; // OSHA construction default
     return (
@@ -640,7 +640,7 @@ export default function FallProtectionPlan(){
   };
 
   // STEP 3: System Guide — the heart of the wizard
-  const Step3 = () => {
+  const renderStep3 = () => {
     const rec = getSystemRecommendation(formData.workEnvironment, formData.heightAboveLower, formData.workTasks);
     const envLabel = WORK_ENVIRONMENTS.find(w=>w.value===formData.workEnvironment)?.label || formData.workEnvironment;
     const h = formData.heightAboveLower;
@@ -727,12 +727,12 @@ export default function FallProtectionPlan(){
   };
 
   // STEP 4: Details (anchor, clearance, emergency, equipment)
-  const Step4 = () => {
+  const renderStep4 = () => {
     const needsClearance = PROTECTION_SYSTEMS[formData.userSelectedSystem]?.clearanceNeeded;
     return (
       <div>
         {/* Compliance grade inline */}
-        <ComplianceGradeBox/>
+        {renderComplianceGradeBox()}
 
         <div style={s.section}><div style={{...s.sectionHeader,...s.sectionPurple}}>⚓ Anchor Point</div>
           <div style={s.formRow}>
@@ -887,7 +887,7 @@ export default function FallProtectionPlan(){
     return { selfRescueFeasible, selfRescueMethod, mechFeasible, mechBest, aidedMethod, timeTarget, primaryMethod, isConfined, isHighWork, isVeryHigh };
   };
 
-  const Step5Rescue = () => {
+  const renderStep5Rescue = () => {
     const env = formData.workEnvironment;
     const rec = getRescueRecommendation(env, formData.heightAboveLower, formData.userSelectedSystem);
     const envLabel = WORK_ENVIRONMENTS.find(w=>w.value===env)?.label || env;
@@ -1160,9 +1160,9 @@ export default function FallProtectionPlan(){
   };
 
   // STEP 6: Personnel, signatures, verifications, submit
-  const Step5 = () => (
+  const renderStep5 = () => (
     <div>
-      <ComplianceGradeBox/>
+      {renderComplianceGradeBox()}
 
       <div style={s.section}><div style={s.sectionHeader}>📋 Job Information</div>
         <div style={s.formRow}>
@@ -1222,13 +1222,13 @@ export default function FallProtectionPlan(){
     <div style={s.content}><form onSubmit={handleSubmit}>
       
       {/* WIZARD PROGRESS */}
-      <WizardProgress/>
-      {wizardStep===1&&<Step1/>}
-      {wizardStep===2&&<Step2/>}
-      {wizardStep===3&&<Step3/>}
-      {wizardStep===4&&<Step4/>}
-      {wizardStep===5&&<Step5Rescue/>}
-      {wizardStep===6&&<Step5/>}
+      {renderWizardProgress()}
+      {wizardStep===1&&renderStep1()}
+      {wizardStep===2&&renderStep2()}
+      {wizardStep===3&&renderStep3()}
+      {wizardStep===4&&renderStep4()}
+      {wizardStep===5&&renderStep5Rescue()}
+      {wizardStep===6&&renderStep5()}
       
     </form></div>
     
