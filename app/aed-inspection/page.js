@@ -15,13 +15,13 @@ const COMPANIES = [
   'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West', 'GBR Equipment',
   'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream', 'Hilcorp Alaska',
   'MagTec Alaska', 'Merkes Builders','Narwhal Exploration', 'Nordic-Calista', 'Parker TRS', 'Peninsula Paving',
-  'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Yellowjacket', 'Other'
+  'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other'
 ];
 
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA',
-  'Point Thompson', 'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ];
 
 const AED_MAKES = [
@@ -136,12 +136,20 @@ export default function AEDInspection() {
         photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
+      const sanitized = {
+        ...formData,
+        battery_expiration:       formData.battery_expiration       || null,
+        battery_install_date:     formData.battery_install_date     || null,
+        adult_pads_expiration:    formData.adult_pads_expiration    || null,
+        pediatric_pads_expiration:formData.pediatric_pads_expiration|| null,
+        last_service_date:        formData.last_service_date        || null,
+        next_service_due:         formData.next_service_due         || null,
+        photo_urls:               photoUrls.length > 0 ? photoUrls : null
+      };
+
       const { error } = await supabase
         .from('aed_inspections')
-        .insert([{
-          ...formData,
-          photo_urls: photoUrls.length > 0 ? photoUrls : null
-        }]);
+        .insert([sanitized]);
 
       if (error) throw error;
       setSubmitted(true);
