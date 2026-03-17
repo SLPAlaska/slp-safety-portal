@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
 const COMPANIES = [
@@ -17,7 +16,7 @@ const COMPANIES = [
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 'Point Thompson',
-  'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ]
 
 export default function ColdWeatherAssessment() {
@@ -55,6 +54,20 @@ export default function ColdWeatherAssessment() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!formData.isCritical) {
+      setMessage({ type: 'error', text: 'Please answer: Is this work Critical?' })
+      return
+    }
+    if (!formData.stopWorkAuthority) {
+      setMessage({ type: 'error', text: 'Please answer: Does the crew acknowledge Stop Work Authority?' })
+      return
+    }
+    if (!formData.jobStopped) {
+      setMessage({ type: 'error', text: 'Please answer: Was the job stopped due to cold weather?' })
+      return
+    }
+
     setSubmitting(true)
     setMessage({ type: '', text: '' })
 
@@ -370,7 +383,7 @@ export default function ColdWeatherAssessment() {
         }
       `}</style>
 
-      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
+      <a href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</a>
       
       <div className="form-container">
         <div className="form-header">
