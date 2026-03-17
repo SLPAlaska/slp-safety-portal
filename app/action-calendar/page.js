@@ -88,6 +88,7 @@ export default function ActionCalendar() {
   const [selectedAction, setSelectedAction] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [dayActions, setDayActions] = useState([]);
+  const [rescheduleDate, setRescheduleDate] = useState('');
 
   // Stats
   const [stats, setStats] = useState({ total: 0, thisMonth: 0, overdue: 0, dueThisWeek: 0 });
@@ -102,6 +103,7 @@ export default function ActionCalendar() {
 
   async function fetchData() {
     setLoading(true);
+    try {
 
     // Get date range for current month view (including overflow days)
     const year = currentDate.getFullYear();
@@ -190,7 +192,7 @@ export default function ActionCalendar() {
       }).length
     });
 
-    setLoading(false);
+    } catch (e) { console.error('fetchData error:', e); } finally { setLoading(false); }
   }
 
   function getCalendarDays() {
@@ -256,16 +258,20 @@ export default function ActionCalendar() {
 
   function openActionModal(action) {
     setSelectedAction(action);
+    setRescheduleDate(action.target_date || '');
     setShowModal(true);
   }
 
   async function rescheduleAction(actionId, newDate) {
-    await supabase
+    const { error } = await supabase
       .from('investigation_corrective_actions')
-      .update({ target_date: newDate, updated_at: new Date().toISOString() })
+      .update({ target_date: newDate || null, updated_at: new Date().toISOString() })
       .eq('id', actionId);
 
+    if (error) { alert('Error rescheduling: ' + error.message); return; }
     setShowModal(false);
+    setSelectedAction(null);
+    setRescheduleDate('');
     fetchData();
     alert('Action rescheduled!');
   }
@@ -446,7 +452,7 @@ export default function ActionCalendar() {
 
       {/* Day Modal */}
       {showModal && selectedDate && !selectedAction && (
-        <div style={styles.modal} onClick={() => setShowModal(false)}>
+        <div style={styles.modal} onClick={() => { setShowModal(false); setSelectedAction(null); setRescheduleDate(''); }}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               📅 {formatDate(selectedDate)}
@@ -535,8 +541,8 @@ export default function ActionCalendar() {
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px' }}>Reschedule To:</label>
               <input
                 type="date"
-                defaultValue={selectedAction.target_date}
-                id="newDate"
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
                 style={styles.input}
               />
             </div>
@@ -547,8 +553,7 @@ export default function ActionCalendar() {
               </button>
               <button
                 onClick={() => {
-                  const newDate = document.getElementById('newDate').value;
-                  if (newDate) rescheduleAction(selectedAction.id, newDate);
+                  if (rescheduleDate) rescheduleAction(selectedAction.id, rescheduleDate);
                 }}
                 style={{ ...styles.actionBtn, ...styles.primaryBtn, flex: 1 }}
               >
