@@ -8,10 +8,22 @@ const supabase = createClient(
 );
 
 const COMPANIES = ['A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services','CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction','ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West','GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream','Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS','Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos','Summit Excavation','Tesoro Refinery','Yellowjacket','Other'];
-const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami',,'West Harrison Bay',,'Other North Slope'];
+const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami','West Harrison Bay','Other North Slope'];
 const NOMINAL_VOLTAGES = ['≤50V','51-240V','241-480V','481-600V','601-1000V','1001-4160V','4161-13800V','>13800V'];
 const PPE_CATEGORIES = ['Category 1 (4 cal/cm²)','Category 2 (8 cal/cm²)','Category 3 (25 cal/cm²)','Category 4 (40 cal/cm²)'];
 const HAZARD_RISK_CATEGORIES = ['Low (≤1.2 cal/cm²)','Medium (1.2-8 cal/cm²)','High (8-25 cal/cm²)','Extreme (25-40 cal/cm²)','Prohibited (>40 cal/cm²)'];
+// NFPA 70E Table 130.4(D)(a) - AC Minimum Approach Distances
+const MAD_TABLE = {
+  '≤50V':        { limited: 'Avoid contact', restricted: 'Avoid contact', prohibited: 'Avoid contact', note: 'Safe zone — normal PPE applies' },
+  '51-240V':     { limited: '3 ft 6 in',     restricted: '1 ft 0 in',     prohibited: '0 ft 1 in',    note: 'Class 00 or Class 0 rubber gloves required within Restricted' },
+  '241-480V':    { limited: '3 ft 6 in',     restricted: '1 ft 0 in',     prohibited: '0 ft 1 in',    note: 'Class 0 rubber gloves required within Restricted' },
+  '481-600V':    { limited: '3 ft 6 in',     restricted: '1 ft 0 in',     prohibited: '0 ft 1 in',    note: 'Class 0 rubber gloves required within Restricted' },
+  '601-1000V':   { limited: '3 ft 6 in',     restricted: '1 ft 0 in',     prohibited: '0 ft 4 in',    note: 'Class 1 rubber gloves required within Restricted' },
+  '1001-4160V':  { limited: '4 ft 0 in',     restricted: '1 ft 4 in',     prohibited: '0 ft 7 in',    note: 'Class 1 rubber gloves required within Restricted' },
+  '4161-13800V': { limited: '5 ft 0 in',     restricted: '2 ft 2 in',     prohibited: '1 ft 5 in',    note: 'Class 2 rubber gloves required within Restricted' },
+  '>13800V':     { limited: 'Consult engineer', restricted: 'Consult engineer', prohibited: 'Consult engineer', note: 'Specialized approach — engineering review required per NFPA 70E 130.4' },
+};
+
 const VOLTAGE_RATED_GLOVES = ['N/A','Class 00 (500V AC)','Class 0 (1000V AC)','Class 1 (7500V AC)','Class 2 (17000V AC)','Class 3 (26500V AC)','Class 4 (36000V AC)'];
 const ADDITIONAL_HAZARDS = [{id:'workingAtHeights',label:'Working at Heights'},{id:'confinedSpace',label:'Confined Space'},{id:'wetDampLocation',label:'Wet/Damp Location'},{id:'outdoorWeather',label:'Outdoor/Weather'}];
 
@@ -68,7 +80,14 @@ export default function EnergizedElectricalWork(){
 
   const loadOpenPermits=async()=>{try{const{data}=await supabase.from('eew_permits').select('*').eq('permit_status','Open').order('created_at',{ascending:false});setOpenPermits(data||[]);}catch(e){console.error(e);}};
 
-  const handleChange=(e)=>{const{name,value}=e.target;setFormData(p=>({...p,[name]:value}));};
+  const handleChange=(e)=>{const{name,value}=e.target;
+  if(name==='nominalVoltage'&&MAD_TABLE[value]){
+    const mad=MAD_TABLE[value];
+    setFormData(p=>({...p,[name]:value,limitedApproach:mad.limited,restrictedApproach:mad.restricted,prohibitedApproach:mad.prohibited}));
+  } else {
+    setFormData(p=>({...p,[name]:value}));
+  }
+};
   const handleHazardToggle=(id)=>{setFormData(p=>({...p,additionalHazards:{...p.additionalHazards,[id]:!p.additionalHazards[id]}}));};
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
@@ -125,11 +144,36 @@ export default function EnergizedElectricalWork(){
         
         {/* SHOCK HAZARD */}
         <div style={s.section}><div style={{...s.sectionHeader,...s.sectionYellow,color:'#000'}}>⚡ Shock Hazard Analysis</div><div style={s.sectionBody}>
-          <div style={s.infoBox}>Approach boundaries based on NFPA 70E Table 130.4(D)(a) - vary by voltage level.</div>
+          <div style={s.infoBox}>Approach boundaries auto-populate from <strong>NFPA 70E Table 130.4(D)(a)</strong> based on the Nominal Voltage selected above. Values may be edited if a site-specific study requires different boundaries.</div>
           <div style={{...s.formRow,marginBottom:'12px'}}><div style={s.formGroup}><label style={s.label}>Shock Hazard Present?</label><select name="shockHazardPresent" value={formData.shockHazardPresent} onChange={handleChange} style={s.select}><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div></div>
-          <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Limited Approach Boundary (ft)</span><input type="text" name="limitedApproach" value={formData.limitedApproach} onChange={handleChange} placeholder="e.g., 3.5 ft" style={s.input}/></div>
-          <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Restricted Approach Boundary (ft)</span><input type="text" name="restrictedApproach" value={formData.restrictedApproach} onChange={handleChange} placeholder="e.g., 1.0 ft" style={s.input}/></div>
-          <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Prohibited Approach Boundary (in)</span><input type="text" name="prohibitedApproach" value={formData.prohibitedApproach} onChange={handleChange} placeholder="e.g., 1 in" style={s.input}/></div>
+          
+          {formData.nominalVoltage&&MAD_TABLE[formData.nominalVoltage]&&(
+            <div style={{background:'linear-gradient(135deg,#1e3a8a11,#eab30822)',border:'2px solid #eab308',borderRadius:'8px',padding:'12px',marginBottom:'12px'}}>
+              <div style={{fontWeight:'700',fontSize:'13px',color:'#92400e',marginBottom:'8px'}}>⚡ NFPA 70E Table 130.4(D)(a) — {formData.nominalVoltage}</div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px',marginBottom:'8px'}}>
+                <div style={{background:'white',borderRadius:'6px',padding:'8px',textAlign:'center',border:'1px solid #d1d5db'}}>
+                  <div style={{fontSize:'11px',color:'#6b7280',fontWeight:'600',marginBottom:'2px'}}>LIMITED APPROACH</div>
+                  <div style={{fontSize:'15px',fontWeight:'700',color:'#1e3a8a'}}>{MAD_TABLE[formData.nominalVoltage].limited}</div>
+                  <div style={{fontSize:'10px',color:'#6b7280'}}>Unqualified persons stop here</div>
+                </div>
+                <div style={{background:'white',borderRadius:'6px',padding:'8px',textAlign:'center',border:'1px solid #d1d5db'}}>
+                  <div style={{fontSize:'11px',color:'#6b7280',fontWeight:'600',marginBottom:'2px'}}>RESTRICTED APPROACH</div>
+                  <div style={{fontSize:'15px',fontWeight:'700',color:'#d97706'}}>{MAD_TABLE[formData.nominalVoltage].restricted}</div>
+                  <div style={{fontSize:'10px',color:'#6b7280'}}>Qualified persons w/ PPE only</div>
+                </div>
+                <div style={{background:'white',borderRadius:'6px',padding:'8px',textAlign:'center',border:'1px solid #d1d5db'}}>
+                  <div style={{fontSize:'11px',color:'#6b7280',fontWeight:'600',marginBottom:'2px'}}>PROHIBITED APPROACH</div>
+                  <div style={{fontSize:'15px',fontWeight:'700',color:'#b91c1c'}}>{MAD_TABLE[formData.nominalVoltage].prohibited}</div>
+                  <div style={{fontSize:'10px',color:'#6b7280'}}>Treat as direct contact</div>
+                </div>
+              </div>
+              <div style={{fontSize:'12px',color:'#92400e',background:'#fef3c7',padding:'6px 10px',borderRadius:'4px'}}>📋 {MAD_TABLE[formData.nominalVoltage].note}</div>
+            </div>
+          )}
+
+          <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Limited Approach Boundary</span><input type="text" name="limitedApproach" value={formData.limitedApproach} onChange={handleChange} placeholder="Select voltage above to auto-fill" style={s.input}/></div>
+          <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Restricted Approach Boundary</span><input type="text" name="restrictedApproach" value={formData.restrictedApproach} onChange={handleChange} placeholder="Select voltage above to auto-fill" style={s.input}/></div>
+          <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Prohibited Approach Boundary</span><input type="text" name="prohibitedApproach" value={formData.prohibitedApproach} onChange={handleChange} placeholder="Select voltage above to auto-fill" style={s.input}/></div>
         </div></div>
         
         {/* ARC FLASH */}
