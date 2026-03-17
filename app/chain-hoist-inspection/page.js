@@ -15,13 +15,13 @@ const COMPANIES = [
   'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West', 'GBR Equipment',
   'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream', 'Hilcorp Alaska',
   'MagTec Alaska', 'Merkes Builders','Narwhal Exploration', 'Nordic-Calista', 'Parker TRS', 'Peninsula Paving',
-  'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Yellowjacket', 'Other'
+  'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other'
 ];
 
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA',
-  'Point Thompson', 'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ];
 
 const HOIST_TYPES = [
@@ -145,12 +145,15 @@ export default function ChainHoistInspection() {
         photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
+      const sanitized = {
+        ...formData,
+        next_inspection_due: formData.next_inspection_due || null,
+        photo_urls: photoUrls.length > 0 ? photoUrls : null
+      };
+
       const { error } = await supabase
         .from('chain_hoist_inspections')
-        .insert([{
-          ...formData,
-          photo_urls: photoUrls.length > 0 ? photoUrls : null
-        }]);
+        .insert([sanitized]);
 
       if (error) throw error;
       setSubmitted(true);
@@ -217,35 +220,6 @@ export default function ChainHoistInspection() {
     return {};
   };
 
-  if (submitted) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #b91c1c 100%)', padding: '20px' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
-            <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
-            <h2 style={{ color: '#16a34a', marginBottom: '15px', fontSize: '24px' }}>Inspection Submitted!</h2>
-            <p style={{ color: '#6b7280', marginBottom: '25px' }}>Chain Hoist Inspection recorded successfully.</p>
-            <button
-              onClick={resetForm}
-              style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '12px 30px',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
-            >
-              Submit Another Inspection
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const InspectionItem = ({ label, name, showNA = false }) => (
     <div style={{
       display: 'flex',
@@ -278,6 +252,35 @@ export default function ChainHoistInspection() {
       </select>
     </div>
   );
+
+  if (submitted) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #b91c1c 100%)', padding: '20px' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
+            <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
+            <h2 style={{ color: '#16a34a', marginBottom: '15px', fontSize: '24px' }}>Inspection Submitted!</h2>
+            <p style={{ color: '#6b7280', marginBottom: '25px' }}>Chain Hoist Inspection recorded successfully.</p>
+            <button
+              onClick={resetForm}
+              style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 30px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Submit Another Inspection
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #b91c1c 100%)', padding: '20px' }}>
