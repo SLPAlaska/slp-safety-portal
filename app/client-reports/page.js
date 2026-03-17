@@ -568,7 +568,7 @@ export default function ClientReports() {
       `}</style>
 
       <div className="container">
-        <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
+        <a href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</a>
         
         <div className="header">
           <img src="/Logo.png" alt="SLP Alaska Logo" />

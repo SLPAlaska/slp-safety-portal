@@ -8,7 +8,7 @@ const supabase = createClient(
 );
 
 const COMPANIES = ['A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services','CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction','ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West','GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream','Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS','Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos','Summit Excavation','Tesoro Refinery','Yellowjacket','Other'];
-const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami',,'West Harrison Bay',,'Other North Slope'];
+const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami', 'West Harrison Bay', 'Other North Slope'];
 const EXCAVATION_TYPES = ['Trench','Bell-Bottom Pier Hole','Shaft','Open Excavation','Tunnel','Other'];
 const SOIL_CLASSIFICATIONS = ['Type A - Cohesive (clay, silty clay)','Type B - Cohesive (angular gravel, silt)','Type C - Granular (gravel, sand)','Layered - Multiple Types','Unknown - Assume Type C'];
 const CLASSIFICATION_METHODS = ['Visual Test','Manual Test (Thumb Penetration)','Pocket Penetrometer','Shearvane','Laboratory Analysis','Multiple Methods'];
