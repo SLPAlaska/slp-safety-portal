@@ -17,6 +17,8 @@ const PROTECTIVE_METHODS = ['Better training','Pre-job planning/JSA','Spotter/gr
 const ENERGY_TYPES = ['Gravity (falls, drops, collapse)','Motion (vehicles, moving equipment)','Mechanical (rotating, pinch points)','Electrical (shock, arc flash)','Pressure (hydraulic, pneumatic)','Chemical (toxic, corrosive, flammable)','Temperature (burns, cold exposure)','Other high energy source'];
 
 export default function PropertyDamageReport(){
+  const preTripRef = useRef(null);
+  const photoRef = useRef(null);
   const [isSubmitting,setIsSubmitting]=useState(false);
   const [submitted,setSubmitted]=useState(false);
   const [photoPreview,setPhotoPreview]=useState(null);
@@ -108,7 +110,7 @@ export default function PropertyDamageReport(){
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
       const{error}=await supabase.from('property_damage_reports').insert([{
-        person_name:formData.personName,incident_date:formData.incidentDat || nulle || null,company:formData.company,location:formData.location,
+        person_name:formData.personName,incident_date:formData.incidentDate || null,company:formData.company,location:formData.location,
         security_notified:formData.securityNotified,injuries_involved:formData.injuriesInvolved,
         spill_involved:formData.spillInvolved,spill_volume_outside:formData.spillVolumeOutside||null,total_spill_volume:formData.totalSpillVolume||null,
         names_contact_involved:formData.namesContactInvolved||null,weather_location:formData.weatherLocation,witness_names:formData.witnessNames||null,

@@ -15,6 +15,8 @@ const LOCATIONS = ['Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik',
 const STORAGE_TYPES = ['Flammable Cabinet', 'Flammable Room', 'Outdoor Storage', 'Paint Locker', 'Fuel Storage', 'Solvent Cabinet', 'Chemical Storage Building', 'Dispensing Area', 'Drum Storage Area', 'IBC/Tote Storage', 'Other']
 
 export default function FlammableStorageAuditForm() {
+  const photoRef = useRef(null);
+  const successBoxRef = useRef(null);
   const [formData, setFormData] = useState({
     audit_date: new Date().toLocaleDateString('en-CA'), inspector_name: '', company: '', location: '', building_area: '', storage_area_type: '', cabinet_id: '',
     flammable_diamond: '', nfpa_label: '', contents_labeled: '', no_smoking_signs: '', emergency_contact: '', sds_available: '',

@@ -15,6 +15,7 @@ const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nik
 const YES_NO_OPTIONS = ['Yes', 'No', 'N/A', 'Needs Improvement']
 
 export default function PressureCrosscheck() {
+  const photoRef = useRef(null);
   const [formData, setFormData] = useState({
     auditor_name: '',
     date: '',
@@ -98,6 +99,7 @@ export default function PressureCrosscheck() {
         .from('pressure_crosscheck')
         .insert([{
           ...formData,
+          last_similar_job_date: formData.last_similar_job_date || null,
           photo_url: photoUrl,
           created_at: new Date().toISOString()
         }])

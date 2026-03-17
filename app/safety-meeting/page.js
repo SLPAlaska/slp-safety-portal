@@ -12,6 +12,7 @@ const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nik
 const MEETING_TYPES = ['Daily Toolbox Meeting','Weekly Safety Meeting','Pre-Job Safety Meeting','JSA Review Meeting','Incident Debrief','Safety Stand-Down','Emergency Response Drill','New Employee Orientation','Contractor Safety Meeting','Management Safety Review','Other'];
 
 export default function SafetyMeeting(){
+  const photoRef = useRef(null);
   const [isSubmitting,setIsSubmitting]=useState(false);
   const [submitted,setSubmitted]=useState(false);
   const [photoPreview,setPhotoPreview]=useState(null);
