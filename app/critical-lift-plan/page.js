@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
 const COMPANIES = [
@@ -203,6 +202,128 @@ export default function CriticalLiftPlanForm() {
     return 'status-blue'
   }
 
+
+  const printLiftPlan = () => {
+    const win = window.open('', '_blank');
+    if (!win) { alert('Please allow pop-ups to print.'); return; }
+    const d = formData;
+    const calc = calculations;
+    const row = (label, value) => value ? `<tr><td class="lbl">${label}</td><td>${value}</td></tr>` : '';
+    const section = (title, color='#1e3a8a') => `<tr><td colspan="2" class="section" style="background:${color}">${title}</td></tr>`;
+
+    const html = `<!DOCTYPE html><html><head><title>Critical Lift Plan — ${d.liftPlanNumber||'Draft'}</title>
+<style>
+  @page{size:letter;margin:0.6in}
+  body{font-family:Arial,sans-serif;font-size:10pt;color:#1a1a1a;margin:0}
+  .header{display:flex;align-items:center;gap:20px;border-bottom:3px solid #1e3a8a;padding-bottom:12px;margin-bottom:16px}
+  .header img{height:55px}
+  .header-text h1{font-size:16pt;color:#1e3a8a;margin:0 0 2px}
+  .header-text p{margin:0;font-size:9pt;color:#555}
+  .badge{display:inline-block;background:#991b1b;color:white;padding:3px 10px;border-radius:4px;font-size:8pt;font-weight:bold;margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin-bottom:14px}
+  td{padding:5px 8px;border:1px solid #d1d5db;font-size:9.5pt;vertical-align:top}
+  .lbl{font-weight:600;width:38%;background:#f1f5f9;color:#1e3a8a}
+  .section{font-weight:700;font-size:10pt;color:white;padding:7px 10px;letter-spacing:0.3px}
+  .status-box{border:2px solid #1e3a8a;border-radius:6px;padding:10px;margin-bottom:14px;text-align:center}
+  .status-box .big{font-size:16pt;font-weight:800}
+  .criteria-grid{display:flex;flex-wrap:wrap;gap:6px;padding:8px}
+  .criteria-item{background:#fee2e2;border:1px solid #fca5a5;padding:3px 8px;border-radius:4px;font-size:8.5pt}
+  .footer{text-align:center;font-size:8pt;color:#888;border-top:1px solid #d1d5db;padding-top:8px;margin-top:16px}
+  .print-btn{display:block;margin:0 auto 16px;padding:10px 32px;background:#1e3a8a;color:white;border:none;border-radius:6px;font-size:12pt;cursor:pointer}
+  @media print{.print-btn{display:none}}
+</style></head><body>
+<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+<div class="header">
+  <img src="/Logo.png" onerror="this.style.display='none'" alt="SLP Alaska">
+  <div class="header-text">
+    <h1>Critical Lift Plan</h1>
+    <p>SLP Alaska Safety Management System</p>
+    <span class="badge">⚠️ CRITICAL LIFT — PERMIT REQUIRED</span>
+  </div>
+  <div style="margin-left:auto;text-align:right;font-size:9pt">
+    <div style="font-size:14pt;font-weight:800;color:#1e3a8a">${d.liftPlanNumber||'—'}</div>
+    <div>${d.date}</div>
+    <div>${d.company} | ${d.location}</div>
+  </div>
+</div>
+
+<div class="status-box" style="border-color:${parseFloat(calc.percentCapacity)>100?'#dc2626':parseFloat(calc.percentCapacity)>85?'#f59e0b':'#059669'}">
+  <div class="big" style="color:${parseFloat(calc.percentCapacity)>100?'#dc2626':parseFloat(calc.percentCapacity)>85?'#f59e0b':'#059669'}">${calc.capacityStatus}</div>
+  <div style="font-size:9.5pt;margin-top:4px">Net Capacity: ${calc.netCapacity} tons | Total Load: ${calc.totalLoadTons} tons | ${calc.percentCapacity}% of capacity | Derating: ${calc.totalDerating}%</div>
+</div>
+
+<table>
+  ${section('📋 Lift Information')}
+  ${row('Prepared By', d.preparedBy)}
+  ${row('Company', d.company)}
+  ${row('Location', d.location)}
+  ${row('Lift Description', d.liftDescription)}
+  ${section('⚠️ Critical Lift Criteria', '#991b1b')}
+  <tr><td colspan="2" style="padding:6px">
+    <div class="criteria-grid">${(d.criticalCriteria||[]).map(c=>`<span class="criteria-item">⚠️ ${c}</span>`).join('')||'None selected'}</div>
+  </td></tr>
+  ${section('⚖️ Load Information')}
+  ${row('Load Description', d.loadDescription)}
+  ${row('Load Weight', d.loadWeight ? d.loadWeight+' lbs' : '')}
+  ${row('Rigging Weight', d.riggingWeight ? d.riggingWeight+' lbs' : '')}
+  ${row('Total Load', calc.totalLoad ? calc.totalLoad.toLocaleString()+' lbs ('+calc.totalLoadTons+' tons)' : '')}
+  ${row('Weight Source', d.weightSource)}
+  ${row('Dimensions (L×W×H)', [d.loadLength,d.loadWidth,d.loadHeight].filter(Boolean).join(' × ')+' ft')}
+  ${row('Center of Gravity', d.centerOfGravity)}
+  ${section('🏗️ Crane Information')}
+  ${row('Crane ID', d.craneNumber)}
+  ${row('Type', d.craneType)}
+  ${row('Make / Model', [d.craneMake,d.craneModel].filter(Boolean).join(' / '))}
+  ${row('Crane Capacity', d.craneCapacity ? d.craneCapacity+' tons' : '')}
+  ${row('Boom Length', d.boomLength ? d.boomLength+' ft' : '')}
+  ${row('Operating Radius', d.operatingRadius ? d.operatingRadius+' ft' : '')}
+  ${row('Capacity at Radius', d.capacityAtRadius ? d.capacityAtRadius+' tons (from load chart)' : '')}
+  ${row('Counterweight', d.counterweight)}
+  ${section('⚡ Capacity & Derating')}
+  ${row('Wind Speed', d.windSpeed)}
+  ${row('Temperature', d.temperature)}
+  ${row('Wind Derating', calc.windDerating+'%')}
+  ${row('Cold Derating', calc.coldDerating+'%')}
+  ${row('Other Derating', d.otherDerating+'%')}
+  ${row('Total Derating', calc.totalDerating+'%')}
+  ${row('Net Capacity', calc.netCapacity+' tons')}
+  ${row('% of Capacity', calc.percentCapacity+'%')}
+  ${section('🔗 Rigging')}
+  ${row('Sling Type', d.slingType)}
+  ${row('Sling Size', d.slingSize)}
+  ${row('Number of Legs', d.numberOfLegs)}
+  ${row('Sling Angle', d.slingAngle+'°')}
+  ${row('Sling WLL (each)', d.slingWLL ? d.slingWLL+' lbs' : '')}
+  ${row('Sling Capacity at Angle', calc.slingCapacityAtAngle ? calc.slingCapacityAtAngle.toLocaleString()+' lbs — '+calc.riggingAdequate : '')}
+  ${row('Shackle Size', d.shackleSize)}
+  ${row('Shackle WLL', d.shackleWLL ? d.shackleWLL+' lbs' : '')}
+  ${section('🌍 Site Conditions')}
+  ${row('Ground Conditions', d.groundConditions)}
+  ${row('Weather Conditions', d.weatherConditions)}
+  ${row('Overhead Hazards', d.overheadHazards)}
+  ${row('Underground Hazards', d.undergroundHazards)}
+  ${row('Power Line Voltage', d.powerLineVoltage)}
+  ${row('Exclusion Zone', d.exclusionZone ? d.exclusionZone+' ft' : '')}
+  ${section('👷 Personnel', '#065f46')}
+  ${row('Crane Operator', d.craneOperator)}
+  ${row('Signal Person', d.signalPerson)}
+  ${row('Rigger(s)', d.riggers)}
+  ${row('Lift Director', d.liftDirector)}
+  ${row('Spotter(s)', d.spotters)}
+  ${section('📻 Communication')}
+  ${row('Primary Method', d.communicationMethod)}
+  ${row('Backup Method', d.backupCommunication)}
+  ${row('Radio Channel', d.radioChannel)}
+  ${section('🚨 Emergency Procedures', '#991b1b')}
+  ${row('Emergency Procedures', d.emergencyProcedures)}
+  ${row('Additional Comments', d.comments)}
+</table>
+<div class="footer">AnthroSafe™ Field Driven Safety © 2026 SLP Alaska, LLC | Safety • Leadership • Performance | Printed: ${new Date().toLocaleString()}</div>
+</body></html>`;
+    win.document.write(html);
+    win.document.close();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
@@ -367,7 +488,7 @@ export default function CriticalLiftPlanForm() {
        }
      `}</style>
 
-      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
+      <a href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</a>
 
       <div className="lift-container">
         <div className="lift-header">
@@ -746,9 +867,15 @@ export default function CriticalLiftPlanForm() {
               <textarea name="comments" value={formData.comments} onChange={handleChange} placeholder="Any additional notes or special considerations..." />
             </div>
 
-            <button type="submit" className="submit-btn" disabled={submitting}>
-              {submitting ? 'Generating Lift Plan...' : 'Generate Critical Lift Plan'}
-            </button>
+            <div style={{display:'flex',gap:'12px',flexWrap:'wrap'}}>
+              <button type="submit" className="submit-btn" disabled={submitting} style={{flex:1}}>
+                {submitting ? 'Generating Lift Plan...' : 'Generate Critical Lift Plan'}
+              </button>
+              <button type="button" onClick={printLiftPlan}
+                style={{flex:1,padding:'16px 32px',background:'linear-gradient(135deg,#374151,#1f2937)',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>
+                🖨️ Print / Save PDF
+              </button>
+            </div>
             {message.type === 'success' && (
               <button type="button" className="reset-btn" onClick={resetForm}>Create Another Lift Plan</button>
             )}

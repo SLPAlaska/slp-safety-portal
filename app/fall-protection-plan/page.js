@@ -324,6 +324,117 @@ export default function FallProtectionPlan(){
     return { topRec, level1, level2, level3, level4 };
   };
 
+
+  const printFPP = () => {
+    const win = window.open('', '_blank');
+    if (!win) { alert('Please allow pop-ups to print.'); return; }
+    const d = formData;
+    const sysName = d.userSelectedSystem && PROTECTION_SYSTEMS[d.userSelectedSystem] ? PROTECTION_SYSTEMS[d.userSelectedSystem].name : d.userSelectedSystem || '—';
+    const row = (label, value) => value ? `<tr><td class="lbl">${label}</td><td>${value}</td></tr>` : '';
+    const section = (title, color='#1e3a8a') => `<tr><td colspan="2" class="section" style="background:${color}">${title}</td></tr>`;
+
+    const html = `<!DOCTYPE html><html><head><title>Fall Protection Plan — ${planNumber||d.datesOfWork||'Draft'}</title>
+<style>
+  @page{size:letter;margin:0.6in}
+  body{font-family:Arial,sans-serif;font-size:10pt;color:#1a1a1a;margin:0}
+  .header{display:flex;align-items:center;gap:20px;border-bottom:3px solid #1e3a8a;padding-bottom:12px;margin-bottom:16px}
+  .header img{height:55px}
+  .header-text h1{font-size:16pt;color:#1e3a8a;margin:0 0 2px}
+  .header-text p{margin:0;font-size:9pt;color:#555}
+  .badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:8pt;font-weight:bold;margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin-bottom:14px}
+  td{padding:5px 8px;border:1px solid #d1d5db;font-size:9.5pt;vertical-align:top}
+  .lbl{font-weight:600;width:38%;background:#f1f5f9;color:#1e3a8a}
+  .section{font-weight:700;font-size:10pt;color:white;padding:7px 10px;letter-spacing:0.3px}
+  .grade-box{display:inline-block;width:50px;height:50px;border-radius:50%;text-align:center;line-height:50px;font-size:24pt;font-weight:800;color:white;margin-right:12px;vertical-align:middle}
+  .footer{text-align:center;font-size:8pt;color:#888;border-top:1px solid #d1d5db;padding-top:8px;margin-top:16px}
+  .print-btn{display:block;margin:0 auto 16px;padding:10px 32px;background:#1e3a8a;color:white;border:none;border-radius:6px;font-size:12pt;cursor:pointer}
+  @media print{.print-btn{display:none}}
+</style></head><body>
+<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+<div class="header">
+  <img src="/Logo.png" onerror="this.style.display='none'" alt="SLP Alaska">
+  <div class="header-text">
+    <h1>Fall Protection Plan</h1>
+    <p>OSHA 1926/1910 Compliant | SLP Alaska Safety Management System</p>
+    <span class="badge" style="background:#1e3a8a;color:white">🛡️ HIERARCHY OF CONTROLS</span>
+  </div>
+  <div style="margin-left:auto;text-align:right;font-size:9pt">
+    <div style="font-size:13pt;font-weight:800;color:#1e3a8a">${planNumber||'DRAFT'}</div>
+    <div>${d.datesOfWork}</div>
+    <div>${d.company||''} | ${d.location||''}</div>
+    ${complianceGrade.grade ? `<div style="margin-top:4px"><span class="grade-box" style="background:${complianceGrade.color};width:30px;height:30px;line-height:30px;font-size:14pt">${complianceGrade.grade}</span> Grade ${complianceGrade.grade} (${complianceGrade.score}/100)</div>` : ''}
+  </div>
+</div>
+
+<table>
+  ${section('📋 Job Information')}
+  ${row('Date(s) of Work', d.datesOfWork)}
+  ${row('Company', d.company)}
+  ${row('Location', d.location)}
+  ${row('Specific Location', d.specificLocation)}
+  ${row('Work Description', d.workTasks)}
+  ${section('🏗️ Work Environment & Hazard')}
+  ${row('Work Environment', d.workEnvironment)}
+  ${row('Height Above Lower Level', d.heightAboveLower ? d.heightAboveLower+' ft' : '')}
+  ${row('Landing Hazard Present', d.landingHazardPresent)}
+  ${row('Landing Hazard Description', d.landingHazardDesc)}
+  ${section('🛡️ Fall Protection System', '#065f46')}
+  ${row('Selected System', sysName)}
+  ${row('System Category', d.userSelectedSystem && PROTECTION_SYSTEMS[d.userSelectedSystem] ? PROTECTION_SYSTEMS[d.userSelectedSystem].category : '')}
+  ${row('Anchorage Type', d.anchorageType)}
+  ${row('Anchorage Strength', d.anchorageStrength)}
+  ${row('Body Support Type', d.bodySupportType)}
+  ${row('Horizontal Anchor Offset', d.anchorHorizontalOffset ? d.anchorHorizontalOffset+' ft' : '')}
+  ${section('📏 Fall Clearance')}
+  ${row('Free Fall Distance', d.freeFallDistance ? d.freeFallDistance+' ft' : '')}
+  ${row('Deceleration Distance', d.decelerationDistance ? d.decelerationDistance+' ft' : '')}
+  ${row('Worker Height (D-ring to feet)', d.workerHeight ? d.workerHeight+' ft' : '')}
+  ${row('Safety Buffer', d.safetyBuffer ? d.safetyBuffer+' ft' : '')}
+  ${row('Required Clearance', (parseFloat(d.freeFallDistance||6)+parseFloat(d.decelerationDistance||3.5)+parseFloat(d.workerHeight||6)+parseFloat(d.safetyBuffer||3)).toFixed(1)+' ft')}
+  ${row('Available Clearance', d.availableClearance ? d.availableClearance+' ft' : '')}
+  ${section('🚨 Rescue Plan', '#991b1b')}
+  ${row('Primary Rescue Method', d.rescuePrimaryMethod)}
+  ${row('Self-Rescue Possible', d.rescueSelfRescuePossible)}
+  ${row('Self-Rescue Method', d.rescueSelfRescueMethod)}
+  ${row('Mechanical Equipment Available', d.rescueMechEquipAvailable)}
+  ${row('Mechanical Equipment Type', d.rescueMechEquipType)}
+  ${row('Mechanical Equipment Location', d.rescueMechEquipLocation)}
+  ${row('Mechanical Equipment Operator', d.rescueMechEquipOperator)}
+  ${row('Trained Rescue Team Available', d.rescueAidedAvailable)}
+  ${row('Rescue Personnel', d.rescueAidedPersonnel)}
+  ${row('Aided Rescue Procedure', d.rescueAidedMethod)}
+  ${row('EMS / Emergency Phone', d.rescueEmsPhone)}
+  ${row('Suspension Trauma Kit', d.rescueSuspensionTraumaKit)}
+  ${row('Target Rescue Time', d.rescueTimeTarget)}
+  ${row('Alert / Distress Signal', d.rescueAlertSignal)}
+  ${row('Assembly / Staging Point', d.rescueAssemblyPoint)}
+  ${row('Additional Rescue Notes', d.rescueAdditionalNotes)}
+  ${section('🔧 Equipment Quantities')}
+  ${row('Harnesses', d.harnessQty)}
+  ${row('Shock Lanyards', d.lanyardQty)}
+  ${row('SRLs', d.srlQty)}
+  ${row('Positioning Lanyards', d.positioningLanyardQty)}
+  ${row('Restraint Lanyards', d.restraintLanyardQty)}
+  ${row('Anchorage Connectors', d.anchorageConnectorQty)}
+  ${section('🚨 Emergency Response')}
+  ${row('Emergency Response Plan', d.emergencyResponsePlan)}
+  ${row('Emergency Phone', d.emergencyPhone)}
+  ${row('Rescue Equipment', d.emergencyEquipmentDetails)}
+  ${section('👷 Workers & Signatures', '#065f46')}
+  ${row('Workers Protected', d.workersProtected)}
+  ${row('Competent Person', d.competentPersonName)}
+  ${row('Competent Person Signature', d.competentPersonSignature)}
+  ${row('Equipment Inspected', d.equipmentInspected ? 'Yes' : 'No')}
+  ${row('Personnel Trained', d.personnelTrained ? 'Yes' : 'No')}
+  ${row('Approved by Competent Person', d.approvedByCompetent ? 'Yes' : 'No')}
+</table>
+<div class="footer">AnthroSafe™ Field Driven Safety © 2026 SLP Alaska, LLC | Safety • Leadership • Performance | Printed: ${new Date().toLocaleString()}</div>
+</body></html>`;
+    win.document.write(html);
+    win.document.close();
+  };
+
   const handleSubmit=async(e)=>{
     e.preventDefault();
     if(!complianceGrade.canSubmit){
@@ -1197,6 +1308,7 @@ export default function FallProtectionPlan(){
 
       <div style={{display:'flex',gap:'12px',marginTop:'10px'}}>
         <button style={s.backBtn} type="button" onClick={()=>setWizardStep(5)}>← Back</button>
+        <button type="button" onClick={printFPP} style={{padding:'16px 20px',background:'linear-gradient(135deg,#374151,#1f2937)',color:'white',border:'none',borderRadius:'10px',fontSize:'14px',fontWeight:'700',cursor:'pointer'}}>🖨️ Print</button>
         <div style={{flex:1}}>
           {complianceGrade.canSubmit ? (
             <button type="submit" disabled={isSubmitting} style={{...s.nextBtn,background:'linear-gradient(135deg,#059669,#047857)',opacity:isSubmitting?0.5:1}}>
@@ -1214,7 +1326,7 @@ export default function FallProtectionPlan(){
     </div>
   );
 
-  if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successMessage}><div style={{fontSize:'48px',marginBottom:'15px'}}>✓</div><h2 style={{margin:'0 0 10px'}}>Fall Protection Plan Approved & Submitted!</h2><div style={{fontSize:'24px',fontWeight:'700',background:'rgba(255,255,255,0.2)',padding:'10px 20px',borderRadius:'8px',margin:'15px 0',display:'inline-block'}}>{planNumber}</div><p style={{marginBottom:'5px'}}>Compliance Grade: <strong style={{fontSize:'20px'}}>{complianceGrade.grade}</strong> ({complianceGrade.score}/100)</p><p style={{marginBottom:'20px',opacity:0.9}}>Keep this plan number for your records.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'14px 30px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>Create New Plan</button><a href="https://portal.slpalaska.com" style={{padding:'14px 30px',background:'#6b7280',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}
+  if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successMessage}><div style={{fontSize:'48px',marginBottom:'15px'}}>✓</div><h2 style={{margin:'0 0 10px'}}>Fall Protection Plan Approved & Submitted!</h2><div style={{fontSize:'24px',fontWeight:'700',background:'rgba(255,255,255,0.2)',padding:'10px 20px',borderRadius:'8px',margin:'15px 0',display:'inline-block'}}>{planNumber}</div><p style={{marginBottom:'5px'}}>Compliance Grade: <strong style={{fontSize:'20px'}}>{complianceGrade.grade}</strong> ({complianceGrade.score}/100)</p><p style={{marginBottom:'20px',opacity:0.9}}>Keep this plan number for your records.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'14px 30px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>Create New Plan</button><button onClick={printFPP} style={{padding:'14px 30px',background:'white',color:'#1e3a8a',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>🖨️ Print Plan</button><a href="https://portal.slpalaska.com" style={{padding:'14px 30px',background:'#6b7280',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}
 
   return(<div style={s.container}><div style={s.formContainer}>
     <div style={s.header}><a href="https://portal.slpalaska.com" style={{color:'white',textDecoration:'none',fontSize:'14px'}}>← Back to Portal</a><div style={{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'15px auto',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'}}><img src="/Logo.png" alt="SLP Alaska" style={{maxWidth:'180px',height:'auto'}}/></div><h1 style={{margin:'0',fontSize:'26px',fontWeight:'700'}}>Fall Protection Plan</h1><p style={{margin:'10px 0 0',opacity:0.9,fontSize:'14px'}}>OSHA 1926/1910 Compliant — Guided Protection Wizard</p><div style={{display:'inline-block',background:'white',color:'#b91c1c',padding:'5px 15px',borderRadius:'20px',fontSize:'11px',fontWeight:'600',marginTop:'10px'}}>🛡️ HIERARCHY OF CONTROLS</div></div>

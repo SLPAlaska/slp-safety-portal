@@ -8,7 +8,7 @@ const supabase = createClient(
 );
 
 const COMPANIES = ['A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services','CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction','ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West','GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream','Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS','Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos','Summit Excavation','Tesoro Refinery','Yellowjacket','Other'];
-const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami',,'West Harrison Bay',,'Other North Slope'];
+const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami','West Harrison Bay','Other North Slope'];
 const ENERGY_TYPES = [{value:'Gravity',icon:'⬇️',desc:'Falls, drops'},{value:'Motion',icon:'🚗',desc:'Vehicles'},{value:'Mechanical',icon:'⚙️',desc:'Pinch points'},{value:'Electrical',icon:'⚡',desc:'Shock'},{value:'Pressure',icon:'💨',desc:'Hydraulic'},{value:'Chemical',icon:'☠️',desc:'Toxic'},{value:'Temperature',icon:'🔥',desc:'Burns'},{value:'Stored',icon:'🔋',desc:'Springs'}];
 const CONTROL_TYPES = [{value:'Elimination',icon:'🚫'},{value:'Substitution',icon:'🔄'},{value:'Engineering',icon:'🔧'},{value:'Guarding',icon:'🚧'},{value:'LOTO',icon:'🔒'},{value:'Warnings',icon:'⚠️'},{value:'Procedures',icon:'📋'},{value:'PPE',icon:'🦺'}];
 const GENERAL_ITEMS = ['Emergency Response Plan','Communication Plan','Work Area Inspected','Tools Inspected','Weather Checked','SIMOPS Reviewed'];
@@ -113,7 +113,105 @@ export default function THAForm(){
     const r=analyzeQuality(filled);setQualityResults(r);setShowQualityPanel(true);if(r.overallScore>=60)setQualityCheckPassed(true);
   };
 
-  const handleSubmit=async(e)=>{e.preventDefault();if(!qualityCheckPassed){alert('Run quality check first.');return;}
+  const 
+  const printTHA = () => {
+    const win = window.open('', '_blank');
+    if (!win) { alert('Please allow pop-ups to print.'); return; }
+    const d = formData;
+    const row = (label, value) => value ? `<tr><td class="lbl">${label}</td><td>${value}</td></tr>` : '';
+    const section = (title, color='#1e3a8a') => `<tr><td colspan="2" class="section" style="background:${color}">${title}</td></tr>`;
+    const checkedItems = (obj) => Object.entries(obj||{}).filter(([,v])=>v).map(([k])=>k).join(', ') || '—';
+
+    const taskRows = taskSteps.map((s,i) => `
+      <tr>
+        <td style="text-align:center;font-weight:700;width:30px">${i+1}</td>
+        <td>${s.task||'—'}</td>
+        <td>${s.hazards||'—'}</td>
+        <td>${s.actions||'—'}</td>
+      </tr>`).join('');
+
+    const crewRows = crewMembers.map(c => `
+      <tr>
+        <td>${c.name||'—'}</td>
+        <td>${c.company||'—'}</td>
+        <td style="min-width:150px">&nbsp;</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html><head><title>THA/JSA — ${d.tha_number||'Draft'}</title>
+<style>
+  @page{size:letter landscape;margin:0.5in}
+  body{font-family:Arial,sans-serif;font-size:9.5pt;color:#1a1a1a;margin:0}
+  .header{display:flex;align-items:center;gap:16px;border-bottom:3px solid #1e3a8a;padding-bottom:10px;margin-bottom:14px}
+  .header img{height:50px}
+  .header-text h1{font-size:15pt;color:#1e3a8a;margin:0 0 2px}
+  .header-text p{margin:0;font-size:8.5pt;color:#555}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+  .info-cell{border:1px solid #d1d5db;padding:5px 8px;border-radius:4px}
+  .info-cell .lbl{font-size:7.5pt;color:#6b7280;font-weight:600;text-transform:uppercase}
+  .info-cell .val{font-size:9.5pt;font-weight:600}
+  table{width:100%;border-collapse:collapse;margin-bottom:12px}
+  td,th{padding:5px 7px;border:1px solid #d1d5db;font-size:9pt;vertical-align:top}
+  th{background:#1e3a8a;color:white;font-weight:600;text-align:left}
+  .lbl{font-weight:600;width:30%;background:#f1f5f9;color:#1e3a8a}
+  .section{font-weight:700;font-size:9.5pt;color:white;padding:6px 10px}
+  .footer{text-align:center;font-size:7.5pt;color:#888;border-top:1px solid #d1d5db;padding-top:6px;margin-top:14px}
+  .print-btn{display:block;margin:0 auto 14px;padding:8px 28px;background:#1e3a8a;color:white;border:none;border-radius:6px;font-size:11pt;cursor:pointer}
+  @media print{.print-btn{display:none}}
+</style></head><body>
+<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+<div class="header">
+  <img src="/Logo.png" onerror="this.style.display='none'" alt="SLP Alaska">
+  <div class="header-text">
+    <h1>Task Hazard Analysis / Job Safety Analysis</h1>
+    <p>SLP Alaska Safety Management System | OSHA Compliant Pre-Task Planning</p>
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div style="font-size:13pt;font-weight:800;color:#1e3a8a">${d.tha_number||'DRAFT'}</div>
+    <div style="font-size:8.5pt">${d.date}</div>
+    ${qualityResults ? `<div style="margin-top:4px;font-size:9pt">Grade: ${qualityResults.overallGrade} (${qualityResults.overallScore}%)</div>` : ''}
+  </div>
+</div>
+<div class="info-grid">
+  <div class="info-cell"><div class="lbl">Company</div><div class="val">${d.company||'—'}</div></div>
+  <div class="info-cell"><div class="lbl">Location</div><div class="val">${d.location||'—'}</div></div>
+  <div class="info-cell"><div class="lbl">Date</div><div class="val">${d.date||'—'}</div></div>
+  <div class="info-cell"><div class="lbl">Crew Lead</div><div class="val">${d.crew_lead||'—'}</div></div>
+  <div class="info-cell"><div class="lbl">Phone/Radio</div><div class="val">${d.phone_radio||'—'}</div></div>
+  <div class="info-cell"><div class="lbl">Work Area</div><div class="val">${d.work_area||'—'}</div></div>
+</div>
+<table>
+  ${section('📋 Pre-Task Information')}
+  ${row('Task Description', d.task_description)}
+  ${row('Procedure Exists / Reviewed', [d.procedure_exists,d.procedure_reviewed].filter(Boolean).join(' / '))}
+  ${row('General Items', checkedItems(d.general_items))}
+  ${row('PPE Required', checkedItems(d.ppe_requirements))}
+  ${row('Permits Required', checkedItems(d.permits_required))}
+  ${row('Potential Hazards', checkedItems(d.potential_hazards))}
+  ${row('Energy Types', (d.energy_types||[]).join(', '))}
+  ${row('Control Types', (d.control_types||[]).join(', '))}
+</table>
+<div style="font-weight:700;font-size:10pt;background:#1e3a8a;color:white;padding:7px 10px;margin-bottom:0">📝 Task Steps, Hazards & Controls</div>
+<table>
+  <thead><tr>
+    <th style="width:35px">#</th>
+    <th style="width:28%">Task Step</th>
+    <th style="width:32%">Hazards</th>
+    <th>Controls / Mitigations</th>
+  </tr></thead>
+  <tbody>${taskRows||'<tr><td colspan="4" style="text-align:center;color:#9ca3af">No task steps entered</td></tr>'}</tbody>
+</table>
+<div style="font-weight:700;font-size:10pt;background:#059669;color:white;padding:7px 10px;margin-bottom:0">👷 Crew Sign-Off</div>
+<table>
+  <thead><tr><th style="width:35%">Name</th><th style="width:30%">Company</th><th>Signature</th></tr></thead>
+  <tbody>${crewRows||'<tr><td colspan="3" style="height:30px">&nbsp;</td></tr><tr><td colspan="3" style="height:30px">&nbsp;</td></tr>'}</tbody>
+</table>
+<div class="footer">AnthroSafe™ Field Driven Safety © 2026 SLP Alaska, LLC | Safety • Leadership • Performance | Printed: ${new Date().toLocaleString()}</div>
+</body></html>`;
+    win.document.write(html);
+    win.document.close();
+  };
+
+handleSubmit=async(e)=>{e.preventDefault();if(!qualityCheckPassed){alert('Run quality check first.');return;}
     setIsSubmitting(true);try{
       const thaNumber=generateTHANumber();const filled=taskSteps.filter(s=>s.task||s.hazards||s.actions);const q=analyzeQuality(filled);
       const{error:assessErr}=await supabase.from('tha_assessments').insert([{tha_number:thaNumber,status:'Open',date:formData.date,company:formData.company,location:formData.location,work_area:formData.work_area,crew_lead:formData.crew_lead,phone_radio:formData.phone_radio,task_description:formData.task_description,job_planning_notes:formData.job_planning_notes,procedure_exists:formData.procedure_exists,procedure_reviewed:formData.procedure_reviewed,driving_backing:formData.driving_backing,walkaround_360:formData.walkaround_360?'Yes':'No',seatbelts_checked:formData.seatbelts_checked?'Yes':'No',spotter_when_backing:formData.spotter_when_backing?'Yes':'No',load_secured:formData.load_secured?'Yes':'No',general_items:formData.general_items,ppe_requirements:formData.ppe_requirements,permits_required:formData.permits_required,potential_hazards:formData.potential_hazards,energy_types:formData.energy_types.join(', '),control_types:formData.control_types.join(', '),quality_score:q.overallScore,quality_grade:q.overallGrade,quality_notes:q.feedback.join(' | '),good_controls_count:q.summary.goodControlsCount,awareness_only_count:q.summary.awarenessOnlyCount,photo_url:attachments.length>0?attachments.join(','):null}]);
@@ -191,7 +289,10 @@ export default function THAForm(){
         
         <div style={{border:'2px dashed #d1d5db',borderRadius:'8px',padding:'20px',margin:'20px 0',background:'#f9fafb'}}><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'15px'}}><h3 style={{margin:0,fontSize:'16px',fontWeight:'600',color:'#374151'}}>📸 Photos & Videos ({uploadedFiles.length}/6)</h3>{uploadedFiles.length<6&&<label style={{background:'#3b82f6',color:'white',padding:'8px 16px',borderRadius:'6px',cursor:uploading?'not-allowed':'pointer',fontSize:'14px',fontWeight:'500',opacity:uploading?0.5:1}}>{uploading?'Uploading...':'+ Add Files'}<input type="file" multiple accept="image/*,video/*" disabled={uploading||uploadedFiles.length>=6} onChange={async(e)=>{const files=Array.from(e.target.files);if(uploadedFiles.length+files.length>6){alert('Maximum 6 files');return;}const MAX_SIZE=10*1024*1024;const oversized=files.filter(f=>f.size>MAX_SIZE);if(oversized.length>0){alert('Files exceed 10MB limit');return;}setUploading(true);try{const newUrls=[];for(const file of files){const fileExt=file.name.split('.').pop();const fileName=`${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;const{data,error}=await supabase.storage.from('form-attachments').upload(fileName,file);if(error)throw error;const{data:{publicUrl}}=supabase.storage.from('form-attachments').getPublicUrl(fileName);newUrls.push({name:file.name,url:publicUrl,path:fileName,type:file.type});}const updated=[...uploadedFiles,...newUrls];setUploadedFiles(updated);setAttachments(updated.map(f=>f.url));}catch(err){alert('Upload failed: '+err.message);}finally{setUploading(false);}}} style={{display:'none'}}/></label>}</div>{uploadedFiles.length>0?<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))',gap:'10px'}}>{uploadedFiles.map((file,i)=><div key={i} style={{position:'relative',border:'1px solid #e5e7eb',borderRadius:'6px',overflow:'hidden',background:'white'}}>{file.type.startsWith('image/')?<img src={file.url} alt={file.name} style={{width:'100%',height:'120px',objectFit:'cover'}}/>:<div style={{width:'100%',height:'120px',display:'flex',alignItems:'center',justifyContent:'center',background:'#f3f4f6',fontSize:'40px'}}>🎥</div>}<button type="button" onClick={async()=>{try{await supabase.storage.from('form-attachments').remove([file.path]);const updated=uploadedFiles.filter((_,idx)=>idx!==i);setUploadedFiles(updated);setAttachments(updated.map(f=>f.url));}catch(err){alert('Delete failed');}}} style={{position:'absolute',top:'5px',right:'5px',background:'#ef4444',color:'white',border:'none',borderRadius:'50%',width:'24px',height:'24px',cursor:'pointer',fontSize:'14px',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold'}}>×</button><div style={{padding:'8px',fontSize:'11px',color:'#6b7280',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{file.name}</div></div>)}</div>:<div style={{textAlign:'center',padding:'20px',color:'#9ca3af',fontSize:'14px'}}>No files uploaded. Click "Add Files" to attach photos or videos.</div>}<div style={{marginTop:'10px',fontSize:'12px',color:'#6b7280'}}>Max 6 files • Images & Videos • 10MB per file</div></div>
 
-        <button type="submit" disabled={isSubmitting||!qualityCheckPassed} style={{...s.submitBtn,opacity:isSubmitting||!qualityCheckPassed?0.5:1,cursor:isSubmitting||!qualityCheckPassed?'not-allowed':'pointer'}}>{isSubmitting?'Submitting...':'Submit THA'}</button>
+        <div style={{display:'flex',gap:'12px',marginTop:'10px'}}>
+        <button type="submit" disabled={isSubmitting||!qualityCheckPassed} style={{...s.submitBtn,flex:1,opacity:isSubmitting||!qualityCheckPassed?0.5:1,cursor:isSubmitting||!qualityCheckPassed?'not-allowed':'pointer'}}>{isSubmitting?'Submitting...':'Submit THA'}</button>
+        <button type="button" onClick={printTHA} style={{...s.submitBtn,flex:'0 0 auto',background:'linear-gradient(135deg,#374151,#1f2937)',padding:'14px 24px'}}>🖨️ Print</button>
+      </div>
       </form>)}
 
       {activeTab==='open'&&<div>{!selectedTHA?<>{loadingOpenTHAs?<div style={{textAlign:'center',padding:'40px'}}>Loading...</div>:openTHAs.length===0?<div style={s.infoBox}>No open THAs.</div>:openTHAs.map(tha=><div key={tha.tha_number} style={s.openThaCard} onClick={()=>loadTHADetails(tha.tha_number)}><div style={{background:'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',padding:'12px 15px',display:'flex',justifyContent:'space-between',alignItems:'center'}}><span style={{fontWeight:'bold',color:'#92400e'}}>{tha.tha_number}</span><span style={{background:'#f59e0b',color:'white',padding:'3px 10px',borderRadius:'12px',fontSize:'11px'}}>OPEN</span></div><div style={{padding:'12px 15px',fontSize:'13px'}}><div><strong>Company:</strong> {tha.company}</div><div><strong>Location:</strong> {tha.location}</div><div><strong>Crew Lead:</strong> {tha.crew_lead}</div></div><div style={{background:'#f3f4f6',padding:'10px 15px',display:'flex',justifyContent:'space-between'}}><span>Score: {tha.quality_score}%</span><span style={{padding:'4px 12px',borderRadius:'4px',fontWeight:'bold',color:'white',background:gradeColors[tha.quality_grade]||'#6b7280'}}>Grade: {tha.quality_grade}</span></div></div>)}</>:thaDetails?<><button type="button" onClick={()=>{setSelectedTHA(null);setThaDetails(null);}} style={{background:'none',border:'none',color:'#1e3a8a',cursor:'pointer',marginBottom:'15px'}}>← Back</button><div style={{background:'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',padding:'20px',borderRadius:'8px',marginBottom:'20px'}}><h3 style={{margin:0,color:'#92400e'}}>{thaDetails.tha_number}</h3><p style={{margin:'5px 0 0',color:'#92400e'}}>{thaDetails.company} | {thaDetails.location}</p></div><div style={{background:'#1e3a8a',color:'white',padding:'15px',borderRadius:'8px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'20px'}}><div style={{...s.bigGrade,width:'60px',height:'60px',background:gradeColors[thaDetails.quality_grade]||'#6b7280'}}><span style={{fontSize:'28px'}}>{thaDetails.quality_grade}</span></div><div><h4 style={{margin:0}}>Score: {thaDetails.quality_score}%</h4></div></div><div style={{border:'1px solid #d1d5db',borderRadius:'8px',marginBottom:'15px',overflow:'hidden'}}><div style={{background:'#f3f4f6',padding:'10px 15px',fontWeight:'600',borderBottom:'1px solid #d1d5db'}}>Current Steps</div><div style={{padding:'15px'}}><table style={{width:'100%',borderCollapse:'collapse',fontSize:'12px'}}><thead><tr><th style={{background:'#e5e7eb',padding:'8px',textAlign:'left'}}>#</th><th style={{background:'#e5e7eb',padding:'8px',textAlign:'left'}}>Task</th><th style={{background:'#e5e7eb',padding:'8px',textAlign:'left'}}>Hazards</th><th style={{background:'#e5e7eb',padding:'8px',textAlign:'left'}}>Controls</th></tr></thead><tbody>{thaDetails.taskSteps.map((x,i)=><tr key={i}><td style={{padding:'8px',borderBottom:'1px solid #e5e7eb'}}>{x.step_number}</td><td style={{padding:'8px',borderBottom:'1px solid #e5e7eb'}}>{x.task_step||'-'}</td><td style={{padding:'8px',borderBottom:'1px solid #e5e7eb'}}>{x.potential_hazards||'-'}</td><td style={{padding:'8px',borderBottom:'1px solid #e5e7eb'}}>{x.recommended_actions||'-'}</td></tr>)}</tbody></table></div></div><div style={{border:'2px solid #f59e0b',borderRadius:'8px',marginBottom:'15px',overflow:'hidden'}}><div style={{background:'#fef3c7',padding:'10px 15px',fontWeight:'600',color:'#92400e'}}>Add New Steps</div><div style={{padding:'15px'}}><table style={s.taskTable}><thead><tr><th style={{...s.taskTableTh,width:'40px'}}>#</th><th style={s.taskTableTh}>Task</th><th style={s.taskTableTh}>Hazards</th><th style={s.taskTableTh}>Controls</th><th style={{...s.taskTableTh,width:'50px'}}></th></tr></thead><tbody>{newTaskSteps.map((x,i)=><tr key={i}><td style={s.taskTableTd}><div style={{...s.stepNum,background:'#f59e0b'}}>{thaDetails.taskSteps.length+i+1}</div></td><td style={s.taskTableTd}><textarea value={x.task} onChange={e=>{const u=[...newTaskSteps];u[i].task=e.target.value;setNewTaskSteps(u);}} style={{...s.textarea,minHeight:'60px'}}/></td><td style={s.taskTableTd}><textarea value={x.hazards} onChange={e=>{const u=[...newTaskSteps];u[i].hazards=e.target.value;setNewTaskSteps(u);}} style={{...s.textarea,minHeight:'60px'}}/></td><td style={s.taskTableTd}><textarea value={x.actions} onChange={e=>{const u=[...newTaskSteps];u[i].actions=e.target.value;setNewTaskSteps(u);}} style={{...s.textarea,minHeight:'60px'}}/></td><td style={s.taskTableTd}><button type="button" onClick={()=>setNewTaskSteps(p=>p.filter((_,j)=>j!==i))} style={s.removeBtn}>✕</button></td></tr>)}</tbody></table><button type="button" onClick={()=>setNewTaskSteps(p=>[...p,{task:'',hazards:'',actions:''}])} style={s.addBtn}>+ Add Step</button></div></div><div style={{border:'1px solid #d1d5db',borderRadius:'8px',marginBottom:'15px',overflow:'hidden'}}><div style={{background:'#f3f4f6',padding:'10px 15px',fontWeight:'600'}}>Current Crew</div><div style={{padding:'15px'}}><div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>{thaDetails.crewMembers.map((c,i)=><span key={i} style={{background:'#059669',color:'white',padding:'4px 10px',borderRadius:'15px',fontSize:'12px'}}>{c.crew_member_name}</span>)}</div></div></div><div style={{border:'2px solid #059669',borderRadius:'8px',marginBottom:'15px',overflow:'hidden'}}><div style={{background:'#ecfdf5',padding:'10px 15px',fontWeight:'600',color:'#065f46'}}>Add New Crew</div><div style={{padding:'15px'}}><table style={s.crewTable}><thead><tr><th style={s.crewTableTh}>Name</th><th style={s.crewTableTh}>Company</th><th style={s.crewTableTh}></th></tr></thead><tbody>{newCrewMembers.map((c,i)=><tr key={i}><td style={s.taskTableTd}><input type="text" value={c.name} onChange={e=>{const u=[...newCrewMembers];u[i].name=e.target.value;setNewCrewMembers(u);}} placeholder="Name" style={s.input}/></td><td style={s.taskTableTd}><select value={c.company} onChange={e=>{const u=[...newCrewMembers];u[i].company=e.target.value;setNewCrewMembers(u);}} style={s.select}><option value="">-- Company --</option>{COMPANIES.map(x=><option key={x} value={x}>{x}</option>)}</select></td><td style={s.taskTableTd}><button type="button" onClick={()=>setNewCrewMembers(p=>p.filter((_,j)=>j!==i))} style={s.removeBtn}>✕</button></td></tr>)}</tbody></table><button type="button" onClick={()=>setNewCrewMembers(p=>[...p,{name:'',company:'',comments:''}])} style={s.addBtn}>+ Add Crew</button></div></div>{updateSuccess&&<div style={s.successMessage}><h2 style={{margin:0}}>✓ Updated!</h2></div>}<div style={{display:'flex',gap:'10px',flexWrap:'wrap'}}><button type="button" onClick={saveUpdates} disabled={isSubmitting} style={{...s.submitBtn,background:'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',flex:1}}>{isSubmitting?'Saving...':'💾 Save'}</button><button type="button" onClick={()=>{setCloseoutThaNumber(selectedTHA);setActiveTab('closeout');}} style={{...s.submitBtn,background:'linear-gradient(135deg, #059669 0%, #047857 100%)',flex:1}}>✅ Close Out</button></div></>:<div>Loading...</div>}</div>}
