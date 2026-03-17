@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 import AddToSailLog from '@/components/AddToSailLog'
 
@@ -18,7 +17,7 @@ const COMPANIES = [
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 'Point Thompson',
-  'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ]
 
 const CATEGORIES = [
@@ -66,6 +65,33 @@ export default function BBSObservationForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Validate click-div fields that have no HTML required attribute
+    if (!formData.observationType) {
+      alert('Please select an Observation Type (Safe or At-Risk).')
+      return
+    }
+    if (!formData.observedAgree) {
+      alert('Please select whether the observed person agrees with your findings.')
+      return
+    }
+    if (!formData.jobStopRequired) {
+      alert('Please answer: Was a Job Stop Required?')
+      return
+    }
+    if (!formData.nearMiss) {
+      alert('Please answer: Was this a Near Miss?')
+      return
+    }
+    if (!formData.potentialEquipmentDamage) {
+      alert('Please answer: Was there Potential Equipment Damage?')
+      return
+    }
+    if (!formData.stkyEvent) {
+      alert('Please answer: Was a STKY Hazard Present?')
+      return
+    }
+
     setSubmitting(true)
 
     try {
@@ -197,7 +223,7 @@ export default function BBSObservationForm() {
             </button>
 
             <div style={{ marginTop: '20px' }}>
-              <Link href="https://portal.slpalaska.com" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '14px' }}>
+              <a href="https://portal.slpalaska.com" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '14px' }}>
                 ← Back to Safety Portal
               </Link>
             </div>
@@ -495,7 +521,7 @@ export default function BBSObservationForm() {
         }
       `}</style>
 
-      <Link href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</Link>
+      <a href="https://portal.slpalaska.com" className="back-link">← Back to Safety Portal</a>
       
       <div className="bbs-container">
         <div className="bbs-header">
