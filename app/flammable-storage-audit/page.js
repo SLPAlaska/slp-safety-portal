@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-const COMPANIES = ['A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services', 'CCI- Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction', 'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West', 'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream', 'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders','Narwhal Exploration', 'Nordic-Calista', 'Parker TRS', 'Peninsula Paving', 'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other']
+const COMPANIES = ['A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services', 'CCI-Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction', 'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West', 'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream', 'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders','Narwhal Exploration', 'Nordic-Calista', 'Parker TRS', 'Peninsula Paving', 'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other']
 
 const LOCATIONS = ['Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset', 'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope']
 
@@ -112,25 +112,17 @@ export default function FlammableStorageAuditForm() {
     setStatus('Calculating scores...')
 
     try {
-      console.log('Starting submission...')
-      
       const calculatedScores = calculateScores()
-      console.log('Scores calculated:', calculatedScores)
       setScores(calculatedScores)
       
       setStatus('Uploading photos...')
       const photoUrls = []
       for (const photo of photos) {
-        console.log('Uploading photo...')
         const url = await uploadPhoto(photo)
         if (url) photoUrls.push(url)
       }
-      console.log('Photos uploaded:', photoUrls.length)
-
       const generatedAuditId = `FSA-${new Date().toLocaleDateString('en-CA').replace(/-/g, '')}-${Date.now().toString().slice(-4)}`
       setAuditId(generatedAuditId)
-      console.log('Audit ID:', generatedAuditId)
-
       // Convert empty strings to null for all question fields
       const cleanedFormData = { ...formData }
       Object.keys(cleanedFormData).forEach(key => {
@@ -155,19 +147,15 @@ export default function FlammableStorageAuditForm() {
         grade: calculatedScores.grade
       }
 
-      console.log('Data to submit:', dataToSubmit)
       setStatus('Submitting to database...')
 
       const { data, error } = await supabase.from('flammable_storage_audits').insert([dataToSubmit]).select()
       
-      console.log('Supabase response:', { data, error })
-
       if (error) {
         console.error('Supabase error:', error)
         throw error
       }
 
-      console.log('SUCCESS! Data inserted:', data)
       setStatus('✅ Flammable Storage Audit submitted successfully!')
       setTimeout(() => {
         document.getElementById('successBox').scrollIntoView({ behavior: 'smooth' })

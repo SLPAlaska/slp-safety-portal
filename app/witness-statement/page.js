@@ -37,7 +37,7 @@ export default function WitnessStatement(){
       const{error}=await supabase.from('witness_statements').insert([{
         statement_id:newStatementId,
         report_type:formData.reportType,
-        incident_date:formData.incidentDate,
+        incident_date:formData.incidentDate || null,
         incident_time:formData.incidentTime,
         incident_location:formData.incidentLocation,
         witness_name:formData.witnessName,

@@ -173,7 +173,6 @@ export default function TrueCostCalculator() {
 
       if (costData) {
         // Load saved costs
-        console.log('Loading existing cost data:', costData);
         setDirectCosts({
           medical: costData.cat1_subtotal || 0,
           workers_comp: costData.cat2_subtotal || 0,
@@ -191,7 +190,6 @@ export default function TrueCostCalculator() {
         setUseAutoCalculate(costData.total_indirect_costs > 0 ? false : true);
       } else {
         // Reset to defaults for new calculation
-        console.log('No existing cost data found - starting fresh');
         setDirectCosts({});
         setIndirectCosts({});
         setUseAutoCalculate(true);
@@ -284,13 +282,11 @@ export default function TrueCostCalculator() {
           .from('incident_costs')
           .update(costRecord)
           .eq('id', existing.id);
-        console.log('Updated existing cost record');
       } else {
         // Insert new record
         result = await supabase
           .from('incident_costs')
           .insert(costRecord);
-        console.log('Inserted new cost record');
       }
 
       if (result.error) {

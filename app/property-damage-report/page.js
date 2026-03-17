@@ -108,7 +108,7 @@ export default function PropertyDamageReport(){
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
       const{error}=await supabase.from('property_damage_reports').insert([{
-        person_name:formData.personName,incident_date:formData.incidentDate,company:formData.company,location:formData.location,
+        person_name:formData.personName,incident_date:formData.incidentDate || null,company:formData.company,location:formData.location,
         security_notified:formData.securityNotified,injuries_involved:formData.injuriesInvolved,
         spill_involved:formData.spillInvolved,spill_volume_outside:formData.spillVolumeOutside||null,total_spill_volume:formData.totalSpillVolume||null,
         names_contact_involved:formData.namesContactInvolved||null,weather_location:formData.weatherLocation,witness_names:formData.witnessNames||null,

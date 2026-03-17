@@ -87,7 +87,7 @@ export default function THAForm(){
 
   useEffect(()=>{if(activeTab==='open'||activeTab==='closeout')loadOpenTHAs();},[activeTab]);
 
-  const loadOpenTHAs=async()=>{setLoadingOpenTHAs(true);try{const{data,error}=await supabase.from('tha_assessments').select('*').eq('status','Open').order('created_at',{ascending:false});if(error){console.error('loadOpenTHAs error:',error);throw error;}console.log('Open THAs loaded:',data?.length||0,'records');setOpenTHAs(data||[]);}catch(e){console.error('loadOpenTHAs catch:',e);}finally{setLoadingOpenTHAs(false);}};
+  const loadOpenTHAs=async()=>{setLoadingOpenTHAs(true);try{const{data,error}=await supabase.from('tha_assessments').select('*').eq('status','Open').order('created_at',{ascending:false});if(error){console.error('loadOpenTHAs error:',error);throw error;}setOpenTHAs(data||[]);}catch(e){console.error('loadOpenTHAs catch:',e);}finally{setLoadingOpenTHAs(false);}};
 
   const loadTHADetails=async(thaNumber)=>{try{
     const{data:tha}=await supabase.from('tha_assessments').select('*').eq('tha_number',thaNumber).single();

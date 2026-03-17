@@ -123,7 +123,6 @@ export default function SAILLogSync() {
         setSailLog(sailData || []);
       }
     } catch (e) {
-      console.log('SAIL Log table may not exist');
       setSailLog([]);
     }
 

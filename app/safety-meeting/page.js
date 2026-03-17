@@ -38,7 +38,7 @@ export default function SafetyMeeting(){
     try{
       const{error}=await supabase.from('safety_meetings').insert([{
         person_leading:formData.personLeading,
-        meeting_date:formData.meetingDate,
+        meeting_date:formData.meetingDate || null,
         company:formData.company,
         location:formData.location,
         meeting_type:formData.meetingType,

@@ -60,7 +60,7 @@ export default function CompetentPersonForm() {
       const inspectionNumber = `CP-${Date.now()}`
       const { error } = await supabase.from('competent_person_inspections').insert([{
         inspection_number: inspectionNumber,
-        inspection_date: formData.inspectionDate,
+        inspection_date: formData.inspectionDate || null,
         inspection_time: formData.inspectionTime,
         competent_person: formData.competentPerson,
         company: formData.company,

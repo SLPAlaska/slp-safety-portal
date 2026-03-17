@@ -36,7 +36,7 @@ export default function SSEEvaluation(){
         company:formData.company,
         location:formData.location,
         sse_name:formData.sseName,
-        hire_date:formData.hireDate,
+        hire_date:formData.hireDate || null,
         safety_attitude:formData.safetyAttitude,
         training_compliance:formData.trainingCompliance,
         adherence_policies:formData.adherencePolicies,

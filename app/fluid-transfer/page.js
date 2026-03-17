@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const COMPANIES = [
   'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
-  'CCI- Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction',
+  'CCI-Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction',
   'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West',
   'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream',
   'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders','Narwhal Exploration', 'Nordic-Calista', 'Parker TRS',
@@ -92,11 +92,8 @@ export default function FluidTransferAuditForm() {
     setSubmitStatus(null);
 
     try {
-      console.log('Starting form submission...');
-      
       let photoUrls = [];
       if (photos.length > 0) {
-        console.log('Uploading photos...');
         photoUrls = await uploadPhotos();
       }
 
@@ -111,8 +108,6 @@ export default function FluidTransferAuditForm() {
         photo_urls: photoUrls.length > 0 ? photoUrls : null
       };
 
-      console.log('Submitting to Supabase:', submitData);
-
       const { data, error } = await supabase
         .from('fluid_transfer_audits')
         .insert([submitData])
@@ -123,7 +118,6 @@ export default function FluidTransferAuditForm() {
         throw error;
       }
 
-      console.log('Success:', data);
       setSubmitStatus('success');
       
       // Reset form

@@ -74,7 +74,7 @@ export default function ColdWeatherAssessment() {
     try {
       const { error } = await supabase.from('cold_weather_assessments').insert([{
         assessor_name: formData.assessorName,
-        assessment_date: formData.date,
+        assessment_date: formData.date || null,
         location: formData.location,
         company: formData.company,
         current_temp: formData.currentTemp,
