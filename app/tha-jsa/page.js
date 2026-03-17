@@ -210,7 +210,7 @@ export default function THAForm(){
     win.document.close();
   };
 
-handleSubmit=async(e)=>{e.preventDefault();if(!qualityCheckPassed){alert('Run quality check first.');return;}
+const handleSubmit=async(e)=>{e.preventDefault();if(!qualityCheckPassed){alert('Run quality check first.');return;}
     setIsSubmitting(true);try{
       const thaNumber=generateTHANumber();const filled=taskSteps.filter(s=>s.task||s.hazards||s.actions);const q=analyzeQuality(filled);
       const{error:assessErr}=await supabase.from('tha_assessments').insert([{tha_number:thaNumber,status:'Open',date:formData.date,company:formData.company,location:formData.location,work_area:formData.work_area,crew_lead:formData.crew_lead,phone_radio:formData.phone_radio,task_description:formData.task_description,job_planning_notes:formData.job_planning_notes,procedure_exists:formData.procedure_exists,procedure_reviewed:formData.procedure_reviewed,driving_backing:formData.driving_backing,walkaround_360:formData.walkaround_360?'Yes':'No',seatbelts_checked:formData.seatbelts_checked?'Yes':'No',spotter_when_backing:formData.spotter_when_backing?'Yes':'No',load_secured:formData.load_secured?'Yes':'No',general_items:formData.general_items,ppe_requirements:formData.ppe_requirements,permits_required:formData.permits_required,potential_hazards:formData.potential_hazards,energy_types:formData.energy_types.join(', '),control_types:formData.control_types.join(', '),quality_score:q.overallScore,quality_grade:q.overallGrade,quality_notes:q.feedback.join(' | '),good_controls_count:q.summary.goodControlsCount,awareness_only_count:q.summary.awarenessOnlyCount,photo_url:attachments.length>0?attachments.join(','):null}]);
