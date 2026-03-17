@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const COMPANIES = [
   'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
-  'CCI- Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction',
+  'CCI-Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction',
   'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West',
   'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream',
   'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders','Narwhal Exploration', 'Nordic-Calista', 'Parker TRS',
@@ -20,7 +20,7 @@ const COMPANIES = [
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA',
-  'Point Thompson', 'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ];
 
 const ENERGY_SOURCES = [
@@ -244,6 +244,16 @@ export default function AerialLiftPractical() {
     setAssessmentId('');
   };
 
+  const styles = {
+    input: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
+    select: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', background: 'white' },
+    textarea: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
+    label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' },
+    section: { marginBottom: '35px', background: '#f0fdfa', borderRadius: '12px', padding: '25px', borderLeft: '4px solid #14b8a6' },
+    sectionHeader: { display: 'flex', alignItems: 'center', marginBottom: '20px', fontSize: '18px', fontWeight: '600', color: '#1e293b' },
+    safetyCritical: { background: '#fef2f2', border: '2px solid #fca5a5', borderRadius: '8px', padding: '12px', marginBottom: '15px' }
+  };
+
   // Success Screen
   if (submitted) {
     return (
@@ -271,16 +281,6 @@ export default function AerialLiftPractical() {
       </div>
     );
   }
-
-  const styles = {
-    input: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
-    select: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', background: 'white' },
-    textarea: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
-    label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' },
-    section: { marginBottom: '35px', background: '#f0fdfa', borderRadius: '12px', padding: '25px', borderLeft: '4px solid #14b8a6' },
-    sectionHeader: { display: 'flex', alignItems: 'center', marginBottom: '20px', fontSize: '18px', fontWeight: '600', color: '#1e293b' },
-    safetyCritical: { background: '#fef2f2', border: '2px solid #fca5a5', borderRadius: '8px', padding: '12px', marginBottom: '15px' }
-  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%)', padding: '20px' }}>
