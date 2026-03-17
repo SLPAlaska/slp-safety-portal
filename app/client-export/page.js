@@ -136,7 +136,7 @@ const FORM_CATEGORIES = {
       'Incident Report': 'incidents',
       'Property Damage Report': 'property_damage_reports',
       'Witness Statement': 'witness_statements',
-      'Corrective Actions': 'corrective_actions',
+      'Corrective Actions': 'investigation_corrective_actions',
       'Lessons Learned': 'lessons_learned',
     }
   },
@@ -196,7 +196,7 @@ const DATE_RANGES = ['Last Week', 'Last Month', 'Last 3 Months', 'Last Year', 'Y
 const LOCATIONS = [
   'All', 'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA',
-  'Point Thompson', 'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'Point Thompson', 'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ];
 
 export default function ClientExport() {
@@ -302,9 +302,7 @@ export default function ClientExport() {
     setExportResults(null);
 
     const { start, end } = getDateRange();
-    console.log('Date range:', start, 'to', end);
-    console.log('Search term:', searchTerms[0]);
-    console.log('Selected forms:', selected.map(([n]) => n));
+
     const results = {};
     let totalRecords = 0;
     let errorList = [];
@@ -316,11 +314,10 @@ export default function ClientExport() {
 
     for (const [formName] of selected) {
       const table = tableMap[formName];
-      if (!table) { console.log('No table for:', formName); continue; }
+      if (!table) { continue; }
 
       try {
         setExportStatus('Querying ' + formName + '...');
-        console.log('Querying table:', table);
 
         const companyCol = COMPANY_COLUMN_MAP.hasOwnProperty(table) ? COMPANY_COLUMN_MAP[table] : 'company';
         
@@ -330,14 +327,13 @@ export default function ClientExport() {
           .gte('created_at', start)
           .lte('created_at', end);
         
-        // Only filter by company if the table has a company column
-        if (companyCol) {
-          query = query.ilike(companyCol, '%' + searchTerms[0] + '%');
+        // Filter by company — OR across all search terms to catch alternate names
+        if (companyCol && searchTerms.length > 0) {
+          const orFilter = searchTerms.map(term => `${companyCol}.ilike.%${term}%`).join(',');
+          query = query.or(orFilter);
         }
         
         const { data, error } = await query.order('created_at', { ascending: false });
-
-        console.log('Result for', table, ':', data ? data.length : 0, 'rows, error:', error);
 
         if (error) {
           console.error('Query error for', table, ':', error);
@@ -410,7 +406,7 @@ export default function ClientExport() {
     return String(val);
   };
 
-  const SKIP_COLS = ['id', 'photo_url', 'pdf_url', 'last_modified'];
+  const SKIP_COLS = ['id', 'photo_url', 'photo_urls', 'pdf_url', 'last_modified'];
 
   const getVisibleHeaders = (data) => {
     if (!data || data.length === 0) return [];
