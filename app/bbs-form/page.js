@@ -225,7 +225,7 @@ export default function BBSObservationForm() {
             <div style={{ marginTop: '20px' }}>
               <a href="https://portal.slpalaska.com" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '14px' }}>
                 ← Back to Safety Portal
-              </Link>
+              </a>
             </div>
           </div>
         </div>
