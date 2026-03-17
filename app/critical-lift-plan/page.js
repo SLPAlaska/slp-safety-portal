@@ -17,7 +17,7 @@ const COMPANIES = [
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
   'Deadhorse', 'Prudhoe Bay', 'Kuparuk', 'Alpine', 'Willow', 'ENI', 'PIKKA', 'Point Thompson',
-  'North Star Island', 'Endicott', 'Badami',, 'West Harrison Bay',, 'Other North Slope'
+  'North Star Island', 'Endicott', 'Badami', 'West Harrison Bay', 'Other North Slope'
 ]
 
 const CRITICAL_CRITERIA = [
@@ -36,7 +36,41 @@ const WEIGHT_SOURCES = ['Certified Scale', 'Manufacturer Specs', 'Shipping Docum
 const SLING_TYPES = ['Wire Rope', 'Synthetic Web', 'Synthetic Round', 'Chain', 'Metal Mesh']
 const GROUND_CONDITIONS = ['Firm/Stable', 'Gravel Pad', 'Concrete', 'Asphalt', 'Soft/Unstable - Matting Required', 'Frozen Ground']
 const WEATHER_CONDITIONS = ['Clear', 'Overcast', 'Light Precipitation', 'Heavy Precipitation', 'Snow', 'Fog/Low Visibility']
-const POWER_LINE_OPTIONS = ['None in area', 'Present - Safe distance maintained', 'Present - De-energized', 'Present - Requires dedicated spotter']
+const POWER_LINE_OPTIONS = [
+  'None in area',
+  'Unknown voltage — Assume overhead distribution (≤50kV)',
+  '≤50V (de minimis)',
+  '51V–1,000V (LV Distribution)',
+  '1,001V–15kV (MV Distribution)',
+  '15kV–35kV (MV Distribution)',
+  '35kV–50kV (Sub-Transmission)',
+  '50kV–100kV (Transmission)',
+  '100kV–200kV (Transmission)',
+  '200kV–350kV (High Voltage)',
+  '350kV–500kV (Extra High Voltage)',
+  '500kV–750kV (Ultra High Voltage)',
+  '>750kV (Ultra High Voltage)',
+  'De-energized & Grounded — Confirmed by Utility'
+]
+
+// OSHA 1926.1408 Table A — Minimum clearance distances for cranes/derricks near power lines
+// "Unknown" scenario defaults to ≤50kV per OSHA guidance (most conservative assumption for overhead distribution)
+const POWER_LINE_CLEARANCE = {
+  'None in area':                                          null,
+  'De-energized & Grounded — Confirmed by Utility':       { min: '0 ft (confirmed de-energized)', exclusion: 0,  note: 'Written confirmation from utility required. Treat as energized until utility authorizes.', osha: 'OSHA 1926.1407', color: '#059669' },
+  '≤50V (de minimis)':                                    { min: '10 ft',  exclusion: 10, note: 'Minimum 10 ft applies even at very low voltages per OSHA 1926.1408.', osha: 'OSHA 1926.1408 Table A', color: '#eab308' },
+  '51V–1,000V (LV Distribution)':                         { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#eab308' },
+  '1,001V–15kV (MV Distribution)':                        { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#eab308' },
+  '15kV–35kV (MV Distribution)':                          { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#f97316' },
+  '35kV–50kV (Sub-Transmission)':                         { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#f97316' },
+  'Unknown voltage — Assume overhead distribution (≤50kV)':{ min: '20 ft', exclusion: 20, note: '⚠️ CONSERVATIVE DEFAULT: When voltage is unknown, OSHA requires 20 ft minimum. Do not assume lower clearance. Contact utility to confirm voltage.', osha: 'OSHA 1926.1408(a)(2)', color: '#dc2626' },
+  '50kV–100kV (Transmission)':                            { min: '15 ft',  exclusion: 15, note: 'Add 0.4 in per kV above 50kV. Dedicated spotter required. Pre-work utility notification recommended.', osha: 'OSHA 1926.1408 Table A', color: '#dc2626' },
+  '100kV–200kV (Transmission)':                           { min: '20 ft',  exclusion: 20, note: 'High voltage transmission — engineering review required. Utility coordination mandatory.', osha: 'OSHA 1926.1408 Table A', color: '#dc2626' },
+  '200kV–350kV (High Voltage)':                           { min: '25 ft',  exclusion: 25, note: 'High voltage — stop work and notify utility. Engineering controls and utility coordination required.', osha: 'OSHA 1926.1408 Table A', color: '#991b1b' },
+  '350kV–500kV (Extra High Voltage)':                     { min: '35 ft',  exclusion: 35, note: 'STOP WORK — Extra high voltage. Do not operate until utility has de-energized and confirmed in writing.', osha: 'OSHA 1926.1408 Table A', color: '#991b1b' },
+  '500kV–750kV (Ultra High Voltage)':                     { min: '45 ft',  exclusion: 45, note: 'STOP WORK — Ultra high voltage. Crane operation near this line requires utility de-energization.', osha: 'OSHA 1926.1408 Table A', color: '#991b1b' },
+  '>750kV (Ultra High Voltage)':                          { min: '50 ft',  exclusion: 50, note: 'STOP WORK — Maximum hazard. Crane work prohibited within 50 ft. Utility de-energization and engineering review required.', osha: 'OSHA 1926.1408 Table A', color: '#991b1b' },
+}
 const COMM_METHODS = ['Hand Signals', 'Radio', 'Voice (Direct)', 'Hardwired Headset']
 const BACKUP_COMM = ['Hand Signals', 'Radio', 'Voice (Direct)', 'Air Horn (Emergency Stop)']
 
@@ -53,7 +87,7 @@ export default function CriticalLiftPlanForm() {
     slingType: '', slingSize: '', numberOfLegs: '1', slingAngle: '90', slingWLL: '',
     shackleSize: '', shackleWLL: '',
     groundConditions: '', weatherConditions: '',
-    overheadHazards: '', undergroundHazards: '', powerLines: 'None in area', exclusionZone: '',
+    overheadHazards: '', undergroundHazards: '', powerLines: 'None in area', powerLineVoltage: 'None in area', exclusionZone: '',
     craneOperator: '', signalPerson: '', riggers: '', liftDirector: '', spotters: '',
     communicationMethod: '', backupCommunication: '', radioChannel: '',
     emergencyProcedures: '', comments: ''
@@ -71,7 +105,17 @@ export default function CriticalLiftPlanForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    if (name === 'powerLineVoltage') {
+      const clearance = POWER_LINE_CLEARANCE[value]
+      setFormData(prev => ({
+        ...prev,
+        powerLineVoltage: value,
+        powerLines: value === 'None in area' ? 'None in area' : value === 'De-energized & Grounded — Confirmed by Utility' ? 'Present - De-energized' : 'Present - Requires dedicated spotter',
+        exclusionZone: clearance ? String(clearance.exclusion) : prev.exclusionZone
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
 
   const toggleCriteria = (criteria) => {
@@ -254,7 +298,7 @@ export default function CriticalLiftPlanForm() {
       slingType: '', slingSize: '', numberOfLegs: '1', slingAngle: '90', slingWLL: '',
       shackleSize: '', shackleWLL: '',
       groundConditions: '', weatherConditions: '',
-      overheadHazards: '', undergroundHazards: '', powerLines: 'None in area', exclusionZone: '',
+      overheadHazards: '', undergroundHazards: '', powerLines: 'None in area', powerLineVoltage: 'None in area', exclusionZone: '',
       craneOperator: '', signalPerson: '', riggers: '', liftDirector: '', spotters: '',
       communicationMethod: '', backupCommunication: '', radioChannel: '',
       emergencyProcedures: '', comments: ''
@@ -600,16 +644,49 @@ export default function CriticalLiftPlanForm() {
             </div>
             <div className="form-row">
               <div className="form-group">
-                <label>Power Lines</label>
-                <select name="powerLines" value={formData.powerLines} onChange={handleChange}>
+                <label>Power Lines — Voltage in Area</label>
+                <select name="powerLineVoltage" value={formData.powerLineVoltage} onChange={handleChange}>
                   {POWER_LINE_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
+                <div style={{fontSize:'12px',color:'#6b7280',marginTop:'4px'}}>If voltage is unknown, select "Unknown" — OSHA requires 20 ft minimum clearance</div>
               </div>
               <div className="form-group">
                 <label>Exclusion Zone Radius (ft) *</label>
                 <input type="number" name="exclusionZone" value={formData.exclusionZone} onChange={handleChange} required />
+                <div style={{fontSize:'12px',color:'#6b7280',marginTop:'4px'}}>Auto-fills from voltage selection — may be increased but not decreased</div>
               </div>
             </div>
+
+            {formData.powerLineVoltage && formData.powerLineVoltage !== 'None in area' && POWER_LINE_CLEARANCE[formData.powerLineVoltage] && (
+              <div style={{border:`2px solid ${POWER_LINE_CLEARANCE[formData.powerLineVoltage].color}`,borderRadius:'8px',padding:'16px',marginBottom:'20px',background:'#fff7ed'}}>
+                <div style={{fontWeight:'700',fontSize:'14px',color:POWER_LINE_CLEARANCE[formData.powerLineVoltage].color,marginBottom:'12px'}}>
+                  ⚡ {POWER_LINE_CLEARANCE[formData.powerLineVoltage].osha} — Power Line Approach Requirements
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px',marginBottom:'12px'}}>
+                  <div style={{background:'white',borderRadius:'6px',padding:'10px',textAlign:'center',border:'1px solid #e5e7eb'}}>
+                    <div style={{fontSize:'11px',color:'#6b7280',fontWeight:'600',marginBottom:'4px'}}>MINIMUM CLEARANCE</div>
+                    <div style={{fontSize:'20px',fontWeight:'800',color:POWER_LINE_CLEARANCE[formData.powerLineVoltage].color}}>{POWER_LINE_CLEARANCE[formData.powerLineVoltage].min}</div>
+                    <div style={{fontSize:'10px',color:'#6b7280',marginTop:'2px'}}>No part of crane/load may enter</div>
+                  </div>
+                  <div style={{background:'white',borderRadius:'6px',padding:'10px',textAlign:'center',border:'1px solid #e5e7eb'}}>
+                    <div style={{fontSize:'11px',color:'#6b7280',fontWeight:'600',marginBottom:'4px'}}>SPOTTER REQUIRED WITHIN</div>
+                    <div style={{fontSize:'20px',fontWeight:'800',color:'#d97706'}}>20 ft</div>
+                    <div style={{fontSize:'10px',color:'#6b7280',marginTop:'2px'}}>Dedicated observer, eyes on lines</div>
+                  </div>
+                  <div style={{background:'white',borderRadius:'6px',padding:'10px',textAlign:'center',border:'1px solid #e5e7eb'}}>
+                    <div style={{fontSize:'11px',color:'#6b7280',fontWeight:'600',marginBottom:'4px'}}>UTILITY NOTIFICATION</div>
+                    <div style={{fontSize:'20px',fontWeight:'800',color:'#1e3a8a'}}>Required</div>
+                    <div style={{fontSize:'10px',color:'#6b7280',marginTop:'2px'}}>Before work begins</div>
+                  </div>
+                </div>
+                <div style={{background: POWER_LINE_CLEARANCE[formData.powerLineVoltage].color === '#059669' ? '#dcfce7' : '#fee2e2', borderRadius:'6px',padding:'10px',fontSize:'13px',color: POWER_LINE_CLEARANCE[formData.powerLineVoltage].color,fontWeight:'600'}}>
+                  📋 {POWER_LINE_CLEARANCE[formData.powerLineVoltage].note}
+                </div>
+                <div style={{marginTop:'10px',padding:'8px 12px',background:'#eff6ff',borderRadius:'6px',fontSize:'12px',color:'#1e3a8a'}}>
+                  <strong>OSHA 1926.1408 Requirements:</strong> A dedicated spotter must be assigned whose sole responsibility is watching the power lines. All personnel must know the emergency response plan if contact occurs. Crane operator must be able to see or communicate with spotter at all times.
+                </div>
+              </div>
+            )}
 
             <div className="section-header green">👷 Personnel</div>
             <div className="form-row">
