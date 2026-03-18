@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -17,6 +17,7 @@ const PRIORITIES = ['A - Critical', 'B - Moderate', 'C - Best Practice']
 const STATUSES = ['Open', 'In Progress', 'Closed']
 
 export default function SAILLogEntry() {
+  const photoRef = useRef(null);
   const [formData, setFormData] = useState({
     submitter_name: '',
     date: '',
@@ -308,7 +309,7 @@ export default function SAILLogEntry() {
               <div style={sectionBodyStyle}>
                 <label style={labelStyle}>Photo (Optional)</label>
                 <div
-                  onClick={() => document.getElementById('photo').click()}
+                  onClick={() => photoRef.current.click()}
                   style={{
                     border: photoPreview ? '2px dashed #059669' : '2px dashed #d1d5db',
                     borderRadius: '8px',
@@ -318,7 +319,7 @@ export default function SAILLogEntry() {
                     background: photoPreview ? 'rgba(5, 150, 105, 0.05)' : 'white'
                   }}
                 >
-                  <input type="file" id="photo" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+                  <input type="file" ref={photoRef} accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
                   <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>📷</div>
                   <p style={{ color: '#6b7280' }}>Click to upload photo</p>
                   {photoPreview && <p style={{ marginTop: '10px', color: '#059669', fontWeight: '600' }}>{photoPreview}</p>}
