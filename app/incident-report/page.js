@@ -42,6 +42,7 @@ const INCIDENT_TYPES = [
   { value: 'Explosion', label: 'Explosion', category: 'pse' },
   { value: 'Process Safety Event', label: 'Process Safety Event (LOPC)', category: 'pse' },
   { value: 'Security Incident', label: 'Security Incident', category: 'security' },
+  { value: 'Report Only', label: 'Report Only', category: 'report' },
   { value: 'Other', label: 'Other', category: 'other' }
 ];
 
