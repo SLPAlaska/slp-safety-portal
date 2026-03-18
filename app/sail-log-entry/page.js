@@ -26,7 +26,8 @@ export default function SAILLogEntry() {
     action_item_description: '',
     immediate_action: '',
     assigned_to: '',
-    target_completion_date: '',
+    assigned_to_email: '',
+    target_completion_date: ',
     priority: '',
     status: '',
     closure_date: ''
@@ -99,6 +100,45 @@ export default function SAILLogEntry() {
 
       if (error) throw error
 
+      // Send assignment notification email
+      if (formData.assigned_to_email && formData.assigned_to_email.includes('@')) {
+        try {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer re_FDjWFcDV_9GGQZnuq8MyXfTJna13re2SF',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              from: 'SLP Alaska Safety <reports@slpalaska.com>',
+              to: [formData.assigned_to_email],
+              subject: `Action Item Assigned to You — Due ${formData.target_completion_date || 'TBD'}`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+                <div style="background:linear-gradient(135deg,#1e3a8a,#b91c1c);padding:20px;border-radius:8px 8px 0 0">
+                  <h2 style="color:white;margin:0">⚠️ SAIL Log Action Item Assigned</h2>
+                </div>
+                <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-radius:0 0 8px 8px">
+                  <p>Hi <strong>${formData.assigned_to}</strong>,</p>
+                  <p>You have been assigned an action item on the SLP Alaska SAIL Log.</p>
+                  <table style="width:100%;border-collapse:collapse;margin:15px 0">
+                    <tr><td style="padding:8px;background:#1e3a8a;color:white;font-weight:bold;width:35%">Action Item</td><td style="padding:8px;border:1px solid #e2e8f0">${formData.action_item_description}</td></tr>
+                    <tr><td style="padding:8px;background:#1e3a8a;color:white;font-weight:bold">Priority</td><td style="padding:8px;border:1px solid #e2e8f0">${formData.priority}</td></tr>
+                    <tr><td style="padding:8px;background:#1e3a8a;color:white;font-weight:bold">Due Date</td><td style="padding:8px;border:1px solid #e2e8f0;color:#dc2626;font-weight:bold">${formData.target_completion_date || 'Not set'}</td></tr>
+                    <tr><td style="padding:8px;background:#1e3a8a;color:white;font-weight:bold">Location</td><td style="padding:8px;border:1px solid #e2e8f0">${formData.location}</td></tr>
+                    <tr><td style="padding:8px;background:#1e3a8a;color:white;font-weight:bold">Company</td><td style="padding:8px;border:1px solid #e2e8f0">${formData.client_company}</td></tr>
+                  </table>
+                  <p style="color:#64748b;font-size:13px">This action was entered by <strong>${formData.submitter_name}</strong>. Please log in to the SLP Alaska Safety Portal to view and update your action items.</p>
+                  <a href="https://portal.slpalaska.com/sail-management" style="display:inline-block;padding:12px 24px;background:#1e3a8a;color:white;text-decoration:none;border-radius:6px;font-weight:bold;margin-top:10px">View SAIL Log →</a>
+                  <p style="color:#94a3b8;font-size:11px;margin-top:20px">SLP Alaska Safety Management System | AnthroSafe™ Field Driven Safety</p>
+                </div>
+              </div>`
+            })
+          });
+        } catch (emailErr) {
+          console.error('Email notification failed:', emailErr);
+          // Don't block success — email failure is non-critical
+        }
+      }
       setSubmitStatus('success')
       setFormData({
         submitter_name: '',
@@ -108,6 +148,7 @@ export default function SAILLogEntry() {
         action_item_description: '',
         immediate_action: '',
         assigned_to: '',
+        assigned_to_email: '',
         target_completion_date: '',
         priority: '',
         status: '',
@@ -240,6 +281,10 @@ export default function SAILLogEntry() {
                   <div>
                     <label style={labelStyle}>Action Assigned To <span style={{ color: '#b91c1c' }}>*</span></label>
                     <input type="text" name="assigned_to" value={formData.assigned_to} onChange={handleChange} required placeholder="Name of person responsible" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Assignee Email <span style={{ color: '#b91c1c' }}>*</span></label>
+                    <input type="email" name="assigned_to_email" value={formData.assigned_to_email} onChange={handleChange} required placeholder="email@company.com" style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Target Completion Date <span style={{ color: '#b91c1c' }}>*</span></label>

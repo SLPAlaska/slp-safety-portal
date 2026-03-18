@@ -90,6 +90,7 @@ export default function SAILManagement() {
     setEditData({
       status: item.status || 'Open',
       assigned_to: item.assigned_to || '',
+      assigned_to_email: item.assigned_to_email || '',
       target_completion_date: item.target_completion_date || '',
       priority: item.priority || 'Medium',
       hierarchy_control: item.hierarchy_control || '',
@@ -398,6 +399,10 @@ export default function SAILManagement() {
               <div style={s.fieldGroup}>
                 <label style={s.fieldLabel}>Assigned To</label>
                 <input placeholder="Enter name of person responsible..." value={editData.assigned_to} onChange={e => setEditData({ ...editData, assigned_to: e.target.value })} style={s.input} />
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Assignee Email</label>
+                <input type="email" placeholder="email@company.com" value={editData.assigned_to_email || ''} onChange={e => setEditData({ ...editData, assigned_to_email: e.target.value })} style={s.input} />
+              </div>
               </div>
               <div style={s.fieldGroup}>
                 <label style={s.fieldLabel}>Target Completion Date</label>
