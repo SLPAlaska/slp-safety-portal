@@ -27,7 +27,7 @@ export default function SAILLogEntry() {
     immediate_action: '',
     assigned_to: '',
     assigned_to_email: '',
-    target_completion_date: ',
+    target_completion_date: '',
     priority: '',
     status: '',
     closure_date: ''
