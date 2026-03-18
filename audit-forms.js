@@ -1,21 +1,10 @@
 /**
- * SLP Alaska Portal — Form Audit Script
+ * SLP Alaska Portal — Form Audit Script v2
  *
- * Scans all page.js files and reports potential issues:
- *   - Optional date fields sent without || null (will crash Supabase)
- *   - ...formData spread in insert (all date fields need review)
- *   - document.getElementById usage
- *   - console.log in production code
- *   - Missing try/catch on Supabase calls
- *   - External <Link> tags remaining
- *   - Double commas remaining
- *   - Missing Tesoro Refinery
- *   - CCI- Industrial spacing issue
+ * Scans all page.js files and reports potential issues.
+ * Does NOT modify files — read-only report.
  *
- * Run from portal root:
- *   node audit-forms.js
- *
- * Outputs a report. Does NOT modify files.
+ * Run from portal root: node audit-forms.js
  */
 
 const fs = require('fs');
@@ -52,31 +41,33 @@ function auditFile(filePath) {
   if (/<Link\s+href="https?:\/\//.test(content)) {
     issues.push({ severity: 'FIX', msg: 'External <Link href="https://"> — must be <a> tag (build error)' });
   }
-  if (/<\/Link>/.test(content) && !/<Link\s+href="\//.test(content)) {
+  // Orphaned </Link> only if no internal <Link href="/"> exists
+  if (/<\/Link>/.test(content) && !/<Link[\s\S]*?href="\//.test(content)) {
     issues.push({ severity: 'FIX', msg: 'Orphaned </Link> closing tag — build error' });
   }
 
   // ── Spread insert with optional date fields ────────────────────────────────
-  if (/\.insert\(\[\{\s*\.\.\.formData/.test(content) || /insert\(\[{\s*\.\.\.formData/.test(content)) {
-    // Find date fields in formData that are optional (no 'required' nearby)
+  if (/\.insert\(\[\{\s*\.\.\.(formData|data)/.test(content)) {
     const dateInputs = [...content.matchAll(/type="date"\s+name="(\w+)"/g)].map(m => m[1]);
-    const requiredDates = [...content.matchAll(/type="date"\s+name="(\w+)"[^/]*required/g)].map(m => m[1]);
+    const requiredDates = [...content.matchAll(/type="date"\s+name="(\w+)"[^/\n]*required/g)].map(m => m[1]);
     const optionalDates = dateInputs.filter(d => !requiredDates.includes(d));
     if (optionalDates.length > 0) {
       issues.push({ severity: 'FIX', msg: `Spread insert + optional date fields: ${optionalDates.join(', ')} — need || null` });
-    } else {
-      issues.push({ severity: 'WARN', msg: 'Uses ...formData spread in insert — verify all optional fields have || null' });
+    } else if (dateInputs.length > 0) {
+      issues.push({ severity: 'WARN', msg: 'Uses spread in insert — verify all optional fields have || null' });
     }
   }
 
   // ── Explicit insert — check for date fields without || null ───────────────
-  if (content.includes('.insert([{') && !(/\.insert\(\[\{\s*\.\.\.formData/.test(content))) {
+  // KEY FIX: Use \b word boundary to prevent backtracking false positives
+  // e.g. "formData.date || null" would previously match on "formData.dat" + "e||null"
+  if (content.includes('.insert([{') && !/\.insert\(\[\{\s*\.\.\./.test(content)) {
     const insertStart = content.indexOf('.insert([{');
     const insertEnd = content.indexOf('}])', insertStart);
     if (insertStart > 0 && insertEnd > 0) {
       const insertBlock = content.slice(insertStart, insertEnd);
-      // Find date column assignments
-      const dateAssigns = [...insertBlock.matchAll(/(\w+_date|\w+_expiration|\w+_install_date|\w+_service_date|\w+_due|\w+_cert):\s*formData\.\w+(?!\s*\|\|)/g)];
+      // \b after \w+ prevents backtracking — "formData.date\b" won't match "formData.dat"
+      const dateAssigns = [...insertBlock.matchAll(/(\w+_date|\w+_expiration|\w+_install_date|\w+_service_date|\w+_due|\w+_cert):\s*formData\.\w+\b(?!\s*\|\|)/g)];
       for (const m of dateAssigns) {
         issues.push({ severity: 'FIX', msg: `Optional date column '${m[1]}' may send empty string — needs || null` });
       }
@@ -111,26 +102,26 @@ function auditFile(filePath) {
     issues.push({ severity: 'FIX', msg: "'CCI- Industrial' has extra space — should be 'CCI-Industrial'" });
   }
 
-  // ── styles/components defined after early return ──────────────────────────
-  const earlyReturnIdx = content.search(/if\s*\(submitted\)\s*\{|if\s*\(!isLoggedIn\)/);
-  const constAfter = earlyReturnIdx > 0
-    ? [...content.slice(earlyReturnIdx).matchAll(/^\s{2}const\s+(styles|s\s*=|InspectionItem|CheckItem|YesNo)\s*=/mg)]
-    : [];
-  if (constAfter.length > 0) {
-    issues.push({ severity: 'WARN', msg: `Component/style const defined after early return — inaccessible if that branch renders` });
-  }
-
   // ── localStorage usage ────────────────────────────────────────────────────
   if (/localStorage/.test(content) && !filePath.includes('action-calendar')) {
     issues.push({ severity: 'WARN', msg: 'localStorage used — will not work in incognito/private browsing' });
   }
 
+  // ── Components defined after early return ─────────────────────────────────
+  const earlyReturnIdx = content.search(/if\s*\(submitted\)\s*\{|if\s*\(!isLoggedIn\)/);
+  if (earlyReturnIdx > 0) {
+    const afterEarly = content.slice(earlyReturnIdx);
+    if (/^\s{2}const\s+(styles|s\s*=|InspectionItem|CheckItem|YesNo)\s*=/m.test(afterEarly)) {
+      issues.push({ severity: 'WARN', msg: 'Component/style const defined after early return' });
+    }
+  }
+
   return issues;
 }
 
-// ── Run ─────────────────────────────────────────────────────────────────────
-console.log('SLP Alaska Portal — Form Audit Report');
-console.log('======================================\n');
+// ── Run ──────────────────────────────────────────────────────────────────────
+console.log('SLP Alaska Portal — Form Audit Report v2');
+console.log('==========================================\n');
 
 if (!fs.existsSync(APP_DIR)) {
   console.error('ERROR: app/ directory not found. Run from portal root.');
@@ -161,7 +152,6 @@ for (const f of files) {
   }
 }
 
-// Print fixes first
 if (fixFiles.length > 0) {
   console.log(`\n⚠️  FILES NEEDING FIXES (${fixFiles.length}):`);
   console.log('─'.repeat(60));
@@ -182,7 +172,6 @@ if (warnFiles.length > 0) {
 }
 
 console.log(`\n\n✅ CLEAN FILES (${cleanCount})`);
-
-console.log('\n\n======================================');
+console.log('\n==========================================');
 console.log(`SUMMARY: ${fixFiles.length} files need fixes | ${warnFiles.length} files have warnings | ${cleanCount} files clean`);
 console.log(`Total issues: ${totalFix} fixes needed, ${totalWarn} warnings`);

@@ -9,7 +9,7 @@ const supabase = createClient(
 
 const COMPANIES = ['A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services','CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction','ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West','GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream','Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS','Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos','Summit Excavation','Tesoro Refinery','Yellowjacket','Other'];
 const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami','West Harrison Bay','Other North Slope'];
-const NOMINAL_VOLTAGES = ['≤50V','51-240V','241-480V','481-600V','601-1000V','1001-4160V','4161-13800V','>13800V'];
+const NOMINAL_VOLTAGES = ['≤50V','51-240V','241-480V','481-600V','601-1000V','1001-4160V','4161-13800V','>13800V','Unknown — Treat as >1000V (PPE Cat 4 Required)'];
 const PPE_CATEGORIES = ['Category 1 (4 cal/cm²)','Category 2 (8 cal/cm²)','Category 3 (25 cal/cm²)','Category 4 (40 cal/cm²)'];
 const HAZARD_RISK_CATEGORIES = ['Low (≤1.2 cal/cm²)','Medium (1.2-8 cal/cm²)','High (8-25 cal/cm²)','Extreme (25-40 cal/cm²)','Prohibited (>40 cal/cm²)'];
 // NFPA 70E Table 130.4(D)(a) - AC Minimum Approach Distances
@@ -22,6 +22,7 @@ const MAD_TABLE = {
   '1001-4160V':  { limited: '4 ft 0 in',     restricted: '1 ft 4 in',     prohibited: '0 ft 7 in',    note: 'Class 1 rubber gloves required within Restricted' },
   '4161-13800V': { limited: '5 ft 0 in',     restricted: '2 ft 2 in',     prohibited: '1 ft 5 in',    note: 'Class 2 rubber gloves required within Restricted' },
   '>13800V':     { limited: 'Consult engineer', restricted: 'Consult engineer', prohibited: 'Consult engineer', note: 'Specialized approach — engineering review required per NFPA 70E 130.4' },
+  'Unknown — Treat as >1000V (PPE Cat 4 Required)': { limited: '4 ft 0 in (minimum)', restricted: '1 ft 4 in (minimum)', prohibited: '0 ft 7 in (minimum)', note: '⚠️ UNKNOWN VOLTAGE — NFPA 70E requires worst-case assumption. PPE Category 4 (40 cal/cm²) MANDATORY. Identify voltage before work proceeds if at all possible.' },
 };
 
 const VOLTAGE_RATED_GLOVES = ['N/A','Class 00 (500V AC)','Class 0 (1000V AC)','Class 1 (7500V AC)','Class 2 (17000V AC)','Class 3 (26500V AC)','Class 4 (36000V AC)'];
@@ -83,14 +84,40 @@ export default function EnergizedElectricalWork(){
   const handleChange=(e)=>{const{name,value}=e.target;
   if(name==='nominalVoltage'&&MAD_TABLE[value]){
     const mad=MAD_TABLE[value];
-    setFormData(p=>({...p,[name]:value,limitedApproach:mad.limited,restrictedApproach:mad.restricted,prohibitedApproach:mad.prohibited}));
+    const isUnknown = value==='Unknown — Treat as >1000V (PPE Cat 4 Required)';
+    setFormData(p=>({
+      ...p,
+      [name]:value,
+      limitedApproach:mad.limited,
+      restrictedApproach:mad.restricted,
+      prohibitedApproach:mad.prohibited,
+      ...(isUnknown ? {
+        ppeCategory:'Category 4 (40 cal/cm²)',
+        arcRatingMinimum:'40',
+        arcFlashAbove40:'No',
+        arcFlashSuitHood:'Yes',
+        arcRatedFaceShield:'Yes',
+        arcRatedClothing:'Yes',
+      } : {})
+    }));
   } else {
     setFormData(p=>({...p,[name]:value}));
   }
 };
   const handleHazardToggle=(id)=>{setFormData(p=>({...p,additionalHazards:{...p.additionalHazards,[id]:!p.additionalHazards[id]}}));};
 
-  const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
+  const handleSubmit=async(e)=>{
+    e.preventDefault();
+    const isUnknown = formData.nominalVoltage==='Unknown — Treat as >1000V (PPE Cat 4 Required)';
+    if(isUnknown && formData.ppeCategory!=='Category 4 (40 cal/cm²)'){
+      alert('⚠️ Unknown voltage requires PPE Category 4 (40 cal/cm²). Update the PPE Category before submitting.');
+      return;
+    }
+    if(isUnknown && !formData.incidentEnergy){
+      alert('⚠️ Unknown voltage — you must enter an assumed incident energy value (minimum 40 cal/cm² for unknown voltage). Cannot submit without this.');
+      return;
+    }
+    setIsSubmitting(true);
     try{
       const permitNumber=generatePermitNumber();
       const indicators=calculateIndicators(formData);
@@ -171,6 +198,18 @@ export default function EnergizedElectricalWork(){
             </div>
           )}
 
+          {formData.nominalVoltage==='Unknown — Treat as >1000V (PPE Cat 4 Required)'&&(
+            <div style={{background:'#fee2e2',border:'3px solid #b91c1c',borderRadius:'8px',padding:'14px',marginBottom:'12px'}}>
+              <div style={{fontWeight:'800',fontSize:'14px',color:'#b91c1c',marginBottom:'8px'}}>🚨 UNKNOWN VOLTAGE — MANDATORY PPE REQUIREMENTS</div>
+              <div style={{fontSize:'13px',color:'#7f1d1d',lineHeight:'1.6'}}>
+                <div>• <strong>PPE Category 4 (40 cal/cm²) is automatically required</strong> — NFPA 70E worst-case assumption</div>
+                <div>• Arc flash suit with hood, arc-rated face shield, Class 2 voltage-rated gloves minimum</div>
+                <div>• Identify voltage from one-line diagram, nameplate, or utility confirmation before work</div>
+                <div>• A Qualified Person must review and approve this permit before any work proceeds</div>
+                <div style={{marginTop:'8px',fontWeight:'700'}}>⚡ NFPA 70E 130.5: Incident energy analysis or PPE table method REQUIRED — unknown voltage defaults to Category 4</div>
+              </div>
+            </div>
+          )}
           <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Limited Approach Boundary</span><input type="text" name="limitedApproach" value={formData.limitedApproach} onChange={handleChange} placeholder="Select voltage above to auto-fill" style={s.input}/></div>
           <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Restricted Approach Boundary</span><input type="text" name="restrictedApproach" value={formData.restrictedApproach} onChange={handleChange} placeholder="Select voltage above to auto-fill" style={s.input}/></div>
           <div style={s.boundaryGrid}><span style={s.boundaryLabel}>Prohibited Approach Boundary</span><input type="text" name="prohibitedApproach" value={formData.prohibitedApproach} onChange={handleChange} placeholder="Select voltage above to auto-fill" style={s.input}/></div>
