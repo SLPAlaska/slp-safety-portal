@@ -318,6 +318,17 @@ const styles = {
     textAlign: 'center',
     padding: '60px 20px',
     color: '#64748b'
+  },
+  checkDot: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    fontSize: '9px',
+    fontWeight: '700',
+    flexShrink: 0
   }
 };
 
@@ -384,6 +395,9 @@ export default function InvestigationDashboard() {
   const [psifFilter, setPsifFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Completion checklist state
+  const [completionData, setCompletionData] = useState({});
+
   // Modal State
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState(null);
@@ -449,10 +463,41 @@ export default function InvestigationDashboard() {
 
       setIncidents(filtered);
       calculateStats(data || []);
+      fetchCompletionData((data || []).map(i => i.id));
     } catch (error) {
       console.error('Error fetching incidents:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+
+  async function fetchCompletionData(incidentIds) {
+    if (!incidentIds || incidentIds.length === 0) return;
+    try {
+      const [timeline, evidence, witnesses, cas, analysis, lessons] = await Promise.all([
+        supabase.from('timeline_events').select('incident_id').in('incident_id', incidentIds),
+        supabase.from('investigation_evidence').select('incident_id').in('incident_id', incidentIds),
+        supabase.from('witness_statements').select('incident_id').in('incident_id', incidentIds),
+        supabase.from('investigation_corrective_actions').select('incident_id').in('incident_id', incidentIds),
+        supabase.from('rca_analyses').select('incident_id').in('incident_id', incidentIds),
+        supabase.from('investigation_lessons_learned').select('incident_id').in('incident_id', incidentIds),
+      ]);
+
+      const map = {};
+      incidentIds.forEach(id => {
+        map[id] = {
+          timeline: (timeline.data || []).some(r => r.incident_id === id),
+          evidence: (evidence.data || []).some(r => r.incident_id === id),
+          witnesses: (witnesses.data || []).some(r => r.incident_id === id),
+          cas: (cas.data || []).some(r => r.incident_id === id),
+          analysis: (analysis.data || []).some(r => r.incident_id === id),
+          lessons: (lessons.data || []).some(r => r.incident_id === id),
+        };
+      });
+      setCompletionData(map);
+    } catch (err) {
+      console.error('Completion fetch error:', err);
     }
   }
 
@@ -777,6 +822,7 @@ export default function InvestigationDashboard() {
                 <thead>
                   <tr>
                     <th style={styles.th}>Incident ID</th>
+                    <th style={styles.th}>Progress</th>
                     <th style={styles.th}>Date</th>
                     <th style={styles.th}>Company</th>
                     <th style={styles.th}>Location</th>
@@ -812,6 +858,38 @@ export default function InvestigationDashboard() {
                           {incident.is_sif && (
                             <span style={{ marginLeft: '8px', fontSize: '12px' }}>⚫ SIF</span>
                           )}
+                        </td>
+                        <td style={styles.td}>
+                          {(() => {
+                            const comp = completionData[incident.id];
+                            if (!comp) return <span style={{ color: '#d1d5db', fontSize: '11px' }}>—</span>;
+                            const items = [
+                              { key: 'timeline', label: 'TL' },
+                              { key: 'evidence', label: 'EV' },
+                              { key: 'witnesses', label: 'WI' },
+                              { key: 'analysis', label: 'AN' },
+                              { key: 'cas', label: 'CA' },
+                              { key: 'lessons', label: 'LL' },
+                            ];
+                            const done = items.filter(i => comp[i.key]).length;
+                            return (
+                              <div>
+                                <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                                  {items.map(item => (
+                                    <span key={item.key} title={item.key} style={{
+                                      ...styles.checkDot,
+                                      background: comp[item.key] ? '#dcfce7' : '#f1f5f9',
+                                      color: comp[item.key] ? '#166534' : '#94a3b8',
+                                      border: `1px solid ${comp[item.key] ? '#86efac' : '#e2e8f0'}`
+                                    }}>{item.label}</span>
+                                  ))}
+                                </div>
+                                <div style={{ fontSize: '10px', color: done === 6 ? '#166534' : '#64748b', fontWeight: done === 6 ? '700' : '400' }}>
+                                  {done}/6 {done === 6 ? '✓ Complete' : ''}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td style={styles.td}>{formatDate(incident.incident_date)}</td>
                         <td style={styles.td}>{incident.company_name || '-'}</td>
