@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -13,6 +13,7 @@ const COMPANIES = ['A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas
 const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami', 'West Harrison Bay', 'Other North Slope']
 
 export default function MBWAForm() {
+  const photoRef = useRef(null);
   const [formData, setFormData] = useState({
     company: '',
     submitter_name: '',
@@ -192,6 +193,39 @@ export default function MBWAForm() {
         {/* Form Content */}
         <div style={{ padding: '30px' }}>
           <form onSubmit={handleSubmit}>
+
+            {/* Progress Summary */}
+            {(() => {
+              const sections = [
+                { label: 'Basic Info', fields: ['company','submitter_name','location','person_observed'] },
+                { label: 'Daily Work', fields: ['doing_today','getting_it_done_safely','feel_about_stopping','set_example'] },
+                { label: 'Communication', fields: ['comfortable_bringing_issues','increase_safety_performance','senior_management_opinion'] },
+                { label: 'Emergency', fields: ['emergency_action','simops_going_on','simops_interact'] },
+                { label: 'Incident Free', fields: ['incident_free_possible','roadblocks','contribute_to_safety','support_from_clients'] },
+                { label: 'Engagement', fields: ['bbs_frequency','hazard_id_frequency','good_catch_frequency'] },
+                { label: 'Commitments', fields: ['weekly_commitment','enjoy_most','career_goals'] },
+                { label: 'Expectations', fields: ['safety_expectations','one_thing_change'] },
+              ];
+              const completed = sections.filter(s => s.fields.every(f => formData[f]?.trim())).length;
+              const pct = Math.round((completed / sections.length) * 100);
+              return (
+                <div style={{ marginBottom: '25px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: '600', color: '#065f46', fontSize: '0.9rem' }}>📋 Form Progress</span>
+                    <span style={{ fontWeight: '700', color: pct === 100 ? '#059669' : '#374151', fontSize: '0.9rem' }}>{completed}/{sections.length} sections complete</span>
+                  </div>
+                  <div style={{ height: '8px', background: '#d1fae5', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: pct + '%', background: pct === 100 ? '#059669' : '#3b82f6', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                    {sections.map(s => {
+                      const done = s.fields.every(f => formData[f]?.trim());
+                      return <span key={s.label} style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: done ? '#dcfce7' : '#f3f4f6', color: done ? '#065f46' : '#9ca3af', fontWeight: '600' }}>{done ? '✓' : '○'} {s.label}</span>;
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Basic Information */}
             <div style={{ marginBottom: '30px', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
@@ -443,7 +477,7 @@ export default function MBWAForm() {
                   Upload Photo (optional)
                 </label>
                 <div
-                  onClick={() => document.getElementById('photo').click()}
+                  onClick={() => photoRef.current.click()}
                   style={{
                     border: photoPreview ? '2px dashed #059669' : '2px dashed #d1d5db',
                     borderRadius: '12px',
@@ -453,7 +487,7 @@ export default function MBWAForm() {
                     background: photoPreview ? '#ecfdf5' : 'white'
                   }}
                 >
-                  <input type="file" id="photo" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+                  <input type="file" ref={photoRef} accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
                   <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>📷</div>
                   <div style={{ color: '#6b7280', fontSize: '0.95rem' }}>Click or tap to upload a photo</div>
                   {photoPreview && <div style={{ marginTop: '10px', color: '#059669', fontWeight: '600' }}>{photoPreview}</div>}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -43,6 +43,7 @@ const CONTROLS = [
 ]
 
 export default function PhaseConditionRiskAssessment() {
+  const photoRef = useRef(null);
   const [formData, setFormData] = useState({
     assessor_name: '',
     date: '',
@@ -329,8 +330,13 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Hazards & Risk Controls */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
-                Hazards & Risk Controls
+              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Hazards & Risk Controls</span>
+                {formData.hazards_risks.length > 0 && (() => {
+                  const n = formData.hazards_risks.length;
+                  const [label, color] = n >= 9 ? ['EXTREME', '#7f1d1d'] : n >= 6 ? ['HIGH', '#b91c1c'] : n >= 3 ? ['MODERATE', '#d97706'] : ['LOW', '#059669'];
+                  return <span style={{ background: color, color: 'white', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', letterSpacing: '0.5px' }}>{label} RISK — {n} hazard{n !== 1 ? 's' : ''}</span>;
+                })()}
               </div>
               <div style={sectionContentStyle}>
                 <div style={formGroupStyle}>
@@ -350,7 +356,17 @@ export default function PhaseConditionRiskAssessment() {
                   </div>
                 </div>
                 <div style={formGroupStyle}>
-                  <label style={labelStyle}>Risk Controls & Mitigation Measures (select all that apply) <span style={{ color: '#b91c1c' }}>*</span></label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{...labelStyle, marginBottom: 0}}>Risk Controls & Mitigation Measures (select all that apply) <span style={{ color: '#b91c1c' }}>*</span></label>
+                    {formData.hazards_risks.length > 0 && formData.risk_controls.length > 0 && (
+                      <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '10px',
+                        background: formData.risk_controls.length >= formData.hazards_risks.length ? '#dcfce7' : '#fef3c7',
+                        color: formData.risk_controls.length >= formData.hazards_risks.length ? '#065f46' : '#92400e'
+                      }}>
+                        {formData.risk_controls.length >= formData.hazards_risks.length ? '✓ Controls adequate' : `⚠️ Add ${formData.hazards_risks.length - formData.risk_controls.length} more control${formData.hazards_risks.length - formData.risk_controls.length !== 1 ? 's' : ''}`}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px', background: 'white', padding: '15px', borderRadius: '8px', border: '2px solid #d1d5db' }}>
                     {CONTROLS.map(control => (
                       <label key={control} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
@@ -508,7 +524,7 @@ export default function PhaseConditionRiskAssessment() {
               <div style={sectionContentStyle}>
                 <label style={labelStyle}>Upload Photo (optional)</label>
                 <div
-                  onClick={() => document.getElementById('photo').click()}
+                  onClick={() => photoRef.current.click()}
                   style={{
                     border: photoPreview ? '2px dashed #059669' : '2px dashed #d1d5db',
                     borderRadius: '12px',
@@ -518,7 +534,7 @@ export default function PhaseConditionRiskAssessment() {
                     background: photoPreview ? '#ecfdf5' : 'white'
                   }}
                 >
-                  <input type="file" id="photo" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+                  <input type="file" ref={photoRef} accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
                   <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>📷</div>
                   <div style={{ color: '#6b7280', fontSize: '0.95rem' }}>Click or tap to upload a photo</div>
                   {photoPreview && <div style={{ marginTop: '10px', color: '#059669', fontWeight: '600' }}>{photoPreview}</div>}
