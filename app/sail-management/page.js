@@ -36,6 +36,7 @@ export default function SAILManagement() {
   const [sortBy, setSortBy] = useState('date');
   const [sortDir, setSortDir] = useState('desc');
   const [stats, setStats] = useState({ total: 0, open: 0, inProgress: 0, delayed: 0, closed: 0, avgDaysOpen: 0, overdue: 0 });
+  const [showClosed, setShowClosed] = useState(false);
 
   // Edit modal
   const [editItem, setEditItem] = useState(null);
@@ -45,21 +46,18 @@ export default function SAILManagement() {
   // Detail view
   const [detailItem, setDetailItem] = useState(null);
 
-  useEffect(() => { loadData(); }, [selectedCompany, selectedStatus]);
+  useEffect(() => { loadData(); }, [selectedCompany, selectedStatus, showClosed]);
 
   async function loadData() {
     setLoading(true);
     try {
-      let query = supabase.from('sail_log').select('*').order('date', { ascending: false });
-      if (selectedCompany !== 'All') query = query.eq('client_company', selectedCompany);
-      if (selectedStatus !== 'All') query = query.eq('status', selectedStatus);
+      // Always fetch ALL items for accurate stats (ignore showClosed for stats)
+      let statsQuery = supabase.from('sail_log').select('*');
+      if (selectedCompany !== 'All') statsQuery = statsQuery.eq('client_company', selectedCompany);
+      const { data: allItems, error: statsError } = await statsQuery;
+      if (statsError) throw statsError;
 
-      const { data: items, error } = await query;
-      if (error) throw error;
-
-      setSailItems(items || []);
-
-      const all = items || [];
+      const all = allItems || [];
       const open = all.filter(i => i.status === 'Open');
       const inProg = all.filter(i => i.status === 'In Progress');
       const delayed = all.filter(i => i.status === 'Delayed');
@@ -69,8 +67,20 @@ export default function SAILManagement() {
       const avgDays = activeItems.length > 0
         ? Math.round(activeItems.reduce((sum, item) => sum + calcDays(item.date), 0) / activeItems.length)
         : 0;
-
       setStats({ total: all.length, open: open.length, inProgress: inProg.length, delayed: delayed.length, closed: closed.length, avgDaysOpen: avgDays, overdue: overdue.length });
+
+      // Now fetch display items — hide closed unless showClosed is true
+      let query = supabase.from('sail_log').select('*').order('date', { ascending: false });
+      if (selectedCompany !== 'All') query = query.eq('client_company', selectedCompany);
+      if (selectedStatus !== 'All') {
+        query = query.eq('status', selectedStatus);
+      } else if (!showClosed) {
+        query = query.neq('status', 'Closed');
+      }
+
+      const { data: items, error } = await query;
+      if (error) throw error;
+      setSailItems(items || []);
     } catch (error) {
       console.error('Error loading SAIL data:', error);
       alert('Error loading SAIL data: ' + error.message);
@@ -109,6 +119,7 @@ export default function SAILManagement() {
       const updates = {
         status: editData.status,
         assigned_to: editData.assigned_to || null,
+        assigned_to_email: editData.assigned_to_email || null,
         target_completion_date: editData.target_completion_date || null,
         priority: editData.priority,
         hierarchy_control: editData.hierarchy_control || null,
@@ -147,6 +158,20 @@ export default function SAILManagement() {
     } catch (error) {
       alert('Error: ' + error.message);
     } finally { setSaving(false); }
+  }
+
+  async function deleteItem(item) {
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete this SAIL item?\n\n"${item.action_item_description || 'No description'}"\n\nThis action cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      const { error } = await supabase.from('sail_log').delete().eq('id', item.id);
+      if (error) throw error;
+      loadData();
+    } catch (error) {
+      alert('Error deleting item: ' + error.message);
+    }
   }
 
   // Filter and sort
@@ -254,7 +279,13 @@ export default function SAILManagement() {
             </select>
             <input placeholder="Search descriptions, owners, locations..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ ...s.input, maxWidth: '350px' }} />
             <button onClick={loadData} style={{ ...s.btn, ...s.secondaryBtn }}>{'\uD83D\uDD04'} Refresh</button>
-            <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#64748b' }}>{filtered.length} items</div>
+            <button
+              onClick={() => setShowClosed(!showClosed)}
+              style={{ ...s.btn, background: showClosed ? '#16a34a' : '#e2e8f0', color: showClosed ? 'white' : '#475569' }}
+            >
+              {showClosed ? '✅ Showing Closed' : '🗃️ Show Closed'}
+            </button>
+            <div style={{ marginLeft: 'auto', fontSize: '13px', color: '#64748b' }}>{filtered.length} items{!showClosed && stats.closed > 0 && <span style={{ color: '#16a34a', marginLeft: '8px' }}>({stats.closed} closed hidden)</span>}</div>
           </div>
 
           {/* Table */}
@@ -319,9 +350,10 @@ export default function SAILManagement() {
                         {daysOpen !== null && <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{daysOpen}d open</div>}
                       </td>
                       <td style={s.td}>
-                        <div style={{ display: 'flex', gap: '5px' }}>
+                        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                           <button onClick={() => openEdit(item)} style={{ ...s.btn, ...s.primaryBtn }}>Edit</button>
                           <button onClick={() => setDetailItem(item)} style={{ ...s.btn, background: '#e2e8f0', color: '#475569' }}>View</button>
+                          <button onClick={() => deleteItem(item)} style={{ ...s.btn, ...s.dangerBtn }} title="Delete this item">{'\uD83D\uDDD1\uFE0F'}</button>
                         </div>
                       </td>
                     </tr>
@@ -394,15 +426,15 @@ export default function SAILManagement() {
               </div>
             </div>
 
-            {/* Assigned To + Due Date */}
-            <div style={s.twoCol}>
+            {/* Assigned To + Email + Due Date */}
+            <div style={s.threeCol}>
               <div style={s.fieldGroup}>
                 <label style={s.fieldLabel}>Assigned To</label>
                 <input placeholder="Enter name of person responsible..." value={editData.assigned_to} onChange={e => setEditData({ ...editData, assigned_to: e.target.value })} style={s.input} />
-              <div style={{ marginBottom: '10px' }}>
-                <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Assignee Email</label>
-                <input type="email" placeholder="email@company.com" value={editData.assigned_to_email || ''} onChange={e => setEditData({ ...editData, assigned_to_email: e.target.value })} style={s.input} />
               </div>
+              <div style={s.fieldGroup}>
+                <label style={s.fieldLabel}>Assignee Email</label>
+                <input type="email" placeholder="email@company.com" value={editData.assigned_to_email || ''} onChange={e => setEditData({ ...editData, assigned_to_email: e.target.value })} style={s.input} />
               </div>
               <div style={s.fieldGroup}>
                 <label style={s.fieldLabel}>Target Completion Date</label>
@@ -537,6 +569,7 @@ export default function SAILManagement() {
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
               <button onClick={() => { setDetailItem(null); openEdit(detailItem); }} style={{ ...s.btn, ...s.primaryBtn, padding: '10px 20px' }}>Edit This Item</button>
+              <button onClick={() => { const item = detailItem; setDetailItem(null); deleteItem(item); }} style={{ ...s.btn, ...s.dangerBtn, padding: '10px 20px' }}>{'\uD83D\uDDD1\uFE0F'} Delete</button>
               <button onClick={() => setDetailItem(null)} style={{ ...s.btn, ...s.secondaryBtn, padding: '10px 20px' }}>Close</button>
             </div>
           </div>
