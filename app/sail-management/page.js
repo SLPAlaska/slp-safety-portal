@@ -246,7 +246,7 @@ export default function SAILManagement() {
         {/* Header */}
         <div style={s.header}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-            <button onClick={() => window.location.href = '/portal'} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>{'\u2190'} Back to Portal</button>
+            <button onClick={() => window.location.href = '/'} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>{'\u2190'} Back to Portal</button>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ height: '50px' }} />
