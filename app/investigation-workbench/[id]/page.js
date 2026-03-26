@@ -54,6 +54,8 @@ export default function InvestigationWorkbench() {
   const [editingWitness, setEditingWitness] = useState(null);
   const [editingCA, setEditingCA] = useState(null);
   const [editingLesson, setEditingLesson] = useState(null);
+  const [editingField, setEditingField] = useState(null);
+  const [incidentEdits, setIncidentEdits] = useState({});
   const [spellCheckResults, setSpellCheckResults] = useState(null);
   const [spellChecking, setSpellChecking] = useState(false);
 
@@ -188,6 +190,21 @@ export default function InvestigationWorkbench() {
 
   async function handleLogin(e) { e.preventDefault(); if (userEmail.endsWith('@slpalaska.com')) { localStorage.setItem('slp_investigator_email', userEmail); setAuthenticated(true); loadAll(); } else alert('Restricted to @slpalaska.com'); }
   async function updateStatus(st) { try { const { error } = await supabase.from('incidents').update({ status: st, updated_at: new Date().toISOString() }).eq('id', id); if (error) throw error; setIncident({ ...incident, status: st }); alert('Status: ' + st); } catch (e) { alert(e.message); } }
+
+  async function saveIncidentField(field, value) {
+    setSaving(true);
+    try {
+      // Coerce boolean fields — Supabase stores these as true/false, not 'YES'/'No'
+      const BOOLEAN_FIELDS = ['is_sif', 'is_sif_p'];
+      let coerced = value;
+      if (BOOLEAN_FIELDS.includes(field)) coerced = (value === 'YES' || value === true);
+      const { error } = await supabase.from('incidents').update({ [field]: coerced, updated_at: new Date().toISOString() }).eq('id', id);
+      if (error) throw error;
+      setIncident({ ...incident, [field]: coerced });
+      setEditingField(null);
+      setIncidentEdits({});
+    } catch (e) { alert('Save failed: ' + e.message); } finally { setSaving(false); }
+  }
 
   async function addTimelineEvent() { if (!newTimelineEvent.event_date || !newTimelineEvent.event_description) { alert('Fill date+description'); return; } setSaving(true); try { const n=timelineEvents.length+1; const { data, error } = await supabase.from('timeline_events').insert({ incident_id:id, sequence_number:n, event_date:newTimelineEvent.event_date, event_time:newTimelineEvent.event_time||null, event_description:newTimelineEvent.event_description, critical:newTimelineEvent.critical, created_by_email:userEmail }).select().single(); if(error)throw error; setTimelineEvents([...timelineEvents,data]); setNewTimelineEvent({event_date:'',event_time:'',event_description:'',critical:false}); await supabase.from('incidents').update({timeline_event_count:n,timeline_developed:true}).eq('id',id); } catch(e){alert(e.message);} finally{setSaving(false);} }
   async function saveTimelineEdit(item) { setSaving(true); try { const{error}=await supabase.from('timeline_events').update({event_date:item.event_date,event_time:item.event_time,event_description:item.event_description,critical:item.critical}).eq('id',item.id); if(error)throw error; setTimelineEvents(timelineEvents.map(e=>e.id===item.id?{...e,...item}:e)); setEditingTimeline(null); } catch(e){alert(e.message);} finally{setSaving(false);} }
@@ -531,15 +548,91 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
 
         <div style={{ padding: '25px' }}>
         {/* OVERVIEW */}
-        {activeTab==='Overview' && <div>
-          <h3>Incident Summary</h3>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'20px'}}>
-            <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>{[['ID',incident.incident_id],['Date',incident.incident_date],['Time',incident.incident_time],['Company',incident.company_name],['Location',incident.location_name],['Type',incident.incident_type]].map(([l,v])=><div key={l} style={{marginBottom:'8px'}}><strong style={{color:'#64748b'}}>{l}:</strong> {v||'—'}</div>)}</div>
-            <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>{[['Status',incident.status],['Severity',incident.safety_severity],['PSIF',incident.psif_classification],['Investigation',incident.investigation_type],['SIF Actual',incident.is_sif?'YES':'No'],['SIF Potential',incident.is_sif_p?'YES':'No']].map(([l,v])=><div key={l} style={{marginBottom:'8px'}}><strong style={{color:'#64748b'}}>{l}:</strong> {v||'—'}</div>)}</div>
-          </div>
-          <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px',marginBottom:'20px'}}><strong>Description:</strong><p>{incident.brief_description||incident.detailed_description||'No description'}</p></div>
-          {incident.witness_statement_summary && <div style={{background:'#fffbeb',padding:'15px',borderRadius:'10px',border:'1px solid #fbbf24'}}><strong>Initial Witness Info:</strong><p>{incident.witness_statement_summary}</p></div>}
-        </div>}
+        {activeTab==='Overview' && (()=>{
+          const EditableText = ({ field, label, value, type='text', options=null }) => {
+            const isEditing = editingField === field;
+            const currentVal = isEditing ? (incidentEdits[field] ?? value ?? '') : (value ?? '');
+            return (
+              <div style={{marginBottom:'12px',padding:'10px',borderRadius:'8px',background: isEditing?'#eff6ff':'transparent',border: isEditing?'1px solid #3b82f6':'1px solid transparent',transition:'all 0.15s'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'8px'}}>
+                  <div style={{flex:1}}>
+                    <strong style={{color:'#64748b',fontSize:'12px',textTransform:'uppercase',letterSpacing:'0.05em'}}>{label}</strong>
+                    {isEditing ? (
+                      <div style={{marginTop:'6px'}}>
+                        {options ? (
+                          <select value={currentVal} onChange={e=>setIncidentEdits({...incidentEdits,[field]:e.target.value})} style={{...st.input,marginBottom:'8px'}}>
+                            {options.map(o=><option key={o}>{o}</option>)}
+                          </select>
+                        ) : type==='textarea' ? (
+                          <textarea value={currentVal} onChange={e=>setIncidentEdits({...incidentEdits,[field]:e.target.value})} style={{...st.input,minHeight:'100px',resize:'vertical',marginBottom:'8px'}} />
+                        ) : (
+                          <input type={type} value={currentVal} onChange={e=>setIncidentEdits({...incidentEdits,[field]:e.target.value})} style={{...st.input,marginBottom:'8px'}} />
+                        )}
+                        <div style={{display:'flex',gap:'8px'}}>
+                          <button onClick={()=>saveIncidentField(field, incidentEdits[field]??value)} disabled={saving} style={{...st.primaryBtn,padding:'6px 14px',fontSize:'13px'}}>{saving?'Saving...':'💾 Save'}</button>
+                          <button onClick={()=>{setEditingField(null);setIncidentEdits({});}} style={{...st.outlineBtn,padding:'6px 14px',fontSize:'13px'}}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{marginTop:'4px',color:'#1e293b',fontSize:'14px'}}>{currentVal||<span style={{color:'#94a3b8',fontStyle:'italic'}}>Not set — click ✏️ to edit</span>}</div>
+                    )}
+                  </div>
+                  {!isEditing && (
+                    <button onClick={()=>{setEditingField(field);setIncidentEdits({[field]:value??''});}} style={{background:'#dbeafe',color:'#1e40af',border:'none',padding:'4px 10px',borderRadius:'4px',cursor:'pointer',fontSize:'12px',flexShrink:0,marginTop:'16px'}}>✏️</button>
+                  )}
+                </div>
+              </div>
+            );
+          };
+          return (
+            <div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
+                <h3 style={{margin:0}}>Incident Summary</h3>
+                <span style={{fontSize:'12px',color:'#94a3b8'}}>Click ✏️ on any field to edit</span>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'20px'}}>
+                <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>
+                  <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>📋 Basic Info</div>
+                  <EditableText field="incident_id" label="Incident ID" value={incident.incident_id} />
+                  <EditableText field="incident_date" label="Date" value={incident.incident_date} type="date" />
+                  <EditableText field="incident_time" label="Time" value={incident.incident_time} type="time" />
+                  <EditableText field="company_name" label="Company" value={incident.company_name} />
+                  <EditableText field="location_name" label="Location" value={incident.location_name} />
+                  <EditableText field="incident_type" label="Incident Type" value={incident.incident_type} options={['Near Miss','First Aid','Medical Treatment','Recordable','Restricted Work','Lost Time','Fatality','Property Damage','Environmental','Vehicle','Fire','Other']} />
+                </div>
+                <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>
+                  <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>⚠️ Classification</div>
+                  <EditableText field="status" label="Status" value={incident.status} options={['Draft','Submitted','Under Review - Triage','Under Review - First Draft','Under Review - Asset Review','Under Review - Final Review','Pending Approval','Approved','Closed']} />
+                  <EditableText field="safety_severity" label="Severity" value={incident.safety_severity} options={['A','B','C','D','1','2','3','4','5']} />
+                  <EditableText field="psif_classification" label="PSIF" value={incident.psif_classification} options={['PSIF Actual','PSIF Potential','Non-PSIF']} />
+                  <EditableText field="investigation_type" label="Investigation Type" value={incident.investigation_type} options={['Local Review','5-Why Analysis','Full RCA']} />
+                  <EditableText field="is_sif" label="SIF Actual" value={incident.is_sif?'YES':'No'} options={['YES','No']} />
+                  <EditableText field="is_sif_p" label="SIF Potential" value={incident.is_sif_p?'YES':'No'} options={['YES','No']} />
+                </div>
+              </div>
+              <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px',marginBottom:'16px'}}>
+                <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>📝 Incident Description</div>
+                <EditableText field="brief_description" label="Brief Description" value={incident.brief_description} type="textarea" />
+                <EditableText field="detailed_description" label="Detailed Description" value={incident.detailed_description} type="textarea" />
+              </div>
+              <div style={{background:'#fffbeb',padding:'15px',borderRadius:'10px',border:'1px solid #fbbf24',marginBottom:'16px'}}>
+                <div style={{fontWeight:'600',color:'#b45309',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>👁️ Witness Info (Initial Report)</div>
+                <EditableText field="witness_statement_summary" label="Initial Witness Summary" value={incident.witness_statement_summary} type="textarea" />
+              </div>
+              <div style={{background:'#f0fdf4',padding:'15px',borderRadius:'10px',border:'1px solid #86efac'}}>
+                <div style={{fontWeight:'600',color:'#166534',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>👷 Injured / Involved Person</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 20px'}}>
+                  <EditableText field="injured_name" label="Name" value={incident.injured_name} />
+                  <EditableText field="injured_company" label="Company" value={incident.injured_company} />
+                  <EditableText field="injured_job_title" label="Job Title" value={incident.injured_job_title} />
+                  <EditableText field="injured_time_on_task" label="Time on Task" value={incident.injured_time_on_task} />
+                  <EditableText field="body_part_affected" label="Body Part Affected" value={incident.body_part_affected} />
+                  <EditableText field="injury_type" label="Injury Type" value={incident.injury_type} />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* TIMELINE */}
         {activeTab==='Timeline' && <div>
