@@ -539,7 +539,12 @@ body{font-family:Arial,Helvetica,sans-serif;max-width:900px;margin:0 auto;paddin
   </div>
 </div>
 ${timelineEvents.length?`<div class="section"><div class="section-title">&#128337; Timeline of Events (${timelineEvents.length})</div><div class="section-body">${timelineEvents.map((e,i)=>`<div class="timeline-item"><strong>${i+1}.</strong> <span style="color:#64748b">${e.event_date} ${e.event_time||''}</span> — <span class="${e.critical?'critical':''}">${e.event_description}</span>${e.critical?' <strong style="color:#dc2626">&#9888; CRITICAL</strong>':''}</div>`).join('')}</div></div>`:''}
-${evidence.length?`<div class="section"><div class="section-title">&#128247; Evidence (${evidence.length})</div><div class="section-body">${evidence.map((e,i)=>`<div class="row">${i+1}. <strong>[${e.evidence_type}]</strong> ${e.description||e.file_name}</div>`).join('')}</div></div>`:''}
+${evidence.length?`<div class="section"><div class="section-title">&#128247; Evidence (${evidence.length})</div><div class="section-body">
+${evidence.map((e,i)=>`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f1f5f9;font-family:Arial,Helvetica,sans-serif">
+  <div class="row"><strong>${i+1}. [${e.evidence_type}]</strong> ${e.description||e.file_name||''}</div>
+  ${(e.evidence_type==='Photo'||e.evidence_type==='Video')&&e.file_url?`<img src="${e.file_url}" style="max-width:420px;max-height:280px;border-radius:6px;border:1px solid #e2e8f0;margin-top:6px;display:block;" onerror="this.style.display='none'" />`:''}
+</div>`).join('')}
+</div></div>`:''}
 ${witnesses.length?`<div class="section"><div class="section-title">&#128483; Witness Statements (${witnesses.length})</div><div class="section-body">${witnesses.map(w=>`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f1f5f9"><div style="font-weight:700;font-family:Arial,Helvetica,sans-serif">${w.witness_name}${w.position_role?` <span style="font-weight:400;color:#64748b">(${w.position_role})</span>`:''}${w.company?` — ${w.company}`:''}</div><div style="margin-top:4px;font-family:Arial,Helvetica,sans-serif">${w.statement_summary}</div></div>`).join('')}</div></div>`:''}
 ${(localReview||fiveWhy||rcaAnalysis)?`<div class="section"><div class="section-title">&#128270; Analysis — ${incident.investigation_type||'N/A'}</div><div class="section-body"><div class="analysis-text">${localReview||fiveWhy||rcaAnalysis}</div></div></div>`:''}
 ${(()=>{
