@@ -476,6 +476,45 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
   // ============================================================================
   // STYLES
   // ============================================================================
+  // ============================================================================
+  // EDITABLE FIELD COMPONENT — defined here so it never re-mounts on keystroke
+  // ============================================================================
+  const EditableText = ({ field, label, value, type='text', options=null }) => {
+    const isEditing = editingField === field;
+    const currentVal = isEditing ? (incidentEdits[field] ?? value ?? '') : (value ?? '');
+    return (
+      <div style={{marginBottom:'12px',padding:'10px',borderRadius:'8px',background:isEditing?'#eff6ff':'transparent',border:isEditing?'1px solid #3b82f6':'1px solid transparent',transition:'all 0.15s'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'8px'}}>
+          <div style={{flex:1}}>
+            <strong style={{color:'#64748b',fontSize:'12px',textTransform:'uppercase',letterSpacing:'0.05em'}}>{label}</strong>
+            {isEditing ? (
+              <div style={{marginTop:'6px'}}>
+                {options ? (
+                  <select value={currentVal} onChange={e=>setIncidentEdits(prev=>({...prev,[field]:e.target.value}))} style={{...st.input,marginBottom:'8px'}}>
+                    {options.map(o=><option key={o}>{o}</option>)}
+                  </select>
+                ) : type==='textarea' ? (
+                  <textarea value={currentVal} onChange={e=>setIncidentEdits(prev=>({...prev,[field]:e.target.value}))} style={{...st.input,minHeight:'100px',resize:'vertical',marginBottom:'8px'}} />
+                ) : (
+                  <input type={type} value={currentVal} onChange={e=>setIncidentEdits(prev=>({...prev,[field]:e.target.value}))} style={{...st.input,marginBottom:'8px'}} autoFocus />
+                )}
+                <div style={{display:'flex',gap:'8px'}}>
+                  <button onClick={()=>saveIncidentField(field, incidentEdits[field]??value)} disabled={saving} style={{...st.primaryBtn,padding:'6px 14px',fontSize:'13px'}}>{saving?'Saving...':'💾 Save'}</button>
+                  <button onClick={()=>{setEditingField(null);setIncidentEdits({});}} style={{...st.outlineBtn,padding:'6px 14px',fontSize:'13px'}}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{marginTop:'4px',color:'#1e293b',fontSize:'14px'}}>{currentVal||<span style={{color:'#94a3b8',fontStyle:'italic'}}>Not set — click ✏️ to edit</span>}</div>
+            )}
+          </div>
+          {!isEditing && (
+            <button onClick={()=>{setEditingField(field);setIncidentEdits(prev=>({...prev,[field]:value??''}));}} style={{background:'#dbeafe',color:'#1e40af',border:'none',padding:'4px 10px',borderRadius:'4px',cursor:'pointer',fontSize:'12px',flexShrink:0,marginTop:'16px'}}>✏️</button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const st = {
     input: { width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
     primaryBtn: { background: '#1e40af', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px', opacity: saving ? 0.6 : 1 },
@@ -549,41 +588,6 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
         <div style={{ padding: '25px' }}>
         {/* OVERVIEW */}
         {activeTab==='Overview' && (()=>{
-          const EditableText = ({ field, label, value, type='text', options=null }) => {
-            const isEditing = editingField === field;
-            const currentVal = isEditing ? (incidentEdits[field] ?? value ?? '') : (value ?? '');
-            return (
-              <div style={{marginBottom:'12px',padding:'10px',borderRadius:'8px',background: isEditing?'#eff6ff':'transparent',border: isEditing?'1px solid #3b82f6':'1px solid transparent',transition:'all 0.15s'}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'8px'}}>
-                  <div style={{flex:1}}>
-                    <strong style={{color:'#64748b',fontSize:'12px',textTransform:'uppercase',letterSpacing:'0.05em'}}>{label}</strong>
-                    {isEditing ? (
-                      <div style={{marginTop:'6px'}}>
-                        {options ? (
-                          <select value={currentVal} onChange={e=>setIncidentEdits({...incidentEdits,[field]:e.target.value})} style={{...st.input,marginBottom:'8px'}}>
-                            {options.map(o=><option key={o}>{o}</option>)}
-                          </select>
-                        ) : type==='textarea' ? (
-                          <textarea value={currentVal} onChange={e=>setIncidentEdits({...incidentEdits,[field]:e.target.value})} style={{...st.input,minHeight:'100px',resize:'vertical',marginBottom:'8px'}} />
-                        ) : (
-                          <input type={type} value={currentVal} onChange={e=>setIncidentEdits({...incidentEdits,[field]:e.target.value})} style={{...st.input,marginBottom:'8px'}} />
-                        )}
-                        <div style={{display:'flex',gap:'8px'}}>
-                          <button onClick={()=>saveIncidentField(field, incidentEdits[field]??value)} disabled={saving} style={{...st.primaryBtn,padding:'6px 14px',fontSize:'13px'}}>{saving?'Saving...':'💾 Save'}</button>
-                          <button onClick={()=>{setEditingField(null);setIncidentEdits({});}} style={{...st.outlineBtn,padding:'6px 14px',fontSize:'13px'}}>Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{marginTop:'4px',color:'#1e293b',fontSize:'14px'}}>{currentVal||<span style={{color:'#94a3b8',fontStyle:'italic'}}>Not set — click ✏️ to edit</span>}</div>
-                    )}
-                  </div>
-                  {!isEditing && (
-                    <button onClick={()=>{setEditingField(field);setIncidentEdits({[field]:value??''});}} style={{background:'#dbeafe',color:'#1e40af',border:'none',padding:'4px 10px',borderRadius:'4px',cursor:'pointer',fontSize:'12px',flexShrink:0,marginTop:'16px'}}>✏️</button>
-                  )}
-                </div>
-              </div>
-            );
-          };
           return (
             <div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
