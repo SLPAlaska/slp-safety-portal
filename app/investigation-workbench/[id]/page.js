@@ -606,10 +606,10 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons
                 </div>
                 <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>
                   <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>⚠️ Classification</div>
-                  <EditableText field="status" label="Status" value={incident.status} options={['Draft','Submitted','Under Review - Triage','Under Review - First Draft','Under Review - Asset Review','Under Review - Final Review','Pending Approval','Approved','Closed']} />
-                  <EditableText field="safety_severity" label="Severity" value={incident.safety_severity} options={['A','B','C','D','1','2','3','4','5']} />
-                  <EditableText field="psif_classification" label="PSIF" value={incident.psif_classification} options={['PSIF Actual','PSIF Potential','Non-PSIF']} />
-                  <EditableText field="investigation_type" label="Investigation Type" value={incident.investigation_type} options={['Local Review','5-Why Analysis','Full RCA']} />
+                  <EditableText field="status" label="Status" value={incident.status} options={['Draft','Submitted','Under Review - Triage','Under Review - First Draft','Under Review - Asset Review','Under Review - Final Review','Pending Approval','Approved','Closed','Reopened','Archived']} />
+                  <EditableText field="safety_severity" label="Severity" value={incident.safety_severity} options={['A','B','C','D','E','F','G']} />
+                  <EditableText field="psif_classification" label="PSIF" value={incident.psif_classification} options={['SIF-Actual','PSIF-Critical','PSIF-High','PSIF-Elevated','STKY-Controlled','Non-STKY']} />
+                  <EditableText field="investigation_type" label="Investigation Type" value={incident.investigation_type} options={['Local Review','5-Why Analysis','Root Cause Analysis','Full RCA','Pending Classification']} />
                   <EditableText field="is_sif" label="SIF Actual" value={incident.is_sif?'YES':'No'} options={['YES','No']} />
                   <EditableText field="is_sif_p" label="SIF Potential" value={incident.is_sif_p?'YES':'No'} options={['YES','No']} />
                 </div>
