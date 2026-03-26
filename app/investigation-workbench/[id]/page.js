@@ -431,31 +431,117 @@ export default function InvestigationWorkbench() {
   // PDF GENERATION
   // ============================================================================
   function generatePDF() {
+    // Convert logo to base64 so it loads reliably in the print window
+    const logoUrl = `${window.location.origin}/Logo.png`;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      const logoBase64 = canvas.toDataURL('image/png');
+      openPrintWindow(logoBase64);
+    };
+    img.onerror = () => openPrintWindow(null);
+    img.src = logoUrl;
+  }
+
+  function openPrintWindow(logoBase64) {
     const w = window.open('', '_blank');
+    const logoHtml = logoBase64
+      ? `<img src="${logoBase64}" style="width:56px;height:56px;border-radius:8px;object-fit:contain;background:white;padding:4px;" />`
+      : `<div style="width:56px;height:56px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;">SLP</div>`;
+    const sevColor = 'ABCD'.includes(incident.safety_severity||'') ? '#dc2626' : '#3b82f6';
     w.document.write(`<!DOCTYPE html><html><head><title>${incident.incident_id} - Investigation Report</title><style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:900px;margin:0 auto;padding:40px;color:#1e293b;font-size:12px;line-height:1.5}
+body{font-family:Arial,Helvetica,sans-serif;max-width:900px;margin:0 auto;padding:40px;color:#1e293b;font-size:12px;line-height:1.6}
 .header{background:linear-gradient(135deg,#991b1b,#c41e3a);color:white;padding:25px;border-radius:10px;margin-bottom:30px}
-.header-title{font-size:22px;font-weight:700}
-.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;margin-left:8px}
+.header-title{font-size:22px;font-weight:700;font-family:Arial,Helvetica,sans-serif}
+.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;margin-left:8px;font-family:Arial,Helvetica,sans-serif}
 .section{margin-bottom:25px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
-.section-title{background:#f1f5f9;padding:12px 16px;font-weight:600;font-size:14px;border-bottom:1px solid #e2e8f0}
+.section-title{background:#f1f5f9;padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;text-transform:uppercase;letter-spacing:0.04em;color:#334155}
 .section-body{padding:16px}
-.row{margin-bottom:6px} .label{font-weight:600;color:#64748b;margin-right:8px}
+.row{margin-bottom:8px;font-family:Arial,Helvetica,sans-serif}
+.label{font-weight:700;color:#64748b;margin-right:6px;font-family:Arial,Helvetica,sans-serif}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.timeline-item{padding:10px 0;border-bottom:1px solid #f1f5f9} .timeline-item:last-child{border-bottom:none}
-.critical{color:#dc2626;font-weight:600}
-.checklist-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.check-yes{width:18px;height:18px;background:#22c55e;border-radius:50%;color:white;display:flex;align-items:center;justify-content:center;font-size:11px}
-.check-no{width:18px;height:18px;background:#e2e8f0;border-radius:50%}
-.analysis-text{white-space:pre-wrap}
-@media print{body{padding:20px} .header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.timeline-item{padding:8px 0;border-bottom:1px solid #f1f5f9;font-family:Arial,Helvetica,sans-serif}
+.timeline-item:last-child{border-bottom:none}
+.critical{color:#dc2626;font-weight:700}
+.checklist-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-family:Arial,Helvetica,sans-serif}
+.check-yes{width:16px;height:16px;background:#22c55e;border-radius:50%;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:10px}
+.check-no{width:16px;height:16px;background:#e2e8f0;border-radius:50%;display:inline-block}
+.analysis-text{white-space:pre-wrap;font-family:Arial,Helvetica,sans-serif}
+.person-box{background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px;margin-top:12px}
+@media print{body{padding:20px}.header{-webkit-print-color-adjust:exact;print-color-adjust:exact}.section-title{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
-<div class="header"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;align-items:center;gap:15px"><img src="${window.location.origin}/Logo.png" style="width:50px;height:50px;border-radius:8px" onerror="this.style.display='none'"/><div><div style="font-size:10px;opacity:0.8;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">AnthroSafe&trade; Field Driven Safety</div><div class="header-title">${incident.incident_id||'Report'}</div><div style="font-size:13px;opacity:0.9">${incident.investigation_type||''} Investigation</div></div></div><div>${incident.safety_severity?`<span class="badge" style="background:${'AB'.includes(incident.safety_severity)?'#dc2626':'CD'.includes(incident.safety_severity)?'#f97316':'#3b82f6'};color:white">Severity ${incident.safety_severity}</span>`:''} ${incident.psif_classification?`<span class="badge" style="background:#1f2937;color:white">${incident.psif_classification}</span>`:''}</div></div><div style="display:flex;gap:20px;margin-top:10px;font-size:11px;opacity:0.85;flex-wrap:wrap"><span>Date: ${incident.incident_date||'N/A'}</span><span>Company: ${incident.company_name||'N/A'}</span><span>Location: ${incident.location_name||'N/A'}</span></div></div>
-<div class="section"><div class="section-title">Incident Summary</div><div class="section-body"><div class="two-col"><div><div class="row"><span class="label">ID:</span>${incident.incident_id||'N/A'}</div><div class="row"><span class="label">Date:</span>${incident.incident_date||'N/A'} ${incident.incident_time||''}</div><div class="row"><span class="label">Company:</span>${incident.company_name||'N/A'}</div></div><div><div class="row"><span class="label">Investigation:</span>${incident.investigation_type||'N/A'}</div><div class="row"><span class="label">Severity:</span>${incident.safety_severity||'N/A'}</div><div class="row"><span class="label">PSIF:</span>${incident.psif_classification||'N/A'}</div></div></div><div style="margin-top:12px"><div class="row"><span class="label">Description:</span></div><div>${incident.brief_description||incident.detailed_description||'None'}</div></div>${incident.witness_statement_summary?`<div style="margin-top:12px"><span class="label">Initial Witness Info:</span><div>${incident.witness_statement_summary}</div></div>`:''}</div></div>
-${timelineEvents.length?`<div class="section"><div class="section-title">Timeline of Events (${timelineEvents.length})</div><div class="section-body">${timelineEvents.map((e,i)=>`<div class="timeline-item"><strong>${i+1}.</strong> ${e.event_date} ${e.event_time||''} - <span class="${e.critical?'critical':''}">${e.event_description}</span></div>`).join('')}</div></div>`:''}
-${evidence.length?`<div class="section"><div class="section-title">Evidence (${evidence.length})</div><div class="section-body">${evidence.map((e,i)=>`<div class="row">${i+1}. [${e.evidence_type}] ${e.description||e.file_name}</div>`).join('')}</div></div>`:''}
-${witnesses.length?`<div class="section"><div class="section-title">Witness Statements (${witnesses.length})</div><div class="section-body">${witnesses.map(w=>`<div style="margin-bottom:12px"><strong>${w.witness_name}</strong> ${w.position_role?`(${w.position_role})`:''} ${w.company?`- ${w.company}`:''}<div style="margin-top:4px">${w.statement_summary}</div></div>`).join('')}</div></div>`:''}
-${(localReview||fiveWhy||rcaAnalysis)?`<div class="section"><div class="section-title">Analysis — ${incident.investigation_type||'N/A'}</div><div class="section-body"><div class="analysis-text">${localReview||fiveWhy||rcaAnalysis}</div></div></div>`:''}
+<div class="header">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div style="display:flex;align-items:center;gap:15px">
+      ${logoHtml}
+      <div>
+        <div style="font-size:10px;opacity:0.8;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;font-family:Arial,Helvetica,sans-serif">AnthroSafe&#8482; Field Driven Safety</div>
+        <div class="header-title">${incident.incident_id||'Report'}</div>
+        <div style="font-size:13px;opacity:0.9;font-family:Arial,Helvetica,sans-serif">${incident.investigation_type||''} Investigation</div>
+      </div>
+    </div>
+    <div>
+      ${incident.safety_severity?`<span class="badge" style="background:${sevColor};color:white">Severity ${incident.safety_severity}</span>`:''}
+      ${incident.psif_classification?`<span class="badge" style="background:#1f2937;color:white">${incident.psif_classification}</span>`:''}
+    </div>
+  </div>
+  <div style="display:flex;gap:20px;margin-top:10px;font-size:11px;opacity:0.85;flex-wrap:wrap;font-family:Arial,Helvetica,sans-serif">
+    <span>Date: ${incident.incident_date||'N/A'} ${incident.incident_time||''}</span>
+    <span>Company: ${incident.company_name||'N/A'}</span>
+    <span>Location: ${incident.location_name||'N/A'}</span>
+    <span>Status: ${incident.status||'N/A'}</span>
+  </div>
+</div>
+<div class="section">
+  <div class="section-title">&#128203; Incident Summary</div>
+  <div class="section-body">
+    <div class="two-col">
+      <div>
+        <div class="row"><span class="label">Incident ID:</span>${incident.incident_id||'N/A'}</div>
+        <div class="row"><span class="label">Date:</span>${incident.incident_date||'N/A'}</div>
+        <div class="row"><span class="label">Time:</span>${incident.incident_time||'N/A'}</div>
+        <div class="row"><span class="label">Company:</span>${incident.company_name||'N/A'}</div>
+        <div class="row"><span class="label">Location:</span>${incident.location_name||'N/A'}</div>
+        <div class="row"><span class="label">Incident Type:</span>${incident.incident_type||'N/A'}</div>
+      </div>
+      <div>
+        <div class="row"><span class="label">Status:</span>${incident.status||'N/A'}</div>
+        <div class="row"><span class="label">Severity:</span>${incident.safety_severity||'N/A'}</div>
+        <div class="row"><span class="label">PSIF:</span>${incident.psif_classification||'N/A'}</div>
+        <div class="row"><span class="label">Investigation Type:</span>${incident.investigation_type||'N/A'}</div>
+        <div class="row"><span class="label">SIF Actual:</span>${incident.is_sif?'YES':'No'}</div>
+        <div class="row"><span class="label">SIF Potential:</span>${incident.is_sif_p?'YES':'No'}</div>
+      </div>
+    </div>
+    ${incident.brief_description?`<div style="margin-top:12px"><div class="row"><span class="label">Brief Description:</span></div><div style="font-family:Arial,Helvetica,sans-serif">${incident.brief_description}</div></div>`:''}
+    ${incident.detailed_description?`<div style="margin-top:12px"><div class="row"><span class="label">Detailed Description:</span></div><div style="font-family:Arial,Helvetica,sans-serif">${incident.detailed_description}</div></div>`:''}
+    ${incident.witness_statement_summary?`<div style="margin-top:12px;background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;padding:10px"><span class="label">Initial Witness Info:</span><div style="margin-top:4px;font-family:Arial,Helvetica,sans-serif">${incident.witness_statement_summary}</div></div>`:''}
+    ${(incident.injured_name||incident.injured_company||incident.injury_type||incident.body_part_affected)?`
+    <div class="person-box">
+      <div style="font-weight:700;color:#166534;margin-bottom:8px;font-family:Arial,Helvetica,sans-serif">&#128119; Injured / Involved Person</div>
+      <div class="two-col">
+        <div>
+          ${incident.injured_name?`<div class="row"><span class="label">Name:</span>${incident.injured_name}</div>`:''}
+          ${incident.injured_company?`<div class="row"><span class="label">Company:</span>${incident.injured_company}</div>`:''}
+          ${incident.injured_job_title?`<div class="row"><span class="label">Job Title:</span>${incident.injured_job_title}</div>`:''}
+        </div>
+        <div>
+          ${incident.injury_type?`<div class="row"><span class="label">Injury Type:</span>${incident.injury_type}</div>`:''}
+          ${incident.body_part_affected?`<div class="row"><span class="label">Body Part:</span>${incident.body_part_affected}</div>`:''}
+          ${incident.injured_time_on_task?`<div class="row"><span class="label">Time on Task:</span>${incident.injured_time_on_task}</div>`:''}
+        </div>
+      </div>
+    </div>`:''}
+  </div>
+</div>
+${timelineEvents.length?`<div class="section"><div class="section-title">&#128337; Timeline of Events (${timelineEvents.length})</div><div class="section-body">${timelineEvents.map((e,i)=>`<div class="timeline-item"><strong>${i+1}.</strong> <span style="color:#64748b">${e.event_date} ${e.event_time||''}</span> — <span class="${e.critical?'critical':''}">${e.event_description}</span>${e.critical?' <strong style="color:#dc2626">&#9888; CRITICAL</strong>':''}</div>`).join('')}</div></div>`:''}
+${evidence.length?`<div class="section"><div class="section-title">&#128247; Evidence (${evidence.length})</div><div class="section-body">${evidence.map((e,i)=>`<div class="row">${i+1}. <strong>[${e.evidence_type}]</strong> ${e.description||e.file_name}</div>`).join('')}</div></div>`:''}
+${witnesses.length?`<div class="section"><div class="section-title">&#128483; Witness Statements (${witnesses.length})</div><div class="section-body">${witnesses.map(w=>`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f1f5f9"><div style="font-weight:700;font-family:Arial,Helvetica,sans-serif">${w.witness_name}${w.position_role?` <span style="font-weight:400;color:#64748b">(${w.position_role})</span>`:''}${w.company?` — ${w.company}`:''}</div><div style="margin-top:4px;font-family:Arial,Helvetica,sans-serif">${w.statement_summary}</div></div>`).join('')}</div></div>`:''}
+${(localReview||fiveWhy||rcaAnalysis)?`<div class="section"><div class="section-title">&#128270; Analysis — ${incident.investigation_type||'N/A'}</div><div class="section-body"><div class="analysis-text">${localReview||fiveWhy||rcaAnalysis}</div></div></div>`:''}
 ${(()=>{
   const factors=[{key:'equipment_factors',label:'Equipment'},{key:'procedure_factors',label:'Procedures'},{key:'training_factors',label:'Training'},{key:'human_factors',label:'Human Factors'},{key:'communication_factors',label:'Communication'},{key:'supervision_factors',label:'Supervision'},{key:'design_factors',label:'Design/Eng.'},{key:'maintenance_factors',label:'Maintenance'},{key:'environmental_factors',label:'Environmental'},{key:'organizational_factors',label:'Organizational'}];
   const active=factors.filter(f=>rcaData[f.key]&&rcaData[f.key].trim());
@@ -464,13 +550,13 @@ ${(()=>{
   const svgHTML=svgEl?new XMLSerializer().serializeToString(svgEl):'';
   return '<div class="section"><div class="section-title">Causal Tree Diagram</div><div class="section-body" style="text-align:center;overflow:auto">'+svgHTML+'</div></div>';
 })()}
-${correctiveActions.length?`<div class="section"><div class="section-title">Corrective Actions (${correctiveActions.length})</div><div class="section-body">${correctiveActions.map((ca,i)=>`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f1f5f9"><strong>${i+1}. ${ca.action_description}</strong><div style="margin-top:4px"><span class="label">Control:</span>${ca.hierarchy_control} | <span class="label">Owner:</span>${ca.action_owner_name} | <span class="label">Due:</span>${ca.target_date||'—'} | <span class="label">Status:</span>${ca.action_status}</div></div>`).join('')}</div></div>`:''}
-${lessonsLearned.length?`<div class="section"><div class="section-title">Lessons Learned (${lessonsLearned.length})</div><div class="section-body">${lessonsLearned.map(l=>`<div style="margin-bottom:12px"><strong>${l.lesson_title}</strong><div>${l.lesson_description}</div>${l.key_takeaway?`<div style="margin-top:4px;font-style:italic;color:#7c3aed">Key Takeaway: ${l.key_takeaway}</div>`:''}</div>`).join('')}</div></div>`:''}
-<div class="section"><div class="section-title">Checklist</div><div class="section-body"><div class="two-col"><div><div class="checklist-item"><span class="${timelineEvents.length?'check-yes':'check-no'}">${timelineEvents.length?'✓':''}</span> Timeline (${timelineEvents.length})</div><div class="checklist-item"><span class="${evidence.length?'check-yes':'check-no'}">${evidence.length?'✓':''}</span> Evidence (${evidence.length})</div><div class="checklist-item"><span class="${witnesses.length?'check-yes':'check-no'}">${witnesses.length?'✓':''}</span> Witnesses (${witnesses.length})</div></div><div><div class="checklist-item"><span class="${(localReview||fiveWhy||rcaAnalysis)?'check-yes':'check-no'}">${(localReview||fiveWhy||rcaAnalysis)?'✓':''}</span> Analysis</div><div class="checklist-item"><span class="${correctiveActions.length?'check-yes':'check-no'}">${correctiveActions.length?'✓':''}</span> Actions (${correctiveActions.length})</div><div class="checklist-item"><span class="${lessonsLearned.length?'check-yes':'check-no'}">${lessonsLearned.length?'✓':''}</span> Lessons (${lessonsLearned.length})</div></div></div></div></div>
-<div style="text-align:center;margin-top:30px;padding:20px;color:#64748b;font-size:11px;border-top:2px solid #e2e8f0"><strong>AnthroSafe™ Field Driven Safety</strong> | © 2026 SLP Alaska, LLC<br>Generated ${new Date().toLocaleString()}</div>
+${correctiveActions.length?`<div class="section"><div class="section-title">&#9989; Corrective Actions (${correctiveActions.length})</div><div class="section-body">${correctiveActions.map((ca,i)=>`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;font-family:Arial,Helvetica,sans-serif"><strong>${i+1}. ${ca.action_description}</strong><div style="margin-top:4px"><span class="label">Control:</span>${ca.hierarchy_control} | <span class="label">Owner:</span>${ca.action_owner_name} | <span class="label">Due:</span>${ca.target_date||'—'} | <span class="label">Status:</span>${ca.action_status}</div></div>`).join('')}</div></div>`:''}
+${lessonsLearned.length?`<div class="section"><div class="section-title">&#128161; Lessons Learned (${lessonsLearned.length})</div><div class="section-body">${lessonsLearned.map(l=>`<div style="margin-bottom:12px;font-family:Arial,Helvetica,sans-serif"><strong>${l.lesson_title}</strong><div style="margin-top:4px">${l.lesson_description}</div>${l.key_takeaway?`<div style="margin-top:6px;font-style:italic;color:#7c3aed;background:#faf5ff;padding:6px 10px;border-radius:4px">Key Takeaway: ${l.key_takeaway}</div>`:''}</div>`).join('')}</div></div>`:''}
+<div class="section"><div class="section-title">&#128203; Investigation Checklist</div><div class="section-body"><div class="two-col"><div><div class="checklist-item"><span class="${timelineEvents.length?'check-yes':'check-no'}">${timelineEvents.length?'&#10003;':''}</span>&nbsp;Timeline (${timelineEvents.length})</div><div class="checklist-item"><span class="${evidence.length?'check-yes':'check-no'}">${evidence.length?'&#10003;':''}</span>&nbsp;Evidence (${evidence.length})</div><div class="checklist-item"><span class="${witnesses.length?'check-yes':'check-no'}">${witnesses.length?'&#10003;':''}</span>&nbsp;Witnesses (${witnesses.length})</div></div><div><div class="checklist-item"><span class="${(localReview||fiveWhy||rcaAnalysis)?'check-yes':'check-no'}">${(localReview||fiveWhy||rcaAnalysis)?'&#10003;':''}</span>&nbsp;Analysis</div><div class="checklist-item"><span class="${correctiveActions.length?'check-yes':'check-no'}">${correctiveActions.length?'&#10003;':''}</span>&nbsp;Actions (${correctiveActions.length})</div><div class="checklist-item"><span class="${lessonsLearned.length?'check-yes':'check-no'}">${lessonsLearned.length?'&#10003;':''}</span>&nbsp;Lessons (${lessonsLearned.length})</div></div></div></div></div>
+<div style="text-align:center;margin-top:30px;padding:20px;color:#64748b;font-size:11px;border-top:2px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif"><strong>AnthroSafe&#8482; Field Driven Safety</strong> | &#169; 2026 SLP Alaska, LLC<br>Generated ${new Date().toLocaleString()}</div>
 </body></html>`);
     w.document.close();
-    setTimeout(() => w.print(), 500);
+    setTimeout(() => w.print(), 800);
   }
 
   // ============================================================================
