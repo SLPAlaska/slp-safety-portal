@@ -974,11 +974,6 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                   <option value="Human Factors Analysis">Human Factors Analysis</option>
                   <option value="Other">Other</option>
                 </select>
-                  <option value="Fishbone/Ishikawa">Fishbone / Ishikawa Diagram</option>
-                  <option value="Fault Tree Analysis">Fault Tree Analysis</option>
-                  <option value="Change Analysis">Change Analysis</option>
-                  <option value="Barrier Analysis">Barrier Analysis</option>
-                </select>
               </div>
             </div>
 
