@@ -34,6 +34,11 @@ const INCIDENT_TYPES = [
   { value: 'Illness-Classification Pending', label: 'Illness - Classification Pending', category: 'injury' },
   { value: 'Near Miss', label: 'Near Miss / Close Call', category: 'safety' },
   { value: 'First Aid', label: 'First Aid Only', category: 'injury' },
+  { value: 'Recordable', label: 'Recordable Injury/Illness', category: 'injury' },
+  { value: 'Lost Time', label: 'Lost Time Injury', category: 'injury' },
+  { value: 'Fatality', label: 'Fatality', category: 'injury' },
+  { value: 'Life Altering Injury', label: 'Life Altering Injury', category: 'injury' },
+  { value: 'Permanently Disabling Injury/Illness', label: 'Permanently Disabling Injury/Illness', category: 'injury' },
   { value: 'Property Damage', label: 'Property / Equipment Damage', category: 'property' },
   { value: 'Vehicle Incident', label: 'Vehicle Incident', category: 'vehicle' },
   { value: 'Spill', label: 'Spill / Release', category: 'environmental' },
@@ -42,7 +47,6 @@ const INCIDENT_TYPES = [
   { value: 'Explosion', label: 'Explosion', category: 'pse' },
   { value: 'Process Safety Event', label: 'Process Safety Event (LOPC)', category: 'pse' },
   { value: 'Security Incident', label: 'Security Incident', category: 'security' },
-  { value: 'Report Only', label: 'Report Only', category: 'report' },
   { value: 'Other', label: 'Other', category: 'other' }
 ];
 
