@@ -99,7 +99,7 @@ export default function InvestigationWorkbench() {
     contributing_factors_summary: '',
     systemic_issues: '',
     recommendations: '',
-    rca_method: 'Standard RCA',
+    rca_method: 'Other',
     team_leader: '',
     team_members: ''
   });
@@ -179,7 +179,7 @@ export default function InvestigationWorkbench() {
           contributing_factors_summary: rcR.data.contributing_factors_summary || '',
           systemic_issues: rcR.data.systemic_issues || '',
           recommendations: rcR.data.recommendations || '',
-          rca_method: rcR.data.rca_method || 'Standard RCA',
+          rca_method: rcR.data.rca_method || 'Other',
           team_leader: rcR.data.team_leader || '',
           team_members: rcR.data.team_members || ''
         });
@@ -825,7 +825,9 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
               <select value={incident.investigation_type||'Local Review'} onChange={async(e)=>{const newType=e.target.value;try{const{error}=await supabase.from('incidents').update({investigation_type:newType,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;setIncident({...incident,investigation_type:newType});}catch(err){alert(err.message);}}} style={{padding:'8px 12px',borderRadius:'8px',border:'1px solid #0284c7',fontSize:'14px',fontWeight:'500',background:'white',cursor:'pointer',minWidth:'200px'}}>
                 <option value="Local Review">Local Review</option>
                 <option value="5-Why Analysis">5-Why Analysis</option>
-                <option value="Full RCA">Comprehensive RCA</option>
+                <option value="Root Cause Analysis">Root Cause Analysis</option>
+                <option value="Full RCA">Full RCA</option>
+                <option value="Pending Classification">Pending Classification</option>
               </select>
               <a href={`/logic-tree?incident=${id}`} target="_blank" style={{background:'#059669',color:'white',padding:'8px 16px',borderRadius:'8px',textDecoration:'none',fontSize:'13px',fontWeight:'500',display:'inline-flex',alignItems:'center',gap:'6px'}}>🌳 Open Logic Tree Builder</a>
             </div>
@@ -961,7 +963,17 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
               <div style={{marginTop:'12px'}}>
                 <label style={{fontSize:'12px',color:'#64748b'}}>RCA Method</label>
                 <select value={rcaData.rca_method} onChange={e=>setRcaData({...rcaData,rca_method:e.target.value})} style={st.input}>
-                  <option value="Standard RCA">Standard RCA</option>
+                  <option value="Fishbone/Ishikawa">Fishbone / Ishikawa</option>
+                  <option value="5-Why">5-Why</option>
+                  <option value="Fault Tree Analysis">Fault Tree Analysis</option>
+                  <option value="Change Analysis">Change Analysis</option>
+                  <option value="Barrier Analysis">Barrier Analysis</option>
+                  <option value="Event Tree Analysis">Event Tree Analysis</option>
+                  <option value="Bow Tie Analysis">Bow Tie Analysis</option>
+                  <option value="TRIPOD Beta">TRIPOD Beta</option>
+                  <option value="Human Factors Analysis">Human Factors Analysis</option>
+                  <option value="Other">Other</option>
+                </select>
                   <option value="Fishbone/Ishikawa">Fishbone / Ishikawa Diagram</option>
                   <option value="Fault Tree Analysis">Fault Tree Analysis</option>
                   <option value="Change Analysis">Change Analysis</option>
