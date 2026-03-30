@@ -1,41 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
-
 export async function POST(request) {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
   try {
-    const { user_id, auth_user_id } = await request.json()
-
-    if (!user_id || !auth_user_id) {
-      return NextResponse.json({ error: 'Missing user_id or auth_user_id.' }, { status: 400 })
-    }
-
-    // Deactivate in lms_users (soft delete — preserves completion records)
-    const { error: deactivateError } = await supabaseAdmin
+    const { email, password, full_name, username, job_title, company_id } = await request.json()
+    if (!email || !password || !full_name || !username || !company_id)
+      return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email.trim().toLowerCase(), password, email_confirm: true,
+    })
+    if (authError) return NextResponse.json({ error: authError.message }, { status: 400 })
+    const { data: lmsUser, error: lmsError } = await supabaseAdmin
       .from('lms_users')
-      .update({ active: false })
-      .eq('id', user_id)
-
-    if (deactivateError) {
-      return NextResponse.json({ error: deactivateError.message }, { status: 400 })
+      .insert({ auth_user_id: authData.user.id, company_id, email: email.trim().toLowerCase(), username: username.trim(), full_name: full_name.trim(), job_title: job_title?.trim() || null, must_change_pw: true, active: true })
+      .select().single()
+    if (lmsError) {
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      return NextResponse.json({ error: lmsError.message }, { status: 400 })
     }
-
-    // Ban in Supabase Auth so they can't log in
-    const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(
-      auth_user_id,
-      { ban_duration: '876600h' } // 100 years = effectively permanent
-    )
-
-    if (banError) {
-      return NextResponse.json({ error: banError.message }, { status: 400 })
-    }
-
-    return NextResponse.json({ success: true })
-
+    return NextResponse.json({ user: lmsUser }, { status: 201 })
   } catch (err) {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 })
   }
