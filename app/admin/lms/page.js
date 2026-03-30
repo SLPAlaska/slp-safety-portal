@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
-const TABS = ['Companies', 'Users', 'Courses', 'Assignments']
+const TABS = ['Companies', 'Users', 'Courses', 'Required Courses', 'Individual Assignments']
 
 function Modal({ title, onClose, children }) {
   return (
@@ -162,8 +162,8 @@ function UsersTab() {
     load()
   }
 
-    async function handleDeactivate(user) {
-    if (!confirm(`Deactivate ${user.full_name}?`)) return
+  async function handleDeactivate(user) {
+    if (!confirm(`Deactivate ${user.full_name}? They will no longer be able to log in.`)) return
     await fetch('/api/lms/delete-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -180,7 +180,7 @@ function UsersTab() {
       </div>
       <table style={S.table}>
         <thead>
-          <tr>{['Name', 'Email', 'Username', 'Company', 'Role', 'Status', 'Actions'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr>
+          <tr>{['Name', 'Email', 'Username', 'Company', 'Job Title', 'Role', 'Status', 'Actions'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr>
         </thead>
         <tbody>
           {users.map(u => (
@@ -189,12 +189,18 @@ function UsersTab() {
               <td style={S.td}>{u.email}</td>
               <td style={S.td}><code style={S.code}>{u.username}</code></td>
               <td style={S.td}>{u.lms_companies?.name || '—'}</td>
+              <td style={S.td}>{u.job_title || '—'}</td>
               <td style={S.td}><span style={u.role === 'company_admin' ? S.badgeBlue : S.badgeGray}>{u.role === 'company_admin' ? 'Company Admin' : 'Learner'}</span></td>
               <td style={S.td}><span style={u.active ? S.badgeGreen : S.badgeGray}>{u.active ? (u.must_change_pw ? 'Pending Login' : 'Active') : 'Inactive'}</span></td>
-              <td style={S.td}>{u.active ? <button style={S.btnSmallRed} onClick={() => handleDeactivate(u)}>Deactivate</button> : <button style={S.btnSmall} onClick={() => handleReactivate(u)}>Reactivate</button>}</td>
+              <td style={S.td}>
+                {u.active
+                  ? <button style={S.btnSmallRed} onClick={() => handleDeactivate(u)}>Deactivate</button>
+                  : <button style={S.btnSmall} onClick={() => handleReactivate(u)}>Reactivate</button>
+                }
+              </td>
             </tr>
           ))}
-          {users.length === 0 && <tr><td colSpan={7} style={S.empty}>No users yet.</td></tr>}
+          {users.length === 0 && <tr><td colSpan={8} style={S.empty}>No users yet.</td></tr>}
         </tbody>
       </table>
       {showModal && (
@@ -346,7 +352,7 @@ function CoursesTab() {
               placeholder="Has successfully completed the…"
               onChange={e => setForm(f => ({ ...f, completion_text: e.target.value }))} />
           </Field>
-          <Field label="Regulation Reference"><input style={S.input} value={form.regulation_ref} onChange={e => setForm(f => ({ ...f, regulation_ref: e.target.value }))} /></Field>
+          <Field label="Regulation Reference (e.g. 29 CFR 1910.120(e))"><input style={S.input} value={form.regulation_ref} onChange={e => setForm(f => ({ ...f, regulation_ref: e.target.value }))} /></Field>
           <Field label="Minimum Pass Score (%)"><input style={S.input} type="number" min={1} max={100} value={form.pass_score} onChange={e => setForm(f => ({ ...f, pass_score: parseInt(e.target.value) }))} /></Field>
           <Field label="Max Quiz Attempts (0 = unlimited)"><input style={S.input} type="number" min={0} value={form.max_quiz_attempts} onChange={e => setForm(f => ({ ...f, max_quiz_attempts: parseInt(e.target.value) }))} /></Field>
           {error && <div style={S.error}>{error}</div>}
@@ -387,34 +393,34 @@ function CoursesTab() {
   )
 }
 
-// ─── ASSIGNMENTS TAB ────────────────────────────────────────
-function AssignmentsTab() {
-  const [assignments, setAssignments] = useState([])
+// ─── REQUIRED COURSES TAB ───────────────────────────────────
+function RequiredCoursesTab() {
+  const [required, setRequired] = useState([])
   const [companies, setCompanies] = useState([])
   const [courses, setCourses] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ company_id: '', course_id: '', due_date: '' })
+  const [form, setForm] = useState({ company_id: '', course_id: '' })
 
   const load = useCallback(async () => {
-    const [ar, cr, cor] = await Promise.all([
-      fetch('/api/lms/assignments'),
+    const [rr, cr, cor] = await Promise.all([
+      fetch('/api/lms/required-courses'),
       fetch('/api/lms/companies'),
       fetch('/api/lms/courses'),
     ])
-    const [ad, cd, cod] = await Promise.all([ar.json(), cr.json(), cor.json()])
-    setAssignments(ad.assignments || [])
+    const [rd, cd, cod] = await Promise.all([rr.json(), cr.json(), cor.json()])
+    setRequired(rd.required_courses || [])
     setCompanies((cd.companies || []).filter(c => c.active))
     setCourses((cod.courses || []).filter(c => c.active))
   }, [])
 
   useEffect(() => { load() }, [load])
 
-  async function handleAssign() {
+  async function handleAdd() {
     setError('')
     setSaving(true)
-    const res = await fetch('/api/lms/assignments', {
+    const res = await fetch('/api/lms/required-courses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
@@ -423,16 +429,16 @@ function AssignmentsTab() {
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
     setShowModal(false)
-    setForm({ company_id: '', course_id: '', due_date: '' })
+    setForm({ company_id: '', course_id: '' })
     load()
   }
 
-  async function handleRemove(assignment) {
-    if (!confirm(`Remove "${assignment.lms_courses?.title}" from ${assignment.lms_companies?.name}?`)) return
-    await fetch('/api/lms/assignments', {
+  async function handleRemove(item) {
+    if (!confirm(`Remove "${item.lms_courses?.title}" as a required course for ${item.lms_companies?.name}?`)) return
+    await fetch('/api/lms/required-courses', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: assignment.id }),
+      body: JSON.stringify({ id: item.id }),
     })
     load()
   }
@@ -440,29 +446,33 @@ function AssignmentsTab() {
   return (
     <div>
       <div style={S.tabHeader}>
-        <h2 style={S.tabTitle}>Course Assignments</h2>
-        <button style={S.btnPrimary} onClick={() => setShowModal(true)}>+ Assign Course</button>
+        <h2 style={S.tabTitle}>Required Courses</h2>
+        <button style={S.btnPrimary} onClick={() => setShowModal(true)}>+ Add Required Course</button>
       </div>
-      <p style={S.hint}>Assigning a course to a company gives access to <strong>all active users</strong> in that company.</p>
+      <div style={S.infoBox}>
+        Required courses are assigned to <strong>every active user in a company</strong> — use these for OSHA mandatory training that applies to all workers regardless of role.
+      </div>
+      <br />
       <table style={S.table}>
         <thead>
-          <tr>{['Company', 'Course', 'Due Date', 'Assigned', 'Actions'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr>
+          <tr>{['Company', 'Course', 'Assigned', 'Actions'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr>
         </thead>
         <tbody>
-          {assignments.map(a => (
-            <tr key={a.id} style={S.tr}>
-              <td style={S.td}>{a.lms_companies?.name}</td>
-              <td style={S.td}>{a.lms_courses?.title}</td>
-              <td style={S.td}>{a.due_date ? new Date(a.due_date).toLocaleDateString() : '—'}</td>
-              <td style={S.td}>{new Date(a.assigned_at).toLocaleDateString()}</td>
-              <td style={S.td}><button style={S.btnSmallRed} onClick={() => handleRemove(a)}>Remove</button></td>
+          {required.map(r => (
+            <tr key={r.id} style={S.tr}>
+              <td style={S.td}>{r.lms_companies?.name}</td>
+              <td style={S.td}>{r.lms_courses?.title}</td>
+              <td style={S.td}>{new Date(r.assigned_at).toLocaleDateString()}</td>
+              <td style={S.td}><button style={S.btnSmallRed} onClick={() => handleRemove(r)}>Remove</button></td>
             </tr>
           ))}
-          {assignments.length === 0 && <tr><td colSpan={5} style={S.empty}>No assignments yet.</td></tr>}
+          {required.length === 0 && <tr><td colSpan={4} style={S.empty}>No required courses yet.</td></tr>}
         </tbody>
       </table>
+
       {showModal && (
-        <Modal title="Assign Course to Company" onClose={() => setShowModal(false)}>
+        <Modal title="Add Required Course" onClose={() => setShowModal(false)}>
+          <div style={S.infoBox}>This course will be required for <strong>all active users</strong> in the selected company.</div>
           <Field label="Company *">
             <select style={S.input} value={form.company_id} onChange={e => setForm(f => ({ ...f, company_id: e.target.value }))}>
               <option value="">— Select Company —</option>
@@ -475,11 +485,118 @@ function AssignmentsTab() {
               {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
           </Field>
+          {error && <div style={S.error}>{error}</div>}
+          <button style={S.btnPrimary} onClick={handleAdd} disabled={saving || !form.company_id || !form.course_id}>
+            {saving ? 'Saving…' : 'Add Required Course'}
+          </button>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+// ─── INDIVIDUAL ASSIGNMENTS TAB ─────────────────────────────
+function IndividualAssignmentsTab() {
+  const [assignments, setAssignments] = useState([])
+  const [users, setUsers] = useState([])
+  const [courses, setCourses] = useState([])
+  const [showModal, setShowModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ user_id: '', course_id: '', due_date: '' })
+
+  const load = useCallback(async () => {
+    const [ar, ur, cor] = await Promise.all([
+      fetch('/api/lms/individual-assignments'),
+      fetch('/api/lms/users'),
+      fetch('/api/lms/courses'),
+    ])
+    const [ad, ud, cod] = await Promise.all([ar.json(), ur.json(), cor.json()])
+    setAssignments(ad.assignments || [])
+    setUsers((ud.users || []).filter(u => u.active && u.role === 'learner'))
+    setCourses((cod.courses || []).filter(c => c.active))
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleAssign() {
+    setError('')
+    setSaving(true)
+    const res = await fetch('/api/lms/individual-assignments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error); return }
+    setShowModal(false)
+    setForm({ user_id: '', course_id: '', due_date: '' })
+    load()
+  }
+
+  async function handleRemove(a) {
+    if (!confirm(`Remove "${a.lms_courses?.title}" from ${a.lms_users?.full_name}?`)) return
+    await fetch('/api/lms/individual-assignments', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: a.id }),
+    })
+    load()
+  }
+
+  return (
+    <div>
+      <div style={S.tabHeader}>
+        <h2 style={S.tabTitle}>Individual Assignments</h2>
+        <button style={S.btnPrimary} onClick={() => setShowModal(true)}>+ Assign Course</button>
+      </div>
+      <div style={S.infoBox}>
+        Individual assignments are <strong>hazard-based</strong> — assign specific courses to specific workers based on their actual job duties and exposure.
+      </div>
+      <br />
+      <table style={S.table}>
+        <thead>
+          <tr>{['Employee', 'Company', 'Course', 'Due Date', 'Assigned', 'Actions'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {assignments.map(a => (
+            <tr key={a.id} style={S.tr}>
+              <td style={S.td}>{a.lms_users?.full_name}</td>
+              <td style={S.td}>{a.lms_users?.lms_companies?.name || '—'}</td>
+              <td style={S.td}>{a.lms_courses?.title}</td>
+              <td style={S.td}>{a.due_date ? new Date(a.due_date).toLocaleDateString() : '—'}</td>
+              <td style={S.td}>{new Date(a.assigned_at).toLocaleDateString()}</td>
+              <td style={S.td}><button style={S.btnSmallRed} onClick={() => handleRemove(a)}>Remove</button></td>
+            </tr>
+          ))}
+          {assignments.length === 0 && <tr><td colSpan={6} style={S.empty}>No individual assignments yet.</td></tr>}
+        </tbody>
+      </table>
+
+      {showModal && (
+        <Modal title="Assign Course to Individual" onClose={() => setShowModal(false)}>
+          <Field label="Employee *">
+            <select style={S.input} value={form.user_id} onChange={e => setForm(f => ({ ...f, user_id: e.target.value }))}>
+              <option value="">— Select Employee —</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name} — {u.lms_companies?.name || 'No Company'} {u.job_title ? `(${u.job_title})` : ''}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Course *">
+            <select style={S.input} value={form.course_id} onChange={e => setForm(f => ({ ...f, course_id: e.target.value }))}>
+              <option value="">— Select Course —</option>
+              {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+            </select>
+          </Field>
           <Field label="Due Date (optional)">
             <input style={S.input} type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
           </Field>
           {error && <div style={S.error}>{error}</div>}
-          <button style={S.btnPrimary} onClick={handleAssign} disabled={saving || !form.company_id || !form.course_id}>
+          <button style={S.btnPrimary} onClick={handleAssign} disabled={saving || !form.user_id || !form.course_id}>
             {saving ? 'Assigning…' : 'Assign Course'}
           </button>
         </Modal>
@@ -496,7 +613,7 @@ export default function AdminLmsPage() {
       <div style={S.pageHeader}>
         <div>
           <h1 style={S.pageTitle}>LMS Administration</h1>
-          <p style={S.pageSubtitle}>Manage companies, learner accounts, courses, and assignments</p>
+          <p style={S.pageSubtitle}>Manage companies, learner accounts, courses, and training assignments</p>
         </div>
         <a href="/" style={S.backLink}>← Back to Portal</a>
       </div>
@@ -506,10 +623,11 @@ export default function AdminLmsPage() {
         ))}
       </div>
       <div style={S.tabContent}>
-        {activeTab === 'Companies'   && <CompaniesTab />}
-        {activeTab === 'Users'       && <UsersTab />}
-        {activeTab === 'Courses'     && <CoursesTab />}
-        {activeTab === 'Assignments' && <AssignmentsTab />}
+        {activeTab === 'Companies'               && <CompaniesTab />}
+        {activeTab === 'Users'                   && <UsersTab />}
+        {activeTab === 'Courses'                 && <CoursesTab />}
+        {activeTab === 'Required Courses'        && <RequiredCoursesTab />}
+        {activeTab === 'Individual Assignments'  && <IndividualAssignmentsTab />}
       </div>
     </div>
   )
@@ -521,8 +639,8 @@ const S = {
   pageTitle: { fontSize: '26px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 4px' },
   pageSubtitle: { fontSize: '14px', color: '#666', margin: 0 },
   backLink: { fontSize: '13px', color: '#b71c1c', textDecoration: 'none', fontWeight: '600', marginTop: '4px' },
-  tabBar: { display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '2px solid #ddd' },
-  tabBtn: { padding: '10px 20px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '600', color: '#666', borderBottom: '2px solid transparent', marginBottom: '-2px' },
+  tabBar: { display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '2px solid #ddd', flexWrap: 'wrap' },
+  tabBtn: { padding: '10px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#666', borderBottom: '2px solid transparent', marginBottom: '-2px' },
   tabBtnActive: { color: '#b71c1c', borderBottom: '2px solid #b71c1c' },
   tabContent: { background: '#fff', borderRadius: '10px', padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' },
   tabHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
@@ -532,7 +650,6 @@ const S = {
   tr: { borderBottom: '1px solid #f0f0f0' },
   td: { padding: '10px 12px', color: '#333', verticalAlign: 'middle' },
   empty: { padding: '24px', textAlign: 'center', color: '#aaa', fontSize: '14px' },
-  hint: { fontSize: '13px', color: '#666', marginBottom: '16px', marginTop: '-4px' },
   badgeGreen: { background: '#e8f5e9', color: '#2e7d32', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
   badgeGray: { background: '#f5f5f5', color: '#999', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
   badgeBlue: { background: '#e3f2fd', color: '#1565c0', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
