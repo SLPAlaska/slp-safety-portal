@@ -10,6 +10,7 @@ const FORM_CATEGORIES = [
     icon: '🎯',
     isTraining: true,
     forms: [
+      { name: 'Online Training Portal (LMS)', href: '/admin/lms', isLocal: true },
       { name: 'Aerial Lift Practical Evaluation', href: '/aerial-lift-practical', isLocal: true },
       { name: 'Crane/Boom Truck Practical Evaluation', href: '/crane-boom-truck-practical', isLocal: true },
       { name: 'Excavator Practical Evaluation', href:'/excavator-practical', isLocal: true },
