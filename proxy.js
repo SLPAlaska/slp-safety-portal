@@ -23,30 +23,18 @@ export async function proxy(request) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // ── LMS ROUTES (/lms/*) ──────────────────────────────────────
+  // ── LMS LEARNER ROUTES (/lms/*) ─────────────────────────────
   if (pathname.startsWith('/lms')) {
     if (pathname === '/lms/login') return response
     if (!user) return NextResponse.redirect(new URL('/lms/login', request.url))
-    if (user.email?.endsWith('@slpalaska.com'))
-      return NextResponse.redirect(new URL('/admin/lms', request.url))
     if (pathname === '/lms/change-password') return response
     return response
   }
 
-  // ── ADMIN LMS ROUTES (/admin/lms/*) ──────────────────────────
-  if (pathname.startsWith('/admin/lms')) {
-    if (!user) return NextResponse.redirect(new URL('/login', request.url))
-    if (!user.email?.endsWith('@slpalaska.com'))
-      return NextResponse.redirect(new URL('/lms/dashboard', request.url))
-    return response
-  }
-
+  // Admin routes (/admin/lms) — no redirect, page handles its own auth
   return response
 }
 
 export const config = {
-  matcher: [
-    '/lms/:path*',
-    '/admin/lms/:path*',
-  ],
+  matcher: ['/lms/:path*'],
 }
