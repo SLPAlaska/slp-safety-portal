@@ -153,6 +153,15 @@ function UsersTab() {
     load()
   }
 
+  async function handleReactivate(user) {
+    await fetch(`/api/lms/reactivate-user`, {
+      method: `POST`,
+      headers: { `Content-Type`: `application/json` },
+      body: JSON.stringify({ user_id: user.id, auth_user_id: user.auth_user_id }),
+    })
+    load()
+  }
+
   async function handleDeactivate(user) {
     if (!confirm(`Deactivate ${user.full_name}?`)) return
     await fetch('/api/lms/delete-user', {
@@ -182,7 +191,7 @@ function UsersTab() {
               <td style={S.td}>{u.lms_companies?.name || '—'}</td>
               <td style={S.td}><span style={u.role === 'company_admin' ? S.badgeBlue : S.badgeGray}>{u.role === 'company_admin' ? 'Company Admin' : 'Learner'}</span></td>
               <td style={S.td}><span style={u.active ? S.badgeGreen : S.badgeGray}>{u.active ? (u.must_change_pw ? 'Pending Login' : 'Active') : 'Inactive'}</span></td>
-              <td style={S.td}>{u.active && <button style={S.btnSmallRed} onClick={() => handleDeactivate(u)}>Deactivate</button>}</td>
+              <td style={S.td}>{u.active ? <button style={S.btnSmallRed} onClick={() => handleDeactivate(u)}>Deactivate</button> : <button style={S.btnSmall} onClick={() => handleReactivate(u)}>Reactivate</button>}</td>
             </tr>
           ))}
           {users.length === 0 && <tr><td colSpan={7} style={S.empty}>No users yet.</td></tr>}
