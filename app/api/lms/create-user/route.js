@@ -7,14 +7,35 @@ export async function POST(request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
   try {
-    const { title, description, completion_text, regulation_ref, pass_score, max_quiz_attempts } = await request.json()
-    if (!title) return NextResponse.json({ error: 'Course title is required.' }, { status: 400 })
-    const { data: course, error } = await supabaseAdmin
-      .from('lms_courses')
-      .insert({ title: title.trim(), description: description?.trim() || null, completion_text: completion_text?.trim() || null, regulation_ref: regulation_ref?.trim() || null, pass_score: pass_score || 80, max_quiz_attempts: max_quiz_attempts || 0, active: true })
+    const { email, password, full_name, username, job_title, company_id, role } = await request.json()
+    if (!email || !password || !full_name || !username || !company_id)
+      return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: email.trim().toLowerCase(), password, email_confirm: true,
+    })
+    if (authError) return NextResponse.json({ error: authError.message }, { status: 400 })
+
+    const { data: lmsUser, error: lmsError } = await supabaseAdmin
+      .from('lms_users')
+      .insert({
+        auth_user_id: authData.user.id,
+        company_id,
+        email: email.trim().toLowerCase(),
+        username: username.trim(),
+        full_name: full_name.trim(),
+        job_title: job_title?.trim() || null,
+        role: role || 'learner',
+        must_change_pw: true,
+        active: true,
+      })
       .select().single()
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-    return NextResponse.json({ course }, { status: 201 })
+
+    if (lmsError) {
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      return NextResponse.json({ error: lmsError.message }, { status: 400 })
+    }
+    return NextResponse.json({ user: lmsUser }, { status: 201 })
   } catch (err) {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 })
   }
