@@ -154,15 +154,15 @@ function UsersTab() {
   }
 
   async function handleReactivate(user) {
-    await fetch(`/api/lms/reactivate-user`, {
-      method: `POST`,
-      headers: { `Content-Type`: `application/json` },
+    await fetch('/api/lms/reactivate-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id, auth_user_id: user.auth_user_id }),
     })
     load()
   }
 
-  async function handleDeactivate(user) {
+    async function handleDeactivate(user) {
     if (!confirm(`Deactivate ${user.full_name}?`)) return
     await fetch('/api/lms/delete-user', {
       method: 'POST',
