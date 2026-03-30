@@ -68,7 +68,7 @@ export default function LmsLoginPage() {
         {/* Header */}
         <div style={styles.header}>
           <img
-            src="/slp-logo.png"
+            src="/Logo.png"
             alt="SLP Alaska"
             style={styles.logo}
             onError={(e) => { e.target.style.display = 'none' }}
