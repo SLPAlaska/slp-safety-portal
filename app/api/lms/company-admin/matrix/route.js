@@ -255,7 +255,7 @@ export async function POST(request) {
     sumPage.drawRectangle({ x: 30, y: y - 4, width: 430, height: 14, color: rowBg })
     const title = c.title.length > 45 ? c.title.slice(0, 42) + '…' : c.title
     sumPage.drawText(title, { x: 35, y, size: 7, font: fontRegular, color: COLORS.black })
-    sumPage.drawText(c.is_required ? '●' : '○', { x: 290, y, size: 7, font: fontRegular, color: c.is_required ? COLORS.slpRed : COLORS.na })
+    sumPage.drawText(c.is_required ? "*" : "-", { x: 290, y, size: 7, font: fontRegular, color: c.is_required ? COLORS.slpRed : COLORS.na })
     sumPage.drawText(String(c.assigned), { x: 335, y, size: 7, font: fontRegular, color: COLORS.black })
     sumPage.drawText(String(c.complete), { x: 380, y, size: 7, font: fontRegular, color: COLORS.complete })
     sumPage.drawText(`${c.rate}%`, { x: 415, y, size: 7.5, font: fontBold, color: rateColor })
@@ -376,7 +376,7 @@ export async function POST(request) {
         })
       })
       if (isReq) {
-        page.drawText('★', { x: x + cellW/2 - 4, y: headerY + 4, size: 7, font: fontBold, color: COLORS.gold })
+        page.drawText("*", { x: x + cellW/2 - 4, y: headerY + 4, size: 7, font: fontBold, color: COLORS.gold })
       }
     })
 
@@ -425,7 +425,7 @@ export async function POST(request) {
     // Legend
     const legendY = margin + 8
     const legendItems = [
-      { label: '★ Required Course', color: COLORS.complete },
+      { label: "* Required Course", color: COLORS.complete },
       { label: '✓ Complete (with date)', color: COLORS.complete },
       { label: 'In Progress (%)', color: COLORS.inProgress },
       { label: 'NOT STARTED', color: COLORS.notStarted },
