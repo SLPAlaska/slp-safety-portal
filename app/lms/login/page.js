@@ -29,28 +29,20 @@ export default function LmsLoginPage() {
       return
     }
 
-    // Check learner account
-    const { data: lmsUser, error: userError } = await supabase
-      .from('lms_users')
-      .select('id, must_change_pw, active')
-      .eq('auth_user_id', data.user.id)
-      .single()
+    // Check must_change_pw via API route (uses service role — no RLS issues)
+    const res = await fetch('/api/lms/learner/check-user', {
+      headers: { 'Authorization': `Bearer ${data.session.access_token}` }
+    })
+    const userData = await res.json()
 
-    if (userError || !lmsUser) {
+    if (!res.ok) {
       await supabase.auth.signOut()
-      setError('Your account was not found. Please contact your administrator.')
+      setError(userData.error || 'Account not found. Contact your administrator.')
       setLoading(false)
       return
     }
 
-    if (!lmsUser.active) {
-      await supabase.auth.signOut()
-      setError('Your account has been deactivated. Please contact your administrator.')
-      setLoading(false)
-      return
-    }
-
-    if (lmsUser.must_change_pw) {
+    if (userData.must_change_pw) {
       window.location.href = '/lms/change-password'
       return
     }
