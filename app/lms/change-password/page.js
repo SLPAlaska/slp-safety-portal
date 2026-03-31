@@ -13,10 +13,12 @@ export default function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError]                     = useState('')
   const [loading, setLoading]                 = useState(false)
+  const [token, setToken]                     = useState(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) window.location.href = '/lms/login'
+      if (!session) { window.location.href = '/lms/login'; return }
+      setToken(session.access_token)
     })
   }, [])
 
@@ -32,12 +34,24 @@ export default function ChangePasswordPage() {
     setError('')
     setLoading(true)
 
+    // Update password in Supabase Auth
     const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
-    if (updateError) { setError('Failed to update password. Please try again.'); setLoading(false); return }
+    if (updateError) {
+      setError('Failed to update password. Please try again.')
+      setLoading(false)
+      return
+    }
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('lms_users').update({ must_change_pw: false }).eq('auth_user_id', user.id)
+    // Clear must_change_pw via service role API
+    const res = await fetch('/api/lms/learner/complete-password-change', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+
+    if (!res.ok) {
+      setError('Password updated but failed to complete setup. Please contact your administrator.')
+      setLoading(false)
+      return
     }
 
     window.location.href = '/lms/dashboard'
@@ -64,8 +78,9 @@ export default function ChangePasswordPage() {
               placeholder="Re-enter your password" style={styles.input} disabled={loading} />
           </div>
           {error && <div style={styles.error}>{error}</div>}
-          <button onClick={handleChangePassword} disabled={loading || !newPassword || !confirmPassword}
-            style={{ ...styles.button, opacity: (loading || !newPassword || !confirmPassword) ? 0.6 : 1 }}>
+          <button onClick={handleChangePassword}
+            disabled={loading || !newPassword || !confirmPassword || !token}
+            style={{ ...styles.button, opacity: (loading || !newPassword || !confirmPassword || !token) ? 0.6 : 1 }}>
             {loading ? 'Saving…' : 'Set Password & Continue'}
           </button>
         </div>
