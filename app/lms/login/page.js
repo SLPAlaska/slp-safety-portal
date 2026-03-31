@@ -29,7 +29,6 @@ export default function LmsLoginPage() {
       return
     }
 
-    // Check user status via service role API
     const res = await fetch('/api/lms/learner/check-user', {
       headers: { 'Authorization': `Bearer ${data.session.access_token}` }
     })
@@ -42,15 +41,17 @@ export default function LmsLoginPage() {
       return
     }
 
-    // Wait for session to be fully persisted in cookies before navigating
-    await new Promise(resolve => setTimeout(resolve, 800))
-
     if (userData.must_change_pw) {
       window.location.href = '/lms/change-password'
       return
     }
 
-    window.location.href = '/lms/dashboard'
+    // Route based on role
+    if (userData.role === 'company_admin') {
+      window.location.href = '/lms/company-dashboard'
+    } else {
+      window.location.href = '/lms/dashboard'
+    }
   }
 
   return (
