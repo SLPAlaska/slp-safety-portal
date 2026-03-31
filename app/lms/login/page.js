@@ -29,7 +29,7 @@ export default function LmsLoginPage() {
       return
     }
 
-    // Check must_change_pw via API route (uses service role — no RLS issues)
+    // Check user status via service role API
     const res = await fetch('/api/lms/learner/check-user', {
       headers: { 'Authorization': `Bearer ${data.session.access_token}` }
     })
@@ -41,6 +41,9 @@ export default function LmsLoginPage() {
       setLoading(false)
       return
     }
+
+    // Wait for session to be fully persisted in cookies before navigating
+    await new Promise(resolve => setTimeout(resolve, 800))
 
     if (userData.must_change_pw) {
       window.location.href = '/lms/change-password'
