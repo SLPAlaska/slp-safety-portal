@@ -7,7 +7,11 @@ export async function POST(request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
   try {
-    const { email, password, full_name, username, job_title, company_id, role } = await request.json()
+    const {
+      email, password, full_name, username, job_title, company_id, role,
+      work_location, client_project, department, employee_id, supervisor, hire_date
+    } = await request.json()
+
     if (!email || !password || !full_name || !username || !company_id)
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
 
@@ -26,6 +30,12 @@ export async function POST(request) {
         full_name: full_name.trim(),
         job_title: job_title?.trim() || null,
         role: role || 'learner',
+        work_location: work_location?.trim() || null,
+        client_project: client_project?.trim() || null,
+        department: department?.trim() || null,
+        employee_id: employee_id?.trim() || null,
+        supervisor: supervisor?.trim() || null,
+        hire_date: hire_date || null,
         must_change_pw: true,
         active: true,
       })

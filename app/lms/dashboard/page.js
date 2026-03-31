@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -33,62 +32,56 @@ function formatTime(seconds) {
 }
 
 function StatusBadge({ status }) {
-  const styles = {
-    'Complete':     { background: '#e8f5e9', color: '#2e7d32' },
-    'In Progress':  { background: '#e3f2fd', color: '#1565c0' },
-    'Not Started':  { background: '#f5f5f5', color: '#999' },
+  const map = {
+    'Complete':    { bg: '#e8f5e9', color: '#2e7d32' },
+    'In Progress': { bg: '#e3f2fd', color: '#1565c0' },
+    'Not Started': { bg: '#f5f5f5', color: '#999' },
   }
-  return (
-    <span style={{ ...styles[status], padding: '3px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' }}>
-      {status}
-    </span>
-  )
+  const s = map[status] || { bg: '#f5f5f5', color: '#999' }
+  return <span style={{ background: s.bg, color: s.color, padding: '3px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' }}>{status}</span>
 }
 
 export default function LmsDashboard() {
-  const router = useRouter()
   const [courses, setCourses] = useState([])
   const [lmsUser, setLmsUser] = useState(null)
+  const [isCompanyAdmin, setIsCompanyAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { router.push('/lms/login'); return }
+      if (!session) { window.location.href = '/lms/login'; return }
+
+      // Check role
+      const checkRes = await fetch('/api/lms/learner/check-user', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+      const checkData = await checkRes.json()
+      if (checkRes.ok && checkData.role === 'company_admin') setIsCompanyAdmin(true)
 
       const res = await fetch('/api/lms/learner/courses', {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       })
       const data = await res.json()
-
-      if (!res.ok) {
-        if (data.error === 'Password change required') {
-          router.push('/lms/change-password')
-          return
-        }
-        setError(data.error || 'Failed to load courses.')
-        setLoading(false)
-        return
-      }
-
+      if (!res.ok) { setError(data.error || 'Failed to load courses.'); setLoading(false); return }
       setCourses(data.courses || [])
       setLmsUser(data.lmsUser)
       setLoading(false)
     }
     load()
-  }, [router])
+  }, [])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    router.push('/lms/login')
+    window.location.href = '/lms/login'
   }
 
   if (loading) return (
     <div style={S.page}>
       <div style={S.loadingCenter}>
         <div style={S.spinner} />
-        <p style={{ color: '#666', marginTop: '16px' }}>Loading your training dashboard…</p>
+        <p style={{ color: '#666', marginTop: '16px' }}>Loading your training…</p>
       </div>
     </div>
   )
@@ -104,11 +97,16 @@ export default function LmsDashboard() {
         <div style={S.headerLeft}>
           <img src="/Logo.png" alt="SLP Alaska" style={S.logo} onError={e => e.target.style.display='none'} />
           <div>
-            <h1 style={S.title}>Training Dashboard</h1>
+            <h1 style={S.title}>My Training Dashboard</h1>
             <p style={S.subtitle}>Welcome back, {lmsUser?.full_name?.split(' ')[0] || 'Learner'}</p>
           </div>
         </div>
-        <button onClick={handleSignOut} style={S.signOutBtn}>Sign Out</button>
+        <div style={S.headerRight}>
+          {isCompanyAdmin && (
+            <a href="/lms/company-dashboard" style={S.adminBtn}>🏢 Company Dashboard</a>
+          )}
+          <button onClick={handleSignOut} style={S.signOutBtn}>Sign Out</button>
+        </div>
       </div>
 
       {/* Stats Bar */}
@@ -133,7 +131,6 @@ export default function LmsDashboard() {
 
       {error && <div style={S.error}>{error}</div>}
 
-      {/* Course Grid */}
       {courses.length === 0 ? (
         <div style={S.empty}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
@@ -149,11 +146,8 @@ export default function LmsDashboard() {
                   <h2 style={S.cardTitle}>{course.title}</h2>
                   <StatusBadge status={course.status} />
                 </div>
-                {course.regulation_ref && (
-                  <p style={S.regulation}>{course.regulation_ref}</p>
-                )}
+                {course.regulation_ref && <p style={S.regulation}>{course.regulation_ref}</p>}
               </div>
-
               <div style={S.cardMid}>
                 <div style={S.ringWrap}>
                   <div style={S.ringInner}>
@@ -174,9 +168,7 @@ export default function LmsDashboard() {
                   {course.best_score !== null && (
                     <div style={S.cardStat}>
                       <span style={S.cardStatLabel}>Best Score</span>
-                      <span style={{ ...S.cardStatVal, color: course.passed ? '#2e7d32' : '#c62828' }}>
-                        {course.best_score}%
-                      </span>
+                      <span style={{ ...S.cardStatVal, color: course.passed ? '#2e7d32' : '#c62828' }}>{course.best_score}%</span>
                     </div>
                   )}
                   {course.completed_at && (
@@ -187,19 +179,16 @@ export default function LmsDashboard() {
                   )}
                 </div>
               </div>
-
               <div style={S.cardActions}>
                 <button
                   style={{ ...S.btn, background: course.status === 'Complete' ? '#e8f5e9' : '#b71c1c', color: course.status === 'Complete' ? '#2e7d32' : '#fff' }}
-                  onClick={() => router.push(`/lms/course/${course.id}`)}
+                  onClick={() => window.location.href = `/lms/course/${course.id}`}
                 >
                   {course.status === 'Complete' ? '✓ Review Course' : course.status === 'In Progress' ? '▶ Resume Course' : '▶ Start Course'}
                 </button>
                 {course.certificate_id && (
-                  <button
-                    style={{ ...S.btn, background: '#f5f5f5', color: '#333', marginTop: '8px' }}
-                    onClick={() => router.push(`/lms/certificate/${course.certificate_id}`)}
-                  >
+                  <button style={{ ...S.btn, background: '#f5f5f5', color: '#333', marginTop: '8px' }}
+                    onClick={() => window.location.href = `/lms/certificate/${course.certificate_id}`}>
                     🎓 View Certificate
                   </button>
                 )}
@@ -208,10 +197,7 @@ export default function LmsDashboard() {
           ))}
         </div>
       )}
-
-      <div style={S.footer}>
-        <p>SLP Alaska Training Portal • AnthroSafe™</p>
-      </div>
+      <div style={S.footer}><p>SLP Alaska Training Portal • AnthroSafe™</p></div>
     </div>
   )
 }
@@ -222,9 +208,11 @@ const S = {
   spinner: { width: '48px', height: '48px', border: '4px solid #ddd', borderTop: '4px solid #b71c1c', borderRadius: '50%', animation: 'spin 1s linear infinite' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' },
   headerLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
+  headerRight: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
   logo: { height: '56px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' },
   title: { color: '#fff', fontSize: '24px', fontWeight: '700', margin: 0 },
   subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: '14px', margin: 0 },
+  adminBtn: { background: '#fbbf24', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '9px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' },
   signOutBtn: { background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontWeight: '600' },
   statsBar: { display: 'flex', gap: '16px', marginBottom: '28px', flexWrap: 'wrap' },
   statCard: { background: 'rgba(255,255,255,0.12)', borderRadius: '12px', padding: '16px 24px', flex: '1', minWidth: '120px', textAlign: 'center' },
