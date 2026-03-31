@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
@@ -28,6 +28,82 @@ const CAUSAL_FACTOR_TAXONOMY = {
   'Immediate Causes': ['Unsafe Act','Unsafe Condition','Human Error','Equipment Failure','Environmental Hazard'],
   'Contributing Factors': ['Inadequate Work Planning','Inadequate Hazard Assessment','Inadequate Communication','Inadequate Training/Competency','Insufficient Resources','Fatigue/Fitness for Duty'],
   'Systemic Factors': ['Management System Gap','Organizational Culture','Regulatory/Compliance Gap','Inadequate Change Management','Contractor Management Deficiency']
+};
+
+// ============================================================================
+// STYLES — defined at module level so reference is stable across renders
+// ============================================================================
+const st = {
+  input: { width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
+  primaryBtn: { background: '#1e40af', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
+  secondaryBtn: { background: '#7c3aed', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
+  outlineBtn: { background: 'white', color: '#64748b', border: '1px solid #d1d5db', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
+  dangerBtn: { background: '#dc2626', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' },
+  footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '20px' },
+  sectionHeader: { background: '#1e40af', color: 'white', padding: '10px 16px', borderRadius: '8px', fontWeight: '600', fontSize: '14px', marginBottom: '15px', marginTop: '20px' },
+  factorCard: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', marginBottom: '12px' },
+  factorLabel: { fontWeight: '600', color: '#1e293b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' },
+  factorHint: { fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontStyle: 'italic' },
+  whyBox: { background: '#fff', border: '2px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px', transition: 'border-color 0.2s' },
+  whyNumber: { background: '#1e40af', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '16px', flexShrink: 0 },
+  whyArrow: { textAlign: 'center', fontSize: '24px', color: '#94a3b8', margin: '-8px 0' }
+};
+
+// ============================================================================
+// HELPER COMPONENTS — defined at module level so React never re-mounts them
+// on every keystroke (defining inside a component creates a new reference each
+// render, causing unmount/remount and loss of input focus).
+// ============================================================================
+const EditDeleteBtns = ({ onEdit, onDelete }) => (
+  <div style={{ display: 'flex', gap: '6px' }}>
+    <button onClick={onEdit} style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>✏️</button>
+    <button onClick={onDelete} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
+  </div>
+);
+
+const SaveCancelBtns = ({ onSave, onCancel, saving }) => (
+  <div style={{ display: 'flex', gap: '10px' }}>
+    <button onClick={onSave} disabled={saving} style={st.primaryBtn}>{saving ? 'Saving...' : '💾 Save'}</button>
+    <button onClick={onCancel} style={st.outlineBtn}>Cancel</button>
+  </div>
+);
+
+// ctx = { editingField, incidentEdits, setIncidentEdits, setEditingField, saveIncidentField, saving }
+const EditableText = ({ field, label, value, type = 'text', options = null, ctx }) => {
+  const { editingField, incidentEdits, setIncidentEdits, setEditingField, saveIncidentField, saving } = ctx;
+  const isEditing = editingField === field;
+  const currentVal = isEditing ? (incidentEdits[field] ?? value ?? '') : (value ?? '');
+  return (
+    <div style={{ marginBottom: '12px', padding: '10px', borderRadius: '8px', background: isEditing ? '#eff6ff' : 'transparent', border: isEditing ? '1px solid #3b82f6' : '1px solid transparent', transition: 'all 0.15s' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+        <div style={{ flex: 1 }}>
+          <strong style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</strong>
+          {isEditing ? (
+            <div style={{ marginTop: '6px' }}>
+              {options ? (
+                <select value={currentVal} onChange={e => setIncidentEdits(prev => ({ ...prev, [field]: e.target.value }))} style={{ ...st.input, marginBottom: '8px' }}>
+                  {options.map(o => <option key={o}>{o}</option>)}
+                </select>
+              ) : type === 'textarea' ? (
+                <textarea value={currentVal} onChange={e => setIncidentEdits(prev => ({ ...prev, [field]: e.target.value }))} style={{ ...st.input, minHeight: '100px', resize: 'vertical', marginBottom: '8px' }} />
+              ) : (
+                <input type={type} value={currentVal} onChange={e => setIncidentEdits(prev => ({ ...prev, [field]: e.target.value }))} style={{ ...st.input, marginBottom: '8px' }} autoFocus />
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => saveIncidentField(field, incidentEdits[field] ?? value)} disabled={saving} style={{ ...st.primaryBtn, padding: '6px 14px', fontSize: '13px' }}>{saving ? 'Saving...' : '💾 Save'}</button>
+                <button onClick={() => { setEditingField(null); setIncidentEdits({}); }} style={{ ...st.outlineBtn, padding: '6px 14px', fontSize: '13px' }}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ marginTop: '4px', color: '#1e293b', fontSize: '14px' }}>{currentVal || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Not set — click ✏️ to edit</span>}</div>
+          )}
+        </div>
+        {!isEditing && (
+          <button onClick={() => { setEditingField(field); setIncidentEdits(prev => ({ ...prev, [field]: value ?? '' })); }} style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', flexShrink: 0, marginTop: '16px' }}>✏️</button>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default function InvestigationWorkbench() {
@@ -189,7 +265,7 @@ export default function InvestigationWorkbench() {
   }
 
   async function handleLogin(e) { e.preventDefault(); if (userEmail.endsWith('@slpalaska.com')) { localStorage.setItem('slp_investigator_email', userEmail); setAuthenticated(true); loadAll(); } else alert('Restricted to @slpalaska.com'); }
-  async function updateStatus(st) { try { const { error } = await supabase.from('incidents').update({ status: st, updated_at: new Date().toISOString() }).eq('id', id); if (error) throw error; setIncident({ ...incident, status: st }); alert('Status: ' + st); } catch (e) { alert(e.message); } }
+  async function updateStatus(newStatus) { try { const { error } = await supabase.from('incidents').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id); if (error) throw error; setIncident({ ...incident, status: newStatus }); alert('Status: ' + newStatus); } catch (e) { alert(e.message); } }
 
   async function saveIncidentField(field, value) {
     setSaving(true);
@@ -219,7 +295,7 @@ export default function InvestigationWorkbench() {
   async function addCA() { if(!newCA.action_description||!newCA.action_owner_name){alert('Fill action+owner');return;} setSaving(true); try { const n=correctiveActions.length+1; const{data,error}=await supabase.from('investigation_corrective_actions').insert({incident_id:id,action_number:n,action_description:newCA.action_description,hierarchy_control:newCA.hierarchy_control,action_owner_name:newCA.action_owner_name,action_owner_email:newCA.action_owner_email||null,target_date:newCA.target_date||null,action_status:newCA.action_status,created_by_email:userEmail}).select().single(); if(error)throw error; setCorrectiveActions([...correctiveActions,data]); // Send assignment email
       if(newCA.action_owner_email&&newCA.action_owner_email.includes('@')){
         try{
-          const incRef=currentIncident?.incident_id||'Investigation';
+          const incRef=incident?.incident_id||'Investigation';
           await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer ' + process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:'SLP Alaska Safety <reports@slpalaska.com>',to:[newCA.action_owner_email],subject:`Corrective Action Assigned — ${incRef} — Due ${newCA.target_date||'TBD'}`,html:`<div style="font-family:Arial,sans-serif;max-width:600px"><div style="background:linear-gradient(135deg,#991b1b,#1e3a8a);padding:20px;border-radius:8px 8px 0 0"><h2 style="color:white;margin:0">🔴 Corrective Action Assigned</h2></div><div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0"><p>Hi <strong>${newCA.action_owner_name}</strong>,</p><p>A corrective action has been assigned to you from an incident investigation.</p><table style="width:100%;border-collapse:collapse;margin:15px 0"><tr><td style="padding:8px;background:#991b1b;color:white;font-weight:bold;width:35%">Incident</td><td style="padding:8px;border:1px solid #e2e8f0">${incRef}</td></tr><tr><td style="padding:8px;background:#991b1b;color:white;font-weight:bold">Action Required</td><td style="padding:8px;border:1px solid #e2e8f0">${newCA.action_description}</td></tr><tr><td style="padding:8px;background:#991b1b;color:white;font-weight:bold">Due Date</td><td style="padding:8px;border:1px solid #e2e8f0;color:#dc2626;font-weight:bold">${newCA.target_date||'Not set'}</td></tr></table><a href="https://portal.slpalaska.com/investigation-workbench" style="display:inline-block;padding:12px 24px;background:#991b1b;color:white;text-decoration:none;border-radius:6px;font-weight:bold">View Investigation →</a></div></div>`})});
         }catch(emailErr){console.error('CA email failed:',emailErr);}
       }
@@ -431,7 +507,6 @@ export default function InvestigationWorkbench() {
   // PDF GENERATION
   // ============================================================================
   function generatePDF() {
-    // Convert logo to base64 so it loads reliably in the print window
     const logoUrl = `${window.location.origin}/Logo.png`;
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -565,77 +640,6 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
   }
 
   // ============================================================================
-  // STYLES
-  // ============================================================================
-  // ============================================================================
-  // EDITABLE FIELD COMPONENT — defined here so it never re-mounts on keystroke
-  // ============================================================================
-  const EditableText = ({ field, label, value, type='text', options=null }) => {
-    const isEditing = editingField === field;
-    const currentVal = isEditing ? (incidentEdits[field] ?? value ?? '') : (value ?? '');
-    return (
-      <div style={{marginBottom:'12px',padding:'10px',borderRadius:'8px',background:isEditing?'#eff6ff':'transparent',border:isEditing?'1px solid #3b82f6':'1px solid transparent',transition:'all 0.15s'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'8px'}}>
-          <div style={{flex:1}}>
-            <strong style={{color:'#64748b',fontSize:'12px',textTransform:'uppercase',letterSpacing:'0.05em'}}>{label}</strong>
-            {isEditing ? (
-              <div style={{marginTop:'6px'}}>
-                {options ? (
-                  <select value={currentVal} onChange={e=>setIncidentEdits(prev=>({...prev,[field]:e.target.value}))} style={{...st.input,marginBottom:'8px'}}>
-                    {options.map(o=><option key={o}>{o}</option>)}
-                  </select>
-                ) : type==='textarea' ? (
-                  <textarea value={currentVal} onChange={e=>setIncidentEdits(prev=>({...prev,[field]:e.target.value}))} style={{...st.input,minHeight:'100px',resize:'vertical',marginBottom:'8px'}} />
-                ) : (
-                  <input type={type} value={currentVal} onChange={e=>setIncidentEdits(prev=>({...prev,[field]:e.target.value}))} style={{...st.input,marginBottom:'8px'}} autoFocus />
-                )}
-                <div style={{display:'flex',gap:'8px'}}>
-                  <button onClick={()=>saveIncidentField(field, incidentEdits[field]??value)} disabled={saving} style={{...st.primaryBtn,padding:'6px 14px',fontSize:'13px'}}>{saving?'Saving...':'💾 Save'}</button>
-                  <button onClick={()=>{setEditingField(null);setIncidentEdits({});}} style={{...st.outlineBtn,padding:'6px 14px',fontSize:'13px'}}>Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <div style={{marginTop:'4px',color:'#1e293b',fontSize:'14px'}}>{currentVal||<span style={{color:'#94a3b8',fontStyle:'italic'}}>Not set — click ✏️ to edit</span>}</div>
-            )}
-          </div>
-          {!isEditing && (
-            <button onClick={()=>{setEditingField(field);setIncidentEdits(prev=>({...prev,[field]:value??''}));}} style={{background:'#dbeafe',color:'#1e40af',border:'none',padding:'4px 10px',borderRadius:'4px',cursor:'pointer',fontSize:'12px',flexShrink:0,marginTop:'16px'}}>✏️</button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const st = {
-    input: { width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
-    primaryBtn: { background: '#1e40af', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px', opacity: saving ? 0.6 : 1 },
-    secondaryBtn: { background: '#7c3aed', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
-    outlineBtn: { background: 'white', color: '#64748b', border: '1px solid #d1d5db', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
-    dangerBtn: { background: '#dc2626', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' },
-    footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '20px' },
-    sectionHeader: { background: '#1e40af', color: 'white', padding: '10px 16px', borderRadius: '8px', fontWeight: '600', fontSize: '14px', marginBottom: '15px', marginTop: '20px' },
-    factorCard: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', marginBottom: '12px' },
-    factorLabel: { fontWeight: '600', color: '#1e293b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' },
-    factorHint: { fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontStyle: 'italic' },
-    whyBox: { background: '#fff', border: '2px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px', transition: 'border-color 0.2s' },
-    whyNumber: { background: '#1e40af', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '16px', flexShrink: 0 },
-    whyArrow: { textAlign: 'center', fontSize: '24px', color: '#94a3b8', margin: '-8px 0' }
-  };
-
-  const EditDeleteBtns = ({ onEdit, onDelete }) => (
-    <div style={{ display: 'flex', gap: '6px' }}>
-      <button onClick={onEdit} style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>✏️</button>
-      <button onClick={onDelete} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
-    </div>
-  );
-  const SaveCancelBtns = ({ onSave, onCancel }) => (
-    <div style={{ display: 'flex', gap: '10px' }}>
-      <button onClick={onSave} disabled={saving} style={st.primaryBtn}>{saving ? 'Saving...' : '💾 Save'}</button>
-      <button onClick={onCancel} style={st.outlineBtn}>Cancel</button>
-    </div>
-  );
-
-  // ============================================================================
   // TOGGLE CAUSAL FACTOR
   // ============================================================================
   function toggleCausalFactor(factor) {
@@ -646,6 +650,14 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
       setFiveWhyData({ ...fiveWhyData, causal_factors: [...current, factor] });
     }
   }
+
+  // ============================================================================
+  // EDIT CONTEXT — stable reference passed to EditableText
+  // ============================================================================
+  const editCtx = useMemo(() => ({
+    editingField, incidentEdits, setIncidentEdits, setEditingField, saveIncidentField, saving
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [editingField, incidentEdits, saving]);
 
   if (loading) return <div style={{ minHeight: '100vh', background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '18px' }}>Loading...</div>;
   if (!authenticated) return <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#1e3a5f,#2d5a87)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ background: 'white', borderRadius: '16px', padding: '40px', maxWidth: '450px', width: '90%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', textAlign: 'center' }}><img src="/Logo.png" alt="SLP" style={{ width: '80px', marginBottom: '15px' }} /><h2>Investigation Workbench</h2><p style={{ color: '#64748b' }}>Restricted to SLP investigators</p><form onSubmit={handleLogin}><input type="email" placeholder="your@slpalaska.com" value={userEmail} onChange={e => setUserEmail(e.target.value)} style={{ ...st.input, marginBottom: '15px' }} /><button type="submit" style={{ ...st.primaryBtn, width: '100%' }}>Sign In</button></form></div></div>;
@@ -658,7 +670,7 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#1e3a5f,#2d5a87)' }}>
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
       <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-        <button onClick={()=>window.location.href='/portal'} style={{ background: '#1e40af', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', textDecoration: 'none', fontSize: '14px' }}>{'\u2190'} Portal</button>
+        <button onClick={()=>window.location.href='/'} style={{ background: '#1e40af', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', textDecoration: 'none', fontSize: '14px' }}>{'\u2190'} Portal</button>
         <button onClick={()=>window.location.href='/investigation-dashboard'} style={{ background: '#059669', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', textDecoration: 'none', fontSize: '14px' }}>{'\u2190'} Dashboard</button>
         <button onClick={generatePDF} style={{ background: '#7c3aed', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🖨️ Print PDF</button>
       </div>
@@ -688,41 +700,41 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'20px'}}>
                 <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>
                   <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>📋 Basic Info</div>
-                  <EditableText field="incident_id" label="Incident ID" value={incident.incident_id} />
-                  <EditableText field="incident_date" label="Date" value={incident.incident_date} type="date" />
-                  <EditableText field="incident_time" label="Time" value={incident.incident_time} type="time" />
-                  <EditableText field="company_name" label="Company" value={incident.company_name} />
-                  <EditableText field="location_name" label="Location" value={incident.location_name} />
-                  <EditableText field="incident_type" label="Incident Type" value={incident.incident_type} options={['Near Miss','First Aid','Medical Treatment','Recordable','Restricted Work','Lost Time','Fatality','Property Damage','Environmental','Vehicle','Fire','Other']} />
+                  <EditableText field="incident_id" label="Incident ID" value={incident.incident_id} ctx={editCtx} />
+                  <EditableText field="incident_date" label="Date" value={incident.incident_date} type="date" ctx={editCtx} />
+                  <EditableText field="incident_time" label="Time" value={incident.incident_time} type="time" ctx={editCtx} />
+                  <EditableText field="company_name" label="Company" value={incident.company_name} ctx={editCtx} />
+                  <EditableText field="location_name" label="Location" value={incident.location_name} ctx={editCtx} />
+                  <EditableText field="incident_type" label="Incident Type" value={incident.incident_type} options={['Near Miss','First Aid','Medical Treatment','Recordable','Restricted Work','Lost Time','Fatality','Property Damage','Environmental','Vehicle','Fire','Other']} ctx={editCtx} />
                 </div>
                 <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>
                   <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>⚠️ Classification</div>
-                  <EditableText field="status" label="Status" value={incident.status} options={['Draft','Submitted','Under Review - Triage','Under Review - First Draft','Under Review - Asset Review','Under Review - Final Review','Pending Approval','Approved','Closed','Reopened','Archived']} />
-                  <EditableText field="safety_severity" label="Severity" value={incident.safety_severity} options={['A','B','C','D','E','F','G']} />
-                  <EditableText field="psif_classification" label="PSIF" value={incident.psif_classification} options={['SIF-Actual','PSIF-Critical','PSIF-High','PSIF-Elevated','STKY-Controlled','Non-STKY']} />
-                  <EditableText field="investigation_type" label="Investigation Type" value={incident.investigation_type} options={['Local Review','5-Why Analysis','Root Cause Analysis','Full RCA','Pending Classification']} />
-                  <EditableText field="is_sif" label="SIF Actual" value={incident.is_sif?'YES':'No'} options={['YES','No']} />
-                  <EditableText field="is_sif_p" label="SIF Potential" value={incident.is_sif_p?'YES':'No'} options={['YES','No']} />
+                  <EditableText field="status" label="Status" value={incident.status} options={['Draft','Submitted','Under Review - Triage','Under Review - First Draft','Under Review - Asset Review','Under Review - Final Review','Pending Approval','Approved','Closed','Reopened','Archived']} ctx={editCtx} />
+                  <EditableText field="safety_severity" label="Severity" value={incident.safety_severity} options={['A','B','C','D','E','F','G']} ctx={editCtx} />
+                  <EditableText field="psif_classification" label="PSIF" value={incident.psif_classification} options={['SIF-Actual','PSIF-Critical','PSIF-High','PSIF-Elevated','STKY-Controlled','Non-STKY']} ctx={editCtx} />
+                  <EditableText field="investigation_type" label="Investigation Type" value={incident.investigation_type} options={['Local Review','5-Why Analysis','Root Cause Analysis','Full RCA','Pending Classification']} ctx={editCtx} />
+                  <EditableText field="is_sif" label="SIF Actual" value={incident.is_sif?'YES':'No'} options={['YES','No']} ctx={editCtx} />
+                  <EditableText field="is_sif_p" label="SIF Potential" value={incident.is_sif_p?'YES':'No'} options={['YES','No']} ctx={editCtx} />
                 </div>
               </div>
               <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px',marginBottom:'16px'}}>
                 <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>📝 Incident Description</div>
-                <EditableText field="brief_description" label="Brief Description" value={incident.brief_description} type="textarea" />
-                <EditableText field="detailed_description" label="Detailed Description" value={incident.detailed_description} type="textarea" />
+                <EditableText field="brief_description" label="Brief Description" value={incident.brief_description} type="textarea" ctx={editCtx} />
+                <EditableText field="detailed_description" label="Detailed Description" value={incident.detailed_description} type="textarea" ctx={editCtx} />
               </div>
               <div style={{background:'#fffbeb',padding:'15px',borderRadius:'10px',border:'1px solid #fbbf24',marginBottom:'16px'}}>
                 <div style={{fontWeight:'600',color:'#b45309',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>👁️ Witness Info (Initial Report)</div>
-                <EditableText field="witness_statement_summary" label="Initial Witness Summary" value={incident.witness_statement_summary} type="textarea" />
+                <EditableText field="witness_statement_summary" label="Initial Witness Summary" value={incident.witness_statement_summary} type="textarea" ctx={editCtx} />
               </div>
               <div style={{background:'#f0fdf4',padding:'15px',borderRadius:'10px',border:'1px solid #86efac'}}>
                 <div style={{fontWeight:'600',color:'#166534',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>👷 Injured / Involved Person</div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 20px'}}>
-                  <EditableText field="injured_name" label="Name" value={incident.injured_name} />
-                  <EditableText field="injured_company" label="Company" value={incident.injured_company} />
-                  <EditableText field="injured_job_title" label="Job Title" value={incident.injured_job_title} />
-                  <EditableText field="injured_time_on_task" label="Time on Task" value={incident.injured_time_on_task} />
-                  <EditableText field="body_part_affected" label="Body Part Affected" value={incident.body_part_affected} />
-                  <EditableText field="injury_type" label="Injury Type" value={incident.injury_type} />
+                  <EditableText field="injured_name" label="Name" value={incident.injured_name} ctx={editCtx} />
+                  <EditableText field="injured_company" label="Company" value={incident.injured_company} ctx={editCtx} />
+                  <EditableText field="injured_job_title" label="Job Title" value={incident.injured_job_title} ctx={editCtx} />
+                  <EditableText field="injured_time_on_task" label="Time on Task" value={incident.injured_time_on_task} ctx={editCtx} />
+                  <EditableText field="body_part_affected" label="Body Part Affected" value={incident.body_part_affected} ctx={editCtx} />
+                  <EditableText field="injury_type" label="Injury Type" value={incident.injury_type} ctx={editCtx} />
                 </div>
               </div>
             </div>
@@ -746,7 +758,7 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                   <input type="date" value={ev.event_date||''} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_date:e.target.value}:x))} style={st.input} />
                   <input type="time" value={ev.event_time||''} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_time:e.target.value}:x))} style={st.input} />
                   <input value={ev.event_description} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_description:e.target.value}:x))} style={st.input} />
-                  <SaveCancelBtns onSave={()=>saveTimelineEdit(ev)} onCancel={()=>{setEditingTimeline(null);loadAll();}} />
+                  <SaveCancelBtns onSave={()=>saveTimelineEdit(ev)} onCancel={()=>{setEditingTimeline(null);loadAll();}} saving={saving} />
                 </div> : <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div><strong style={{color:ev.critical?'#dc2626':'#1e40af'}}>#{i+1}</strong> <span style={{color:'#64748b'}}>{ev.event_date} {ev.event_time||''}</span> — {ev.event_description} {ev.critical&&<span style={{color:'#dc2626',fontWeight:'600'}}>⚠️ CRITICAL</span>}</div>
                   <EditDeleteBtns onEdit={()=>setEditingTimeline(ev.id)} onDelete={()=>deleteTimelineEvent(ev)} />
@@ -799,7 +811,7 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                     <input value={w.company||''} onChange={e=>setWitnesses(witnesses.map(x=>x.id===w.id?{...x,company:e.target.value}:x))} style={st.input} />
                   </div>
                   <textarea value={w.statement_summary} onChange={e=>setWitnesses(witnesses.map(x=>x.id===w.id?{...x,statement_summary:e.target.value}:x))} style={{...st.input,minHeight:'100px',resize:'vertical'}} />
-                  <SaveCancelBtns onSave={()=>saveWitnessEdit(w)} onCancel={()=>{setEditingWitness(null);loadAll();}} />
+                  <SaveCancelBtns onSave={()=>saveWitnessEdit(w)} onCancel={()=>{setEditingWitness(null);loadAll();}} saving={saving} />
                 </div> : <div>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
                     <div><strong>{w.witness_name}</strong> <span style={{color:'#64748b'}}>{w.position_role} {w.company&&`- ${w.company}`}</span></div>
@@ -1037,7 +1049,6 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
             {/* CAUSAL TREE DIAGRAM (auto-generated) */}
             {/* =============================== */}
             {(() => {
-              // Build tree data from RCA fields
               const factors = [
                 {key:'equipment_factors',icon:'🔧',label:'Equipment',color:'#3b82f6'},
                 {key:'procedure_factors',icon:'📋',label:'Procedures',color:'#8b5cf6'},
@@ -1057,7 +1068,6 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
 
               if (activeFactors.length === 0 && !hasRootCauses) return null;
 
-              // Layout calculations
               const nodeW = 150, nodeH = 56, padX = 16, padY = 70;
               const tier2Count = activeFactors.length;
               const tier3Items = [];
@@ -1074,7 +1084,6 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
               const svgW = Math.max(maxCols * (nodeW + padX) + padX, 600);
               const svgH = 80 + (tier2Count > 0 ? padY + nodeH : 0) + (tier3Count > 0 ? padY + nodeH : 0) + padY + nodeH + 40;
 
-              // Tier positions
               const eventX = svgW / 2, eventY = 40;
               const tier2Y = eventY + padY + nodeH;
               const tier2StartX = (svgW - tier2Count * (nodeW + padX) + padX) / 2;
@@ -1109,21 +1118,14 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                   <p style={{color:'#64748b',marginBottom:'15px',fontSize:'13px'}}>Auto-generated from your analysis. Only categories with content appear. Export as SVG for reports.</p>
                   <div style={{background:'#fafafa',border:'2px solid #e2e8f0',borderRadius:'12px',padding:'20px',overflow:'auto'}}>
                     <svg id="causal-tree-svg" width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} xmlns="http://www.w3.org/2000/svg" style={{display:'block',margin:'0 auto',maxWidth:'100%'}}>
-                      {/* Background */}
                       <rect width={svgW} height={svgH} fill="#fafafa" rx="8"/>
-
-                      {/* TIER 0: EVENT NODE */}
                       <rect x={eventX - nodeW*0.75} y={eventY - 20} width={nodeW*1.5} height={nodeH} rx="10" fill="#1e293b" stroke="#0f172a" strokeWidth="2"/>
                       <text x={eventX} y={eventY + 2} textAnchor="middle" fill="white" fontSize="11" fontWeight="600">⚡ INCIDENT EVENT</text>
                       <text x={eventX} y={eventY + 18} textAnchor="middle" fill="#94a3b8" fontSize="9">{truncate(hasEvent ? (incident.brief_description || incident.detailed_description) : incident.incident_id, 40)}</text>
-
-                      {/* Lines from event to tier 2 */}
                       {activeFactors.map((f, i) => {
                         const fx = tier2StartX + i * (nodeW + padX) + nodeW/2;
                         return <line key={`l1-${i}`} x1={eventX} y1={eventY + nodeH - 20} x2={fx} y2={tier2Y - 20} stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4,3"/>;
                       })}
-
-                      {/* TIER 1: CONTRIBUTING FACTOR NODES */}
                       {activeFactors.map((f, i) => {
                         const fx = tier2StartX + i * (nodeW + padX);
                         const cx = fx + nodeW/2;
@@ -1138,17 +1140,12 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                           </g>
                         );
                       })}
-
-                      {/* Lines from tier 2 to tier 3 */}
                       {tier3Items.map((item, i) => {
                         const tx = tier3StartX + i * (nodeW + padX) + nodeW/2;
-                        // Connect to nearest tier2 node or event
                         const sourceY = tier2Count > 0 ? tier2Y + nodeH - 20 : eventY + nodeH - 20;
                         const sourceX = tier2Count > 0 ? tier2StartX + Math.min(i, tier2Count-1) * (nodeW + padX) + nodeW/2 : eventX;
                         return <line key={`l2-${i}`} x1={sourceX} y1={sourceY} x2={tx} y2={tier3Y - 20} stroke={item.color} strokeWidth="1.5" strokeDasharray="4,3"/>;
                       })}
-
-                      {/* TIER 2: ROOT CAUSES & SYSTEMIC ISSUES */}
                       {tier3Items.map((item, i) => {
                         const tx = tier3StartX + i * (nodeW + padX);
                         const cx = tx + nodeW/2;
@@ -1164,8 +1161,6 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                           </g>
                         );
                       })}
-
-                      {/* Watermark */}
                       <text x={svgW - 10} y={svgH - 8} textAnchor="end" fill="#cbd5e1" fontSize="8">AnthroSafe{'\u2122'} Causal Tree | {incident.incident_id} | {new Date().toLocaleDateString()}</text>
                     </svg>
                   </div>
@@ -1185,7 +1180,7 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'10px',marginBottom:'15px'}}>
               <select value={newCA.hierarchy_control} onChange={e=>setNewCA({...newCA,hierarchy_control:e.target.value})} style={st.input}><option value="1-Elimination">1. Elimination</option><option value="2-Substitution">2. Substitution</option><option value="3-Engineering Controls">3. Engineering Controls</option><option value="4-Administrative Controls">4. Administrative Controls</option><option value="5-PPE">5. PPE</option></select>
               <input placeholder="Owner *" value={newCA.action_owner_name} onChange={e=>setNewCA({...newCA,action_owner_name:e.target.value})} style={st.input} />
-        <input type="email" placeholder="Owner email" value={newCA.action_owner_email} onChange={e=>setNewCA({...newCA,action_owner_email:e.target.value})} style={st.input}/>
+              <input type="email" placeholder="Owner email" value={newCA.action_owner_email} onChange={e=>setNewCA({...newCA,action_owner_email:e.target.value})} style={st.input}/>
               <input type="date" value={newCA.target_date} onChange={e=>setNewCA({...newCA,target_date:e.target.value})} style={st.input} />
               <select value={newCA.action_status} onChange={e=>setNewCA({...newCA,action_status:e.target.value})} style={st.input}><option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Pending Verification">Pending Verification</option><option value="Completed">Completed</option><option value="Verified Effective">Verified Effective</option><option value="Overdue">Overdue</option><option value="Cancelled">Cancelled</option></select>
             </div>
@@ -1202,7 +1197,7 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                     <input type="date" value={ca.target_date||''} onChange={e=>setCorrectiveActions(correctiveActions.map(x=>x.id===ca.id?{...x,target_date:e.target.value}:x))} style={st.input} />
                     <select value={ca.action_status} onChange={e=>setCorrectiveActions(correctiveActions.map(x=>x.id===ca.id?{...x,action_status:e.target.value}:x))} style={st.input}><option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Pending Verification">Pending Verification</option><option value="Completed">Completed</option><option value="Verified Effective">Verified Effective</option><option value="Overdue">Overdue</option><option value="Cancelled">Cancelled</option></select>
                   </div>
-                  <SaveCancelBtns onSave={()=>saveCAEdit(ca)} onCancel={()=>{setEditingCA(null);loadAll();}} />
+                  <SaveCancelBtns onSave={()=>saveCAEdit(ca)} onCancel={()=>{setEditingCA(null);loadAll();}} saving={saving} />
                 </div> : <div>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
                     <div><span style={{background:'#dbeafe',color:'#1e40af',padding:'4px 12px',borderRadius:'6px',fontSize:'12px',marginRight:'8px'}}>{ca.hierarchy_control}</span><span style={{background:ca.action_status==='Completed'?'#dcfce7':ca.action_status==='In Progress'?'#fef3c7':'#fee2e2',color:ca.action_status==='Completed'?'#15803d':ca.action_status==='In Progress'?'#d97706':'#dc2626',padding:'4px 12px',borderRadius:'6px',fontSize:'12px'}}>{ca.action_status}</span></div>
@@ -1232,7 +1227,7 @@ ${lessonsLearned.length?`<div class="section"><div class="section-title">&#12816
                   <input value={l.lesson_title} onChange={e=>setLessonsLearned(lessonsLearned.map(x=>x.id===l.id?{...x,lesson_title:e.target.value}:x))} style={st.input} />
                   <textarea value={l.lesson_description} onChange={e=>setLessonsLearned(lessonsLearned.map(x=>x.id===l.id?{...x,lesson_description:e.target.value}:x))} style={{...st.input,minHeight:'100px',resize:'vertical'}} />
                   <input value={l.key_takeaway||''} onChange={e=>setLessonsLearned(lessonsLearned.map(x=>x.id===l.id?{...x,key_takeaway:e.target.value}:x))} placeholder="Key takeaway" style={st.input} />
-                  <SaveCancelBtns onSave={()=>saveLessonEdit(l)} onCancel={()=>{setEditingLesson(null);loadAll();}} />
+                  <SaveCancelBtns onSave={()=>saveLessonEdit(l)} onCancel={()=>{setEditingLesson(null);loadAll();}} saving={saving} />
                 </div> : <div>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
                     <h4 style={{marginTop:0,color:'#1e40af'}}>{l.lesson_title}</h4>
