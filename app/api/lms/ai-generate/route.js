@@ -5,11 +5,13 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 function extractJSON(text) {
-  try { return JSON.parse(text) } catch {}
-  const stripped = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-  try { return JSON.parse(stripped) } catch {}
+  try { return JSON.parse(text) } catch(e) {}
+  const stripped = text.replace(/```json
+?/g, '').replace(/```
+?/g, '').trim()
+  try { return JSON.parse(stripped) } catch(e) {}
   const match = stripped.match(/\{[\s\S]*\}/)
-  if (match) try { return JSON.parse(match[0]) } catch {}
+  if (match) try { return JSON.parse(match[0]) } catch(e) {}
   return null
 }
 
@@ -18,7 +20,6 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
-
   try {
     const { course_id, mode } = await request.json()
     if (!course_id || !mode)
@@ -32,7 +33,6 @@ export async function POST(request) {
     if (!count || count === 0)
       return NextResponse.json({ error: 'No slides found.' }, { status: 404 })
 
-    // Create job record
     const { data: job } = await supabaseAdmin
       .from('lms_ai_jobs')
       .insert({ course_id, mode, status: 'running', progress: 0, total_slides: count })
@@ -59,25 +59,35 @@ export async function POST(request) {
 
     for (const slide of slides || []) {
       try {
-        // Get signed URL — send directly to Anthropic, no base64 needed
         const { data: signedData } = await supabaseAdmin.storage
           .from('lms-slides')
           .createSignedUrl(slide.image_path, 3600)
 
         if (!signedData?.signedUrl) { processed++; continue }
 
-        const systemPrompt = `You are a world-class OSHA safety training content developer with 20+ years of experience in oil & gas, construction, and industrial operations. Course: "${course?.title}"${course?.regulation_ref ? ` (${course.regulation_ref})` : ''}. Respond with valid JSON only — no markdown, no code blocks, no explanation.`
+        const courseTitle = course?.title || ''
+        const courseReg = course?.regulation_ref ? ' (' + course.regulation_ref + ')' : ''
+        const systemPrompt = 'You are a world-class OSHA safety training content developer with 20+ years of experience in oil & gas, construction, and industrial operations. Course: ' + JSON.stringify(courseTitle + courseReg) + '. Respond with valid JSON only, no markdown, no code blocks, no explanation.'
 
         let userPrompt = ''
         if (mode === 'speaker_notes') {
-          userPrompt = `Analyze Slide ${slide.slide_order}. Write 4-6 professional speaker notes sentences a trainer delivers aloud. Reference slide content specifically. Cite applicable CFR regulations with section numbers. End with a safety-critical takeaway.\n\nJSON: {"speaker_notes": "your notes here"}`
+          userPrompt = 'Analyze Slide ' + slide.slide_order + '. Write 4-6 professional speaker notes sentences a trainer delivers aloud. Reference slide content specifically. Cite applicable CFR regulations with section numbers. End with a safety-critical takeaway.
+
+JSON: {"speaker_notes": "your notes here"}'
         } else if (mode === 'quiz_questions') {
-          userPrompt = `Analyze Slide ${slide.slide_order}. Generate 5 multiple-choice questions from this slide. 4 options each. Vary difficulty.\n\nJSON: {"questions": [{"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "A", "slide_reference": ${slide.slide_order}}]}`
+          userPrompt = 'Analyze Slide ' + slide.slide_order + '. Generate 5 multiple-choice questions from this slide. 4 options each. Vary difficulty.
+
+JSON: {"questions": [{"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "A", "slide_reference": ' + slide.slide_order + '}]}'
         } else {
-          userPrompt = `Analyze Slide ${slide.slide_order}. Complete both tasks.\n\nTASK 1 - Speaker Notes: Write 4-6 sentences a trainer delivers aloud. Reference slide content. Cite CFR regulations. End with safety takeaway.\n\nTASK 2 - Quiz Questions: Generate 5 multiple-choice questions. 4 options each. Vary difficulty.\n\nJSON: {"speaker_notes": "...", "questions": [{"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "A", "slide_reference": ${slide.slide_order}}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "B", "slide_reference": ${slide.slide_order}}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "C", "slide_reference": ${slide.slide_order}}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "A", "slide_reference": ${slide.slide_order}}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "D", "slide_reference": ${slide.slide_order}}]}`
+          userPrompt = 'Analyze Slide ' + slide.slide_order + '. Complete both tasks.
+
+TASK 1 - Speaker Notes: Write 4-6 sentences a trainer delivers aloud. Reference slide content. Cite CFR regulations. End with safety takeaway.
+
+TASK 2 - Quiz Questions: Generate 5 multiple-choice questions. 4 options each. Vary difficulty.
+
+JSON: {"speaker_notes": "...", "questions": [{"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "A", "slide_reference": ' + slide.slide_order + '}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "B", "slide_reference": ' + slide.slide_order + '}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "C", "slide_reference": ' + slide.slide_order + '}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "A", "slide_reference": ' + slide.slide_order + '}, {"question_text": "...", "option_a": "...", "option_b": "...", "option_c": "...", "option_d": "...", "correct_answer": "D", "slide_reference": ' + slide.slide_order + '}]}'
         }
 
-        // Send signed URL directly to Anthropic — no base64 conversion needed
         const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: {
@@ -101,7 +111,7 @@ export async function POST(request) {
 
         if (!aiRes.ok) {
           const errText = await aiRes.text()
-          console.error(`Anthropic error slide ${slide.slide_order}:`, aiRes.status, errText)
+          console.error('Anthropic error slide ' + slide.slide_order + ':', aiRes.status, errText)
           processed++
           await supabaseAdmin.from('lms_ai_jobs').update({ progress: processed, updated_at: new Date().toISOString() }).eq('id', job.id)
           continue
@@ -116,7 +126,6 @@ export async function POST(request) {
             await supabaseAdmin.from('lms_slides').update({ speaker_notes: parsed.speaker_notes }).eq('id', slide.id)
             notesGenerated++
           }
-
           if (parsed.questions?.length && (mode === 'quiz_questions' || mode === 'both')) {
             for (const q of parsed.questions) {
               if (!q.question_text || !q.option_a || !q.option_b || !q.correct_answer) continue
@@ -149,7 +158,7 @@ export async function POST(request) {
         }).eq('id', job.id)
 
       } catch (err) {
-        console.error(`Slide ${slide.slide_order} error:`, err.message)
+        console.error('Slide ' + slide.slide_order + ' error:', err.message)
         processed++
         await supabaseAdmin.from('lms_ai_jobs').update({
           progress: processed, updated_at: new Date().toISOString()
