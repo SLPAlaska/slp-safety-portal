@@ -543,17 +543,27 @@ export default function CoursePlayer() {
                   onClick={handlePrev}
                   disabled={currentIndex === 0}
                 >
-                  ← Previous
+                  Back
                 </button>
 
                 {narrating && skipVisible && (
                   <button style={P.skipBtn} onClick={handleSkip}>
-                    Skip Narration →
+                    Skip Narration
+                  </button>
+                )}
+
+                {!narrating && !canAdvance && currentSlide?.speaker_notes && (
+                  <button style={{ ...P.skipBtn, background: '#b71c1c' }} onClick={() => narrateSlide(currentSlide, speechRate)}>
+                    Play Narration
                   </button>
                 )}
 
                 {narrating && !skipVisible && (
-                  <div style={P.waitMsg}>🔊 Narrating…</div>
+                  <div style={P.waitMsg}>Narrating...</div>
+                )}
+
+                {!currentSlide?.speaker_notes && !canAdvance && (
+                  <div style={P.waitMsg}></div>
                 )}
 
                 <button
@@ -566,7 +576,7 @@ export default function CoursePlayer() {
                   onClick={handleNext}
                   disabled={!canAdvance}
                 >
-                  {currentIndex === slides.length - 1 ? 'Take Quiz →' : 'Next →'}
+                  {currentIndex === slides.length - 1 ? 'Take Quiz' : 'Next'}
                 </button>
               </div>
             </div>
