@@ -23,7 +23,7 @@ export async function GET(request, { params }) {
 
   if (!lmsUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-  const courseId = params.courseId
+  const { courseId } = await params
 
   // Verify user has access to this course
   const { data: requiredAccess } = await supabaseAdmin
