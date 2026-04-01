@@ -446,6 +446,12 @@ function QuizBuilderTab() {
     if (!res.ok) { setError(data.error); setGenerating(false); return }
     setJobId(data.job_id)
     setJobProgress({ status: 'pending', progress: 0, total_slides: data.total_slides, percent: 0 })
+    const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/process-ai-job'
+    fetch(edgeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
+      body: JSON.stringify({ job_id: data.job_id }),
+    }).catch(err => console.error('Edge function error:', err))
   }
 
   function openAdd() {
