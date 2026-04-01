@@ -444,14 +444,14 @@ function QuizBuilderTab() {
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); setGenerating(false); return }
+    // Route handles everything synchronously — poll job status for progress
     setJobId(data.job_id)
-    setJobProgress({ status: 'pending', progress: 0, total_slides: data.total_slides, percent: 0 })
-    const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/process-ai-job'
-    fetch(edgeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
-      body: JSON.stringify({ job_id: data.job_id }),
-    }).catch(err => console.error('Edge function error:', err))
+    setJobProgress({ status: data.status || 'running', progress: data.slides_processed || 0, total_slides: data.total_slides, percent: data.total_slides > 0 ? Math.round(((data.slides_processed||0)/data.total_slides)*100) : 0 })
+    if (data.status === 'complete') {
+      setGenerating(false)
+      setJobId(null)
+      loadQuestions()
+    }
   }
 
   function openAdd() {
