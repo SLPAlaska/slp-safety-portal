@@ -319,18 +319,26 @@ export default function CoursePlayer() {
     window.speechSynthesis.speak(utterance)
   }, [])
 
-  // When slide changes
+  // When slide changes -- reset state, user must click Play or Next to trigger narration
   useEffect(() => {
     if (loading || slides.length === 0 || showQuiz) return
-    const slide = slides[currentIndex]
+    window.speechSynthesis?.cancel()
+    clearTimeout(skipTimerRef.current)
     setSlideStartTime(Date.now())
-    narrateSlide(slide, speechRate)
+    setNarrating(false)
+    setSkipVisible(false)
+    const slide = slides[currentIndex]
+    if (!slide?.speaker_notes) {
+      setCanAdvance(true)
+    } else {
+      setCanAdvance(false)
+    }
     setSlidesViewedThisSession(prev => prev + 1)
     return () => {
       window.speechSynthesis?.cancel()
       clearTimeout(skipTimerRef.current)
     }
-  }, [currentIndex, loading, slides, showQuiz, narrateSlide, speechRate])
+  }, [currentIndex, loading, slides, showQuiz, speechRate])
 
   // When speech rate changes mid-narration
   function handleRateChange(newRate) {
@@ -353,7 +361,13 @@ export default function CoursePlayer() {
     await saveProgress(slide.id, timeSpent)
 
     if (currentIndex < slides.length - 1) {
-      setCurrentIndex(i => i + 1)
+      const nextIdx = currentIndex + 1
+      setCurrentIndex(nextIdx)
+      // Narrate next slide directly from user gesture -- satisfies browser autoplay policy
+      setTimeout(() => {
+        const nextSlide = slides[nextIdx]
+        if (nextSlide) narrateSlide(nextSlide, speechRate)
+      }, 50)
     } else {
       window.speechSynthesis?.cancel()
       setShowQuiz(true)
@@ -554,6 +568,12 @@ export default function CoursePlayer() {
 
                 {!narrating && !canAdvance && currentSlide?.speaker_notes && (
                   <button style={{ ...P.skipBtn, background: '#b71c1c' }} onClick={() => narrateSlide(currentSlide, speechRate)}>
+                    Play Narration
+                  </button>
+                )}
+
+                {!narrating && !canAdvance && currentSlide?.speaker_notes && (
+                  <button style={P.skipBtn} onClick={() => narrateSlide(currentSlide, speechRate)}>
                     Play Narration
                   </button>
                 )}
