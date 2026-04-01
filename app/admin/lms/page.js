@@ -503,6 +503,294 @@ function AssignmentsTab() {
   )
 }
 
+// ─── QUIZ BUILDER TAB ───────────────────────────────────────
+function QuizBuilderTab() {
+  const [courses, setCourses] = useState([])
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  const [questions, setQuestions] = useState([])
+  const [slides, setSlides] = useState([])
+  const [showModal, setShowModal] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generateMode, setGenerateMode] = useState('both')
+  const [generateResult, setGenerateResult] = useState(null)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({
+    question_text: '', option_a: '', option_b: '', option_c: '', option_d: '',
+    correct_answer: 'A', slide_reference: '',
+  })
+
+  const loadCourses = useCallback(async () => {
+    const res = await fetch('/api/lms/courses')
+    const data = await res.json()
+    setCourses(data.courses || [])
+  }, [])
+
+  useEffect(() => { loadCourses() }, [loadCourses])
+
+  async function selectCourse(course) {
+    setSelectedCourse(course)
+    setGenerateResult(null)
+    setError('')
+    const [qRes, sRes] = await Promise.all([
+      fetch(`/api/lms/quiz-questions?course_id=${course.id}`),
+      fetch(`/api/lms/courses`),
+    ])
+    const qData = await qRes.json()
+    setQuestions(qData.questions || [])
+
+    // Get slide count
+    const sliRes = await fetch(`/api/lms/quiz-questions?course_id=${course.id}`)
+    const sliData = await sliRes.json()
+
+    // Fetch slides for reference dropdown
+    const slidesRes = await fetch(`/api/lms/learner/slides/${course.id}`, {
+      headers: { 'Authorization': 'Bearer admin' }
+    })
+    // Just use slide count from questions for now
+    const maxSlide = Math.max(...(qData.questions || []).map(q => q.slide_reference || 0), 0)
+    setSlides(Array.from({ length: Math.max(maxSlide, 10) }, (_, i) => i + 1))
+  }
+
+  async function loadQuestions() {
+    if (!selectedCourse) return
+    const res = await fetch(`/api/lms/quiz-questions?course_id=${selectedCourse.id}`)
+    const data = await res.json()
+    setQuestions(data.questions || [])
+  }
+
+  function openAdd() {
+    setEditingQuestion(null)
+    setForm({ question_text: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', slide_reference: '' })
+    setShowModal(true)
+  }
+
+  function openEdit(q) {
+    setEditingQuestion(q)
+    setForm({
+      question_text: q.question_text,
+      option_a: q.option_a,
+      option_b: q.option_b,
+      option_c: q.option_c || '',
+      option_d: q.option_d || '',
+      correct_answer: q.correct_answer,
+      slide_reference: q.slide_reference || '',
+    })
+    setShowModal(true)
+  }
+
+  async function handleSave() {
+    setError('')
+    setSaving(true)
+    const payload = {
+      ...form,
+      course_id: selectedCourse.id,
+      slide_reference: form.slide_reference ? parseInt(form.slide_reference) : null,
+    }
+    const url = '/api/lms/quiz-questions'
+    const method = editingQuestion ? 'PATCH' : 'POST'
+    if (editingQuestion) payload.id = editingQuestion.id
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error); return }
+    setShowModal(false)
+    loadQuestions()
+  }
+
+  async function handleDelete(q) {
+    if (!confirm(`Delete question: "${q.question_text.slice(0, 50)}…"?`)) return
+    await fetch('/api/lms/quiz-questions', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: q.id }),
+    })
+    loadQuestions()
+  }
+
+  async function handleAIGenerate() {
+    setError('')
+    setGenerating(true)
+    setGenerateResult(null)
+    const res = await fetch('/api/lms/ai-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ course_id: selectedCourse.id, mode: generateMode }),
+    })
+    const data = await res.json()
+    setGenerating(false)
+    if (!res.ok) { setError(data.error); return }
+    setGenerateResult(data)
+    loadQuestions()
+  }
+
+  const correctLabels = { A: 'A', B: 'B', C: 'C', D: 'D' }
+
+  return (
+    <div>
+      <div style={S.tabHeader}>
+        <h2 style={S.tabTitle}>Quiz Builder</h2>
+      </div>
+
+      {/* Course selector */}
+      <div style={S.field}>
+        <label style={S.label}>Select Course</label>
+        <select style={{ ...S.input, maxWidth: '400px' }}
+          value={selectedCourse?.id || ''}
+          onChange={e => {
+            const c = courses.find(c => c.id === e.target.value)
+            if (c) selectCourse(c)
+            else { setSelectedCourse(null); setQuestions([]) }
+          }}>
+          <option value="">— Select a course —</option>
+          {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+        </select>
+      </div>
+
+      {selectedCourse && (
+        <>
+          {/* AI Generation Panel */}
+          <div style={QB.aiPanel}>
+            <div style={QB.aiTitle}>
+              <span style={{ fontSize: '18px' }}>🤖</span>
+              <span>AI Content Generator</span>
+              <span style={QB.aiBadge}>Powered by Claude</span>
+            </div>
+            <p style={QB.aiDesc}>
+              Claude analyzes each slide image and automatically generates world-class speaker notes and quiz questions tailored to your course content.
+            </p>
+            <div style={QB.aiRow}>
+              <select style={{ ...S.input, width: 'auto' }} value={generateMode} onChange={e => setGenerateMode(e.target.value)}>
+                <option value="both">Generate Speaker Notes + Quiz Questions</option>
+                <option value="speaker_notes">Speaker Notes Only</option>
+                <option value="quiz_questions">Quiz Questions Only</option>
+              </select>
+              <button style={QB.aiBtn} onClick={handleAIGenerate} disabled={generating}>
+                {generating ? '⏳ Generating… (this may take a minute)' : '✨ Generate with AI'}
+              </button>
+            </div>
+            {generating && (
+              <div style={QB.aiProgress}>
+                Analyzing slides and generating content with Claude AI. Processing one slide at a time for maximum quality…
+              </div>
+            )}
+            {generateResult && (
+              <div style={QB.aiResult}>
+                ✅ Generation complete! {generateResult.speaker_notes_generated} slides got speaker notes, {generateResult.questions_generated} quiz questions created.
+              </div>
+            )}
+          </div>
+
+          {/* Questions table */}
+          <div style={S.tabHeader}>
+            <span style={{ fontSize: '14px', fontWeight: '700', color: '#1a1a2e' }}>
+              {questions.length} Question{questions.length !== 1 ? 's' : ''} — {selectedCourse.title}
+            </span>
+            <button style={S.btnPrimary} onClick={openAdd}>+ Add Question</button>
+          </div>
+
+          {error && <div style={S.error}>{error}</div>}
+
+          <table style={S.table}>
+            <thead>
+              <tr>{['#', 'Question', 'Slide Ref', 'Options', 'Answer', 'Actions'].map(h => (
+                <th key={h} style={S.th}>{h}</th>
+              ))}</tr>
+            </thead>
+            <tbody>
+              {questions.map((q, i) => (
+                <tr key={q.id} style={S.tr}>
+                  <td style={{ ...S.td, width: '40px', color: '#999', fontSize: '12px' }}>{i + 1}</td>
+                  <td style={{ ...S.td, maxWidth: '280px' }}>
+                    <div style={{ fontSize: '13px', color: '#1a1a2e', lineHeight: '1.4' }}>{q.question_text}</div>
+                  </td>
+                  <td style={{ ...S.td, width: '80px', textAlign: 'center' }}>
+                    {q.slide_reference ? (
+                      <span style={QB.slideRef}>Slide {q.slide_reference}</span>
+                    ) : '—'}
+                  </td>
+                  <td style={{ ...S.td, fontSize: '11px', color: '#666' }}>
+                    <div><strong>A:</strong> {q.option_a}</div>
+                    <div><strong>B:</strong> {q.option_b}</div>
+                    {q.option_c && <div><strong>C:</strong> {q.option_c}</div>}
+                    {q.option_d && <div><strong>D:</strong> {q.option_d}</div>}
+                  </td>
+                  <td style={{ ...S.td, width: '60px', textAlign: 'center' }}>
+                    <span style={QB.correctBadge}>{q.correct_answer}</span>
+                  </td>
+                  <td style={{ ...S.td, width: '100px' }}>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button style={S.btnSmall} onClick={() => openEdit(q)}>Edit</button>
+                      <button style={S.btnSmallRed} onClick={() => handleDelete(q)}>Del</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {questions.length === 0 && (
+                <tr><td colSpan={6} style={S.empty}>No questions yet. Add manually or use AI generation above.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </>
+      )}
+
+      {!selectedCourse && (
+        <div style={{ textAlign: 'center', padding: '48px', color: '#aaa' }}>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>📝</div>
+          <p>Select a course above to manage its quiz questions.</p>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <Modal title={editingQuestion ? 'Edit Question' : 'Add Question'} onClose={() => setShowModal(false)}>
+          <Field label="Question Text *">
+            <textarea style={{ ...S.textarea, minHeight: '80px' }} value={form.question_text}
+              onChange={e => setForm(f => ({ ...f, question_text: e.target.value }))} />
+          </Field>
+          <Field label="Slide Reference (which slide covers this topic)">
+            <input style={S.input} type="number" min={1} value={form.slide_reference}
+              placeholder="e.g. 3"
+              onChange={e => setForm(f => ({ ...f, slide_reference: e.target.value }))} />
+          </Field>
+          <div style={{ background: '#f9f9f9', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {['A','B','C','D'].map(opt => (
+              <Field key={opt} label={`Option ${opt}${opt === 'A' || opt === 'B' ? ' *' : ' (optional)'}`}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input style={{ ...S.input, flex: 1 }} value={form[`option_${opt.toLowerCase()}`]}
+                    onChange={e => setForm(f => ({ ...f, [`option_${opt.toLowerCase()}`]: e.target.value }))} />
+                  <button
+                    style={{ ...QB.correctBtn, background: form.correct_answer === opt ? '#2e7d32' : '#f0f0f0', color: form.correct_answer === opt ? '#fff' : '#999' }}
+                    onClick={() => setForm(f => ({ ...f, correct_answer: opt }))}
+                    title="Mark as correct answer"
+                  >
+                    {form.correct_answer === opt ? '✓ Correct' : 'Set Correct'}
+                  </button>
+                </div>
+              </Field>
+            ))}
+          </div>
+          <div style={{ background: '#e8f5e9', borderRadius: '6px', padding: '8px 12px', fontSize: '12px', color: '#2e7d32' }}>
+            ✓ Correct answer: Option <strong>{form.correct_answer}</strong>
+          </div>
+          {error && <div style={S.error}>{error}</div>}
+          <button style={S.btnPrimary} onClick={handleSave}
+            disabled={saving || !form.question_text || !form.option_a || !form.option_b || !form.correct_answer}>
+            {saving ? 'Saving…' : editingQuestion ? 'Save Changes' : 'Add Question'}
+          </button>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+
 // ─── MAIN PAGE ──────────────────────────────────────────────
 export default function AdminLmsPage() {
   const [activeTab, setActiveTab] = useState('Companies')
@@ -529,6 +817,21 @@ export default function AdminLmsPage() {
     </div>
   )
 }
+
+const QB = {
+  aiPanel: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '12px', padding: '20px', marginBottom: '24px', color: '#fff' },
+  aiTitle: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '16px', fontWeight: '700', marginBottom: '8px' },
+  aiBadge: { background: 'rgba(251,191,36,0.2)', color: '#fbbf24', padding: '2px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', border: '1px solid rgba(251,191,36,0.4)' },
+  aiDesc: { fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: '0 0 14px', lineHeight: '1.5' },
+  aiRow: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' },
+  aiBtn: { background: '#fbbf24', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' },
+  aiProgress: { marginTop: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: 'rgba(255,255,255,0.9)' },
+  aiResult: { marginTop: '12px', background: '#e8f5e9', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#2e7d32', fontWeight: '600' },
+  slideRef: { background: '#e3f2fd', color: '#1565c0', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '700' },
+  correctBadge: { background: '#e8f5e9', color: '#2e7d32', padding: '4px 10px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', border: '1px solid #a5d6a7' },
+  correctBtn: { border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' },
+}
+
 
 const S = {
   page: { minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: 'Arial, Helvetica, sans-serif', padding: '24px' },
