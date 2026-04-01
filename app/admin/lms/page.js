@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
-const TABS = ['Companies', 'Users', 'Courses', 'Assignments']
+const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments']
 
 function Modal({ title, onClose, children }) {
   return (
@@ -812,7 +812,10 @@ export default function AdminLmsPage() {
         {activeTab === 'Companies'   && <CompaniesTab />}
         {activeTab === 'Users'       && <UsersTab />}
         {activeTab === 'Courses'     && <CoursesTab />}
-        {activeTab === 'Assignments' && <AssignmentsTab />}
+        {activeTab === 'Quiz Builder'            && <QuizBuilderTab />}
+        {activeTab === 'Required Courses'        && <RequiredCoursesTab />}
+        {activeTab === 'Individual Assignments'  && <IndividualAssignmentsTab />}
+        {activeTab === 'Assignments'             && <AssignmentsTab />}
       </div>
     </div>
   )
