@@ -13,7 +13,7 @@ function extractJSON(text) {
   return null
 }
 
-export async function POST(request) {
+export const maxDuration = 60`nexport const dynamic = 'force-dynamic'`n`nexport async function POST(request) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -187,3 +187,4 @@ Respond with this exact JSON format (raw JSON only, no markdown):
     return NextResponse.json({ error: 'AI generation failed: ' + err.message }, { status: 500 })
   }
 }
+
