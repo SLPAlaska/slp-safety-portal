@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments']
 
@@ -48,27 +48,16 @@ function CompaniesTab() {
   }
 
   async function handleSave() {
-    setError('')
-    setSaving(true)
-    const res = await fetch('/api/lms/companies', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
+    setError(''); setSaving(true)
+    const res = await fetch('/api/lms/companies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
-    setShowModal(false)
-    setForm({ name: '', slug: '', notes: '' })
-    load()
+    setShowModal(false); setForm({ name: '', slug: '', notes: '' }); load()
   }
 
   async function toggleActive(company) {
-    await fetch('/api/lms/companies', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: company.id, active: !company.active }),
-    })
+    await fetch('/api/lms/companies', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: company.id, active: !company.active }) })
     load()
   }
 
@@ -81,7 +70,7 @@ function CompaniesTab() {
       <table style={S.table}>
         <thead><tr>{['Company Name','Slug','Status','Notes','Actions'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
         <tbody>
-          {companies.map(c => (
+          {companies.map(c=>(
             <tr key={c.id} style={S.tr}>
               <td style={S.td}>{c.name}</td>
               <td style={S.td}><code style={S.code}>{c.slug}</code></td>
@@ -113,7 +102,7 @@ function UsersTab() {
   const [showModal, setShowModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ full_name:'',email:'',username:'',job_title:'',company_id:'',password:'',role:'learner',work_location:'',client_project:'',department:'',employee_id:'',supervisor:'',hire_date:'' })
+  const [form, setForm] = useState({full_name:'',email:'',username:'',job_title:'',company_id:'',password:'',role:'learner',work_location:'',client_project:'',department:'',employee_id:'',supervisor:'',hire_date:''})
 
   const load = useCallback(async () => {
     const [ur,cr] = await Promise.all([fetch('/api/lms/users'),fetch('/api/lms/companies')])
@@ -125,11 +114,8 @@ function UsersTab() {
   useEffect(() => { load() }, [load])
 
   async function handleCreate() {
-    setError('')
-    setSaving(true)
-    const res = await fetch('/api/lms/create-user', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form)
-    })
+    setError(''); setSaving(true)
+    const res = await fetch('/api/lms/create-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
@@ -139,19 +125,13 @@ function UsersTab() {
   }
 
   async function handleReactivate(user) {
-    await fetch('/api/lms/reactivate-user', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id})
-    })
+    await fetch('/api/lms/reactivate-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id}) })
     load()
   }
 
   async function handleDeactivate(user) {
     if (!confirm(`Deactivate ${user.full_name}?`)) return
-    await fetch('/api/lms/delete-user', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id})
-    })
+    await fetch('/api/lms/delete-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id}) })
     load()
   }
 
@@ -217,12 +197,17 @@ function CoursesTab() {
   const [courses, setCourses] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [showSlideModal, setShowSlideModal] = useState(null)
+  const [showVideoModal, setShowVideoModal] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [uploadProgress, setUploadProgress] = useState('')
   const [form, setForm] = useState({title:'',description:'',completion_text:'',regulation_ref:'',pass_score:80,max_quiz_attempts:0})
   const [slideFiles, setSlideFiles] = useState([])
   const [speakerNotes, setSpeakerNotes] = useState([])
+  const [videoSlides, setVideoSlides] = useState([])
+  const [videoFile, setVideoFile] = useState(null)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [selectedVideoSlide, setSelectedVideoSlide] = useState('')
 
   const load = useCallback(async () => {
     const res = await fetch('/api/lms/courses')
@@ -234,9 +219,7 @@ function CoursesTab() {
 
   async function handleCreateCourse() {
     setError(''); setSaving(true)
-    const res = await fetch('/api/lms/create-course', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form)
-    })
+    const res = await fetch('/api/lms/create-course', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
@@ -265,6 +248,38 @@ function CoursesTab() {
     setSaving(false); setUploadProgress(''); setSlideFiles([]); setSpeakerNotes([]); setShowSlideModal(null); load()
   }
 
+  async function loadVideoSlides(course) {
+    const res = await fetch(`/api/lms/quiz-questions?course_id=${course.id}`)
+    // Reuse courses endpoint to get slides
+    const slidesRes = await fetch(`/api/lms/courses`)
+    const data = await slidesRes.json()
+    // Get slide count from course
+    const c = (data.courses||[]).find(c=>c.id===course.id)
+    const count = c?.lms_slides?.[0]?.count || 0
+    setVideoSlides(Array.from({length:count},(_,i)=>i+1))
+  }
+
+  async function handleVideoUpload(course) {
+    if (!selectedVideoSlide) { setError('Select a slide number first.'); return }
+    if (!videoFile && !videoUrl) { setError('Select a video file or enter a URL.'); return }
+    setError(''); setSaving(true)
+
+    // Get slide_id for the selected slide_order
+    const { data: slideData } = await fetch(`/api/lms/learner/slides/${course.id}`, {
+      headers: { 'Authorization': 'Bearer admin' }
+    }).then(r=>r.json()).catch(()=>({data:null}))
+
+    const fd = new FormData()
+    fd.append('slide_id', selectedVideoSlide)
+    if (videoFile) fd.append('file', videoFile)
+    if (videoUrl) fd.append('video_url', videoUrl)
+
+    const res = await fetch('/api/lms/upload-video',{method:'POST',body:fd})
+    setSaving(false)
+    if (!res.ok) { const d = await res.json(); setError(d.error); return }
+    setShowVideoModal(null); setVideoFile(null); setVideoUrl(''); setSelectedVideoSlide('')
+  }
+
   function handleSlideFileChange(e) {
     const files = Array.from(e.target.files).sort((a,b)=>a.name.localeCompare(b.name))
     setSlideFiles(files); setSpeakerNotes(files.map(()=>''))
@@ -291,8 +306,9 @@ function CoursesTab() {
               <td style={S.td}>{c.pass_score}%</td>
               <td style={S.td}>{c.lms_slides?.[0]?.count??0} slides</td>
               <td style={S.td}><span style={c.active?S.badgeGreen:S.badgeGray}>{c.active?'Active':'Inactive'}</span></td>
-              <td style={{...S.td,display:'flex',gap:'8px',flexWrap:'wrap'}}>
+              <td style={{...S.td,display:'flex',gap:'6px',flexWrap:'wrap'}}>
                 <button style={S.btnSmall} onClick={()=>{setShowSlideModal(c);setError('')}}>Upload Slides</button>
+                <button style={S.btnSmall} onClick={()=>{setShowVideoModal(c);setError('');loadVideoSlides(c)}}>Add Video</button>
                 <button style={S.btnSmall} onClick={()=>toggleCourseActive(c)}>{c.active?'Deactivate':'Activate'}</button>
               </td>
             </tr>
@@ -300,6 +316,7 @@ function CoursesTab() {
           {courses.length===0&&<tr><td colSpan={6} style={S.empty}>No courses yet.</td></tr>}
         </tbody>
       </table>
+
       {showModal&&(
         <Modal title="New Training Course" onClose={()=>setShowModal(false)}>
           <Field label="Course Title *"><input style={S.input} value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} /></Field>
@@ -312,19 +329,20 @@ function CoursesTab() {
           <button style={S.btnPrimary} onClick={handleCreateCourse} disabled={saving||!form.title}>{saving?'Creating…':'Create Course'}</button>
         </Modal>
       )}
+
       {showSlideModal&&(
         <Modal title={`Upload Slides — ${showSlideModal.title}`} onClose={()=>{setShowSlideModal(null);setSlideFiles([]);setSpeakerNotes([])}}>
-          <div style={S.infoBox}><strong>Export from PowerPoint:</strong> File → Export → Change File Type → PNG → Save Every Slide. Then select all PNG files below.</div>
-          <Field label="Select Slide Images (PNG/JPG)">
+          <div style={S.infoBox}><strong>Export from PowerPoint:</strong> File → Export → Change File Type → PNG → Save Every Slide. Select all PNG/JPG files below. Speaker notes can be left blank — use AI generation in the Quiz Builder tab to auto-generate them.</div>
+          <Field label="Select Slide Images (PNG or JPG)">
             <input type="file" multiple accept="image/png,image/jpeg" onChange={handleSlideFileChange} style={{marginTop:'4px'}} />
           </Field>
           {slideFiles.length>0&&(
             <div style={S.slideList}>
-              <p style={{margin:'0 0 8px',fontWeight:600,fontSize:'13px'}}>{slideFiles.length} slides — enter speaker notes per slide:</p>
+              <p style={{margin:'0 0 8px',fontWeight:600,fontSize:'13px'}}>{slideFiles.length} slides selected — speaker notes optional (AI can generate them)</p>
               {slideFiles.map((file,i)=>(
                 <div key={i} style={S.slideItem}>
                   <div style={S.slideLabel}>Slide {i+1}: {file.name}</div>
-                  <textarea style={{...S.textarea,minHeight:'60px'}} placeholder="Your talking points (read aloud to learner)" value={speakerNotes[i]||''} onChange={e=>{const n=[...speakerNotes];n[i]=e.target.value;setSpeakerNotes(n)}} />
+                  <textarea style={{...S.textarea,minHeight:'50px'}} placeholder="Optional — leave blank for AI generation" value={speakerNotes[i]||''} onChange={e=>{const n=[...speakerNotes];n[i]=e.target.value;setSpeakerNotes(n)}} />
                 </div>
               ))}
             </div>
@@ -332,6 +350,27 @@ function CoursesTab() {
           {uploadProgress&&<div style={S.infoBox}>{uploadProgress}</div>}
           {error&&<div style={S.error}>{error}</div>}
           <button style={S.btnPrimary} onClick={()=>handleSlideUpload(showSlideModal)} disabled={saving||slideFiles.length===0}>{saving?uploadProgress||'Uploading…':`Upload ${slideFiles.length} Slide${slideFiles.length!==1?'s':''}`}</button>
+        </Modal>
+      )}
+
+      {showVideoModal&&(
+        <Modal title={`Add Video — ${showVideoModal.title}`} onClose={()=>{setShowVideoModal(null);setVideoFile(null);setVideoUrl('');setSelectedVideoSlide('')}}>
+          <div style={S.infoBox}>Link a video to a specific slide. The course player will show the video on that slide. Use an MP4 file (up to 5GB) or paste an external URL (Vimeo, YouTube, S3).</div>
+          <Field label="Slide Number *">
+            <select style={S.input} value={selectedVideoSlide} onChange={e=>setSelectedVideoSlide(e.target.value)}>
+              <option value="">— Select slide —</option>
+              {videoSlides.map(n=><option key={n} value={n}>Slide {n}</option>)}
+            </select>
+          </Field>
+          <Field label="Upload MP4 File (up to 5GB)">
+            <input type="file" accept="video/mp4,video/*" onChange={e=>setVideoFile(e.target.files[0]||null)} style={{marginTop:'4px'}} />
+          </Field>
+          <div style={{textAlign:'center',color:'#999',fontSize:'13px'}}>— OR —</div>
+          <Field label="External Video URL (Vimeo, YouTube, S3, etc.)">
+            <input style={S.input} value={videoUrl} placeholder="https://vimeo.com/..." onChange={e=>setVideoUrl(e.target.value)} />
+          </Field>
+          {error&&<div style={S.error}>{error}</div>}
+          <button style={S.btnPrimary} onClick={()=>handleVideoUpload(showVideoModal)} disabled={saving||!selectedVideoSlide||((!videoFile)&&(!videoUrl))}>{saving?'Uploading…':'Save Video'}</button>
         </Modal>
       )}
     </div>
@@ -346,11 +385,15 @@ function QuizBuilderTab() {
   const [showModal, setShowModal] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [generateMode, setGenerateMode] = useState('both')
-  const [generateResult, setGenerateResult] = useState(null)
   const [error, setError] = useState('')
   const [form, setForm] = useState({question_text:'',option_a:'',option_b:'',option_c:'',option_d:'',correct_answer:'A',slide_reference:''})
+
+  // AI generation state
+  const [generating, setGenerating] = useState(false)
+  const [generateMode, setGenerateMode] = useState('both')
+  const [jobId, setJobId] = useState(null)
+  const [jobProgress, setJobProgress] = useState(null)
+  const pollRef = useRef(null)
 
   const loadCourses = useCallback(async () => {
     const res = await fetch('/api/lms/courses')
@@ -360,8 +403,26 @@ function QuizBuilderTab() {
 
   useEffect(() => { loadCourses() }, [loadCourses])
 
+  // Poll job status
+  useEffect(() => {
+    if (!jobId) return
+    pollRef.current = setInterval(async () => {
+      const res = await fetch(`/api/lms/ai-job-status?job_id=${jobId}`)
+      const data = await res.json()
+      setJobProgress(data)
+      if (data.status === 'complete' || data.status === 'failed') {
+        clearInterval(pollRef.current)
+        setGenerating(false)
+        setJobId(null)
+        if (selectedCourse) loadQuestions()
+        if (data.status === 'failed') setError(data.error_message || 'Generation failed.')
+      }
+    }, 2000)
+    return () => clearInterval(pollRef.current)
+  }, [jobId, selectedCourse])
+
   async function selectCourse(course) {
-    setSelectedCourse(course); setGenerateResult(null); setError('')
+    setSelectedCourse(course); setError(''); setJobProgress(null)
     const res = await fetch(`/api/lms/quiz-questions?course_id=${course.id}`)
     const data = await res.json()
     setQuestions(data.questions||[])
@@ -372,6 +433,19 @@ function QuizBuilderTab() {
     const res = await fetch(`/api/lms/quiz-questions?course_id=${selectedCourse.id}`)
     const data = await res.json()
     setQuestions(data.questions||[])
+  }
+
+  async function handleAIGenerate() {
+    setError(''); setGenerating(true); setJobProgress(null)
+    const res = await fetch('/api/lms/ai-generate', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({course_id: selectedCourse.id, mode: generateMode})
+    })
+    const data = await res.json()
+    if (!res.ok) { setError(data.error); setGenerating(false); return }
+    setJobId(data.job_id)
+    setJobProgress({ status: 'pending', progress: 0, total_slides: data.total_slides, percent: 0 })
   }
 
   function openAdd() {
@@ -388,7 +462,7 @@ function QuizBuilderTab() {
 
   async function handleSave() {
     setError(''); setSaving(true)
-    const payload = {...form,course_id:selectedCourse.id,slide_reference:form.slide_reference?parseInt(form.slide_reference):null}
+    const payload = {...form, course_id:selectedCourse.id, slide_reference:form.slide_reference?parseInt(form.slide_reference):null, is_ai_generated:false, always_include:true}
     const method = editingQuestion?'PATCH':'POST'
     if (editingQuestion) payload.id = editingQuestion.id
     const res = await fetch('/api/lms/quiz-questions',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
@@ -399,57 +473,92 @@ function QuizBuilderTab() {
   }
 
   async function handleDelete(q) {
-    if (!confirm(`Delete this question?`)) return
+    if (!confirm('Delete this question?')) return
     await fetch('/api/lms/quiz-questions',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:q.id})})
     loadQuestions()
   }
 
-  async function handleAIGenerate() {
-    setError(''); setGenerating(true); setGenerateResult(null)
-    const res = await fetch('/api/lms/ai-generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({course_id:selectedCourse.id,mode:generateMode})})
-    const data = await res.json()
-    setGenerating(false)
-    if (!res.ok) { setError(data.error); return }
-    setGenerateResult(data); loadQuestions()
+  async function toggleAlwaysInclude(q) {
+    await fetch('/api/lms/quiz-questions',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:q.id,always_include:!q.always_include,question_text:q.question_text,option_a:q.option_a,option_b:q.option_b,option_c:q.option_c,option_d:q.option_d,correct_answer:q.correct_answer,slide_reference:q.slide_reference,question_order:q.question_order})})
+    loadQuestions()
   }
+
+  const manualCount = questions.filter(q=>!q.is_ai_generated||q.always_include).length
+  const aiCount = questions.filter(q=>q.is_ai_generated&&!q.always_include).length
 
   return (
     <div>
       <div style={S.tabHeader}><h2 style={S.tabTitle}>Quiz Builder</h2></div>
+
       <Field label="Select Course">
         <select style={{...S.input,maxWidth:'400px'}} value={selectedCourse?.id||''} onChange={e=>{const c=courses.find(c=>c.id===e.target.value);if(c)selectCourse(c);else{setSelectedCourse(null);setQuestions([])}}}>
           <option value="">— Select a course —</option>
-          {courses.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}
+          {courses.map(c=><option key={c.id} value={c.id}>{c.title} ({c.lms_slides?.[0]?.count??0} slides)</option>)}
         </select>
       </Field>
+
       {selectedCourse&&(
         <>
+          {/* AI Panel */}
           <div style={QB.aiPanel}>
             <div style={QB.aiTitle}><span>🤖</span><span>AI Content Generator</span><span style={QB.aiBadge}>Powered by Claude</span></div>
-            <p style={QB.aiDesc}>Claude analyzes each slide image and automatically generates world-class speaker notes and quiz questions tailored to your course content.</p>
+            <p style={QB.aiDesc}>Claude analyzes every slide image, writes CFR-aligned speaker notes, and generates a diverse question bank (5 questions per slide). Each quiz randomly samples from the bank — no two attempts are identical.</p>
             <div style={QB.aiRow}>
-              <select style={{...S.input,width:'auto'}} value={generateMode} onChange={e=>setGenerateMode(e.target.value)}>
+              <select style={{...S.input,width:'auto'}} value={generateMode} onChange={e=>setGenerateMode(e.target.value)} disabled={generating}>
                 <option value="both">Generate Speaker Notes + Quiz Questions</option>
                 <option value="speaker_notes">Speaker Notes Only</option>
                 <option value="quiz_questions">Quiz Questions Only</option>
               </select>
-              <button style={QB.aiBtn} onClick={handleAIGenerate} disabled={generating}>{generating?'⏳ Generating… (this may take a minute)':'✨ Generate with AI'}</button>
+              <button style={{...QB.aiBtn,opacity:generating?0.6:1}} onClick={handleAIGenerate} disabled={generating}>
+                {generating?'⏳ Processing…':'✨ Generate with AI'}
+              </button>
             </div>
-            {generating&&<div style={QB.aiProgress}>Analyzing slides and generating content with Claude AI. Processing one slide at a time for maximum quality…</div>}
-            {generateResult&&<div style={QB.aiResult}>✅ Generation complete! {generateResult.speaker_notes_generated} slides got speaker notes, {generateResult.questions_generated} quiz questions created.</div>}
+
+            {/* Live Progress Bar */}
+            {jobProgress&&(
+              <div style={{marginTop:'14px'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
+                  <span style={{fontSize:'13px',color:'rgba(255,255,255,0.9)',fontWeight:'600'}}>
+                    {jobProgress.status==='complete'?'✅ Generation complete!'
+                      :jobProgress.status==='failed'?'❌ Generation failed'
+                      :jobProgress.status==='running'?`Processing slide ${jobProgress.progress} of ${jobProgress.total_slides}…`
+                      :'Initializing…'}
+                  </span>
+                  <span style={{fontSize:'13px',color:'#fbbf24',fontWeight:'700'}}>{jobProgress.percent||0}%</span>
+                </div>
+                <div style={{background:'rgba(255,255,255,0.15)',borderRadius:'10px',height:'10px',overflow:'hidden'}}>
+                  <div style={{background:'#fbbf24',height:'100%',width:`${jobProgress.percent||0}%`,borderRadius:'10px',transition:'width 0.5s ease'}} />
+                </div>
+                {jobProgress.status==='complete'&&(
+                  <div style={{marginTop:'8px',fontSize:'12px',color:'rgba(255,255,255,0.8)'}}>
+                    {jobProgress.total_slides} slides processed. Question bank updated — each quiz will randomly select questions.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Stats */}
+          <div style={{display:'flex',gap:'12px',marginBottom:'16px',flexWrap:'wrap'}}>
+            <div style={QB.statBox}><div style={QB.statNum}>{questions.length}</div><div style={QB.statLbl}>Total Questions</div></div>
+            <div style={QB.statBox}><div style={{...QB.statNum,color:'#1565c0'}}>{manualCount}</div><div style={QB.statLbl}>Always Include</div></div>
+            <div style={{...QB.statBox,background:'#f3e5f5'}}><div style={{...QB.statNum,color:'#7b1fa2'}}>{aiCount}</div><div style={QB.statLbl}>AI Bank (Random)</div></div>
+          </div>
+
           <div style={S.tabHeader}>
             <span style={{fontSize:'14px',fontWeight:'700',color:'#1a1a2e'}}>{questions.length} Question{questions.length!==1?'s':''} — {selectedCourse.title}</span>
             <button style={S.btnPrimary} onClick={openAdd}>+ Add Question</button>
           </div>
+
           {error&&<div style={S.error}>{error}</div>}
+
           <table style={S.table}>
-            <thead><tr>{['#','Question','Slide Ref','Options','Answer','Actions'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+            <thead><tr>{['#','Question','Slide Ref','Options','Answer','Type','Actions'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
             <tbody>
               {questions.map((q,i)=>(
-                <tr key={q.id} style={S.tr}>
-                  <td style={{...S.td,width:'40px',color:'#999',fontSize:'12px'}}>{i+1}</td>
-                  <td style={{...S.td,maxWidth:'280px'}}><div style={{fontSize:'13px',color:'#1a1a2e',lineHeight:'1.4'}}>{q.question_text}</div></td>
+                <tr key={q.id} style={{...S.tr,background:q.always_include||!q.is_ai_generated?'#f0f7ff':'#fff'}}>
+                  <td style={{...S.td,width:'36px',color:'#999',fontSize:'12px'}}>{i+1}</td>
+                  <td style={{...S.td,maxWidth:'260px'}}><div style={{fontSize:'13px',color:'#1a1a2e',lineHeight:'1.4'}}>{q.question_text}</div></td>
                   <td style={{...S.td,width:'80px',textAlign:'center'}}>{q.slide_reference?<span style={QB.slideRef}>Slide {q.slide_reference}</span>:'—'}</td>
                   <td style={{...S.td,fontSize:'11px',color:'#666'}}>
                     <div><strong>A:</strong> {q.option_a}</div>
@@ -457,16 +566,26 @@ function QuizBuilderTab() {
                     {q.option_c&&<div><strong>C:</strong> {q.option_c}</div>}
                     {q.option_d&&<div><strong>D:</strong> {q.option_d}</div>}
                   </td>
-                  <td style={{...S.td,width:'60px',textAlign:'center'}}><span style={QB.correctBadge}>{q.correct_answer}</span></td>
-                  <td style={{...S.td,width:'100px'}}><div style={{display:'flex',gap:'6px'}}><button style={S.btnSmall} onClick={()=>openEdit(q)}>Edit</button><button style={S.btnSmallRed} onClick={()=>handleDelete(q)}>Del</button></div></td>
+                  <td style={{...S.td,width:'56px',textAlign:'center'}}><span style={QB.correctBadge}>{q.correct_answer}</span></td>
+                  <td style={{...S.td,width:'90px'}}>
+                    {q.is_ai_generated
+                      ? <button style={{...S.btnSmall,fontSize:'10px',padding:'3px 7px',background:q.always_include?'#e8f5e9':'#f3e5f5',color:q.always_include?'#2e7d32':'#7b1fa2'}} onClick={()=>toggleAlwaysInclude(q)}>
+                          {q.always_include?'★ Fixed':'◇ Random'}
+                        </button>
+                      : <span style={{fontSize:'11px',fontWeight:'700',color:'#1565c0'}}>★ Manual</span>
+                    }
+                  </td>
+                  <td style={{...S.td,width:'96px'}}><div style={{display:'flex',gap:'5px'}}><button style={S.btnSmall} onClick={()=>openEdit(q)}>Edit</button><button style={S.btnSmallRed} onClick={()=>handleDelete(q)}>Del</button></div></td>
                 </tr>
               ))}
-              {questions.length===0&&<tr><td colSpan={6} style={S.empty}>No questions yet. Add manually or use AI generation above.</td></tr>}
+              {questions.length===0&&<tr><td colSpan={7} style={S.empty}>No questions yet. Use AI generation or add manually.</td></tr>}
             </tbody>
           </table>
         </>
       )}
-      {!selectedCourse&&<div style={{textAlign:'center',padding:'48px',color:'#aaa'}}><div style={{fontSize:'48px',marginBottom:'12px'}}>📝</div><p>Select a course above to manage its quiz questions.</p></div>}
+
+      {!selectedCourse&&<div style={{textAlign:'center',padding:'48px',color:'#aaa'}}><div style={{fontSize:'48px',marginBottom:'12px'}}>📝</div><p>Select a course to manage its quiz questions.</p></div>}
+
       {showModal&&(
         <Modal title={editingQuestion?'Edit Question':'Add Question'} onClose={()=>setShowModal(false)}>
           <Field label="Question Text *"><textarea style={{...S.textarea,minHeight:'80px'}} value={form.question_text} onChange={e=>setForm(f=>({...f,question_text:e.target.value}))} /></Field>
@@ -476,12 +595,12 @@ function QuizBuilderTab() {
               <Field key={opt} label={`Option ${opt}${opt==='A'||opt==='B'?' *':' (optional)'}`}>
                 <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
                   <input style={{...S.input,flex:1}} value={form[`option_${opt.toLowerCase()}`]} onChange={e=>setForm(f=>({...f,[`option_${opt.toLowerCase()}`]:e.target.value}))} />
-                  <button style={{...QB.correctBtn,background:form.correct_answer===opt?'#2e7d32':'#f0f0f0',color:form.correct_answer===opt?'#fff':'#999'}} onClick={()=>setForm(f=>({...f,correct_answer:opt}))} title="Mark as correct answer">{form.correct_answer===opt?'✓ Correct':'Set Correct'}</button>
+                  <button style={{...QB.correctBtn,background:form.correct_answer===opt?'#2e7d32':'#f0f0f0',color:form.correct_answer===opt?'#fff':'#999'}} onClick={()=>setForm(f=>({...f,correct_answer:opt}))}>{form.correct_answer===opt?'✓ Correct':'Set Correct'}</button>
                 </div>
               </Field>
             ))}
           </div>
-          <div style={{background:'#e8f5e9',borderRadius:'6px',padding:'8px 12px',fontSize:'12px',color:'#2e7d32'}}>✓ Correct answer: Option <strong>{form.correct_answer}</strong></div>
+          <div style={{background:'#e8f5e9',borderRadius:'6px',padding:'8px 12px',fontSize:'12px',color:'#2e7d32'}}>Correct answer: Option <strong>{form.correct_answer}</strong> — this question will always appear in quizzes</div>
           {error&&<div style={S.error}>{error}</div>}
           <button style={S.btnPrimary} onClick={handleSave} disabled={saving||!form.question_text||!form.option_a||!form.option_b||!form.correct_answer}>{saving?'Saving…':editingQuestion?'Save Changes':'Add Question'}</button>
         </Modal>
@@ -682,56 +801,57 @@ export default function AdminLmsPage() {
 }
 
 const QB = {
-  aiPanel: { background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius:'12px', padding:'20px', marginBottom:'24px', color:'#fff' },
-  aiTitle: { display:'flex', alignItems:'center', gap:'10px', fontSize:'16px', fontWeight:'700', marginBottom:'8px' },
-  aiBadge: { background:'rgba(251,191,36,0.2)', color:'#fbbf24', padding:'2px 10px', borderRadius:'20px', fontSize:'11px', fontWeight:'700', border:'1px solid rgba(251,191,36,0.4)' },
-  aiDesc: { fontSize:'13px', color:'rgba(255,255,255,0.8)', margin:'0 0 14px', lineHeight:'1.5' },
-  aiRow: { display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap' },
-  aiBtn: { background:'#fbbf24', color:'#1a1a2e', border:'none', borderRadius:'8px', padding:'10px 20px', fontSize:'14px', fontWeight:'700', cursor:'pointer', whiteSpace:'nowrap' },
-  aiProgress: { marginTop:'12px', background:'rgba(255,255,255,0.1)', borderRadius:'8px', padding:'10px 14px', fontSize:'13px', color:'rgba(255,255,255,0.9)' },
-  aiResult: { marginTop:'12px', background:'#e8f5e9', borderRadius:'8px', padding:'10px 14px', fontSize:'13px', color:'#2e7d32', fontWeight:'600' },
-  slideRef: { background:'#e3f2fd', color:'#1565c0', padding:'2px 8px', borderRadius:'10px', fontSize:'11px', fontWeight:'700' },
-  correctBadge: { background:'#e8f5e9', color:'#2e7d32', padding:'4px 10px', borderRadius:'10px', fontSize:'13px', fontWeight:'700', border:'1px solid #a5d6a7' },
-  correctBtn: { border:'none', borderRadius:'6px', padding:'6px 10px', fontSize:'11px', fontWeight:'700', cursor:'pointer', whiteSpace:'nowrap' },
+  aiPanel: {background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',borderRadius:'12px',padding:'20px',marginBottom:'20px',color:'#fff'},
+  aiTitle: {display:'flex',alignItems:'center',gap:'10px',fontSize:'16px',fontWeight:'700',marginBottom:'8px'},
+  aiBadge: {background:'rgba(251,191,36,0.2)',color:'#fbbf24',padding:'2px 10px',borderRadius:'20px',fontSize:'11px',fontWeight:'700',border:'1px solid rgba(251,191,36,0.4)'},
+  aiDesc: {fontSize:'13px',color:'rgba(255,255,255,0.8)',margin:'0 0 14px',lineHeight:'1.5'},
+  aiRow: {display:'flex',gap:'12px',alignItems:'center',flexWrap:'wrap'},
+  aiBtn: {background:'#fbbf24',color:'#1a1a2e',border:'none',borderRadius:'8px',padding:'10px 20px',fontSize:'14px',fontWeight:'700',cursor:'pointer',whiteSpace:'nowrap'},
+  slideRef: {background:'#e3f2fd',color:'#1565c0',padding:'2px 8px',borderRadius:'10px',fontSize:'11px',fontWeight:'700'},
+  correctBadge: {background:'#e8f5e9',color:'#2e7d32',padding:'4px 10px',borderRadius:'10px',fontSize:'13px',fontWeight:'700',border:'1px solid #a5d6a7'},
+  correctBtn: {border:'none',borderRadius:'6px',padding:'6px 10px',fontSize:'11px',fontWeight:'700',cursor:'pointer',whiteSpace:'nowrap'},
+  statBox: {background:'#e3f2fd',borderRadius:'8px',padding:'12px 20px',textAlign:'center',minWidth:'100px'},
+  statNum: {fontSize:'24px',fontWeight:'700',color:'#1565c0'},
+  statLbl: {fontSize:'11px',color:'#666',textTransform:'uppercase',marginTop:'2px'},
 }
 
 const S = {
-  page: { minHeight:'100vh', backgroundColor:'#f0f2f5', fontFamily:'Arial, Helvetica, sans-serif', padding:'24px' },
-  pageHeader: { display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'24px' },
-  pageTitle: { fontSize:'26px', fontWeight:'700', color:'#1a1a2e', margin:'0 0 4px' },
-  pageSubtitle: { fontSize:'14px', color:'#666', margin:0 },
-  backLink: { fontSize:'13px', color:'#b71c1c', textDecoration:'none', fontWeight:'600', marginTop:'4px' },
-  tabBar: { display:'flex', gap:'4px', marginBottom:'24px', borderBottom:'2px solid #ddd', flexWrap:'wrap' },
-  tabBtn: { padding:'10px 16px', border:'none', background:'transparent', cursor:'pointer', fontSize:'13px', fontWeight:'600', color:'#666', borderBottom:'2px solid transparent', marginBottom:'-2px' },
-  tabBtnActive: { color:'#b71c1c', borderBottom:'2px solid #b71c1c' },
-  tabContent: { background:'#fff', borderRadius:'10px', padding:'28px', boxShadow:'0 2px 12px rgba(0,0,0,0.07)' },
-  tabHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' },
-  tabTitle: { fontSize:'18px', fontWeight:'700', color:'#1a1a2e', margin:0 },
-  table: { width:'100%', borderCollapse:'collapse', fontSize:'14px' },
-  th: { textAlign:'left', padding:'10px 12px', background:'#f7f7f9', color:'#555', fontWeight:'700', fontSize:'12px', textTransform:'uppercase', letterSpacing:'0.04em', borderBottom:'1px solid #e5e5e5' },
-  tr: { borderBottom:'1px solid #f0f0f0' },
-  td: { padding:'10px 12px', color:'#333', verticalAlign:'middle' },
-  empty: { padding:'24px', textAlign:'center', color:'#aaa', fontSize:'14px' },
-  badgeGreen: { background:'#e8f5e9', color:'#2e7d32', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'700' },
-  badgeGray: { background:'#f5f5f5', color:'#999', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'700' },
-  badgeBlue: { background:'#e3f2fd', color:'#1565c0', padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:'700' },
-  code: { background:'#f5f5f5', padding:'2px 6px', borderRadius:'4px', fontSize:'12px', fontFamily:'monospace' },
-  btnPrimary: { background:'#b71c1c', color:'#fff', border:'none', borderRadius:'8px', padding:'10px 18px', fontSize:'14px', fontWeight:'700', cursor:'pointer' },
-  btnSmall: { background:'#e3f2fd', color:'#1565c0', border:'none', borderRadius:'6px', padding:'5px 12px', fontSize:'12px', fontWeight:'600', cursor:'pointer' },
-  btnSmallRed: { background:'#ffebee', color:'#b71c1c', border:'none', borderRadius:'6px', padding:'5px 12px', fontSize:'12px', fontWeight:'600', cursor:'pointer' },
-  overlay: { position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:'24px' },
-  modal: { background:'#fff', borderRadius:'12px', padding:'32px', width:'100%', maxWidth:'520px', maxHeight:'85vh', overflowY:'auto', display:'flex', flexDirection:'column', gap:'16px' },
-  modalHeader: { display:'flex', justifyContent:'space-between', alignItems:'center' },
-  modalTitle: { fontSize:'18px', fontWeight:'700', color:'#1a1a2e', margin:0 },
-  closeBtn: { background:'none', border:'none', fontSize:'20px', cursor:'pointer', color:'#666' },
-  field: { display:'flex', flexDirection:'column', gap:'5px' },
-  label: { fontSize:'13px', fontWeight:'600', color:'#444' },
-  input: { padding:'9px 12px', borderRadius:'7px', border:'1px solid #ddd', fontSize:'14px', outline:'none', width:'100%', boxSizing:'border-box' },
-  textarea: { padding:'9px 12px', borderRadius:'7px', border:'1px solid #ddd', fontSize:'14px', outline:'none', width:'100%', boxSizing:'border-box', minHeight:'80px', resize:'vertical', fontFamily:'Arial, Helvetica, sans-serif' },
-  error: { background:'#fff0f0', border:'1px solid #ffcdd2', color:'#c62828', borderRadius:'8px', padding:'10px 14px', fontSize:'13px' },
-  infoBox: { background:'#e3f2fd', border:'1px solid #bbdefb', color:'#1565c0', borderRadius:'8px', padding:'10px 14px', fontSize:'13px', lineHeight:'1.6' },
-  slideList: { maxHeight:'320px', overflowY:'auto', display:'flex', flexDirection:'column', gap:'12px', border:'1px solid #eee', borderRadius:'8px', padding:'12px' },
-  slideItem: { display:'flex', flexDirection:'column', gap:'4px' },
-  slideLabel: { fontSize:'12px', fontWeight:'700', color:'#555' },
-  hint: { fontSize:'13px', color:'#666', marginBottom:'16px', marginTop:'-4px' },
+  page: {minHeight:'100vh',backgroundColor:'#f0f2f5',fontFamily:'Arial, Helvetica, sans-serif',padding:'24px'},
+  pageHeader: {display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'24px'},
+  pageTitle: {fontSize:'26px',fontWeight:'700',color:'#1a1a2e',margin:'0 0 4px'},
+  pageSubtitle: {fontSize:'14px',color:'#666',margin:0},
+  backLink: {fontSize:'13px',color:'#b71c1c',textDecoration:'none',fontWeight:'600',marginTop:'4px'},
+  tabBar: {display:'flex',gap:'4px',marginBottom:'24px',borderBottom:'2px solid #ddd',flexWrap:'wrap'},
+  tabBtn: {padding:'10px 16px',border:'none',background:'transparent',cursor:'pointer',fontSize:'13px',fontWeight:'600',color:'#666',borderBottom:'2px solid transparent',marginBottom:'-2px'},
+  tabBtnActive: {color:'#b71c1c',borderBottom:'2px solid #b71c1c'},
+  tabContent: {background:'#fff',borderRadius:'10px',padding:'28px',boxShadow:'0 2px 12px rgba(0,0,0,0.07)'},
+  tabHeader: {display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'},
+  tabTitle: {fontSize:'18px',fontWeight:'700',color:'#1a1a2e',margin:0},
+  table: {width:'100%',borderCollapse:'collapse',fontSize:'14px'},
+  th: {textAlign:'left',padding:'10px 12px',background:'#f7f7f9',color:'#555',fontWeight:'700',fontSize:'12px',textTransform:'uppercase',letterSpacing:'0.04em',borderBottom:'1px solid #e5e5e5'},
+  tr: {borderBottom:'1px solid #f0f0f0'},
+  td: {padding:'10px 12px',color:'#333',verticalAlign:'middle'},
+  empty: {padding:'24px',textAlign:'center',color:'#aaa',fontSize:'14px'},
+  badgeGreen: {background:'#e8f5e9',color:'#2e7d32',padding:'3px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:'700'},
+  badgeGray: {background:'#f5f5f5',color:'#999',padding:'3px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:'700'},
+  badgeBlue: {background:'#e3f2fd',color:'#1565c0',padding:'3px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:'700'},
+  code: {background:'#f5f5f5',padding:'2px 6px',borderRadius:'4px',fontSize:'12px',fontFamily:'monospace'},
+  btnPrimary: {background:'#b71c1c',color:'#fff',border:'none',borderRadius:'8px',padding:'10px 18px',fontSize:'14px',fontWeight:'700',cursor:'pointer'},
+  btnSmall: {background:'#e3f2fd',color:'#1565c0',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'600',cursor:'pointer'},
+  btnSmallRed: {background:'#ffebee',color:'#b71c1c',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'600',cursor:'pointer'},
+  overlay: {position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'24px'},
+  modal: {background:'#fff',borderRadius:'12px',padding:'32px',width:'100%',maxWidth:'520px',maxHeight:'85vh',overflowY:'auto',display:'flex',flexDirection:'column',gap:'16px'},
+  modalHeader: {display:'flex',justifyContent:'space-between',alignItems:'center'},
+  modalTitle: {fontSize:'18px',fontWeight:'700',color:'#1a1a2e',margin:0},
+  closeBtn: {background:'none',border:'none',fontSize:'20px',cursor:'pointer',color:'#666'},
+  field: {display:'flex',flexDirection:'column',gap:'5px'},
+  label: {fontSize:'13px',fontWeight:'600',color:'#444'},
+  input: {padding:'9px 12px',borderRadius:'7px',border:'1px solid #ddd',fontSize:'14px',outline:'none',width:'100%',boxSizing:'border-box'},
+  textarea: {padding:'9px 12px',borderRadius:'7px',border:'1px solid #ddd',fontSize:'14px',outline:'none',width:'100%',boxSizing:'border-box',minHeight:'80px',resize:'vertical',fontFamily:'Arial, Helvetica, sans-serif'},
+  error: {background:'#fff0f0',border:'1px solid #ffcdd2',color:'#c62828',borderRadius:'8px',padding:'10px 14px',fontSize:'13px'},
+  infoBox: {background:'#e3f2fd',border:'1px solid #bbdefb',color:'#1565c0',borderRadius:'8px',padding:'10px 14px',fontSize:'13px',lineHeight:'1.6'},
+  slideList: {maxHeight:'280px',overflowY:'auto',display:'flex',flexDirection:'column',gap:'10px',border:'1px solid #eee',borderRadius:'8px',padding:'12px'},
+  slideItem: {display:'flex',flexDirection:'column',gap:'4px'},
+  slideLabel: {fontSize:'12px',fontWeight:'700',color:'#555'},
+  hint: {fontSize:'13px',color:'#666',marginBottom:'16px',marginTop:'-4px'},
 }
