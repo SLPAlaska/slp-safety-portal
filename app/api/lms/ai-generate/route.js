@@ -105,7 +105,7 @@ Respond with this exact JSON format (raw JSON only, no markdown):
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-opus-4-5',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 1500,
           system: systemPrompt,
           messages: [{
