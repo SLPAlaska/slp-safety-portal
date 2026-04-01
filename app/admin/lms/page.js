@@ -437,6 +437,7 @@ function QuizBuilderTab() {
 
   async function handleAIGenerate() {
     setError(''); setGenerating(true); setJobProgress(null)
+
     const res = await fetch('/api/lms/ai-generate', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
@@ -444,14 +445,38 @@ function QuizBuilderTab() {
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); setGenerating(false); return }
-    // Route handles everything synchronously — poll job status for progress
+
     setJobId(data.job_id)
-    setJobProgress({ status: data.status || 'running', progress: data.slides_processed || 0, total_slides: data.total_slides, percent: data.total_slides > 0 ? Math.round(((data.slides_processed||0)/data.total_slides)*100) : 0 })
-    if (data.status === 'complete') {
-      setGenerating(false)
-      setJobId(null)
-      loadQuestions()
-    }
+    setJobProgress({ status: 'running', progress: 0, total_slides: data.total_slides, percent: 0 })
+
+    // Connect to Edge Function via SSE streaming
+    const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/process-ai-job'
+    try {
+      const streamRes = await fetch(edgeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
+        body: JSON.stringify({ job_id: data.job_id }),
+      })
+      const reader = streamRes.body.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const text = decoder.decode(value)
+        const lines = text.split('\n').filter(l => l.startsWith('data: '))
+        for (const line of lines) {
+          try {
+            const event = JSON.parse(line.slice(6))
+            const pct = event.total > 0 ? Math.round((event.progress / event.total) * 100) : 0
+            setJobProgress({ status: event.status, progress: event.progress, total_slides: event.total, percent: pct })
+            if (event.status === 'complete' || event.status === 'failed') {
+              setGenerating(false); setJobId(null); loadQuestions(); return
+            }
+          } catch {}
+        }
+      }
+    } catch (err) { console.error('Stream error:', err) }
+    setGenerating(false); setJobId(null); loadQuestions()
   }
 
   function openAdd() {
