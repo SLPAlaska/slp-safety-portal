@@ -114,7 +114,7 @@ export async function POST(request) {
   if (passed) {
     const { data: existing } = await supabaseAdmin
       .from('lms_completions')
-      .select('id, certificate_id, lms_certificates(cert_number)')
+      .select('id, certificate_id')
       .eq('user_id', lmsUser.id)
       .eq('course_id', course_id)
       .maybeSingle()
@@ -150,12 +150,12 @@ export async function POST(request) {
       if (cert) {
         await supabaseAdmin
           .from('lms_completions')
-          .insert({ user_id: lmsUser.id, course_id, quiz_attempt_id: attempt.id, certificate_id: cert.id })
+          .insert({ user_id: lmsUser.id, course_id, quiz_attempt_id: attempt.id, certificate_id: cert.cert_number })
         certNumber = cert.cert_number
       }
     } else {
       // Return existing cert number
-      certNumber = existing.lms_certificates?.cert_number || null
+      certNumber = existing.certificate_id || null
 
       // If existing completion has no cert, generate one now
       if (!certNumber) {
@@ -185,7 +185,7 @@ export async function POST(request) {
         if (cert) {
           await supabaseAdmin
             .from('lms_completions')
-            .update({ certificate_id: cert.id })
+            .update({ certificate_id: cert.cert_number })
             .eq('id', existing.id)
           certNumber = cert.cert_number
         }
