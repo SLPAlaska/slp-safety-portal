@@ -150,7 +150,7 @@ export default function CertificatePage() {
               {/* LEFT: CSP + ASP */}
               <div style={{display:'flex',gap:'10px',alignItems:'center',justifyContent:'flex-start'}}>
                 <img src="/CSP_Seal.jpg" alt="CSP" style={{width:'72px',height:'72px',objectFit:'contain'}} />
-                <img src="/ASP_Seal.png" alt="ASP" style={{width:'72px',height:'72px',objectFit:'contain'}} />
+                <img src="/ASP_Seal.png" alt="ASP" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'multiply'}} />
               </div>
 
               {/* CENTER: Signature + AnthroSafe logo */}
@@ -163,15 +163,14 @@ export default function CertificatePage() {
                   Brian Walden, Trainer
                 </div>
                 {/* AnthroSafe logo */}
-                <img src="/Logo.PNG" alt="AnthroSafe" style={{height:'52px',objectFit:'contain',maxWidth:'160px'}}
-                  onError={e => { e.target.style.display='none' }} />
+                <img src="/Logo.PNG" alt="AnthroSafe" style={{height:'70px',objectFit:'contain',maxWidth:'180px',display:'block'}} />
               </div>
 
               {/* RIGHT: OHST + CSHM + OSHA */}
               <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'8px'}}>
                 <div style={{display:'flex',gap:'10px',alignItems:'center',justifyContent:'flex-end'}}>
-                  <img src="/OHST_Seal.png" alt="OHST" style={{width:'72px',height:'72px',objectFit:'contain'}} />
-                  <img src="/CSHM_Seal.png" alt="CSHM" style={{width:'72px',height:'72px',objectFit:'contain'}} />
+                  <img src="/OHST_Seal.png" alt="OHST" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'multiply'}} />
+                  <img src="/CSHM_Seal.png" alt="CSHM" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'multiply'}} />
                 </div>
                 {/* OSHA Compliant */}
                 <div style={{
