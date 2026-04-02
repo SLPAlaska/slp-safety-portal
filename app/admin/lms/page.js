@@ -610,8 +610,38 @@ function QuizBuilderTab() {
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error); setGeneratingAudio(false); return }
+
     setAudioJobId(data.job_id)
     setAudioJobProgress({ status: 'running', progress: 0, total_slides: data.total_slides, percent: 0 })
+
+    // Connect to Edge Function via SSE -- no timeout, handles 500+ slides
+    const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/process-audio-job'
+    try {
+      const streamRes = await fetch(edgeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
+        body: JSON.stringify({ job_id: data.job_id }),
+      })
+      const reader = streamRes.body.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const text = decoder.decode(value)
+        const lines = text.split('\n').filter(l => l.startsWith('data: '))
+        for (const line of lines) {
+          try {
+            const event = JSON.parse(line.slice(6))
+            const pct = event.total > 0 ? Math.round((event.progress / event.total) * 100) : 0
+            setAudioJobProgress({ status: event.status, progress: event.progress, total_slides: event.total, percent: pct })
+            if (event.status === 'complete' || event.status === 'failed') {
+              setGeneratingAudio(false); setAudioJobId(null); return
+            }
+          } catch {}
+        }
+      }
+    } catch (err) { console.error('Audio stream error:', err) }
+    setGeneratingAudio(false); setAudioJobId(null)
   }
 
   function openAdd() {
