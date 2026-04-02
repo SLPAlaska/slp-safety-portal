@@ -390,6 +390,8 @@ function QuizBuilderTab() {
 
   // AI generation state
   const [generating, setGenerating] = useState(false)
+  const [generatingAudio, setGeneratingAudio] = useState(false)
+  const [audioResult, setAudioResult] = useState(null)
   const [generateMode, setGenerateMode] = useState('both')
   const [jobId, setJobId] = useState(null)
   const [jobProgress, setJobProgress] = useState(null)
@@ -494,6 +496,19 @@ function QuizBuilderTab() {
     setAudioResult(data)
   }
 
+  async function handleGenerateAudio() {
+    setError(''); setGeneratingAudio(true); setAudioResult(null)
+    const res = await fetch('/api/lms/generate-audio', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ course_id: selectedCourse.id }),
+    })
+    const data = await res.json()
+    setGeneratingAudio(false)
+    if (!res.ok) { setError(data.error); return }
+    setAudioResult(data)
+  }
+
   function openAdd() {
     setEditingQuestion(null)
     setForm({question_text:'',option_a:'',option_b:'',option_c:'',option_d:'',correct_answer:'A',slide_reference:''})
@@ -582,6 +597,14 @@ function QuizBuilderTab() {
                 )}
               </div>
             )}
+          <div style={{marginTop:'14px',paddingTop:'14px',borderTop:'1px solid rgba(255,255,255,0.15)'}}>
+              <div style={{fontSize:'13px',color:'rgba(255,255,255,0.9)',fontWeight:'700',marginBottom:'6px'}}>Professional Audio Narration</div>
+              <p style={{fontSize:'12px',color:'rgba(255,255,255,0.7)',margin:'0 0 10px'}}>Generate studio-quality MP3 audio for each slide using ElevenLabs AI voices.</p>
+              <button style={{...QB.aiBtn,background:'#10b981'}} onClick={handleGenerateAudio} disabled={generatingAudio}>
+                {generatingAudio ? 'Generating Audio...' : 'Generate Audio with ElevenLabs'}
+              </button>
+              {audioResult && <div style={{...QB.aiResult,marginTop:'8px'}}>Audio generated for {audioResult.generated} slides.</div>}
+            </div>
           </div>
 
           {/* Stats */}
