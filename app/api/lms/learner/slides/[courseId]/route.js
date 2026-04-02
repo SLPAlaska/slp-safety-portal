@@ -47,7 +47,7 @@ export async function GET(request, { params }) {
   // Fetch slides
   const { data: slides, error } = await supabaseAdmin
     .from('lms_slides')
-    .select('id, slide_order, image_path, speaker_notes')
+    .select('id, slide_order, image_path, speaker_notes, audio_path, video_path, video_url')
     .eq('course_id', courseId)
     .order('slide_order')
 
