@@ -208,6 +208,11 @@ function CoursesTab() {
   const [videoFile, setVideoFile] = useState(null)
   const [videoUrl, setVideoUrl] = useState('')
   const [selectedVideoSlide, setSelectedVideoSlide] = useState('')
+  const [showEditModal, setShowEditModal] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [showSlideManager, setShowSlideManager] = useState(null)
+  const [slideManagerSlides, setSlideManagerSlides] = useState([])
+  const [loadingSlides, setLoadingSlides] = useState(false)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/lms/courses')
@@ -290,6 +295,59 @@ function CoursesTab() {
     load()
   }
 
+  function openEditCourse(course) {
+    setEditForm({
+      id: course.id,
+      title: course.title || '',
+      description: course.description || '',
+      completion_text: course.completion_text || '',
+      regulation_ref: course.regulation_ref || '',
+      pass_score: course.pass_score || 80,
+      max_quiz_attempts: course.max_quiz_attempts || 0,
+    })
+    setShowEditModal(course)
+  }
+
+  async function handleEditCourse() {
+    setError(''); setSaving(true)
+    const res = await fetch('/api/lms/courses', {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(editForm)
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error); return }
+    setShowEditModal(null); load()
+  }
+
+  async function openSlideManager(course) {
+    setShowSlideManager(course); setLoadingSlides(true)
+    const res = await fetch('/api/lms/slides?course_id=' + course.id)
+    const data = await res.json()
+    setSlideManagerSlides(data.slides || [])
+    setLoadingSlides(false)
+  }
+
+  async function handleDeleteSlide(slide) {
+    if (!confirm('Delete Slide ' + slide.slide_order + '? This cannot be undone.')) return
+    await fetch('/api/lms/slides', {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id: slide.id, course_id: showSlideManager.id })
+    })
+    openSlideManager(showSlideManager)
+  }
+
+  async function handleReorderSlide(slide, direction) {
+    await fetch('/api/lms/slides', {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id: slide.id, course_id: showSlideManager.id, direction })
+    })
+    openSlideManager(showSlideManager)
+  }
+
   return (
     <div>
       <div style={S.tabHeader}>
@@ -307,6 +365,8 @@ function CoursesTab() {
               <td style={S.td}>{c.lms_slides?.[0]?.count??0} slides</td>
               <td style={S.td}><span style={c.active?S.badgeGreen:S.badgeGray}>{c.active?'Active':'Inactive'}</span></td>
               <td style={{...S.td,display:'flex',gap:'6px',flexWrap:'wrap'}}>
+                <button style={S.btnSmall} onClick={()=>openEditCourse(c)}>Edit</button>
+                <button style={S.btnSmall} onClick={()=>openSlideManager(c)}>Manage Slides</button>
                 <button style={S.btnSmall} onClick={()=>{setShowSlideModal(c);setError('')}}>Upload Slides</button>
                 <button style={S.btnSmall} onClick={()=>{setShowVideoModal(c);setError('');loadVideoSlides(c)}}>Add Video</button>
                 <button style={S.btnSmall} onClick={()=>toggleCourseActive(c)}>{c.active?'Deactivate':'Activate'}</button>
@@ -350,6 +410,46 @@ function CoursesTab() {
           {uploadProgress&&<div style={S.infoBox}>{uploadProgress}</div>}
           {error&&<div style={S.error}>{error}</div>}
           <button style={S.btnPrimary} onClick={()=>handleSlideUpload(showSlideModal)} disabled={saving||slideFiles.length===0}>{saving?uploadProgress||'Uploading…':`Upload ${slideFiles.length} Slide${slideFiles.length!==1?'s':''}`}</button>
+        </Modal>
+      )}
+
+      {showEditModal&&(
+        <Modal title={`Edit Course — ${showEditModal.title}`} onClose={()=>setShowEditModal(null)}>
+          <Field label="Course Title *"><input style={S.input} value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} /></Field>
+          <Field label="Short Description"><textarea style={S.textarea} value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} /></Field>
+          <Field label="Certificate Completion Text"><textarea style={{...S.textarea,minHeight:'80px'}} value={editForm.completion_text} onChange={e=>setEditForm(f=>({...f,completion_text:e.target.value}))} /></Field>
+          <Field label="Regulation Reference"><input style={S.input} value={editForm.regulation_ref} onChange={e=>setEditForm(f=>({...f,regulation_ref:e.target.value}))} /></Field>
+          <Field label="Minimum Pass Score (%)"><input style={S.input} type="number" min={1} max={100} value={editForm.pass_score} onChange={e=>setEditForm(f=>({...f,pass_score:parseInt(e.target.value)}))} /></Field>
+          <Field label="Max Quiz Attempts (0 = unlimited)"><input style={S.input} type="number" min={0} value={editForm.max_quiz_attempts} onChange={e=>setEditForm(f=>({...f,max_quiz_attempts:parseInt(e.target.value)}))} /></Field>
+          {error&&<div style={S.error}>{error}</div>}
+          <button style={S.btnPrimary} onClick={handleEditCourse} disabled={saving||!editForm.title}>{saving?'Saving…':'Save Changes'}</button>
+        </Modal>
+      )}
+
+      {showSlideManager&&(
+        <Modal title={`Manage Slides — ${showSlideManager.title}`} onClose={()=>setShowSlideManager(null)}>
+          {loadingSlides&&<div style={{textAlign:'center',padding:'24px',color:'#999'}}>Loading slides…</div>}
+          {!loadingSlides&&slideManagerSlides.length===0&&<div style={{textAlign:'center',padding:'24px',color:'#999'}}>No slides found.</div>}
+          {!loadingSlides&&slideManagerSlides.length>0&&(
+            <div style={{display:'flex',flexDirection:'column',gap:'10px',maxHeight:'60vh',overflowY:'auto'}}>
+              {slideManagerSlides.map((slide,idx)=>(
+                <div key={slide.id} style={{display:'flex',alignItems:'center',gap:'10px',padding:'10px',border:'1px solid #eee',borderRadius:'8px',background:'#fafafa'}}>
+                  <img src={slide.image_url} alt={'Slide '+slide.slide_order} style={{width:'80px',height:'55px',objectFit:'cover',borderRadius:'4px',border:'1px solid #ddd',flexShrink:0}} />
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:'700',fontSize:'13px',color:'#1a1a2e'}}>Slide {slide.slide_order}</div>
+                    <div style={{fontSize:'11px',color:'#999',marginTop:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{slide.speaker_notes?slide.speaker_notes.substring(0,60)+'…':'No speaker notes'}</div>
+                    <div style={{fontSize:'11px',color:slide.audio_path?'#2e7d32':'#999',marginTop:'2px'}}>{slide.audio_path?'✓ Audio ready':'No audio'}</div>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:'4px',flexShrink:0}}>
+                    <button style={{...S.btnSmall,padding:'3px 8px',fontSize:'11px'}} onClick={()=>handleReorderSlide(slide,'up')} disabled={idx===0}>↑</button>
+                    <button style={{...S.btnSmall,padding:'3px 8px',fontSize:'11px'}} onClick={()=>handleReorderSlide(slide,'down')} disabled={idx===slideManagerSlides.length-1}>↓</button>
+                  </div>
+                  <button style={{...S.btnSmallRed,padding:'5px 10px',fontSize:'12px',flexShrink:0}} onClick={()=>handleDeleteSlide(slide)}>Delete</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{fontSize:'12px',color:'#999',marginTop:'4px'}}>Slides renumber automatically after delete. Audio and speaker notes are preserved on remaining slides.</div>
         </Modal>
       )}
 
