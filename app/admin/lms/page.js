@@ -396,8 +396,6 @@ function QuizBuilderTab() {
   const [jobId, setJobId] = useState(null)
   const [jobProgress, setJobProgress] = useState(null)
   const pollRef = useRef(null)
-  const [generatingAudio, setGeneratingAudio] = useState(false)
-  const [audioResult, setAudioResult] = useState(null)
 
   const loadCourses = useCallback(async () => {
     const res = await fetch('/api/lms/courses')
