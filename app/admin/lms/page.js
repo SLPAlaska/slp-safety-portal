@@ -494,19 +494,6 @@ function QuizBuilderTab() {
     setAudioResult(data)
   }
 
-  async function handleGenerateAudio() {
-    setError(''); setGeneratingAudio(true); setAudioResult(null)
-    const res = await fetch('/api/lms/generate-audio', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ course_id: selectedCourse.id }),
-    })
-    const data = await res.json()
-    setGeneratingAudio(false)
-    if (!res.ok) { setError(data.error); return }
-    setAudioResult(data)
-  }
-
   function openAdd() {
     setEditingQuestion(null)
     setForm({question_text:'',option_a:'',option_b:'',option_c:'',option_d:'',correct_answer:'A',slide_reference:''})
