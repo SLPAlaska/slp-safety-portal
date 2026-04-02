@@ -495,7 +495,10 @@ function QuizBuilderTab() {
   const [generateMode, setGenerateMode] = useState('both')
   const [jobId, setJobId] = useState(null)
   const [jobProgress, setJobProgress] = useState(null)
+  const [audioJobId, setAudioJobId] = useState(null)
+  const [audioJobProgress, setAudioJobProgress] = useState(null)
   const pollRef = useRef(null)
+  const audioPollRef = useRef(null)
 
   const loadCourses = useCallback(async () => {
     const res = await fetch('/api/lms/courses')
@@ -522,6 +525,23 @@ function QuizBuilderTab() {
     }, 2000)
     return () => clearInterval(pollRef.current)
   }, [jobId, selectedCourse])
+
+  // Poll audio job status
+  useEffect(() => {
+    if (!audioJobId) return
+    audioPollRef.current = setInterval(async () => {
+      const res = await fetch(`/api/lms/ai-job-status?job_id=${audioJobId}`)
+      const data = await res.json()
+      setAudioJobProgress(data)
+      if (data.status === 'complete' || data.status === 'failed') {
+        clearInterval(audioPollRef.current)
+        setGeneratingAudio(false)
+        setAudioJobId(null)
+        if (data.status === 'failed') setError(data.error_message || 'Audio generation failed.')
+      }
+    }, 2000)
+    return () => clearInterval(audioPollRef.current)
+  }, [audioJobId])
 
   async function selectCourse(course) {
     setSelectedCourse(course); setError(''); setJobProgress(null)
@@ -582,16 +602,16 @@ function QuizBuilderTab() {
   }
 
   async function handleGenerateAudio() {
-    setError(''); setGeneratingAudio(true); setAudioResult(null)
+    setError(''); setGeneratingAudio(true); setAudioResult(null); setAudioJobProgress(null)
     const res = await fetch('/api/lms/generate-audio', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ course_id: selectedCourse.id }),
     })
     const data = await res.json()
-    setGeneratingAudio(false)
-    if (!res.ok) { setError(data.error); return }
-    setAudioResult(data)
+    if (!res.ok) { setError(data.error); setGeneratingAudio(false); return }
+    setAudioJobId(data.job_id)
+    setAudioJobProgress({ status: 'running', progress: 0, total_slides: data.total_slides, percent: 0 })
   }
 
   function openAdd() {
@@ -688,7 +708,21 @@ function QuizBuilderTab() {
               <button style={{...QB.aiBtn,background:'#10b981'}} onClick={handleGenerateAudio} disabled={generatingAudio}>
                 {generatingAudio ? 'Generating Audio...' : 'Generate Audio with ElevenLabs'}
               </button>
-              {audioResult && <div style={{...QB.aiResult,marginTop:'8px'}}>Audio generated for {audioResult.generated} slides.</div>}
+              {audioJobProgress && (
+                <div style={{marginTop:'12px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:'4px'}}>
+                    <span style={{fontSize:'12px',color:'rgba(255,255,255,0.9)',fontWeight:'600'}}>
+                      {audioJobProgress.status==='complete'?'Audio generation complete!'
+                        :audioJobProgress.status==='failed'?'Audio generation failed'
+                        :`Generating audio for slide ${audioJobProgress.progress} of ${audioJobProgress.total_slides}...`}
+                    </span>
+                    <span style={{fontSize:'12px',color:'#10b981',fontWeight:'700'}}>{audioJobProgress.percent||0}%</span>
+                  </div>
+                  <div style={{background:'rgba(255,255,255,0.15)',borderRadius:'10px',height:'8px',overflow:'hidden'}}>
+                    <div style={{background:'#10b981',height:'100%',width:`${audioJobProgress.percent||0}%`,borderRadius:'10px',transition:'width 0.5s ease'}} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
