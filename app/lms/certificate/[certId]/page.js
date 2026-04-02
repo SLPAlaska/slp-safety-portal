@@ -163,7 +163,7 @@ export default function CertificatePage() {
                   Brian Walden, Trainer
                 </div>
                 {/* AnthroSafe logo */}
-                <img src="/Logo.PNG" alt="AnthroSafe" style={{height:'70px',objectFit:'contain',maxWidth:'180px',display:'block'}} />
+                <img src="/AnthroSafe_Logo.PNG" alt="AnthroSafe" style={{height:'70px',objectFit:'contain',maxWidth:'180px',display:'block'}} />
               </div>
 
               {/* RIGHT: OHST + CSHM + OSHA */}
