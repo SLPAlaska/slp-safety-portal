@@ -156,8 +156,8 @@ export default function CertificatePage() {
 
               {/* LEFT: CSP + ASP */}
               <div style={{display:'flex',gap:'10px',alignItems:'center',justifyContent:'flex-start'}}>
-                <img src="/CSP_Seal.jpg" alt="CSP" style={{width:'72px',height:'72px',objectFit:'contain'}} />
-                <img src="/ASP_Seal.png" alt="ASP" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'screen'}} />
+                <img src="/CSP_Seal.jpg" alt="CSP" style={{width:'72px',height:'72px',objectFit:'contain',flexShrink:0}} />
+                <img src="/ASP_Seal.png" alt="ASP" style={{width:'72px',height:'72px',objectFit:'contain',flexShrink:0}} />
               </div>
 
               {/* CENTER: Signature + AnthroSafe logo */}
@@ -176,8 +176,8 @@ export default function CertificatePage() {
               {/* RIGHT: OHST + CSHM + OSHA */}
               <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'8px'}}>
                 <div style={{display:'flex',gap:'10px',alignItems:'center',justifyContent:'flex-end'}}>
-                  <img src="/OHST_Seal.png" alt="OHST" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'screen'}} />
-                  <img src="/CSHM_Seal.png" alt="CSHM" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'screen'}} />
+                  <img src="/OHST_Seal.png" alt="OHST" style={{width:'72px',height:'72px',objectFit:'contain',flexShrink:0}} />
+                  <img src="/CSHM_Seal.png" alt="CSHM" style={{width:'72px',height:'72px',objectFit:'contain',flexShrink:0}} />
                 </div>
                 {/* OSHA Compliant */}
                 <div style={{
