@@ -30,8 +30,17 @@ export async function POST(request) {
     if (!job)
       return NextResponse.json({ error: 'Failed to create job.' }, { status: 500 })
 
-    // Return immediately -- frontend connects directly to Edge Function via SSE
-    // Edge Function handles all slide processing with no timeout limit
+    // Fire first chained invocation -- processes one slide at a time, no timeout
+    const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/process-ai-job'
+    fetch(edgeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY
+      },
+      body: JSON.stringify({ job_id: job.id, slide_index: 0 })
+    }).catch(err => console.error('Edge trigger error:', err))
+
     return NextResponse.json({ job_id: job.id, total_slides: count })
 
   } catch (err) {
