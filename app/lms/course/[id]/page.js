@@ -189,6 +189,13 @@ export default function CoursePlayer() {
   const utteranceRef = useRef(null)
   const skipTimerRef = useRef(null)
   const slideTimeRef = useRef(null)
+  const audioRef = useRef(null)
+
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+  function getAudioUrl(audioPath) {
+    if (!audioPath) return null
+    return SUPABASE_URL + '/storage/v1/object/public/lms-audio/' + audioPath
+  }
 
   // Get token
   useEffect(() => {
@@ -288,10 +295,12 @@ export default function CoursePlayer() {
     setProgress(prev => ({ ...prev, [slideId]: { ...prev[slideId], completed: true } }))
   }, [token, lmsUserId, courseId])
 
-  // Narrate current slide
+  // Narrate current slide -- use ElevenLabs MP3 if available, fallback to Web Speech
   const narrateSlide = useCallback((slide, rate) => {
     window.speechSynthesis?.cancel()
-    if (!slide?.speaker_notes) {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+
+    if (!slide?.speaker_notes && !slide?.audio_path) {
       setNarrating(false)
       setCanAdvance(true)
       return
@@ -300,23 +309,47 @@ export default function CoursePlayer() {
     setNarrating(true)
     setCanAdvance(false)
     setSkipVisible(false)
-
-    // Show skip button after 5 seconds
     skipTimerRef.current = setTimeout(() => setSkipVisible(true), 5000)
 
-    const utterance = new SpeechSynthesisUtterance(slide.speaker_notes)
-    utterance.rate = rate || 1
-    utterance.onend = () => {
+    const audioUrl = getAudioUrl(slide.audio_path)
+    if (audioUrl) {
+      // Use ElevenLabs MP3
+      const audio = new Audio(audioUrl)
+      audioRef.current = audio
+      audio.onended = () => {
+        setNarrating(false)
+        setCanAdvance(true)
+        clearTimeout(skipTimerRef.current)
+        audioRef.current = null
+      }
+      audio.onerror = () => {
+        setNarrating(false)
+        setCanAdvance(true)
+        audioRef.current = null
+      }
+      audio.play().catch(() => {
+        setNarrating(false)
+        setCanAdvance(true)
+      })
+    } else if (slide.speaker_notes) {
+      // Fallback to Web Speech API
+      const utterance = new SpeechSynthesisUtterance(slide.speaker_notes)
+      utterance.rate = rate || 1
+      utterance.onend = () => {
+        setNarrating(false)
+        setCanAdvance(true)
+        clearTimeout(skipTimerRef.current)
+      }
+      utterance.onerror = () => {
+        setNarrating(false)
+        setCanAdvance(true)
+      }
+      utteranceRef.current = utterance
+      window.speechSynthesis.speak(utterance)
+    } else {
       setNarrating(false)
       setCanAdvance(true)
-      clearTimeout(skipTimerRef.current)
     }
-    utterance.onerror = () => {
-      setNarrating(false)
-      setCanAdvance(true)
-    }
-    utteranceRef.current = utterance
-    window.speechSynthesis.speak(utterance)
   }, [])
 
   // When slide changes -- reset state, user must click Play or Next to trigger narration
@@ -349,6 +382,7 @@ export default function CoursePlayer() {
 
   function handleSkip() {
     window.speechSynthesis?.cancel()
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
     clearTimeout(skipTimerRef.current)
     setNarrating(false)
     setCanAdvance(true)

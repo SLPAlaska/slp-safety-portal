@@ -394,6 +394,8 @@ function QuizBuilderTab() {
   const [jobId, setJobId] = useState(null)
   const [jobProgress, setJobProgress] = useState(null)
   const pollRef = useRef(null)
+  const [generatingAudio, setGeneratingAudio] = useState(false)
+  const [audioResult, setAudioResult] = useState(null)
 
   const loadCourses = useCallback(async () => {
     const res = await fetch('/api/lms/courses')
@@ -477,6 +479,19 @@ function QuizBuilderTab() {
       }
     } catch (err) { console.error('Stream error:', err) }
     setGenerating(false); setJobId(null); loadQuestions()
+  }
+
+  async function handleGenerateAudio() {
+    setError(''); setGeneratingAudio(true); setAudioResult(null)
+    const res = await fetch('/api/lms/generate-audio', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ course_id: selectedCourse.id }),
+    })
+    const data = await res.json()
+    setGeneratingAudio(false)
+    if (!res.ok) { setError(data.error); return }
+    setAudioResult(data)
   }
 
   function openAdd() {
