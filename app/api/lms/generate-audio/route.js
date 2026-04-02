@@ -42,6 +42,20 @@ export async function POST(request) {
       if (slide.audio_path) { skipped++; continue }
 
       try {
+        // Fix CFR citation pronunciation before sending to ElevenLabs
+        let ttsText = slide.speaker_notes
+        // 29 CFR 1910.1020 -> 29 C F R 1910 point 1020
+        ttsText = ttsText.replace(/([0-9]+)\s*CFR\s*([0-9]+)\.([0-9]+)\(([a-z])\)/gi,
+          '$1 C F R $2 point $3 paragraph $4')
+        ttsText = ttsText.replace(/([0-9]+)\s*CFR\s*([0-9]+)\.([0-9]+)/gi,
+          '$1 C F R $2 point $3')
+        ttsText = ttsText.replace(/\bCFR\b/g, 'C F R')
+        ttsText = ttsText.replace(/\bOSHA\b/g, 'OH SHA')
+        ttsText = ttsText.replace(/\bPPE\b/g, 'P P E')
+        ttsText = ttsText.replace(/\bSDS\b/g, 'S D S')
+        ttsText = ttsText.replace(/\bGHS\b/g, 'G H S')
+        ttsText = ttsText.replace(/\bHAZMAT\b/gi, 'HAZ MAT')
+
         const ttsRes = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + ELEVENLABS_VOICE_ID, {
           method: 'POST',
           headers: {
@@ -50,7 +64,7 @@ export async function POST(request) {
             'xi-api-key': process.env.ELEVENLABS_API_KEY,
           },
           body: JSON.stringify({
-            text: slide.speaker_notes,
+            text: ttsText,
             model_id: ELEVENLABS_MODEL,
             voice_settings: {
               stability: 0.5,
