@@ -118,8 +118,15 @@ export default function CertificatePage() {
             </div>
 
             {/* Completion text */}
-            <div style={{fontSize:'13.5px',color:'#333',textAlign:'center',lineHeight:'1.75',maxWidth:'680px',marginBottom:'14px',fontFamily:'Arial,Helvetica,sans-serif'}}>
-              {completionText}
+            <div style={{textAlign:'center',maxWidth:'700px',marginBottom:'14px'}}>
+              <div style={{fontSize:'15px',fontWeight:'700',color:'#222',fontFamily:'Arial,Helvetica,sans-serif',marginBottom:'8px',letterSpacing:'0.02em'}}>
+                {cert.course_title}
+              </div>
+              {completionText.replace(cert.course_title, '').trim().split('\n').filter(l => l.trim()).map((line, i) => (
+                <p key={i} style={{fontSize:'13px',color:'#333',lineHeight:'1.7',margin:'0 0 4px',fontFamily:'Arial,Helvetica,sans-serif'}}>
+                  {line.trim()}
+                </p>
+              ))}
             </div>
 
             {/* Conducted by */}
@@ -128,7 +135,7 @@ export default function CertificatePage() {
             </div>
 
             {/* Company */}
-            <div style={{fontSize:'30px',fontWeight:'700',color:'#222',fontFamily:'Arial,Helvetica,sans-serif',letterSpacing:'0.04em',marginBottom:'2px'}}>
+            <div style={{fontSize:'24px',fontWeight:'700',color:'#222',fontFamily:'Arial,Helvetica,sans-serif',letterSpacing:'0.04em',marginBottom:'2px'}}>
               SLP Alaska, LLC
             </div>
 
@@ -150,7 +157,7 @@ export default function CertificatePage() {
               {/* LEFT: CSP + ASP */}
               <div style={{display:'flex',gap:'10px',alignItems:'center',justifyContent:'flex-start'}}>
                 <img src="/CSP_Seal.jpg" alt="CSP" style={{width:'72px',height:'72px',objectFit:'contain'}} />
-                <img src="/ASP_Seal.png" alt="ASP" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'multiply'}} />
+                <img src="/ASP_Seal.png" alt="ASP" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'screen'}} />
               </div>
 
               {/* CENTER: Signature + AnthroSafe logo */}
@@ -169,8 +176,8 @@ export default function CertificatePage() {
               {/* RIGHT: OHST + CSHM + OSHA */}
               <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'8px'}}>
                 <div style={{display:'flex',gap:'10px',alignItems:'center',justifyContent:'flex-end'}}>
-                  <img src="/OHST_Seal.png" alt="OHST" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'multiply'}} />
-                  <img src="/CSHM_Seal.png" alt="CSHM" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'multiply'}} />
+                  <img src="/OHST_Seal.png" alt="OHST" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'screen'}} />
+                  <img src="/CSHM_Seal.png" alt="CSHM" style={{width:'72px',height:'72px',objectFit:'contain',mixBlendMode:'screen'}} />
                 </div>
                 {/* OSHA Compliant */}
                 <div style={{
