@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-const ELEVENLABS_VOICE_ID = 'ChO6kqkVouUn0s7HMunx'
+const ELEVENLABS_VOICE_ID = 'q0IMILNRPxOgtBTS4taI'
 const ELEVENLABS_MODEL = 'eleven_turbo_v2_5'
 
 export async function POST(request) {
