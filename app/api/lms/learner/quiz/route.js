@@ -19,14 +19,6 @@ export async function GET(request) {
   const courseId = searchParams.get('course_id')
   if (!courseId) return NextResponse.json({ error: 'Missing course_id' }, { status: 400 })
 
-  // Get course pass score and question count config
-  const { data: course } = await supabaseAdmin
-    .from('lms_courses')
-    .select('pass_score, max_quiz_attempts')
-    .eq('id', courseId)
-    .single()
-
-  // Get ALL questions for this course
   const { data: allQuestions } = await supabaseAdmin
     .from('lms_quiz_questions')
     .select('id, question_order, question_text, option_a, option_b, option_c, option_d, correct_answer, slide_reference, is_ai_generated, always_include')
@@ -35,25 +27,29 @@ export async function GET(request) {
 
   if (!allQuestions?.length) return NextResponse.json({ questions: [] })
 
-  // Separate always-include (manually added) from AI question bank
   const alwaysInclude = allQuestions.filter(q => !q.is_ai_generated || q.always_include)
   const aiBank = allQuestions.filter(q => q.is_ai_generated && !q.always_include)
 
-  // Target 10-15 questions per quiz — always include manual ones, randomly sample from AI bank
   const TARGET_QUESTIONS = Math.min(15, allQuestions.length)
   const manualCount = alwaysInclude.length
   const aiNeeded = Math.max(0, TARGET_QUESTIONS - manualCount)
 
-  // Randomly sample from AI bank — shuffle and take what we need
   const shuffled = [...aiBank].sort(() => Math.random() - 0.5)
   const selectedAI = shuffled.slice(0, aiNeeded)
 
-  // Combine and shuffle final set
   const finalQuestions = [...alwaysInclude, ...selectedAI]
     .sort(() => Math.random() - 0.5)
     .map((q, idx) => ({ ...q, question_order: idx + 1 }))
 
   return NextResponse.json({ questions: finalQuestions })
+}
+
+function generateCertNumber() {
+  const year = new Date().getFullYear()
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let suffix = ''
+  for (let i = 0; i < 6; i++) suffix += chars[Math.floor(Math.random() * chars.length)]
+  return 'SLP-' + year + '-' + suffix
 }
 
 export async function POST(request) {
@@ -69,7 +65,10 @@ export async function POST(request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: lmsUser } = await supabaseAdmin
-    .from('lms_users').select('id, full_name').eq('auth_user_id', user.id).single()
+    .from('lms_users')
+    .select('id, full_name, job_title, lms_companies(name)')
+    .eq('auth_user_id', user.id)
+    .single()
   if (!lmsUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const { course_id, answers } = await request.json()
@@ -83,7 +82,6 @@ export async function POST(request) {
 
   if (!course) return NextResponse.json({ error: 'Course not found.' }, { status: 404 })
 
-  // Check max attempts
   if (course.max_quiz_attempts > 0) {
     const { count } = await supabaseAdmin
       .from('lms_quiz_attempts')
@@ -94,7 +92,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Maximum quiz attempts reached.' }, { status: 400 })
   }
 
-  // Grade only the questions that were answered
   const questionIds = Object.keys(answers)
   const { data: questions } = await supabaseAdmin
     .from('lms_quiz_questions')
@@ -107,36 +104,98 @@ export async function POST(request) {
   const score = total > 0 ? Math.round((correct / total) * 100) : 0
   const passed = score >= course.pass_score
 
-  // Record attempt
   const { data: attempt } = await supabaseAdmin
     .from('lms_quiz_attempts')
     .insert({ user_id: lmsUser.id, course_id, score, passed, answers })
     .select().single()
 
-  // Record completion if passed
-  let completion = null
+  let certNumber = null
+
   if (passed) {
     const { data: existing } = await supabaseAdmin
       .from('lms_completions')
-      .select('id, certificate_id')
+      .select('id, certificate_id, lms_certificates(cert_number)')
       .eq('user_id', lmsUser.id)
       .eq('course_id', course_id)
       .maybeSingle()
 
     if (!existing) {
-      const { data: newCompletion } = await supabaseAdmin
-        .from('lms_completions')
-        .insert({ user_id: lmsUser.id, course_id, quiz_attempt_id: attempt.id })
+      // Generate certificate
+      const certNum = generateCertNumber()
+      const expiresAt = new Date()
+      expiresAt.setFullYear(expiresAt.getFullYear() + 3)
+
+      const completionText = course.completion_text ||
+        'Has successfully completed the ' + course.title + ' training course' +
+        (course.regulation_ref ? ' in accordance with ' + course.regulation_ref : '') + '.'
+
+      const { data: cert } = await supabaseAdmin
+        .from('lms_certificates')
+        .insert({
+          cert_number: certNum,
+          user_id: lmsUser.id,
+          course_id,
+          quiz_attempt_id: attempt.id,
+          full_name: lmsUser.full_name,
+          company_name: lmsUser.lms_companies?.name || null,
+          job_title: lmsUser.job_title || null,
+          course_title: course.title,
+          regulation_ref: course.regulation_ref || null,
+          completion_text: completionText,
+          score_achieved: score,
+          expires_at: expiresAt.toISOString(),
+        })
         .select().single()
-      completion = newCompletion
+
+      if (cert) {
+        await supabaseAdmin
+          .from('lms_completions')
+          .insert({ user_id: lmsUser.id, course_id, quiz_attempt_id: attempt.id, certificate_id: cert.id })
+        certNumber = cert.cert_number
+      }
     } else {
-      completion = existing
+      // Return existing cert number
+      certNumber = existing.lms_certificates?.cert_number || null
+
+      // If existing completion has no cert, generate one now
+      if (!certNumber) {
+        const certNum = generateCertNumber()
+        const expiresAt = new Date()
+        expiresAt.setFullYear(expiresAt.getFullYear() + 3)
+        const completionText = course.completion_text ||
+          'Has successfully completed the ' + course.title + ' training course' +
+          (course.regulation_ref ? ' in accordance with ' + course.regulation_ref : '') + '.'
+        const { data: cert } = await supabaseAdmin
+          .from('lms_certificates')
+          .insert({
+            cert_number: certNum,
+            user_id: lmsUser.id,
+            course_id,
+            quiz_attempt_id: attempt.id,
+            full_name: lmsUser.full_name,
+            company_name: lmsUser.lms_companies?.name || null,
+            job_title: lmsUser.job_title || null,
+            course_title: course.title,
+            regulation_ref: course.regulation_ref || null,
+            completion_text: completionText,
+            score_achieved: score,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select().single()
+        if (cert) {
+          await supabaseAdmin
+            .from('lms_completions')
+            .update({ certificate_id: cert.id })
+            .eq('id', existing.id)
+          certNumber = cert.cert_number
+        }
+      }
     }
   }
 
   return NextResponse.json({
     score, passed, correct, total,
-    certificate_id: completion?.certificate_id || null,
+    certificate_id: certNumber,
     attempt_id: attempt.id,
   })
 }
