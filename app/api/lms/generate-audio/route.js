@@ -50,7 +50,11 @@ export async function POST(request) {
             'xi-api-key': process.env.ELEVENLABS_API_KEY,
           },
           body: JSON.stringify({
-            text: slide.speaker_notes,
+            text: (function() {
+              var t = slide.speaker_notes
+              t = t.replace(/([0-9]+)\.([0-9]+)/g, '$1 dot $2')
+              return t
+            })(),
             model_id: ELEVENLABS_MODEL,
             voice_settings: {
               stability: 0.5,
