@@ -106,3 +106,19 @@ export async function PATCH(request) {
 
   return NextResponse.json({ success: true })
 }
+
+// PUT /api/lms/slides  { id, speaker_notes }
+export async function PUT(request) {
+  const supabase = adminClient()
+  const { id, speaker_notes } = await request.json()
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  const { error } = await supabase
+    .from('lms_slides')
+    .update({ speaker_notes: speaker_notes || null, audio_path: null })
+    .eq('id', id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ success: true })
+}

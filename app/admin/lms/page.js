@@ -213,6 +213,9 @@ function CoursesTab() {
   const [showSlideManager, setShowSlideManager] = useState(null)
   const [slideManagerSlides, setSlideManagerSlides] = useState([])
   const [loadingSlides, setLoadingSlides] = useState(false)
+  const [editingSlide, setEditingSlide] = useState(null)
+  const [editNotes, setEditNotes] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/lms/courses')
@@ -348,6 +351,18 @@ function CoursesTab() {
     openSlideManager(showSlideManager)
   }
 
+  async function handleSaveNotes(slide) {
+    setSavingNotes(true)
+    await fetch('/api/lms/slides', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id: slide.id, speaker_notes: editNotes })
+    })
+    setSavingNotes(false)
+    setEditingSlide(null)
+    openSlideManager(showSlideManager)
+  }
+
   return (
     <div>
       <div style={S.tabHeader}>
@@ -444,12 +459,32 @@ function CoursesTab() {
                     <button style={{...S.btnSmall,padding:'3px 8px',fontSize:'11px'}} onClick={()=>handleReorderSlide(slide,'up')} disabled={idx===0}>↑</button>
                     <button style={{...S.btnSmall,padding:'3px 8px',fontSize:'11px'}} onClick={()=>handleReorderSlide(slide,'down')} disabled={idx===slideManagerSlides.length-1}>↓</button>
                   </div>
+                  <button style={{...S.btnSmall,padding:'5px 10px',fontSize:'12px',flexShrink:0}} onClick={()=>{setEditingSlide(slide);setEditNotes(slide.speaker_notes||'')}}>Edit Notes</button>
                   <button style={{...S.btnSmallRed,padding:'5px 10px',fontSize:'12px',flexShrink:0}} onClick={()=>handleDeleteSlide(slide)}>Delete</button>
                 </div>
               ))}
             </div>
           )}
           <div style={{fontSize:'12px',color:'#999',marginTop:'4px'}}>Slides renumber automatically after delete. Audio and speaker notes are preserved on remaining slides.</div>
+        </Modal>
+      )}
+
+      {editingSlide&&(
+        <Modal title={`Edit Speaker Notes — Slide ${editingSlide.slide_order}`} onClose={()=>setEditingSlide(null)}>
+          <div style={S.infoBox}>Edit the narration for this slide. Echo will read exactly what you write — so feel free to add personality, jokes, or wake-up calls. Just keep the safety message intact.</div>
+          <Field label="Speaker Notes">
+            <textarea
+              style={{...S.textarea,minHeight:'200px',fontFamily:'Arial,sans-serif',fontSize:'14px',lineHeight:'1.6'}}
+              value={editNotes}
+              onChange={e=>setEditNotes(e.target.value)}
+              placeholder="Write what Echo will say on this slide..."
+            />
+          </Field>
+          <div style={{fontSize:'12px',color:'#999'}}>{editNotes.length} characters — aim for 200-500 for best narration length</div>
+          {error&&<div style={S.error}>{error}</div>}
+          <button style={S.btnPrimary} onClick={()=>handleSaveNotes(editingSlide)} disabled={savingNotes}>
+            {savingNotes?'Saving…':'Save Notes'}
+          </button>
         </Modal>
       )}
 
