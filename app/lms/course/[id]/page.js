@@ -190,6 +190,9 @@ export default function CoursePlayer() {
   const skipTimerRef = useRef(null)
   const slideTimeRef = useRef(null)
   const audioRef = useRef(null)
+  const sessionIdRef = useRef(null)
+  const tokenRef = useRef(null)
+  const slidesViewedRef = useRef(0)
 
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
   function getAudioUrl(audioPath) {
@@ -202,6 +205,7 @@ export default function CoursePlayer() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push('/lms/login'); return }
       setToken(session.access_token)
+      tokenRef.current = session.access_token
     })
   }, [router])
 
@@ -260,24 +264,42 @@ export default function CoursePlayer() {
         body: JSON.stringify({ action: 'start', course_id: courseId }),
       })
       const sessionData = await sessionRes.json()
-      setSessionId(sessionData.session?.id || null)
+      const newSessionId = sessionData.session?.id || null
+      setSessionId(newSessionId)
+      sessionIdRef.current = newSessionId
     }
     load()
   }, [token, courseId, router])
 
-  // End session on unmount
+  // End session reliably -- handles tab close, navigation, and unmount
   useEffect(() => {
+    function endSession() {
+      const sid = sessionIdRef.current
+      const tok = tokenRef.current
+      if (!sid || !tok) return
+      // Use sendBeacon for tab close -- it survives page unload
+      const payload = JSON.stringify({ action: 'end', course_id: courseId, session_id: sid, slides_viewed: slidesViewedRef.current })
+      const blob = new Blob([payload], { type: 'application/json' })
+      navigator.sendBeacon
+        ? navigator.sendBeacon('/api/lms/learner/session?token=' + tok, blob)
+        : fetch('/api/lms/learner/session', { method: 'POST', headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' }, body: payload, keepalive: true })
+      sessionIdRef.current = null
+    }
+
+    function handleVisibility() {
+      if (document.visibilityState === 'hidden') endSession()
+    }
+
+    window.addEventListener('beforeunload', endSession)
+    document.addEventListener('visibilitychange', handleVisibility)
+
     return () => {
-      if (sessionId && token) {
-        fetch('/api/lms/learner/session', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'end', course_id: courseId, session_id: sessionId, slides_viewed: slidesViewedThisSession }),
-        })
-      }
+      endSession()
+      window.removeEventListener('beforeunload', endSession)
+      document.removeEventListener('visibilitychange', handleVisibility)
       window.speechSynthesis?.cancel()
     }
-  }, [sessionId, token, courseId, slidesViewedThisSession])
+  }, [courseId])
 
   // Save slide progress
   const saveProgress = useCallback(async (slideId, timeSpent) => {
@@ -366,7 +388,11 @@ export default function CoursePlayer() {
     } else {
       setCanAdvance(false)
     }
-    setSlidesViewedThisSession(prev => prev + 1)
+    setSlidesViewedThisSession(prev => {
+      const next = prev + 1
+      slidesViewedRef.current = next
+      return next
+    })
     return () => {
       window.speechSynthesis?.cancel()
       clearTimeout(skipTimerRef.current)

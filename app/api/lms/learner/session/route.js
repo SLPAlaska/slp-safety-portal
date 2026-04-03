@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
@@ -7,10 +8,14 @@ export async function POST(request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
+  // Support both Authorization header and query param (sendBeacon uses query param)
   const authHeader = request.headers.get('authorization')
-  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { searchParams } = new URL(request.url)
+  const queryToken = searchParams.get('token')
+  const token = authHeader ? authHeader.replace('Bearer ', '') : queryToken
 
-  const token = authHeader.replace('Bearer ', '')
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { data: { user } } = await supabaseAdmin.auth.getUser(token)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -19,12 +24,27 @@ export async function POST(request) {
     .select('id')
     .eq('auth_user_id', user.id)
     .single()
-
   if (!lmsUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   const { action, course_id, session_id, slides_viewed } = await request.json()
 
   if (action === 'start') {
+    // Auto-close any orphaned open sessions for this user+course
+    const { data: openSessions } = await supabaseAdmin
+      .from('lms_session_time')
+      .select('id, session_start')
+      .eq('user_id', lmsUser.id)
+      .eq('course_id', course_id)
+      .is('session_end', null)
+
+    for (const s of openSessions || []) {
+      const duration = Math.round((Date.now() - new Date(s.session_start).getTime()) / 1000)
+      await supabaseAdmin
+        .from('lms_session_time')
+        .update({ session_end: new Date().toISOString(), duration_seconds: duration })
+        .eq('id', s.id)
+    }
+
     const { data, error } = await supabaseAdmin
       .from('lms_session_time')
       .insert({
@@ -35,17 +55,23 @@ export async function POST(request) {
       })
       .select()
       .single()
+
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
     return NextResponse.json({ session: data })
   }
 
   if (action === 'end') {
+    if (!session_id) return NextResponse.json({ success: true })
+
     const now = new Date()
     const { data: session } = await supabaseAdmin
       .from('lms_session_time')
-      .select('session_start')
+      .select('session_start, session_end')
       .eq('id', session_id)
       .single()
+
+    // Don't double-close already ended sessions
+    if (session?.session_end) return NextResponse.json({ success: true })
 
     const duration = session
       ? Math.round((now - new Date(session.session_start)) / 1000)
