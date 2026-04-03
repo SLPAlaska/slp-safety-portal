@@ -32,9 +32,9 @@ export async function POST(request) {
     if (!job)
       return NextResponse.json({ error: 'Failed to create job.' }, { status: 500 })
 
-    // Trigger Edge Function using anon key
+    // Fire and forget -- do NOT await, return immediately
     const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/process-audio-job'
-    const triggerRes = await fetch(edgeUrl, {
+    fetch(edgeUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42,12 +42,7 @@ export async function POST(request) {
         'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({ job_id: job.id, slide_index: 0 })
-    })
-
-    if (!triggerRes.ok) {
-      const errText = await triggerRes.text()
-      console.error('Audio edge trigger failed:', triggerRes.status, errText)
-    }
+    }).catch(err => console.error('Edge trigger error:', err))
 
     return NextResponse.json({ job_id: job.id, total_slides: count })
 
