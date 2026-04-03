@@ -407,7 +407,7 @@ export async function POST(request) {
           bg = COLORS.naBg; textColor = COLORS.na; label = '—'
         } else if (cell.status === 'Complete') {
           bg = COLORS.completeBg; textColor = COLORS.complete
-          label = cell.date ? new Date(cell.date).toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'2-digit'}) : '✓'
+          label = cell.date ? new Date(cell.date).toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'2-digit'}) : 'X'
         } else if (cell.status === 'In Progress') {
           bg = COLORS.inProgBg; textColor = COLORS.inProgress
           label = cell.pct ? `${cell.pct}%` : 'In Prog'
@@ -426,7 +426,7 @@ export async function POST(request) {
     const legendY = margin + 8
     const legendItems = [
       { label: "* Required Course", color: COLORS.complete },
-      { label: '✓ Complete (with date)', color: COLORS.complete },
+      { label: 'X Complete (with date)', color: COLORS.complete },
       { label: 'In Progress (%)', color: COLORS.inProgress },
       { label: 'NOT STARTED', color: COLORS.notStarted },
       { label: '— Not Assigned', color: COLORS.na },
