@@ -32,7 +32,7 @@ export async function POST(request) {
 
     // Fire and forget -- do NOT await, return immediately
     const edgeUrl = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1/process-ai-job'
-    fetch(edgeUrl, {
+    await fetch(edgeUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
