@@ -197,7 +197,8 @@ export default function CoursePlayer() {
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
   function getAudioUrl(audioPath) {
     if (!audioPath) return null
-    return SUPABASE_URL + '/storage/v1/object/public/lms-audio/' + audioPath + '?t=' + Date.now()
+    const cleanPath = audioPath.replace(/^lms-audio\//, '')
+    return SUPABASE_URL + '/storage/v1/object/public/lms-audio/' + cleanPath + '?t=' + Date.now()
   }
 
   // Get token
