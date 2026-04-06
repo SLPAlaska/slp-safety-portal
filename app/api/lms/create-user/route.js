@@ -15,17 +15,44 @@ export async function POST(request) {
     if (!email || !password || !full_name || !username || !company_id)
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email.trim().toLowerCase(), password, email_confirm: true,
-    })
-    if (authError) return NextResponse.json({ error: authError.message }, { status: 400 })
+    const cleanEmail = email.trim().toLowerCase()
+
+    // Check if auth user already exists
+    let authUserId = null
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+    const existingAuth = existingUsers?.users?.find(u => u.email === cleanEmail)
+
+    if (existingAuth) {
+      // Use existing auth user
+      authUserId = existingAuth.id
+      // Update their password to the new one
+      await supabaseAdmin.auth.admin.updateUserById(authUserId, { password })
+    } else {
+      // Create new auth user
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: cleanEmail, password, email_confirm: true,
+      })
+      if (authError) return NextResponse.json({ error: authError.message }, { status: 400 })
+      authUserId = authData.user.id
+    }
+
+    // Check if lms_user already exists for this auth user
+    const { data: existingLmsUser } = await supabaseAdmin
+      .from('lms_users')
+      .select('id')
+      .eq('auth_user_id', authUserId)
+      .single()
+
+    if (existingLmsUser) {
+      return NextResponse.json({ error: 'This user already exists in the LMS.' }, { status: 400 })
+    }
 
     const { data: lmsUser, error: lmsError } = await supabaseAdmin
       .from('lms_users')
       .insert({
-        auth_user_id: authData.user.id,
+        auth_user_id: authUserId,
         company_id,
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         username: username.trim(),
         full_name: full_name.trim(),
         job_title: job_title?.trim() || null,
@@ -41,10 +68,8 @@ export async function POST(request) {
       })
       .select().single()
 
-    if (lmsError) {
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-      return NextResponse.json({ error: lmsError.message }, { status: 400 })
-    }
+    if (lmsError) return NextResponse.json({ error: lmsError.message }, { status: 400 })
+
     return NextResponse.json({ user: lmsUser }, { status: 201 })
   } catch (err) {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 })
