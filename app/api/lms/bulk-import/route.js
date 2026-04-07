@@ -7,7 +7,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Load ALL existing auth users once (handles >1000 via pagination)
 async function loadAllAuthUsers() {
   const allUsers = [];
   let page = 1;
@@ -30,7 +29,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'company_id and users array required' }, { status: 400 });
     }
 
-    // Load existing lms_users for this company (check for duplicate usernames)
+    // Load existing usernames for this company
     const { data: existingLmsUsers, error: lmsErr } = await supabaseAdmin
       .from('lms_users')
       .select('username')
@@ -38,7 +37,7 @@ export async function POST(req) {
     if (lmsErr) throw new Error(`lms_users lookup failed: ${lmsErr.message}`);
     const existingUsernames = new Set((existingLmsUsers || []).map(u => u.username));
 
-    // Load all auth users once — avoid calling listUsers() per employee
+    // Load all auth users once
     const allAuthUsers = await loadAllAuthUsers();
     const authByEmail = new Map(allAuthUsers.map(u => [u.email, u.id]));
 
@@ -63,21 +62,18 @@ export async function POST(req) {
         continue;
       }
 
-      const display_name = `${first_name} ${last_name}`.trim();
-      // Placeholder email for Supabase Auth (field workers without real email)
+      const full_name = `${first_name} ${last_name}`.trim();
       const has_real_email = email && email.includes('@') && !email.includes('noemail.');
       const placeholder_email = has_real_email
         ? email.toLowerCase().trim()
         : `${username}@noemail.slpalaska.com`;
 
       try {
-        // Skip if username already exists in this company
         if (existingUsernames.has(username)) {
           results.skipped.push({ username, reason: 'already exists' });
           continue;
         }
 
-        // Find or create auth user
         let auth_user_id = authByEmail.get(placeholder_email);
 
         if (!auth_user_id) {
@@ -86,10 +82,9 @@ export async function POST(req) {
             password: temp_password,
             email_confirm: true,
             user_metadata: {
-              display_name,
+              full_name,
               username,
               company_id,
-              login_type: has_real_email ? 'email' : 'username',
             },
           });
 
@@ -98,35 +93,34 @@ export async function POST(req) {
             continue;
           }
           auth_user_id = newAuth.user.id;
-          // Add to in-memory map so dupes within this batch are caught
           authByEmail.set(placeholder_email, auth_user_id);
         }
 
-        // Insert lms_users record
+        // Only insert columns that actually exist in lms_users
         const { error: dbError } = await supabaseAdmin.from('lms_users').insert({
           id: auth_user_id,
           company_id,
           username,
-          display_name,
+          full_name,
           email: has_real_email ? email.toLowerCase().trim() : null,
           job_title: job_title || null,
           department: department || null,
-          location: location || null,
+          work_location: location || null,
           hire_date: hire_date || null,
-          employee_number: employee_number ? String(employee_number) : null,
+          employee_id: employee_number ? String(employee_number) : null,
           role: 'learner',
-          is_active: true,
+          active: true,
+          must_change_pw: true,
         });
 
         if (dbError) {
-          // Roll back auth user creation
           await supabaseAdmin.auth.admin.deleteUser(auth_user_id);
           results.errors.push({ username, error: dbError.message });
           continue;
         }
 
-        existingUsernames.add(username); // prevent intra-batch dupes
-        results.created.push({ username, display_name });
+        existingUsernames.add(username);
+        results.created.push({ username, full_name });
       } catch (err) {
         results.errors.push({ username, error: err.message });
       }
