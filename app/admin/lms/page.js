@@ -112,9 +112,13 @@ function UsersTab() {
   const [users, setUsers] = useState([])
   const [companies, setCompanies] = useState([])
   const [showModal, setShowModal] = useState(false)
+  const [editUser, setEditUser] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [filterCompany, setFilterCompany] = useState('')
+  const [search, setSearch] = useState('')
   const [form, setForm] = useState({full_name:'',email:'',username:'',job_title:'',company_id:'',password:'',role:'learner',work_location:'',client_project:'',department:'',employee_id:'',supervisor:'',hire_date:''})
+  const [editForm, setEditForm] = useState({})
 
   const load = useCallback(async () => {
     const [ur,cr] = await Promise.all([fetch('/api/lms/users'),fetch('/api/lms/companies')])
@@ -125,6 +129,16 @@ function UsersTab() {
 
   useEffect(() => { load() }, [load])
 
+  // Filter + search + sort
+  const visibleUsers = users
+    .filter(u => !filterCompany || u.company_id === filterCompany || u.lms_companies?.id === filterCompany)
+    .filter(u => !search || u.full_name?.toLowerCase().includes(search.toLowerCase()) || u.username?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a,b) => {
+      const aLast = a.full_name?.split(' ').pop() || ''
+      const bLast = b.full_name?.split(' ').pop() || ''
+      return aLast.localeCompare(bLast)
+    })
+
   async function handleCreate() {
     setError(''); setSaving(true)
     const res = await fetch('/api/lms/create-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
@@ -133,6 +147,38 @@ function UsersTab() {
     if (!res.ok) { setError(data.error); return }
     setShowModal(false)
     setForm({full_name:'',email:'',username:'',job_title:'',company_id:'',password:'',role:'learner',work_location:'',client_project:'',department:'',employee_id:'',supervisor:'',hire_date:''})
+    load()
+  }
+
+  function openEdit(user) {
+    setEditUser(user)
+    setEditForm({
+      id: user.id,
+      full_name: user.full_name || '',
+      email: user.email || '',
+      username: user.username || '',
+      job_title: user.job_title || '',
+      company_id: user.company_id || user.lms_companies?.id || '',
+      role: user.role || 'learner',
+      work_location: user.work_location || '',
+      department: user.department || '',
+      employee_id: user.employee_id || '',
+      hire_date: user.hire_date || '',
+    })
+    setError('')
+  }
+
+  async function handleEdit() {
+    setError(''); setSaving(true)
+    const res = await fetch('/api/lms/users', {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(editForm)
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error || 'Save failed.'); return }
+    setEditUser(null)
     load()
   }
 
@@ -153,24 +199,54 @@ function UsersTab() {
         <h2 style={S.tabTitle}>Learner Accounts</h2>
         <button style={S.btnPrimary} onClick={()=>setShowModal(true)}>+ Add User</button>
       </div>
+
+      {/* Filter bar */}
+      <div style={{display:'flex',gap:'12px',marginBottom:'16px',alignItems:'center',flexWrap:'wrap'}}>
+        <select
+          style={{...S.input,maxWidth:'220px',margin:0}}
+          value={filterCompany}
+          onChange={e=>setFilterCompany(e.target.value)}
+        >
+          <option value="">All Companies</option>
+          {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <input
+          style={{...S.input,maxWidth:'240px',margin:0}}
+          placeholder="Search by name or username..."
+          value={search}
+          onChange={e=>setSearch(e.target.value)}
+        />
+        <span style={{fontSize:'13px',color:'#94a3b8',fontWeight:'600',whiteSpace:'nowrap'}}>
+          {visibleUsers.length} of {users.length} users
+        </span>
+      </div>
+
       <table style={S.table}>
         <thead><tr>{['Name','Email','Username','Company','Job Title','Role','Status','Actions'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
         <tbody>
-          {users.map(u=>(
+          {visibleUsers.map(u=>(
             <tr key={u.id} style={S.tr}>
               <td style={S.td}>{u.full_name}</td>
-              <td style={S.td}>{u.email}</td>
+              <td style={S.td}>{u.email||<span style={{color:'#94a3b8',fontSize:'12px'}}>no email</span>}</td>
               <td style={S.td}><code style={S.code}>{u.username}</code></td>
               <td style={S.td}>{u.lms_companies?.name||'—'}</td>
               <td style={S.td}>{u.job_title||'—'}</td>
               <td style={S.td}><span style={u.role==='company_admin'?S.badgeBlue:S.badgeGray}>{u.role==='company_admin'?'Company Admin':'Learner'}</span></td>
               <td style={S.td}><span style={u.active?S.badgeGreen:S.badgeGray}>{u.active?(u.must_change_pw?'Pending Login':'Active'):'Inactive'}</span></td>
-              <td style={S.td}>{u.active?<button style={S.btnSmallRed} onClick={()=>handleDeactivate(u)}>Deactivate</button>:<button style={S.btnSmall} onClick={()=>handleReactivate(u)}>Reactivate</button>}</td>
+              <td style={{...S.td,display:'flex',gap:'5px',flexWrap:'wrap'}}>
+                <button style={S.btnSmall} onClick={()=>openEdit(u)}>Edit</button>
+                {u.active
+                  ? <button style={S.btnSmallRed} onClick={()=>handleDeactivate(u)}>Deactivate</button>
+                  : <button style={S.btnSmall} onClick={()=>handleReactivate(u)}>Reactivate</button>
+                }
+              </td>
             </tr>
           ))}
-          {users.length===0&&<tr><td colSpan={8} style={S.empty}>No users yet.</td></tr>}
+          {visibleUsers.length===0&&<tr><td colSpan={8} style={S.empty}>{users.length===0?'No users yet.':'No users match the current filter.'}</td></tr>}
         </tbody>
       </table>
+
+      {/* Create modal */}
       {showModal&&(
         <Modal title="Create Account" onClose={()=>setShowModal(false)}>
           <Field label="Full Name *"><input style={S.input} value={form.full_name} onChange={e=>setForm(f=>({...f,full_name:e.target.value}))} /></Field>
@@ -198,6 +274,34 @@ function UsersTab() {
           <Field label="Temporary Password *"><input style={S.input} type="password" value={form.password} placeholder="Min 8 characters" onChange={e=>setForm(f=>({...f,password:e.target.value}))} /></Field>
           {error&&<div style={S.error}>{error}</div>}
           <button style={S.btnPrimary} onClick={handleCreate} disabled={saving||!form.full_name||!form.email||!form.username||!form.company_id||!form.password}>{saving?'Creating…':'Create Account'}</button>
+        </Modal>
+      )}
+
+      {/* Edit modal */}
+      {editUser&&(
+        <Modal title={`Edit — ${editUser.full_name}`} onClose={()=>setEditUser(null)}>
+          <Field label="Full Name *"><input style={S.input} value={editForm.full_name} onChange={e=>setEditForm(f=>({...f,full_name:e.target.value}))} /></Field>
+          <Field label="Email"><input style={S.input} type="email" value={editForm.email} onChange={e=>setEditForm(f=>({...f,email:e.target.value}))} /></Field>
+          <Field label="Username *"><input style={S.input} value={editForm.username} onChange={e=>setEditForm(f=>({...f,username:e.target.value}))} /></Field>
+          <Field label="Job Title"><input style={S.input} value={editForm.job_title} onChange={e=>setEditForm(f=>({...f,job_title:e.target.value}))} /></Field>
+          <Field label="Company *">
+            <select style={S.input} value={editForm.company_id} onChange={e=>setEditForm(f=>({...f,company_id:e.target.value}))}>
+              <option value="">— Select Company —</option>
+              {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Role *">
+            <select style={S.input} value={editForm.role} onChange={e=>setEditForm(f=>({...f,role:e.target.value}))}>
+              <option value="learner">Learner</option>
+              <option value="company_admin">Company Admin</option>
+            </select>
+          </Field>
+          <Field label="Work Location"><input style={S.input} value={editForm.work_location} onChange={e=>setEditForm(f=>({...f,work_location:e.target.value}))} /></Field>
+          <Field label="Department"><input style={S.input} value={editForm.department} onChange={e=>setEditForm(f=>({...f,department:e.target.value}))} /></Field>
+          <Field label="Employee ID"><input style={S.input} value={editForm.employee_id} onChange={e=>setEditForm(f=>({...f,employee_id:e.target.value}))} /></Field>
+          <Field label="Hire Date"><input style={S.input} type="date" value={editForm.hire_date} onChange={e=>setEditForm(f=>({...f,hire_date:e.target.value}))} /></Field>
+          {error&&<div style={S.error}>{error}</div>}
+          <button style={S.btnPrimary} onClick={handleEdit} disabled={saving||!editForm.full_name||!editForm.username||!editForm.company_id}>{saving?'Saving…':'Save Changes'}</button>
         </Modal>
       )}
     </div>
