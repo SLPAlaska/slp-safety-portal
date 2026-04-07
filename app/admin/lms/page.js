@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import BulkImportModal from '@/components/lms/BulkImportModal'
 
 const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments']
 
@@ -34,6 +35,7 @@ function CompaniesTab() {
   const [form, setForm] = useState({ name: '', slug: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [importCompany, setImportCompany] = useState(null)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/lms/companies')
@@ -76,7 +78,10 @@ function CompaniesTab() {
               <td style={S.td}><code style={S.code}>{c.slug}</code></td>
               <td style={S.td}><span style={c.active?S.badgeGreen:S.badgeGray}>{c.active?'Active':'Inactive'}</span></td>
               <td style={S.td}>{c.notes||'—'}</td>
-              <td style={S.td}><button style={S.btnSmall} onClick={()=>toggleActive(c)}>{c.active?'Deactivate':'Reactivate'}</button></td>
+              <td style={{...S.td,display:'flex',gap:'6px'}}>
+                <button style={S.btnSmall} onClick={()=>setImportCompany({id:c.id,name:c.name})}>Import Employees</button>
+                <button style={S.btnSmall} onClick={()=>toggleActive(c)}>{c.active?'Deactivate':'Reactivate'}</button>
+              </td>
             </tr>
           ))}
           {companies.length===0&&<tr><td colSpan={5} style={S.empty}>No companies yet.</td></tr>}
@@ -90,6 +95,13 @@ function CompaniesTab() {
           {error&&<div style={S.error}>{error}</div>}
           <button style={S.btnPrimary} onClick={handleSave} disabled={saving||!form.name}>{saving?'Saving…':'Save Company'}</button>
         </Modal>
+      )}
+      {importCompany&&(
+        <BulkImportModal
+          company={importCompany}
+          onClose={()=>setImportCompany(null)}
+          onComplete={()=>setImportCompany(null)}
+        />
       )}
     </div>
   )
