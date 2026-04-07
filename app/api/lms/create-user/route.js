@@ -17,31 +17,51 @@ export async function POST(request) {
 
     const cleanEmail = email.trim().toLowerCase()
 
-    // Check if auth user already exists
+    // Find existing auth user — paginate to handle >1000 users
     let authUserId = null
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const existingAuth = existingUsers?.users?.find(u => u.email === cleanEmail)
+    let page = 1
+    const perPage = 1000
+    outer: while (true) {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage })
+      if (error) break
+      const match = data?.users?.find(u => u.email === cleanEmail)
+      if (match) { authUserId = match.id; break outer }
+      if (!data?.users || data.users.length < perPage) break
+      page++
+    }
 
-    if (existingAuth) {
-      // Use existing auth user
-      authUserId = existingAuth.id
-      // Update their password to the new one
+    if (authUserId) {
+      // Update password so the new one they typed actually works
       await supabaseAdmin.auth.admin.updateUserById(authUserId, { password })
     } else {
-      // Create new auth user
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: cleanEmail, password, email_confirm: true,
       })
-      if (authError) return NextResponse.json({ error: authError.message }, { status: 400 })
-      authUserId = authData.user.id
+      if (authError) {
+        // If Supabase still says duplicate, do one more direct lookup
+        if (authError.message?.toLowerCase().includes('already')) {
+          const { data: retry } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+          const match = retry?.users?.find(u => u.email === cleanEmail)
+          if (match) {
+            authUserId = match.id
+            await supabaseAdmin.auth.admin.updateUserById(authUserId, { password })
+          } else {
+            return NextResponse.json({ error: authError.message }, { status: 400 })
+          }
+        } else {
+          return NextResponse.json({ error: authError.message }, { status: 400 })
+        }
+      } else {
+        authUserId = authData.user.id
+      }
     }
 
-    // Check if lms_user already exists for this auth user
+    // Check if lms_users row already exists (by id — the auth user id IS the row id)
     const { data: existingLmsUser } = await supabaseAdmin
       .from('lms_users')
       .select('id')
-      .eq('auth_user_id', authUserId)
-      .single()
+      .eq('id', authUserId)
+      .maybeSingle()
 
     if (existingLmsUser) {
       return NextResponse.json({ error: 'This user already exists in the LMS.' }, { status: 400 })
@@ -50,7 +70,7 @@ export async function POST(request) {
     const { data: lmsUser, error: lmsError } = await supabaseAdmin
       .from('lms_users')
       .insert({
-        auth_user_id: authUserId,
+        id: authUserId,
         company_id,
         email: cleanEmail,
         username: username.trim(),
