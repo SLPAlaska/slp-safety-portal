@@ -414,6 +414,21 @@ function CoursesTab() {
     load()
   }
 
+  async function handleDeleteCourse(course) {
+    if (!confirm(`DELETE "${course.title}"?\n\nThis will permanently delete the course, all slides, audio files, quiz questions, and completion records. This CANNOT be undone.`)) return
+    const res = await fetch('/api/lms/delete-course', {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ course_id: course.id })
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      alert('Delete failed: ' + (d.error || 'Unknown error'))
+      return
+    }
+    load()
+  }
+
   function openEditCourse(course) {
     setEditForm({
       id: course.id,
@@ -501,6 +516,7 @@ function CoursesTab() {
                 <button style={S.btnSmall} onClick={()=>{setShowSlideModal(c);setError('')}}>Upload Slides</button>
                 <button style={S.btnSmall} onClick={()=>{setShowVideoModal(c);setError('');loadVideoSlides(c)}}>Add Video</button>
                 <button style={S.btnSmall} onClick={()=>toggleCourseActive(c)}>{c.active?'Deactivate':'Activate'}</button>
+                <button style={S.btnSmallRed} onClick={()=>handleDeleteCourse(c)}>Delete</button>
               </td>
             </tr>
           ))}
