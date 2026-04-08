@@ -193,6 +193,21 @@ function UsersTab() {
     load()
   }
 
+  async function handleDeleteUser(user) {
+    if (!confirm(`PERMANENTLY DELETE "${user.full_name}"?\n\nThis will remove the user, all training records, certificates, and completions. This CANNOT be undone.`)) return
+    const res = await fetch('/api/lms/delete-user-permanent', {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ user_id: user.id })
+    })
+    if (!res.ok) {
+      const d = await res.json()
+      alert('Delete failed: ' + (d.error || 'Unknown error'))
+      return
+    }
+    load()
+  }
+
   return (
     <div>
       <div style={S.tabHeader}>
