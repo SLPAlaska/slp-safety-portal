@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import BulkImportModal from '@/components/lms/BulkImportModal'
 
-const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments']
+const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments', 'Grant Credit']
 
 function Modal({ title, onClose, children }) {
   return (
@@ -1356,6 +1356,7 @@ export default function AdminLmsPage() {
         {activeTab==='Quiz Builder'           && <QuizBuilderTab />}
         {activeTab==='Required Courses'       && <RequiredCoursesTab />}
         {activeTab==='Individual Assignments' && <IndividualAssignmentsTab />}
+        {activeTab === 'Grant Credit'            && <GrantCreditTab />}
       </div>
     </div>
   )
@@ -1416,3 +1417,196 @@ const S = {
   slideLabel: {fontSize:'12px',fontWeight:'700',color:'#555'},
   hint: {fontSize:'13px',color:'#666',marginBottom:'16px',marginTop:'-4px'},
 }
+
+
+// ─── GRANT CREDIT TAB ───────────────────────────────────────
+function GrantCreditTab() {
+  const [users, setUsers] = useState([])
+  const [courses, setCourses] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [companyFilter, setCompanyFilter] = useState('')
+  const [nameSearch, setNameSearch] = useState('')
+  const [userId, setUserId] = useState('')
+  const [courseIds, setCourseIds] = useState([])
+  const [completedAt, setCompletedAt] = useState(new Date().toISOString().slice(0, 10))
+  const [note, setNote] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [results, setResults] = useState([])
+
+  const load = useCallback(async () => {
+    const [ur, cor, comr] = await Promise.all([
+      fetch('/api/lms/users'),
+      fetch('/api/lms/courses'),
+      fetch('/api/lms/companies'),
+    ])
+    const [ud, cod, comd] = await Promise.all([ur.json(), cor.json(), comr.json()])
+    setUsers((ud.users || []).filter(u => u.active))
+    setCourses((cod.courses || []).filter(c => c.active))
+    setCompanies((comd.companies || []).filter(c => c.active !== false))
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filteredUsers = users.filter(u => {
+    if (companyFilter && u.company_id !== companyFilter) return false
+    if (nameSearch && !(u.full_name || '').toLowerCase().includes(nameSearch.toLowerCase())) return false
+    return true
+  })
+
+  function toggleCourse(id) {
+    setCourseIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id])
+  }
+
+  async function handleGrant() {
+    setError(''); setResults([]); setSaving(true)
+    // Get auth token — same pattern as other admin actions
+    const { data: { session } } = await (await import('@supabase/ssr')).createBrowserClient
+      ? { data: { session: null } }
+      : { data: { session: null } }
+    // Fallback: the admin page already has auth in cookies; the route accepts Bearer header,
+    // so we pull from window.localStorage (Supabase default) as a last resort.
+    let token = null
+    try {
+      const raw = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+      if (raw) token = JSON.parse(localStorage.getItem(raw))?.access_token
+    } catch {}
+
+    const out = []
+    for (const course_id of courseIds) {
+      const res = await fetch('/api/lms/grant-credit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          course_id,
+          completed_at: completedAt,
+          grant_note: note || null,
+        }),
+      })
+      const data = await res.json()
+      out.push(res.ok
+        ? { ok: true, course: data.course, cert: data.cert_number }
+        : { ok: false, course: courses.find(c => c.id === course_id)?.title || course_id, error: data.error })
+    }
+    setSaving(false)
+    setResults(out)
+    if (out.every(r => r.ok)) {
+      setCourseIds([])
+      setNote('')
+    } else {
+      setError('One or more grants failed. See details below.')
+    }
+  }
+
+  return (
+    <div>
+      <div style={S.tabHeader}>
+        <h2 style={S.tabTitle}>Grant Course Credit</h2>
+      </div>
+      <div style={S.infoBox}>
+        Grant credit for training completed elsewhere (previous employer, in-person class, etc.)
+        without requiring the learner to take the quiz. Issues a certificate and records the admin grant.
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 12, margin: '16px 0', flexWrap: 'wrap' }}>
+        <select
+          value={companyFilter}
+          onChange={e => { setCompanyFilter(e.target.value); setUserId('') }}
+          style={{ ...S.input, minWidth: 220, margin: 0 }}
+        >
+          <option value="">All companies</option>
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={nameSearch}
+          onChange={e => setNameSearch(e.target.value)}
+          style={{ ...S.input, minWidth: 240, margin: 0 }}
+        />
+      </div>
+
+      <label style={S.label}>Employee ({filteredUsers.length})</label>
+      <select value={userId} onChange={e => setUserId(e.target.value)} style={S.input}>
+        <option value="">Select employee…</option>
+        {filteredUsers.map(u => {
+          const companyName = u.lms_companies?.name
+            || companies.find(c => c.id === u.company_id)?.name
+            || ''
+          return (
+            <option key={u.id} value={u.id}>
+              {u.full_name}{companyName ? ` — ${companyName}` : ''}
+            </option>
+          )
+        })}
+      </select>
+
+      {userId && (
+        <>
+          <label style={S.label}>Courses ({courseIds.length} selected)</label>
+          <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 6, padding: 12 }}>
+            {courses.map(c => (
+              <label key={c.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 0' }}>
+                <input
+                  type="checkbox"
+                  checked={courseIds.includes(c.id)}
+                  onChange={() => toggleCourse(c.id)}
+                  style={{ marginRight: 8 }}
+                />
+                {c.title}
+              </label>
+            ))}
+          </div>
+
+          <label style={S.label}>Completion Date</label>
+          <input
+            type="date"
+            value={completedAt}
+            onChange={e => setCompletedAt(e.target.value)}
+            style={S.input}
+          />
+
+          <label style={S.label}>Note (optional)</label>
+          <input
+            type="text"
+            placeholder="e.g., Completed at previous employer — cert on file"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            style={S.input}
+          />
+
+          <button
+            style={S.btnPrimary}
+            onClick={handleGrant}
+            disabled={saving || !userId || courseIds.length === 0}
+          >
+            {saving ? 'Granting…' : `Grant ${courseIds.length} course${courseIds.length === 1 ? '' : 's'}`}
+          </button>
+        </>
+      )}
+
+      {error && <div style={{ ...S.errorBox, marginTop: 16 }}>{error}</div>}
+
+      {results.length > 0 && (
+        <div style={{ marginTop: 16, border: '1px solid #e5e7eb', borderRadius: 6, padding: 12 }}>
+          <strong>Results:</strong>
+          <ul style={{ margin: '8px 0 0 20px' }}>
+            {results.map((r, i) => (
+              <li key={i} style={{ color: r.ok ? '#16a34a' : '#dc2626' }}>
+                {r.ok
+                  ? `✓ ${r.course} — cert ${r.cert}`
+                  : `✗ ${r.course} — ${r.error}`}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
