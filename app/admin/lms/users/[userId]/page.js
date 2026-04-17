@@ -5,13 +5,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../../../../../lib/supabase'
 import { getCourseStatus, formatFrequency, STATUS_COLORS } from '@/lib/courseStatus'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
 
 export default function UserTrainingPage() {
   const params = useParams()
