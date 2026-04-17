@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '../../../../../lib/supabase'
+
 import { getCourseStatus, formatFrequency, STATUS_COLORS } from '@/lib/courseStatus'
 
 
@@ -24,18 +24,9 @@ export default function UserTrainingPage() {
   const [granting, setGranting] = useState(false)
   const [grantResult, setGrantResult] = useState(null)
 
-  async function getToken() {
-    const { data: { session } } = await supabase.auth.getSession()
-    return session?.access_token || null
-  }
-
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    const token = await getToken()
-    if (!token) { setError('Not signed in. Please log in again.'); setLoading(false); return }
-    const res = await fetch(`/api/lms/admin/user-training?user_id=${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await fetch(`/api/lms/admin/user-training?user_id=${userId}`)
     const j = await res.json()
     if (!res.ok) { setError(j.error || 'Failed to load'); setLoading(false); return }
     setData(j); setLoading(false)
@@ -71,15 +62,11 @@ export default function UserTrainingPage() {
   async function handleGrant() {
     if (!grantCourseIds.length) return
     setGranting(true); setGrantResult(null)
-    const token = await getToken()
     const out = []
     for (const course_id of grantCourseIds) {
       const res = await fetch('/api/lms/grant-credit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, course_id, completed_at: grantDate, grant_note: grantNote || null }),
       })
       const j = await res.json()
@@ -267,3 +254,4 @@ const S = {
   td: { padding: 10, borderBottom: '1px solid #f3f4f6', fontSize: 13, verticalAlign: 'top' },
   certLink: { color: '#dc2626', textDecoration: 'none', fontSize: 12, fontFamily: 'monospace' },
 }
+

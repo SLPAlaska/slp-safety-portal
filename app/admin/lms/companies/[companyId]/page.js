@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '../../../../../lib/supabase'
+
 import { getCourseStatus, formatFrequency, STATUS_COLORS } from '@/lib/courseStatus'
 
 
@@ -31,15 +31,7 @@ export default function CompanyMatrixPage() {
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) {
-      setError('Not signed in. Please log in again.')
-      setLoading(false)
-      return
-    }
-    const res = await fetch(`/api/lms/admin/company-matrix?company_id=${companyId}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
+    const res = await fetch(`/api/lms/admin/company-matrix?company_id=${companyId}`)
     const j = await res.json()
     if (!res.ok) { setError(j.error || 'Failed to load'); setLoading(false); return }
     setData(j); setLoading(false)
@@ -333,3 +325,4 @@ const S = {
   userMeta: { fontSize: 11, color: '#6b7280', marginTop: 2 },
   cell: { padding: 4, borderBottom: '1px solid #f3f4f6', borderRight: '1px solid #f3f4f6', textAlign: 'center', minWidth: 80, maxWidth: 100 },
 }
+
