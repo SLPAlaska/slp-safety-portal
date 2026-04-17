@@ -1,15 +1,17 @@
 'use client'
 
 // app/admin/lms/users/[userId]/page.js
-//
-// Super-admin drill-down: one user's full training record.
-// Shows every expected course with status + completion info + cert link.
-// Includes inline grant-credit.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
 import { getCourseStatus, formatFrequency, STATUS_COLORS } from '@/lib/courseStatus'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 export default function UserTrainingPage() {
   const params = useParams()
@@ -26,19 +28,17 @@ export default function UserTrainingPage() {
   const [granting, setGranting] = useState(false)
   const [grantResult, setGrantResult] = useState(null)
 
-  const getToken = () => {
-    try {
-      const raw = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-      if (raw) return JSON.parse(localStorage.getItem(raw))?.access_token
-    } catch {}
-    return null
+  async function getToken() {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token || null
   }
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    const token = getToken()
+    const token = await getToken()
+    if (!token) { setError('Not signed in. Please log in again.'); setLoading(false); return }
     const res = await fetch(`/api/lms/admin/user-training?user_id=${userId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${token}` },
     })
     const j = await res.json()
     if (!res.ok) { setError(j.error || 'Failed to load'); setLoading(false); return }
@@ -75,7 +75,7 @@ export default function UserTrainingPage() {
   async function handleGrant() {
     if (!grantCourseIds.length) return
     setGranting(true); setGrantResult(null)
-    const token = getToken()
+    const token = await getToken()
     const out = []
     for (const course_id of grantCourseIds) {
       const res = await fetch('/api/lms/grant-credit', {
@@ -132,7 +132,6 @@ export default function UserTrainingPage() {
         </button>
       </div>
 
-      {/* Rollup */}
       <div style={S.rollupBar}>
         <RollupCell label="Current"  count={rollup.current  || 0} color={STATUS_COLORS.current} />
         <RollupCell label="Due Soon" count={rollup.due_soon || 0} color={STATUS_COLORS.due_soon} />
@@ -140,7 +139,6 @@ export default function UserTrainingPage() {
         <RollupCell label="Not Done" count={rollup.never    || 0} color={STATUS_COLORS.never} />
       </div>
 
-      {/* Grant credit inline panel */}
       {grantOpen && (
         <div style={S.grantPanel}>
           <h3 style={{ margin: '0 0 12px 0' }}>Grant Credit to {u.full_name}</h3>
@@ -177,7 +175,6 @@ export default function UserTrainingPage() {
         </div>
       )}
 
-      {/* Training table */}
       <table style={S.table}>
         <thead>
           <tr>

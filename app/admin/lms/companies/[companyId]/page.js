@@ -3,12 +3,17 @@
 // app/admin/lms/companies/[companyId]/page.js
 //
 // Super-admin view: company training matrix with rich filters.
-// Columns: users rows × courses cols. Each cell is color-coded status.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
 import { getCourseStatus, formatFrequency, STATUS_COLORS } from '@/lib/courseStatus'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 export default function CompanyMatrixPage() {
   const params = useParams()
@@ -19,30 +24,25 @@ export default function CompanyMatrixPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Filter state
   const [selectedUserIds, setSelectedUserIds] = useState([])
   const [workLocation, setWorkLocation] = useState('')
   const [department, setDepartment] = useState('')
   const [jobTitle, setJobTitle] = useState('')
   const [supervisor, setSupervisor] = useState('')
   const [clientProject, setClientProject] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all') // all | red | yellow | red_yellow | green
+  const [statusFilter, setStatusFilter] = useState('all')
   const [showMore, setShowMore] = useState(false)
-
-  // Auth helper
-  const getToken = () => {
-    try {
-      const raw = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-      if (raw) return JSON.parse(localStorage.getItem(raw))?.access_token
-    } catch {}
-    return null
-  }
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    const token = getToken()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      setError('Not signed in. Please log in again.')
+      setLoading(false)
+      return
+    }
     const res = await fetch(`/api/lms/admin/company-matrix?company_id=${companyId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { Authorization: `Bearer ${session.access_token}` },
     })
     const j = await res.json()
     if (!res.ok) { setError(j.error || 'Failed to load'); setLoading(false); return }
@@ -51,7 +51,6 @@ export default function CompanyMatrixPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Distinct values for filters
   const distinct = useMemo(() => {
     if (!data) return { locations: [], departments: [], jobTitles: [], supervisors: [], projects: [] }
     const pick = (key) => [...new Set(data.users.map(u => u[key]).filter(Boolean))].sort()
@@ -64,7 +63,6 @@ export default function CompanyMatrixPage() {
     }
   }, [data])
 
-  // Build completion map: userId -> courseId -> {completed_at, cert, granted_by}
   const completionMap = useMemo(() => {
     const m = {}
     if (!data) return m
@@ -75,7 +73,6 @@ export default function CompanyMatrixPage() {
     return m
   }, [data])
 
-  // Which courses apply to which user (required for company + their individual assignments)
   const userCourseMap = useMemo(() => {
     const m = {}
     if (!data) return m
@@ -91,7 +88,6 @@ export default function CompanyMatrixPage() {
     return m
   }, [data])
 
-  // Filtered users
   const filteredUsers = useMemo(() => {
     if (!data) return []
     let users = data.users
@@ -121,7 +117,6 @@ export default function CompanyMatrixPage() {
     return users
   }, [data, selectedUserIds, workLocation, department, jobTitle, supervisor, clientProject, statusFilter, userCourseMap, completionMap])
 
-  // Compliance rollup for header
   const rollup = useMemo(() => {
     if (!data) return { current: 0, due_soon: 0, overdue: 0, never: 0, total: 0 }
     let current = 0, due_soon = 0, overdue = 0, never = 0
@@ -160,7 +155,6 @@ export default function CompanyMatrixPage() {
         {data.users.length} active employees · {data.courses.length} courses in matrix
       </p>
 
-      {/* Compliance rollup */}
       <div style={S.rollupBar}>
         <RollupCell label="Current"  count={rollup.current}  total={rollup.total} color={STATUS_COLORS.current} />
         <RollupCell label="Due Soon" count={rollup.due_soon} total={rollup.total} color={STATUS_COLORS.due_soon} />
@@ -168,7 +162,6 @@ export default function CompanyMatrixPage() {
         <RollupCell label="Not Done" count={rollup.never}    total={rollup.total} color={STATUS_COLORS.never} />
       </div>
 
-      {/* Filter bar */}
       <div style={S.filterBar}>
         <select value={workLocation} onChange={e => setWorkLocation(e.target.value)} style={S.select}>
           <option value="">All Work Locations</option>
@@ -212,7 +205,6 @@ export default function CompanyMatrixPage() {
         </div>
       )}
 
-      {/* Matrix */}
       <div style={S.matrixWrap}>
         <table style={S.matrix}>
           <thead>
