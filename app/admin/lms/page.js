@@ -1103,77 +1103,229 @@ function IndividualAssignmentsTab() {
   const [assignments, setAssignments] = useState([])
   const [users, setUsers] = useState([])
   const [courses, setCourses] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [companyFilter, setCompanyFilter] = useState('')
+  const [nameSearch, setNameSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({user_id:'',course_id:'',due_date:''})
+  const [form, setForm] = useState({ user_id: '', course_ids: [], due_date: '' })
 
   const load = useCallback(async () => {
-    const [ar,ur,cor] = await Promise.all([fetch('/api/lms/individual-assignments'),fetch('/api/lms/users'),fetch('/api/lms/courses')])
-    const [ad,ud,cod] = await Promise.all([ar.json(),ur.json(),cor.json()])
-    setAssignments(ad.assignments||[])
-    setUsers((ud.users||[]).filter(u=>u.active&&u.role==='learner'))
-    setCourses((cod.courses||[]).filter(c=>c.active))
+    const [ar, ur, cor, comr] = await Promise.all([
+      fetch('/api/lms/individual-assignments'),
+      fetch('/api/lms/users'),
+      fetch('/api/lms/courses'),
+      fetch('/api/lms/companies'),
+    ])
+    const [ad, ud, cod, comd] = await Promise.all([
+      ar.json(), ur.json(), cor.json(), comr.json(),
+    ])
+    setAssignments(ad.assignments || [])
+    setUsers((ud.users || []).filter(u => u.active))
+    setCourses((cod.courses || []).filter(c => c.active))
+    setCompanies((comd.companies || []).filter(c => c.active !== false))
   }, [])
 
   useEffect(() => { load() }, [load])
 
   async function handleAssign() {
-    setError(''); setSaving(true)
-    const res = await fetch('/api/lms/individual-assignments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)})
-    const data = await res.json()
+    setError('')
+    setSaving(true)
+    let anyError = null
+    for (const course_id of form.course_ids) {
+      const res = await fetch('/api/lms/individual-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: form.user_id,
+          course_id,
+          due_date: form.due_date || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) anyError = data.error
+    }
     setSaving(false)
-    if (!res.ok) { setError(data.error); return }
-    setShowModal(false); setForm({user_id:'',course_id:'',due_date:''}); load()
+    if (anyError) { setError(anyError); return }
+    setShowModal(false)
+    setForm({ user_id: '', course_ids: [], due_date: '' })
+    load()
   }
 
   async function handleRemove(a) {
     if (!confirm(`Remove "${a.lms_courses?.title}" from ${a.lms_users?.full_name}?`)) return
-    await fetch('/api/lms/individual-assignments',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:a.id})})
+    await fetch('/api/lms/individual-assignments', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: a.id }),
+    })
     load()
   }
+
+  function toggleCourse(courseId) {
+    setForm(f => {
+      const ids = f.course_ids.includes(courseId)
+        ? f.course_ids.filter(id => id !== courseId)
+        : [...f.course_ids, courseId]
+      return { ...f, course_ids: ids }
+    })
+  }
+
+  // Filtered views based on company dropdown + name search
+  const filteredUsers = users.filter(u => {
+    if (companyFilter && u.company_id !== companyFilter) return false
+    if (nameSearch && !(u.full_name || '').toLowerCase().includes(nameSearch.toLowerCase())) return false
+    return true
+  })
+
+  const filteredAssignments = assignments.filter(a => {
+    const uCompany = a.lms_users?.company_id || a.lms_users?.lms_companies?.id
+    if (companyFilter && uCompany !== companyFilter) return false
+    if (nameSearch && !(a.lms_users?.full_name || '').toLowerCase().includes(nameSearch.toLowerCase())) return false
+    return true
+  })
+
+  const alreadyAssigned = new Set(
+    assignments.filter(a => a.user_id === form.user_id).map(a => a.course_id)
+  )
 
   return (
     <div>
       <div style={S.tabHeader}>
         <h2 style={S.tabTitle}>Individual Assignments</h2>
-        <button style={S.btnPrimary} onClick={()=>setShowModal(true)}>+ Assign Course</button>
+        <button style={S.btnPrimary} onClick={() => setShowModal(true)}>+ Assign Courses</button>
       </div>
-      <div style={S.infoBox}>Individual assignments are <strong>hazard-based</strong> — assign specific courses to specific workers based on their actual job duties and exposure.</div>
-      <br/>
+      <div style={S.infoBox}>
+        Individual assignments are <strong>hazard-based</strong> — assign specific courses to specific workers based on their actual job duties and exposure.
+      </div>
+
+      {/* Filter bar */}
+      <div style={{ display: 'flex', gap: 12, margin: '16px 0', alignItems: 'center', flexWrap: 'wrap' }}>
+        <select
+          value={companyFilter}
+          onChange={e => setCompanyFilter(e.target.value)}
+          style={{ ...S.input, minWidth: 220, margin: 0 }}
+        >
+          <option value="">All companies</option>
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={nameSearch}
+          onChange={e => setNameSearch(e.target.value)}
+          style={{ ...S.input, minWidth: 240, margin: 0 }}
+        />
+        {(companyFilter || nameSearch) && (
+          <button
+            style={{ ...S.btnSmall, margin: 0 }}
+            onClick={() => { setCompanyFilter(''); setNameSearch('') }}
+          >
+            Clear
+          </button>
+        )}
+        <span style={{ color: '#6b7280', fontSize: 14, marginLeft: 'auto' }}>
+          {filteredAssignments.length} of {assignments.length} assignments
+        </span>
+      </div>
+
       <table style={S.table}>
-        <thead><tr>{['Employee','Company','Course','Due Date','Assigned','Actions'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
+        <thead>
+          <tr>{['Employee', 'Company', 'Course', 'Due Date', 'Assigned', 'Actions'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr>
+        </thead>
         <tbody>
-          {assignments.map(a=>(
+          {filteredAssignments.map(a => (
             <tr key={a.id} style={S.tr}>
               <td style={S.td}>{a.lms_users?.full_name}</td>
-              <td style={S.td}>{a.lms_users?.lms_companies?.name||'—'}</td>
+              <td style={S.td}>{a.lms_users?.lms_companies?.name || '—'}</td>
               <td style={S.td}>{a.lms_courses?.title}</td>
-              <td style={S.td}>{a.due_date?new Date(a.due_date).toLocaleDateString():'—'}</td>
+              <td style={S.td}>{a.due_date ? new Date(a.due_date).toLocaleDateString() : '—'}</td>
               <td style={S.td}>{new Date(a.assigned_at).toLocaleDateString()}</td>
-              <td style={S.td}><button style={S.btnSmallRed} onClick={()=>handleRemove(a)}>Remove</button></td>
+              <td style={S.td}><button style={S.btnSmallRed} onClick={() => handleRemove(a)}>Remove</button></td>
             </tr>
           ))}
-          {assignments.length===0&&<tr><td colSpan={6} style={S.empty}>No individual assignments yet.</td></tr>}
+          {filteredAssignments.length === 0 && (
+            <tr><td colSpan={6} style={{ ...S.td, textAlign: 'center', color: '#6b7280', padding: 24 }}>
+              No assignments match the current filters.
+            </td></tr>
+          )}
         </tbody>
       </table>
-      {showModal&&(
-        <Modal title="Assign Course to Individual" onClose={()=>setShowModal(false)}>
-          <Field label="Employee *">
-            <select style={S.input} value={form.user_id} onChange={e=>setForm(f=>({...f,user_id:e.target.value}))}>
-              <option value="">— Select Employee —</option>
-              {users.map(u=><option key={u.id} value={u.id}>{u.full_name} — {u.lms_companies?.name||'No Company'}{u.job_title?` (${u.job_title})`:''}</option>)}
-            </select>
-          </Field>
-          <Field label="Course *">
-            <select style={S.input} value={form.course_id} onChange={e=>setForm(f=>({...f,course_id:e.target.value}))}>
-              <option value="">— Select Course —</option>
-              {courses.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}
-            </select>
-          </Field>
-          <Field label="Due Date (optional)"><input style={S.input} type="date" value={form.due_date} onChange={e=>setForm(f=>({...f,due_date:e.target.value}))} /></Field>
-          {error&&<div style={S.error}>{error}</div>}
-          <button style={S.btnPrimary} onClick={handleAssign} disabled={saving||!form.user_id||!form.course_id}>{saving?'Assigning…':'Assign Course'}</button>
+
+      {showModal && (
+        <Modal onClose={() => setShowModal(false)} title="Assign Courses">
+          {error && <div style={S.errorBox}>{error}</div>}
+
+          <label style={S.label}>Filter by company</label>
+          <select
+            value={companyFilter}
+            onChange={e => { setCompanyFilter(e.target.value); setForm(f => ({ ...f, user_id: '', course_ids: [] })) }}
+            style={S.input}
+          >
+            <option value="">All companies</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+
+          <label style={S.label}>Employee ({filteredUsers.length})</label>
+          <select
+            value={form.user_id}
+            onChange={e => setForm({ ...form, user_id: e.target.value, course_ids: [] })}
+            style={S.input}
+          >
+            <option value="">Select employee…</option>
+            {filteredUsers.map(u => {
+              const companyName = u.lms_companies?.name
+                || companies.find(c => c.id === u.company_id)?.name
+                || ''
+              const roleTag = u.role && u.role !== 'learner' ? ` [${u.role}]` : ''
+              return (
+                <option key={u.id} value={u.id}>
+                  {u.full_name}{companyName ? ` — ${companyName}` : ''}{roleTag}
+                </option>
+              )
+            })}
+          </select>
+
+          {form.user_id && (
+            <>
+              <label style={S.label}>Courses (select one or more)</label>
+              <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 6, padding: 12 }}>
+                {courses.map(c => {
+                  const isAssigned = alreadyAssigned.has(c.id)
+                  const isChecked = form.course_ids.includes(c.id)
+                  return (
+                    <label key={c.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', opacity: isAssigned ? 0.5 : 1 }}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={isAssigned}
+                        onChange={() => toggleCourse(c.id)}
+                        style={{ marginRight: 8 }}
+                      />
+                      {c.title}{isAssigned ? ' (already assigned)' : ''}
+                    </label>
+                  )
+                })}
+              </div>
+            </>
+          )}
+
+          <label style={S.label}>Due Date (optional)</label>
+          <input
+            type="date"
+            value={form.due_date}
+            onChange={e => setForm({ ...form, due_date: e.target.value })}
+            style={S.input}
+          />
+
+          <button
+            style={S.btnPrimary}
+            onClick={handleAssign}
+            disabled={saving || !form.user_id || form.course_ids.length === 0}
+          >
+            {saving ? 'Saving…' : `Assign ${form.course_ids.length} course${form.course_ids.length === 1 ? '' : 's'}`}
+          </button>
         </Modal>
       )}
     </div>
