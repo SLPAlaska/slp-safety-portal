@@ -1,5 +1,7 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import BulkImportModal from '@/components/lms/BulkImportModal'
 
@@ -30,6 +32,8 @@ function Field({ label, children }) {
 
 // ─── COMPANIES TAB ──────────────────────────────────────────
 function CompaniesTab() {
+  const router = useRouter()
+
   const [companies, setCompanies] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ name: '', slug: '', notes: '' })
@@ -73,7 +77,7 @@ function CompaniesTab() {
         <thead><tr>{['Company Name','Slug','Status','Notes','Actions'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
         <tbody>
           {companies.map(c=>(
-            <tr key={c.id} style={S.tr}>
+            <tr key={c.id} style={{...S.tr, cursor: 'pointer'}} onClick={() => router.push(`/admin/lms/companies/${c.id}`)}>
               <td style={S.td}>{c.name}</td>
               <td style={S.td}><code style={S.code}>{c.slug}</code></td>
               <td style={S.td}><span style={c.active?S.badgeGreen:S.badgeGray}>{c.active?'Active':'Inactive'}</span></td>
@@ -109,6 +113,8 @@ function CompaniesTab() {
 
 // ─── USERS TAB ──────────────────────────────────────────────
 function UsersTab() {
+  const router = useRouter()
+
   const [users, setUsers] = useState([])
   const [companies, setCompanies] = useState([])
   const [showModal, setShowModal] = useState(false)
@@ -240,7 +246,7 @@ function UsersTab() {
         <thead><tr>{['Name','Email','Username','Company','Job Title','Role','Status','Actions'].map(h=><th key={h} style={S.th}>{h}</th>)}</tr></thead>
         <tbody>
           {visibleUsers.map(u=>(
-            <tr key={u.id} style={S.tr}>
+            <tr key={u.id} style={{...S.tr, cursor: 'pointer'}} onClick={() => router.push(`/admin/lms/users/${u.id}`)}>
               <td style={S.td}>{u.full_name}</td>
               <td style={S.td}>{u.email||<span style={{color:'#94a3b8',fontSize:'12px'}}>no email</span>}</td>
               <td style={S.td}><code style={S.code}>{u.username}</code></td>
