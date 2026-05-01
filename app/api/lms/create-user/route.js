@@ -17,7 +17,7 @@ export async function POST(request) {
 
     const cleanEmail = email.trim().toLowerCase()
 
-    // Find existing auth user — paginate to handle >1000 users
+    // Find existing auth user -- paginate to handle >1000 users
     let authUserId = null
     let page = 1
     const perPage = 1000
@@ -56,7 +56,7 @@ export async function POST(request) {
       }
     }
 
-    // Check if lms_users row already exists (by id — the auth user id IS the row id)
+    // Check if lms_users row already exists (by id -- the auth user id IS the row id)
     const { data: existingLmsUser } = await supabaseAdmin
       .from('lms_users')
       .select('id')
@@ -71,6 +71,7 @@ export async function POST(request) {
       .from('lms_users')
       .insert({
         id: authUserId,
+        auth_user_id: authUserId,
         company_id,
         email: cleanEmail,
         username: username.trim(),
