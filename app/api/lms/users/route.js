@@ -28,11 +28,31 @@ export async function PATCH(req) {
 
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
+    // Look up current row to detect email change and get auth_user_id
+    const { data: existing, error: lookupErr } = await supabaseAdmin
+      .from('lms_users')
+      .select('email, auth_user_id')
+      .eq('id', id)
+      .single()
+    if (lookupErr || !existing)
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
+    // If email is changing, sync the Supabase auth user FIRST (must succeed before DB row update)
+    const newEmail = email?.trim().toLowerCase() || null
+    if (newEmail !== null && newEmail !== existing.email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail))
+        return NextResponse.json({ error: 'Invalid email format.' }, { status: 400 })
+
+      const authId = existing.auth_user_id || id
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(authId, { email: newEmail })
+      if (authErr) return NextResponse.json({ error: `Auth update failed: ${authErr.message}` }, { status: 400 })
+    }
+
     const { data, error } = await supabaseAdmin
       .from('lms_users')
       .update({
         full_name: full_name || null,
-        email: email || null,
+        email: newEmail,
         username: username || null,
         job_title: job_title || null,
         company_id: company_id || null,

@@ -87,26 +87,51 @@ export async function PATCH(request) {
   if (!adminUser) return NextResponse.json({ error: 'Access denied.' }, { status: 403 })
 
   try {
-    const { user_id, work_location, client_project, department, employee_id, supervisor, hire_date, job_title } = await request.json()
+    const {
+      user_id, full_name, email, username,
+      work_location, client_project, department, employee_id,
+      supervisor, hire_date, job_title,
+    } = await request.json()
     if (!user_id) return NextResponse.json({ error: 'Missing user_id.' }, { status: 400 })
 
-    const { data: emp } = await supabaseAdmin.from('lms_users').select('company_id').eq('id', user_id).single()
+    // Verify employee belongs to this admin's company AND grab auth_user_id + current email
+    const { data: emp } = await supabaseAdmin
+      .from('lms_users')
+      .select('company_id, auth_user_id, email')
+      .eq('id', user_id)
+      .single()
     if (!emp || emp.company_id !== adminUser.company_id)
       return NextResponse.json({ error: 'Employee not in your company.' }, { status: 403 })
 
-    const { error } = await supabaseAdmin.from('lms_users').update({
-      work_location: work_location?.trim() || null,
-      client_project: client_project?.trim() || null,
-      department: department?.trim() || null,
-      employee_id: employee_id?.trim() || null,
-      supervisor: supervisor?.trim() || null,
-      hire_date: hire_date || null,
-      job_title: job_title?.trim() || null,
-    }).eq('id', user_id)
+    // If email is changing, sync the Supabase auth user FIRST (must succeed before DB row update)
+    const newEmail = email?.trim().toLowerCase() || null
+    if (newEmail !== null && newEmail !== emp.email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail))
+        return NextResponse.json({ error: 'Invalid email format.' }, { status: 400 })
+
+      const authId = emp.auth_user_id || user_id
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(authId, { email: newEmail })
+      if (authErr) return NextResponse.json({ error: `Auth update failed: ${authErr.message}` }, { status: 400 })
+    }
+
+    // Build patch object only with fields that were provided so we don't accidentally null things out
+    const patch = {}
+    if (full_name !== undefined)      patch.full_name      = full_name?.trim() || null
+    if (email !== undefined)          patch.email          = newEmail
+    if (username !== undefined)       patch.username       = username?.trim() || null
+    if (work_location !== undefined)  patch.work_location  = work_location?.trim() || null
+    if (client_project !== undefined) patch.client_project = client_project?.trim() || null
+    if (department !== undefined)     patch.department     = department?.trim() || null
+    if (employee_id !== undefined)    patch.employee_id    = employee_id?.trim() || null
+    if (supervisor !== undefined)     patch.supervisor     = supervisor?.trim() || null
+    if (hire_date !== undefined)      patch.hire_date      = hire_date || null
+    if (job_title !== undefined)      patch.job_title      = job_title?.trim() || null
+
+    const { error } = await supabaseAdmin.from('lms_users').update(patch).eq('id', user_id)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
     return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Server error.' }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: e.message || 'Server error.' }, { status: 500 })
   }
 }
