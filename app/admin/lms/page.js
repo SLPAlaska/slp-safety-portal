@@ -82,7 +82,7 @@ function CompaniesTab() {
               <td style={S.td}><code style={S.code}>{c.slug}</code></td>
               <td style={S.td}><span style={c.active?S.badgeGreen:S.badgeGray}>{c.active?'Active':'Inactive'}</span></td>
               <td style={S.td}>{c.notes||'—'}</td>
-              <td style={{...S.td,display:'flex',gap:'6px'}}>
+              <td style={{...S.td,display:'flex',gap:'6px'}} onClick={e=>e.stopPropagation()}>
                 <button style={S.btnSmall} onClick={()=>setImportCompany({id:c.id,name:c.name})}>Import Employees</button>
                 <button style={S.btnSmall} onClick={()=>toggleActive(c)}>{c.active?'Deactivate':'Reactivate'}</button>
               </td>
@@ -254,12 +254,13 @@ function UsersTab() {
               <td style={S.td}>{u.job_title||'—'}</td>
               <td style={S.td}><span style={u.role==='company_admin'?S.badgeBlue:S.badgeGray}>{u.role==='company_admin'?'Company Admin':'Learner'}</span></td>
               <td style={S.td}><span style={u.active?S.badgeGreen:S.badgeGray}>{u.active?(u.must_change_pw?'Pending Login':'Active'):'Inactive'}</span></td>
-              <td style={{...S.td,display:'flex',gap:'5px',flexWrap:'wrap'}}>
+              <td style={{...S.td,display:'flex',gap:'5px',flexWrap:'wrap'}} onClick={e=>e.stopPropagation()}>
                 <button style={S.btnSmall} onClick={()=>openEdit(u)}>Edit</button>
                 {u.active
                   ? <button style={S.btnSmallRed} onClick={()=>handleDeactivate(u)}>Deactivate</button>
                   : <button style={S.btnSmall} onClick={()=>handleReactivate(u)}>Reactivate</button>
                 }
+                <button style={S.btnSmallDanger} onClick={()=>handleDeleteUser(u)}>Delete</button>
               </td>
             </tr>
           ))}
@@ -1407,6 +1408,7 @@ const S = {
   btnPrimary: {background:'#b71c1c',color:'#fff',border:'none',borderRadius:'8px',padding:'10px 18px',fontSize:'14px',fontWeight:'700',cursor:'pointer'},
   btnSmall: {background:'#e3f2fd',color:'#1565c0',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'600',cursor:'pointer'},
   btnSmallRed: {background:'#ffebee',color:'#b71c1c',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'600',cursor:'pointer'},
+  btnSmallDanger: {background:'#b71c1c',color:'#fff',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'700',cursor:'pointer'},
   overlay: {position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'24px'},
   modal: {background:'#fff',borderRadius:'12px',padding:'32px',width:'100%',maxWidth:'520px',maxHeight:'85vh',overflowY:'auto',display:'flex',flexDirection:'column',gap:'16px'},
   modalHeader: {display:'flex',justifyContent:'space-between',alignItems:'center'},
