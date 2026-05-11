@@ -150,9 +150,14 @@ export default function LanyardSRLInspection() {
     setSubmitting(true);
 
     try {
+      // Sanitize empty date strings to null (Postgres rejects empty string for date columns)
+      const sanitizedData = { ...formData };
+      ['date', 'manufacture_date', 'next_inspection_due'].forEach((field) => {
+        if (sanitizedData[field] === '') sanitizedData[field] = null;
+      });
       const result = await safeSubmit({
         table: 'lanyard_srl_inspections',
-        data: { ...formData },
+        data: sanitizedData,
         photoRef: photoRef,
         formType: 'lanyard-srl-inspection'
       });
