@@ -417,43 +417,42 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, onIncide
           Edit any field below to correct or clarify the original field report. Changes save automatically.
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <Field label="Incident ID"   value={incident.incident_id}   onChange={v => onIncidentChange({ incident_id: v })} />
-          <Field label="Date" type="date" value={incident.incident_date} onChange={v => onIncidentChange({ incident_date: v })} />
-          <Field label="Time" type="time" value={incident.incident_time} onChange={v => onIncidentChange({ incident_time: v })} />
-          <Field label="Location"      value={incident.location}      onChange={v => onIncidentChange({ location: v })} />
-          <Field label="Company"       value={incident.company}       onChange={v => onIncidentChange({ company: v })} />
-          <Field label="Reported By"   value={incident.reported_by || incident.submitted_by} onChange={v => onIncidentChange({ reported_by: v })} />
-          <div>
-            <Label>Safety Severity</Label>
-            <select
-              value={incident.safety_severity || incident.severity_safety || ''}
-              onChange={e => onIncidentChange({ safety_severity: e.target.value })}
-              style={inputStyle}
-            >
-              <option value="">-- Select --</option>
-              {['A','B','C','D','E'].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <Field label="Incident ID"        value={incident.incident_id}     onChange={v => onIncidentChange({ incident_id: v })} />
+          <Field label="Status"             value={incident.status}          onChange={v => onIncidentChange({ status: v })} />
+          <Field label="Date"   type="date" value={incident.incident_date}   onChange={v => onIncidentChange({ incident_date: v })} />
+          <Field label="Time"   type="time" value={incident.incident_time}   onChange={v => onIncidentChange({ incident_time: v })} />
+          <Field label="Location"           value={incident.location_name || incident.location}             onChange={v => onIncidentChange({ location_name: v })} />
+          <Field label="Company"            value={incident.company_name || incident.company}               onChange={v => onIncidentChange({ company_name: v })} />
+          <Field label="Reported By"        value={incident.reported_by_name || incident.reported_by || incident.submitted_by} onChange={v => onIncidentChange({ reported_by_name: v })} />
+          <Field label="Reporter Email"     value={incident.reported_by_email}                              onChange={v => onIncidentChange({ reported_by_email: v })} />
+          <Field label="Reporter Phone"     value={incident.reported_by_phone}                              onChange={v => onIncidentChange({ reported_by_phone: v })} />
+          <Field label="Reporter Company"   value={incident.reported_by_company}                            onChange={v => onIncidentChange({ reported_by_company: v })} />
+          <Field label="Safety Severity"    value={incident.safety_severity || incident.severity_safety}    onChange={v => onIncidentChange({ safety_severity: v })} />
+          <Field label="Investigation Type" value={incident.investigation_type}                             onChange={v => onIncidentChange({ investigation_type: v })} />
+        </div>
+        {incident.safety_severity_description && (
+          <div style={{ marginTop: 10, fontSize: 12, color: C.muted, fontStyle: 'italic' }}>
+            Severity meaning: {incident.safety_severity_description}
           </div>
-          <div>
-            <Label>Investigation Type</Label>
-            <select
-              value={incident.investigation_type || ''}
-              onChange={e => onIncidentChange({ investigation_type: e.target.value })}
-              style={inputStyle}
-            >
-              <option value="">-- Select --</option>
-              {['Local Review','5-Why Analysis','Full RCA','Comprehensive'].map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
+        )}
+        <div style={{ marginTop: 14 }}>
+          <Label>Brief Description</Label>
+          <textarea
+            value={incident.brief_description || incident.description || ''}
+            onChange={e => onIncidentChange({ brief_description: e.target.value })}
+            rows={3}
+            style={inputStyle}
+            placeholder="One- or two-sentence summary of what happened..."
+          />
         </div>
         <div style={{ marginTop: 14 }}>
-          <Label>Description</Label>
+          <Label>Detailed Description</Label>
           <textarea
-            value={incident.description || ''}
-            onChange={e => onIncidentChange({ description: e.target.value })}
+            value={incident.detailed_description || ''}
+            onChange={e => onIncidentChange({ detailed_description: e.target.value })}
             rows={5}
             style={inputStyle}
-            placeholder="Detailed description of what happened, the conditions, and the immediate response..."
+            placeholder="Full account including conditions, sequence, and immediate response..."
           />
         </div>
       </Card>
@@ -952,23 +951,34 @@ function EvidenceList({ items, initialPhotos = [], onChange }) {
 // AdditionalFields - renders every other column on the incident row
 // =====================================================================
 function AdditionalFields({ incident, onChange }) {
-  // Fields shown in the primary Incident Summary card
+  // Fields already shown in the primary Incident Summary card
   const PRIMARY = new Set([
-    'id','incident_id','incident_date','incident_time','location','company',
-    'reported_by','submitted_by','description','safety_severity','severity_safety',
-    'investigation_type','status',
+    'id','incident_id','status',
+    'incident_date','incident_time',
+    'location','location_name','location_id',
+    'company','company_name','company_id',
+    'reported_by','reported_by_name','reported_by_email','reported_by_phone','reported_by_company','submitted_by',
+    'brief_description','detailed_description','description',
+    'safety_severity','severity_safety','safety_severity_description',
+    'investigation_type',
   ]);
-  // Internal tracking fields - never show
+  // Internal tracking / handled-elsewhere fields - never show
   const HIDDEN = new Set([
     'created_at','updated_at',
     'stage_1_complete','stage_2_complete','stage_3_complete','stage_4_complete',
     'pdf_last_generated_at','root_cause_summary','root_cause_completed_at',
-    'photo_urls', // handled by Evidence section
+    'photo_urls',
+    // JSONB shadow columns (we use normalized tables instead)
+    'evidence','timeline','witnesses','corrective_actions','lessons_learned',
+    'local_review','five_why','rca_analysis','tags',
+    'report_pdf_url','report_pdf_id','report_generated_at',
   ]);
 
   const extras = Object.entries(incident || {}).filter(([k, v]) => {
     if (PRIMARY.has(k) || HIDDEN.has(k)) return false;
     if (v === null || v === undefined || v === '') return false;
+    if (Array.isArray(v) && v.length === 0) return false;
+    if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) return false;
     return true;
   });
 
@@ -977,7 +987,7 @@ function AdditionalFields({ incident, onChange }) {
   return (
     <Card title={`Additional Details from Field Report (${extras.length})`} toneAccent={C.muted}>
       <div style={{ fontSize: 12, color: C.muted, marginBottom: 14, padding: 10, background: '#fafafa', borderRadius: 6, borderLeft: `3px solid ${C.muted}` }}>
-        Every field captured by the original field report. All editable — autosaves on change.
+        Every additional field captured by the original field report. All editable — autosaves on change.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {extras.map(([k, v]) => {
@@ -987,7 +997,7 @@ function AdditionalFields({ incident, onChange }) {
             const text = v.filter(x => typeof x !== 'object').join(', ');
             return (
               <div key={k} style={{ gridColumn: '1 / -1' }}>
-                <Label>{label} (list)</Label>
+                <Label>{label} <span style={{ color: C.muted, fontWeight: 400, fontSize: 10 }}>(list)</span></Label>
                 <textarea
                   value={text}
                   onChange={e => onChange({ [k]: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}

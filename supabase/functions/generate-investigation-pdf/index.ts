@@ -253,21 +253,84 @@ function drawIncidentSummary(ctx: Ctx, incident: any) {
   row(ctx, "Incident ID",        incident.incident_id || "");
   row(ctx, "Date of Incident",   formatDate(incident.incident_date));
   row(ctx, "Time",               incident.incident_time || "");
-  row(ctx, "Location",           incident.location || "");
-  row(ctx, "Company",            incident.company || "");
-  row(ctx, "Reported By",        incident.reported_by || incident.submitted_by || "");
+  row(ctx, "Location",           incident.location_name || incident.location || "");
+  row(ctx, "Specific Location",  incident.specific_location_onsite || "");
+  row(ctx, "Operation Type",     incident.operation_type || "");
+  row(ctx, "Company",            incident.company_name || incident.company || "");
+  row(ctx, "Reported By",        incident.reported_by_name || incident.reported_by || incident.submitted_by || "");
+  row(ctx, "Reporter Email",     incident.reported_by_email || "");
+  row(ctx, "Reporter Phone",     incident.reported_by_phone || "");
+  row(ctx, "Supervisor",         incident.supervisor_name || "");
+  row(ctx, "Supervisor Title",   incident.supervisor_title || "");
   row(ctx, "Investigation Type", incident.investigation_type || "");
-  row(ctx, "Safety Severity",    incident.safety_severity || incident.severity_safety || "");
+  row(ctx, "Safety Severity",    `${incident.safety_severity || incident.severity_safety || ""}${incident.safety_severity_description ? ` (${incident.safety_severity_description})` : ""}`);
+  row(ctx, "Risk Ranking",       incident.risk_ranking || incident.risk_level || "");
+  row(ctx, "PSIF Classification", incident.psif_classification || "");
   row(ctx, "Status",             incident.status || "");
-  if (incident.description) {
+
+  const brief = incident.brief_description || incident.description;
+  if (brief) {
     ctx.y -= 4;
     ensureSpace(ctx, 14);
-    ctx.page.drawText("Description:", {
+    ctx.page.drawText("Brief Description:", {
       x: MARGIN + 5, y: ctx.y, size: 9, font: ctx.fonts.bold, color: TEXT,
     });
     ctx.y -= 12;
-    paragraph(ctx, incident.description);
+    paragraph(ctx, brief);
   }
+  if (incident.detailed_description) {
+    ctx.y -= 4;
+    ensureSpace(ctx, 14);
+    ctx.page.drawText("Detailed Description:", {
+      x: MARGIN + 5, y: ctx.y, size: 9, font: ctx.fonts.bold, color: TEXT,
+    });
+    ctx.y -= 12;
+    paragraph(ctx, incident.detailed_description);
+  }
+
+  // Injury block (only if relevant)
+  if (incident.injury_occurred) {
+    ctx.y -= 6;
+    sectionTitle(ctx, "INJURY INFORMATION");
+    row(ctx, "Injured Person",   incident.injured_person_name || incident.injured_name || "");
+    row(ctx, "Company",          incident.injured_person_company || incident.injured_company || "");
+    row(ctx, "Position",         incident.injured_person_position || incident.injured_job_title || "");
+    if (Array.isArray(incident.injured_body_parts) && incident.injured_body_parts.length) {
+      row(ctx, "Body Parts",       incident.injured_body_parts.join(", "));
+    } else if (incident.body_part_affected) {
+      row(ctx, "Body Part",        incident.body_part_affected);
+    }
+    row(ctx, "Injury Nature",    incident.injury_nature || incident.injury_type || "");
+    row(ctx, "Treatment",        incident.treatment_provided || "");
+    row(ctx, "Treating Physician", incident.treating_physician || "");
+  }
+
+  // Initial findings from field report
+  if (incident.immediate_actions_taken || incident.suspected_root_causes || incident.lessons_learned_initial || incident.causal_factors) {
+    ctx.y -= 6;
+    sectionTitle(ctx, "INITIAL FIELD-REPORT FINDINGS");
+    if (incident.immediate_actions_taken) {
+      paragraph(ctx, "Immediate actions taken:", { font: ctx.fonts.bold });
+      paragraph(ctx, incident.immediate_actions_taken, { indent: 15 });
+      ctx.y -= 4;
+    }
+    if (incident.suspected_root_causes) {
+      paragraph(ctx, "Suspected root causes:", { font: ctx.fonts.bold });
+      paragraph(ctx, incident.suspected_root_causes, { indent: 15 });
+      ctx.y -= 4;
+    }
+    if (incident.causal_factors) {
+      paragraph(ctx, "Causal factors:", { font: ctx.fonts.bold });
+      paragraph(ctx, incident.causal_factors, { indent: 15 });
+      ctx.y -= 4;
+    }
+    if (incident.lessons_learned_initial) {
+      paragraph(ctx, "Initial lessons learned:", { font: ctx.fonts.bold });
+      paragraph(ctx, incident.lessons_learned_initial, { indent: 15 });
+      ctx.y -= 4;
+    }
+  }
+
   ctx.y -= 8;
 }
 
