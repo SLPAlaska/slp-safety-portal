@@ -496,7 +496,15 @@ function Stage2({ timeline, incidentId, onReload, onComplete }) {
   async function addEvent() {
     if (!form.event_date || !form.description) return alert('Date and description are required.');
     setBusy(true);
-    const { error } = await supabase.from('timeline_events').insert({ ...form, incident_id: incidentId });
+    const { error } = await supabase.from('timeline_events').insert({
+      incident_id: incidentId,
+      event_date: form.event_date,
+      event_time: form.event_time,
+      description: form.description,
+      event_description: form.description,
+      is_critical: form.is_critical,
+      critical: form.is_critical,
+    });
     setBusy(false);
     if (error) return alert('Failed to add event: ' + error.message);
     setForm({ event_date: '', event_time: '', description: '', is_critical: false });
@@ -510,7 +518,11 @@ function Stage2({ timeline, incidentId, onReload, onComplete }) {
   }
 
   async function toggleCritical(ev) {
-    await supabase.from('timeline_events').update({ is_critical: !ev.is_critical }).eq('id', ev.id);
+    const next = !(ev.is_critical || ev.critical);
+    await supabase.from('timeline_events').update({
+      is_critical: next,
+      critical: next,
+    }).eq('id', ev.id);
     onReload();
   }
 
@@ -548,31 +560,35 @@ function Stage2({ timeline, incidentId, onReload, onComplete }) {
         ) : (
           <div style={{ position: 'relative', paddingLeft: 24 }}>
             <div style={{ position: 'absolute', left: 8, top: 8, bottom: 8, width: 2, background: C.borderL }} />
-            {timeline.map((ev, i) => (
+            {timeline.map((ev, i) => {
+              const isCritical = ev.is_critical || ev.critical;
+              const description = ev.description || ev.event_description || '';
+              return (
               <div key={ev.id} style={{ position: 'relative', marginBottom: 18 }}>
                 <div style={{
                   position: 'absolute', left: -22, top: 6, width: 14, height: 14, borderRadius: '50%',
-                  background: ev.is_critical ? C.danger : C.steel, border: `3px solid ${C.card}`,
+                  background: isCritical ? C.danger : C.steel, border: `3px solid ${C.card}`,
                 }} />
-                <div style={{ background: ev.is_critical ? C.amber : '#f9fafb', border: `1px solid ${ev.is_critical ? C.warning : C.borderL}`, borderRadius: 8, padding: 12 }}>
+                <div style={{ background: isCritical ? C.amber : '#f9fafb', border: `1px solid ${isCritical ? C.warning : C.borderL}`, borderRadius: 8, padding: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: ev.is_critical ? C.danger : C.navy }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: isCritical ? C.danger : C.navy }}>
                         {formatDate(ev.event_date)} {ev.event_time ? `at ${ev.event_time}` : ''}
-                        {ev.is_critical && <span style={{ marginLeft: 8, fontSize: 10, background: C.danger, color: 'white', padding: '2px 6px', borderRadius: 3 }}>CRITICAL</span>}
+                        {isCritical && <span style={{ marginLeft: 8, fontSize: 10, background: C.danger, color: 'white', padding: '2px 6px', borderRadius: 3 }}>CRITICAL</span>}
                       </div>
-                      <div style={{ fontSize: 13, color: C.text, marginTop: 6, whiteSpace: 'pre-wrap' }}>{ev.description}</div>
+                      <div style={{ fontSize: 13, color: C.text, marginTop: 6, whiteSpace: 'pre-wrap' }}>{description}</div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => toggleCritical(ev)} style={btnSmall} title="Toggle critical">
-                        {ev.is_critical ? 'Unflag' : 'Flag'}
+                        {isCritical ? 'Unflag' : 'Flag'}
                       </button>
                       <button onClick={() => removeEvent(ev.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
@@ -853,7 +869,9 @@ function EvidenceUploader({ incidentId, userEmail, onUploaded }) {
           file_url: urlData.publicUrl,
           file_name: file.name,
           uploaded_by: userEmail,
+          uploaded_by_email: userEmail,
           uploaded_at: new Date().toISOString(),
+          source: 'workbench',
         });
         if (insErr) throw insErr;
       } catch (err) {
@@ -1316,7 +1334,14 @@ function LessonAdd({ incidentId, onAdded }) {
   async function submit() {
     if (!form.title) return alert('A title is required.');
     setBusy(true);
-    const { error } = await supabase.from('lessons_learned').insert({ ...form, incident_id: incidentId });
+    const { error } = await supabase.from('lessons_learned').insert({
+      incident_id: incidentId,
+      title: form.title,
+      lesson_title: form.title,
+      description: form.description,
+      lesson_description: form.description,
+      key_takeaway: form.key_takeaway,
+    });
     setBusy(false);
     if (error) return alert('Failed: ' + error.message);
     setForm({ title: '', description: '', key_takeaway: '' });
@@ -1351,12 +1376,15 @@ function LessonList({ items, onChange }) {
     onChange();
   }
   if (items.length === 0) return <Empty text="No lessons learned yet." />;
-  return items.map(l => (
+  return items.map(l => {
+    const title = l.title || l.lesson_title || '(untitled)';
+    const description = l.description || l.lesson_description;
+    return (
     <div key={l.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{l.title}</div>
-          {l.description  && <div style={{ fontSize: 13, marginTop: 6, whiteSpace: 'pre-wrap' }}>{l.description}</div>}
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{title}</div>
+          {description && <div style={{ fontSize: 13, marginTop: 6, whiteSpace: 'pre-wrap' }}>{description}</div>}
           {l.key_takeaway && (
             <div style={{ fontSize: 12, marginTop: 8, padding: 8, background: C.amber, borderRadius: 4, borderLeft: `3px solid ${C.warning}` }}>
               <strong>Takeaway:</strong> {l.key_takeaway}
@@ -1366,7 +1394,8 @@ function LessonList({ items, onChange }) {
         <button onClick={() => remove(l.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
       </div>
     </div>
-  ));
+    );
+  });
 }
 
 // =====================================================================

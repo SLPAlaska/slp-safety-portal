@@ -339,22 +339,24 @@ function drawTimeline(ctx: Ctx, events: any[]) {
   sectionTitle(ctx, "TIMELINE OF EVENTS");
   events.forEach((e, idx) => {
     ensureSpace(ctx, 30);
+    const isCritical = e.is_critical || e.critical;
+    const description = e.description || e.event_description || "";
     const stamp = `${formatDate(e.event_date)}${e.event_time ? "  " + e.event_time : ""}`;
     ctx.page.drawText(`${idx + 1}.`, {
       x: MARGIN + 5, y: ctx.y, size: 9, font: ctx.fonts.bold, color: TEXT,
     });
     ctx.page.drawText(stamp, {
       x: MARGIN + 25, y: ctx.y, size: 9, font: ctx.fonts.bold,
-      color: e.is_critical ? DANGER : TEXT,
+      color: isCritical ? DANGER : TEXT,
     });
-    if (e.is_critical) {
+    if (isCritical) {
       ctx.page.drawText("[CRITICAL]", {
         x: MARGIN + 25 + ctx.fonts.bold.widthOfTextAtSize(stamp, 9) + 8,
         y: ctx.y, size: 8, font: ctx.fonts.bold, color: DANGER,
       });
     }
     ctx.y -= 12;
-    paragraph(ctx, e.description || "", { indent: 25 });
+    paragraph(ctx, description, { indent: 25 });
     ctx.y -= 4;
   });
   ctx.y -= 6;
@@ -480,8 +482,10 @@ function drawLessons(ctx: Ctx, lessons: any[]) {
   if (lessons.length === 0) return;
   sectionTitle(ctx, "LESSONS LEARNED");
   lessons.forEach((l, idx) => {
-    paragraph(ctx, `${idx + 1}. ${l.title || "Lesson"}`, { font: ctx.fonts.bold });
-    if (l.description)   paragraph(ctx, l.description, { indent: 15 });
+    const title = l.title || l.lesson_title || "Lesson";
+    const description = l.description || l.lesson_description;
+    paragraph(ctx, `${idx + 1}. ${title}`, { font: ctx.fonts.bold });
+    if (description) paragraph(ctx, description, { indent: 15 });
     if (l.key_takeaway) {
       paragraph(ctx, "Key Takeaway:", { font: ctx.fonts.bold, size: 8, indent: 15 });
       paragraph(ctx, l.key_takeaway, { indent: 15 });
