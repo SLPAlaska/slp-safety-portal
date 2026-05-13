@@ -143,6 +143,13 @@ export default function InvestigationWorkbench() {
 
       if (incR.error) throw incR.error;
       setIncident(incR.data);
+
+      // Log table-level errors instead of failing the whole load
+      const warn = (name, r) => { if (r.error) console.warn(`[Workbench] ${name}: ${r.error.message}`); };
+      warn('timeline_events', tlR); warn('witness_statements', wR); warn('investigation_evidence', evR);
+      warn('rca_factors', facR); warn('five_why_analyses', fwR); warn('local_reviews', lrR);
+      warn('investigation_corrective_actions', caR); warn('lessons_learned', lessR); warn('rca_analyses', legR);
+
       setTimeline(tlR.data || []);
       setWitnesses(wR.data || []);
       setEvidence(evR.data || []);
@@ -405,28 +412,65 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, onIncide
     <div>
       <StageHeader stage={1} title="Setup & Evidence" subtitle="Confirm the scope of this investigation, then gather photos and witness statements." />
 
-      <Card title="Incident Summary">
+      <Card title="Incident Summary" toneAccent={C.steel}>
+        <div style={{ fontSize: 12, color: C.steel, marginBottom: 14, padding: 10, background: '#eff6ff', borderRadius: 6, borderLeft: `3px solid ${C.steel}` }}>
+          Edit any field below to correct or clarify the original field report. Changes save automatically.
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <Field label="Incident ID"     value={incident.incident_id}     readOnly />
-          <Field label="Date"            value={incident.incident_date}   readOnly />
-          <Field label="Location"        value={incident.location}        readOnly />
-          <Field label="Company"         value={incident.company}         readOnly />
-          <Field label="Severity"        value={incident.safety_severity || incident.severity_safety} readOnly />
-          <Field label="Investigation Type" value={incident.investigation_type} readOnly />
+          <Field label="Incident ID"   value={incident.incident_id}   onChange={v => onIncidentChange({ incident_id: v })} />
+          <Field label="Date" type="date" value={incident.incident_date} onChange={v => onIncidentChange({ incident_date: v })} />
+          <Field label="Time" type="time" value={incident.incident_time} onChange={v => onIncidentChange({ incident_time: v })} />
+          <Field label="Location"      value={incident.location}      onChange={v => onIncidentChange({ location: v })} />
+          <Field label="Company"       value={incident.company}       onChange={v => onIncidentChange({ company: v })} />
+          <Field label="Reported By"   value={incident.reported_by || incident.submitted_by} onChange={v => onIncidentChange({ reported_by: v })} />
+          <div>
+            <Label>Safety Severity</Label>
+            <select
+              value={incident.safety_severity || incident.severity_safety || ''}
+              onChange={e => onIncidentChange({ safety_severity: e.target.value })}
+              style={inputStyle}
+            >
+              <option value="">-- Select --</option>
+              {['A','B','C','D','E'].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label>Investigation Type</Label>
+            <select
+              value={incident.investigation_type || ''}
+              onChange={e => onIncidentChange({ investigation_type: e.target.value })}
+              style={inputStyle}
+            >
+              <option value="">-- Select --</option>
+              {['Local Review','5-Why Analysis','Full RCA','Comprehensive'].map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
         </div>
         <div style={{ marginTop: 14 }}>
           <Label>Description</Label>
-          <div style={readOnlyBox}>{incident.description || '(no description provided)'}</div>
+          <textarea
+            value={incident.description || ''}
+            onChange={e => onIncidentChange({ description: e.target.value })}
+            rows={5}
+            style={inputStyle}
+            placeholder="Detailed description of what happened, the conditions, and the immediate response..."
+          />
         </div>
       </Card>
 
-      <Card title={`Evidence (${evidence.length})`}>
+      <AdditionalFields incident={incident} onChange={onIncidentChange} />
+
+      <Card title={`Evidence (${evidence.length + (Array.isArray(incident.photo_urls) ? incident.photo_urls.length : 0)})`}>
         <EvidenceUploader
           incidentId={incidentId}
           userEmail={userEmail}
           onUploaded={onEvidenceReload}
         />
-        <EvidenceList items={evidence} onChange={onEvidenceReload} />
+        <EvidenceList
+          items={evidence}
+          initialPhotos={Array.isArray(incident.photo_urls) ? incident.photo_urls : []}
+          onChange={onEvidenceReload}
+        />
       </Card>
 
       <Card title={`Witnesses (${witnesses.length})`}>
@@ -853,35 +897,168 @@ function EvidenceUploader({ incidentId, userEmail, onUploaded }) {
   );
 }
 
-function EvidenceList({ items, onChange }) {
+function EvidenceList({ items, initialPhotos = [], onChange }) {
   async function remove(item) {
+    if (item._isInitial) {
+      alert('Initial-report photos can be removed by editing the photo_urls field in the incident record. Workbench-uploaded photos can be deleted directly.');
+      return;
+    }
     if (!confirm('Remove this evidence?')) return;
     await supabase.from('investigation_evidence').delete().eq('id', item.id);
     onChange();
   }
-  if (items.length === 0) return <Empty text="No evidence uploaded yet." />;
+  const initialItems = (initialPhotos || []).map((url, i) => ({
+    id: `initial-${i}`,
+    evidence_type: 'Initial Field Report',
+    description: '',
+    file_url: url,
+    file_name: (url || '').split('/').pop(),
+    _isInitial: true,
+  }));
+  const allItems = [...initialItems, ...items];
+  if (allItems.length === 0) return <Empty text="No evidence yet. Upload above." />;
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
-      {items.map(it => (
-        <div key={it.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, overflow: 'hidden', background: C.card }}>
+      {allItems.map(it => (
+        <div key={it.id} style={{ border: `1px solid ${it._isInitial ? C.steel : C.borderL}`, borderRadius: 8, overflow: 'hidden', background: C.card, position: 'relative' }}>
+          {it._isInitial && (
+            <div style={{ position: 'absolute', top: 4, right: 4, background: C.steel, color: 'white', fontSize: 9, padding: '2px 6px', borderRadius: 3, fontWeight: 700, zIndex: 2 }}>
+              FIELD REPORT
+            </div>
+          )}
           {/\.(jpe?g|png|webp|gif)$/i.test(it.file_url) ? (
             <a href={it.file_url} target="_blank" rel="noreferrer">
               <img src={it.file_url} alt={it.description} style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
             </a>
           ) : (
-            <a href={it.file_url} target="_blank" rel="noreferrer" style={{ display: 'block', height: 120, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, textDecoration: 'none' }}>
+            <a href={it.file_url} target="_blank" rel="noreferrer" style={{ height: 120, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, textDecoration: 'none' }}>
               📄
             </a>
           )}
           <div style={{ padding: 10 }}>
             <div style={{ fontSize: 12, fontWeight: 600 }}>{it.evidence_type}</div>
-            <div style={{ fontSize: 11, color: C.muted, marginTop: 2, wordBreak: 'break-word' }}>{it.description || '(no description)'}</div>
-            <button onClick={() => remove(it)} style={{ ...btnSmall, color: C.danger, marginTop: 8 }}>Remove</button>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 2, wordBreak: 'break-word' }}>{it.description || (it._isInitial ? 'From original field report' : '(no description)')}</div>
+            {!it._isInitial && (
+              <button onClick={() => remove(it)} style={{ ...btnSmall, color: C.danger, marginTop: 8 }}>Remove</button>
+            )}
           </div>
         </div>
       ))}
     </div>
   );
+}
+
+// =====================================================================
+// AdditionalFields - renders every other column on the incident row
+// =====================================================================
+function AdditionalFields({ incident, onChange }) {
+  // Fields shown in the primary Incident Summary card
+  const PRIMARY = new Set([
+    'id','incident_id','incident_date','incident_time','location','company',
+    'reported_by','submitted_by','description','safety_severity','severity_safety',
+    'investigation_type','status',
+  ]);
+  // Internal tracking fields - never show
+  const HIDDEN = new Set([
+    'created_at','updated_at',
+    'stage_1_complete','stage_2_complete','stage_3_complete','stage_4_complete',
+    'pdf_last_generated_at','root_cause_summary','root_cause_completed_at',
+    'photo_urls', // handled by Evidence section
+  ]);
+
+  const extras = Object.entries(incident || {}).filter(([k, v]) => {
+    if (PRIMARY.has(k) || HIDDEN.has(k)) return false;
+    if (v === null || v === undefined || v === '') return false;
+    return true;
+  });
+
+  if (extras.length === 0) return null;
+
+  return (
+    <Card title={`Additional Details from Field Report (${extras.length})`} toneAccent={C.muted}>
+      <div style={{ fontSize: 12, color: C.muted, marginBottom: 14, padding: 10, background: '#fafafa', borderRadius: 6, borderLeft: `3px solid ${C.muted}` }}>
+        Every field captured by the original field report. All editable — autosaves on change.
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        {extras.map(([k, v]) => {
+          const label = prettify(k);
+          // Array → comma-joined editable text (best-effort)
+          if (Array.isArray(v)) {
+            const text = v.filter(x => typeof x !== 'object').join(', ');
+            return (
+              <div key={k} style={{ gridColumn: '1 / -1' }}>
+                <Label>{label} (list)</Label>
+                <textarea
+                  value={text}
+                  onChange={e => onChange({ [k]: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                  rows={2}
+                  style={inputStyle}
+                />
+              </div>
+            );
+          }
+          // Object → JSON read-only display
+          if (typeof v === 'object') {
+            return (
+              <div key={k} style={{ gridColumn: '1 / -1' }}>
+                <Label>{label}</Label>
+                <div style={{ ...readOnlyBox, fontFamily: 'monospace', fontSize: 11 }}>
+                  {JSON.stringify(v, null, 2)}
+                </div>
+              </div>
+            );
+          }
+          // Boolean → checkbox
+          if (typeof v === 'boolean') {
+            return (
+              <div key={k}>
+                <Label>{label}</Label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!v}
+                    onChange={e => onChange({ [k]: e.target.checked })}
+                  />
+                  <span style={{ fontSize: 13 }}>{v ? 'Yes' : 'No'}</span>
+                </label>
+              </div>
+            );
+          }
+          // Long string → textarea
+          const strVal = String(v);
+          if (strVal.length > 60 || strVal.includes('\n')) {
+            return (
+              <div key={k} style={{ gridColumn: '1 / -1' }}>
+                <Label>{label}</Label>
+                <textarea
+                  value={strVal}
+                  onChange={e => onChange({ [k]: e.target.value })}
+                  rows={Math.min(8, Math.max(2, Math.ceil(strVal.length / 80)))}
+                  style={inputStyle}
+                />
+              </div>
+            );
+          }
+          // Short string / number → input
+          return (
+            <div key={k}>
+              <Label>{label}</Label>
+              <input
+                type={typeof v === 'number' ? 'number' : 'text'}
+                value={strVal}
+                onChange={e => onChange({ [k]: typeof v === 'number' ? Number(e.target.value) : e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function prettify(s) {
+  return (s || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // =====================================================================
