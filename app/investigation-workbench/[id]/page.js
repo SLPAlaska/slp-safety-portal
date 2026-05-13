@@ -1,1311 +1,1312 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+// =====================================================================
+// AnthroSafe Investigation Workbench v2
+// 4-stage stepper - structured RCA - hierarchy of controls - server PDF
+// =====================================================================
 
-// ============================================================================
-// ROOT CAUSE TAXONOMY (39 root causes in 10 categories)
-// ============================================================================
-const ROOT_CAUSE_TAXONOMY = {
-  'Equipment/Tools': ['Defective equipment','Improper tool for task','Equipment not available','Equipment not maintained','Equipment design flaw'],
-  'Procedures': ['No procedure exists','Procedure incomplete','Procedure not followed','Procedure outdated','Procedure unclear/confusing'],
-  'Training': ['No training provided','Inadequate training','Training not current','On-the-job training insufficient'],
-  'Human Factors': ['Fatigue','Complacency','Distraction','Rushing','Frustration','Line of fire awareness'],
-  'Communication': ['No communication','Miscommunication','Language barrier','Shift handover failure'],
-  'Supervision': ['Inadequate oversight','Supervisor not present','Failed to enforce standards'],
-  'Design/Engineering': ['Facility design flaw','Inadequate engineering controls','Guard/barrier missing'],
-  'Maintenance': ['Preventive maintenance missed','Corrective maintenance delayed','Maintenance procedure inadequate'],
-  'Environmental': ['Weather conditions','Lighting','Noise','Temperature extremes','Surface conditions'],
-  'Organizational/Culture': ['Production pressure','Inadequate staffing','Budget constraints','Safety culture deficiency']
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const STAGES = [
+  { id: 1, title: 'Setup & Evidence',  description: 'Confirm scope, gather photos and witnesses' },
+  { id: 2, title: 'What Happened',     description: 'Build the timeline of events' },
+  { id: 3, title: 'Why It Happened',   description: 'Identify root causes and contributing factors' },
+  { id: 4, title: 'Close It Out',      description: 'Define corrective actions and approve' },
+];
+
+const RCA_CATEGORIES = [
+  { key: 'equipment',     label: 'Equipment',           prompt: 'Was equipment functioning properly? Maintenance current? Right tool for the job?' },
+  { key: 'environment',   label: 'Environment',         prompt: 'Weather, lighting, noise, temperature, space, terrain factors?' },
+  { key: 'materials',     label: 'Materials',           prompt: 'Were correct materials available, in good condition, and used properly?' },
+  { key: 'methods',       label: 'Methods',             prompt: 'Were procedures correct? Did the work plan match the actual task?' },
+  { key: 'people',        label: 'People',              prompt: 'Training, fatigue, experience, fitness for duty, situational awareness?' },
+  { key: 'management',    label: 'Management',          prompt: 'Was supervision adequate? Were resources and time provided?' },
+  { key: 'communication', label: 'Communication',       prompt: 'Were expectations and hazards clearly communicated and understood?' },
+  { key: 'training',      label: 'Training',            prompt: 'Was training current and adequate for the task and conditions?' },
+  { key: 'procedures',    label: 'Procedures',          prompt: 'Did written procedures exist? Were they current and followed?' },
+  { key: 'culture',       label: 'Culture',             prompt: 'Was Stop Work used? Pressure to shortcut? Was reporting encouraged?' },
+];
+
+const HIERARCHY_OF_CONTROLS = [
+  { level: 1, name: 'Elimination',    desc: 'Remove the hazard entirely',     tone: 'strong' },
+  { level: 2, name: 'Substitution',   desc: 'Replace with something safer',   tone: 'strong' },
+  { level: 3, name: 'Engineering',    desc: 'Isolate people from the hazard', tone: 'good' },
+  { level: 4, name: 'Administrative', desc: 'Change how people work',         tone: 'weak' },
+  { level: 5, name: 'PPE',            desc: 'Protect the worker (last resort)', tone: 'weakest' },
+];
+
+const STATUS_FLOW = [
+  'Submitted','Triage','First Draft','Asset Review','Final Review','Pending Approval','Approved','Closed'
+];
+
+// =====================================================================
+// Theme
+// =====================================================================
+const C = {
+  navy:    '#1e3a5f',
+  steel:   '#2d5a87',
+  bg:      '#f3f4f6',
+  card:    '#ffffff',
+  text:    '#111827',
+  muted:   '#6b7280',
+  border:  '#d1d5db',
+  borderL: '#e5e7eb',
+  success: '#16a34a',
+  warning: '#f59e0b',
+  danger:  '#dc2626',
+  amber:   '#fef3c7',
+  blueL:   '#dbeafe',
 };
 
-// ============================================================================
-// CAUSAL FACTOR TAXONOMY (16 factors in 3 groups)
-// ============================================================================
-const CAUSAL_FACTOR_TAXONOMY = {
-  'Immediate Causes': ['Unsafe Act','Unsafe Condition','Human Error','Equipment Failure','Environmental Hazard'],
-  'Contributing Factors': ['Inadequate Work Planning','Inadequate Hazard Assessment','Inadequate Communication','Inadequate Training/Competency','Insufficient Resources','Fatigue/Fitness for Duty'],
-  'Systemic Factors': ['Management System Gap','Organizational Culture','Regulatory/Compliance Gap','Inadequate Change Management','Contractor Management Deficiency']
-};
-
-// ============================================================================
-// STYLES — defined at module level so reference is stable across renders
-// ============================================================================
-const st = {
-  input: { width: '100%', padding: '10px 14px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
-  primaryBtn: { background: '#1e40af', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
-  secondaryBtn: { background: '#7c3aed', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
-  outlineBtn: { background: 'white', color: '#64748b', border: '1px solid #d1d5db', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '500', fontSize: '14px' },
-  dangerBtn: { background: '#dc2626', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' },
-  footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '20px' },
-  sectionHeader: { background: '#1e40af', color: 'white', padding: '10px 16px', borderRadius: '8px', fontWeight: '600', fontSize: '14px', marginBottom: '15px', marginTop: '20px' },
-  factorCard: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', marginBottom: '12px' },
-  factorLabel: { fontWeight: '600', color: '#1e293b', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' },
-  factorHint: { fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontStyle: 'italic' },
-  whyBox: { background: '#fff', border: '2px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px', transition: 'border-color 0.2s' },
-  whyNumber: { background: '#1e40af', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '16px', flexShrink: 0 },
-  whyArrow: { textAlign: 'center', fontSize: '24px', color: '#94a3b8', margin: '-8px 0' }
-};
-
-// ============================================================================
-// HELPER COMPONENTS — defined at module level so React never re-mounts them
-// on every keystroke (defining inside a component creates a new reference each
-// render, causing unmount/remount and loss of input focus).
-// ============================================================================
-const EditDeleteBtns = ({ onEdit, onDelete }) => (
-  <div style={{ display: 'flex', gap: '6px' }}>
-    <button onClick={onEdit} style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>✏️</button>
-    <button onClick={onDelete} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
-  </div>
-);
-
-const SaveCancelBtns = ({ onSave, onCancel, saving }) => (
-  <div style={{ display: 'flex', gap: '10px' }}>
-    <button onClick={onSave} disabled={saving} style={st.primaryBtn}>{saving ? 'Saving...' : '💾 Save'}</button>
-    <button onClick={onCancel} style={st.outlineBtn}>Cancel</button>
-  </div>
-);
-
-// ctx = { editingField, incidentEdits, setIncidentEdits, setEditingField, saveIncidentField, saving }
-const EditableText = ({ field, label, value, type = 'text', options = null, ctx }) => {
-  const { editingField, incidentEdits, setIncidentEdits, setEditingField, saveIncidentField, saving } = ctx;
-  const isEditing = editingField === field;
-  const currentVal = isEditing ? (incidentEdits[field] ?? value ?? '') : (value ?? '');
-  return (
-    <div style={{ marginBottom: '12px', padding: '10px', borderRadius: '8px', background: isEditing ? '#eff6ff' : 'transparent', border: isEditing ? '1px solid #3b82f6' : '1px solid transparent', transition: 'all 0.15s' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-        <div style={{ flex: 1 }}>
-          <strong style={{ color: '#64748b', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</strong>
-          {isEditing ? (
-            <div style={{ marginTop: '6px' }}>
-              {options ? (
-                <select value={currentVal} onChange={e => setIncidentEdits(prev => ({ ...prev, [field]: e.target.value }))} style={{ ...st.input, marginBottom: '8px' }}>
-                  {options.map(o => <option key={o}>{o}</option>)}
-                </select>
-              ) : type === 'textarea' ? (
-                <textarea value={currentVal} onChange={e => setIncidentEdits(prev => ({ ...prev, [field]: e.target.value }))} style={{ ...st.input, minHeight: '100px', resize: 'vertical', marginBottom: '8px' }} />
-              ) : (
-                <input type={type} value={currentVal} onChange={e => setIncidentEdits(prev => ({ ...prev, [field]: e.target.value }))} style={{ ...st.input, marginBottom: '8px' }} autoFocus />
-              )}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => saveIncidentField(field, incidentEdits[field] ?? value)} disabled={saving} style={{ ...st.primaryBtn, padding: '6px 14px', fontSize: '13px' }}>{saving ? 'Saving...' : '💾 Save'}</button>
-                <button onClick={() => { setEditingField(null); setIncidentEdits({}); }} style={{ ...st.outlineBtn, padding: '6px 14px', fontSize: '13px' }}>Cancel</button>
-              </div>
-            </div>
-          ) : (
-            <div style={{ marginTop: '4px', color: '#1e293b', fontSize: '14px' }}>{currentVal || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Not set — click ✏️ to edit</span>}</div>
-          )}
-        </div>
-        {!isEditing && (
-          <button onClick={() => { setEditingField(field); setIncidentEdits(prev => ({ ...prev, [field]: value ?? '' })); }} style={{ background: '#dbeafe', color: '#1e40af', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', flexShrink: 0, marginTop: '16px' }}>✏️</button>
-        )}
-      </div>
-    </div>
-  );
-};
-
+// =====================================================================
+// Main component
+// =====================================================================
 export default function InvestigationWorkbench() {
-  const { id } = useParams();
+  const params = useParams();
+  const router = useRouter();
+  const incidentId = params.id;
+
+  const [authed, setAuthed] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const [authenticated, setAuthenticated] = useState(false);
-  const [incident, setIncident] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('Overview');
-  const [saving, setSaving] = useState(false);
-  const [timelineEvents, setTimelineEvents] = useState([]);
-  const [evidence, setEvidence] = useState([]);
+  const [error, setError] = useState('');
+
+  const [incident, setIncident] = useState(null);
+  const [timeline, setTimeline] = useState([]);
   const [witnesses, setWitnesses] = useState([]);
+  const [evidence, setEvidence] = useState([]);
+  const [rcaFactors, setRcaFactors] = useState({}); // {category: {is_factor, description}}
+  const [fiveWhy, setFiveWhy] = useState(null);
+  const [localReview, setLocalReview] = useState(null);
+  const [legacyRcaText, setLegacyRcaText] = useState('');
   const [correctiveActions, setCorrectiveActions] = useState([]);
-  const [lessonsLearned, setLessonsLearned] = useState([]);
-  const [showEvidenceUpload, setShowEvidenceUpload] = useState(false);
-  const [uploadingEvidence, setUploadingEvidence] = useState(false);
-  const [newEvidence, setNewEvidence] = useState({ type: 'Photo', description: '', files: [] });
-  const [newTimelineEvent, setNewTimelineEvent] = useState({ event_date: '', event_time: '', event_description: '', critical: false });
-  const [newWitness, setNewWitness] = useState({ witness_name: '', position_role: '', company: '', statement_summary: '' });
-  const [newCA, setNewCA] = useState({ action_description: '', hierarchy_control: '1-Elimination', action_owner_name: '', action_owner_email: '', target_date: '', action_status: 'Open' });
-  const [newLesson, setNewLesson] = useState({ lesson_title: '', lesson_description: '', key_takeaway: '' });
-  const [editingTimeline, setEditingTimeline] = useState(null);
-  const [editingWitness, setEditingWitness] = useState(null);
-  const [editingCA, setEditingCA] = useState(null);
-  const [editingLesson, setEditingLesson] = useState(null);
-  const [editingField, setEditingField] = useState(null);
-  const [incidentEdits, setIncidentEdits] = useState({});
-  const [spellCheckResults, setSpellCheckResults] = useState(null);
-  const [spellChecking, setSpellChecking] = useState(false);
+  const [lessons, setLessons] = useState([]);
 
-  // ============================================================================
-  // STRUCTURED ANALYSIS STATE
-  // ============================================================================
+  const [currentStage, setCurrentStage] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
 
-  // Local Review - structured
-  const [localReviewData, setLocalReviewData] = useState({
-    what_happened: '',
-    immediate_causes: '',
-    do_differently: '',
-    additional_notes: ''
-  });
-
-  // 5-Why Analysis - structured
-  const [fiveWhyData, setFiveWhyData] = useState({
-    problem_statement: '',
-    why1: '', why2: '', why3: '', why4: '', why5: '',
-    root_cause_category: '',
-    root_cause_identified: '',
-    causal_factors: [],
-    team_leader: '',
-    team_members: ''
-  });
-
-  // RCA - structured with 10 contributing factor categories
-  const [rcaData, setRcaData] = useState({
-    problem_statement: '',
-    equipment_factors: '',
-    procedure_factors: '',
-    training_factors: '',
-    human_factors: '',
-    communication_factors: '',
-    supervision_factors: '',
-    design_factors: '',
-    maintenance_factors: '',
-    environmental_factors: '',
-    organizational_factors: '',
-    root_causes_identified: '',
-    contributing_factors_summary: '',
-    systemic_issues: '',
-    recommendations: '',
-    rca_method: 'Other',
-    team_leader: '',
-    team_members: ''
-  });
-
-  // Legacy plain text (for backward compatibility)
-  const [localReview, setLocalReview] = useState('');
-  const [fiveWhy, setFiveWhy] = useState('');
-  const [rcaAnalysis, setRcaAnalysis] = useState('');
-
+  // -------- Auth --------
   useEffect(() => {
-    const saved = localStorage.getItem('slp_investigator_email');
-    if (saved && saved.endsWith('@slpalaska.com')) { setUserEmail(saved); setAuthenticated(true); loadAll(); }
-    else setLoading(false);
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('slp_inv_email') : '';
+    if (saved && saved.endsWith('@slpalaska.com')) {
+      setUserEmail(saved);
+      setAuthed(true);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
+  function handleLogin(e) {
+    e.preventDefault();
+    const email = e.target.email.value.trim().toLowerCase();
+    if (!email.endsWith('@slpalaska.com')) {
+      alert('Access restricted to @slpalaska.com accounts.');
+      return;
+    }
+    localStorage.setItem('slp_inv_email', email);
+    setUserEmail(email);
+    setAuthed(true);
+  }
+
+  // -------- Data load --------
+  useEffect(() => {
+    if (!authed || !incidentId) return;
+    loadAll();
+  }, [authed, incidentId]);
+
   async function loadAll() {
+    setLoading(true);
+    setError('');
     try {
-      const { data: inc, error } = await supabase.from('incidents').select('*').eq('id', id).single();
-      if (error) throw error;
-      if (!inc) throw new Error('No incident found');
-      setIncident(inc);
-      const [tR, eR, wR, cR, lR, lrR, fwR, rcR] = await Promise.all([
-        supabase.from('timeline_events').select('*').eq('incident_id', id).order('sequence_number'),
-        supabase.from('investigation_evidence').select('*').eq('incident_id', id).order('evidence_number'),
-        supabase.from('witness_statements').select('*').eq('incident_id', id).order('witness_number'),
-        supabase.from('investigation_corrective_actions').select('*').eq('incident_id', id).order('action_number'),
-        supabase.from('investigation_lessons_learned').select('*').eq('incident_id', id).order('lesson_number'),
-        supabase.from('local_reviews').select('*').eq('incident_id', id).maybeSingle(),
-        supabase.from('five_why_analyses').select('*').eq('incident_id', id).maybeSingle(),
-        supabase.from('rca_analyses').select('*').eq('incident_id', id).maybeSingle()
+      const [
+        incR, tlR, wR, evR, facR, fwR, lrR, caR, lessR, legR
+      ] = await Promise.all([
+        supabase.from('incidents').select('*').eq('id', incidentId).single(),
+        supabase.from('timeline_events').select('*').eq('incident_id', incidentId).order('event_date').order('event_time'),
+        supabase.from('witness_statements').select('*').eq('incident_id', incidentId).order('created_at'),
+        supabase.from('investigation_evidence').select('*').eq('incident_id', incidentId).order('uploaded_at'),
+        supabase.from('rca_factors').select('*').eq('incident_id', incidentId),
+        supabase.from('five_why_analyses').select('*').eq('incident_id', incidentId).maybeSingle(),
+        supabase.from('local_reviews').select('*').eq('incident_id', incidentId).maybeSingle(),
+        supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incidentId).order('due_date'),
+        supabase.from('lessons_learned').select('*').eq('incident_id', incidentId).order('created_at'),
+        supabase.from('rca_analyses').select('*').eq('incident_id', incidentId).maybeSingle(),
       ]);
-      setTimelineEvents(tR.data || []); setEvidence(eR.data || []); setWitnesses(wR.data || []);
-      setCorrectiveActions(cR.data || []); setLessonsLearned(lR.data || []);
 
-      // Load Local Review (structured or legacy)
-      if (lrR.data) {
-        setLocalReview(lrR.data.review_text || lrR.data.findings || '');
-        setLocalReviewData({
-          what_happened: lrR.data.what_happened || '',
-          immediate_causes: lrR.data.immediate_causes || '',
-          do_differently: lrR.data.do_differently || '',
-          additional_notes: lrR.data.additional_notes || ''
-        });
-      }
+      if (incR.error) throw incR.error;
+      setIncident(incR.data);
+      setTimeline(tlR.data || []);
+      setWitnesses(wR.data || []);
+      setEvidence(evR.data || []);
 
-      // Load 5-Why (structured or legacy)
-      if (fwR.data) {
-        setFiveWhy(fwR.data.analysis_text || fwR.data.findings || '');
-        setFiveWhyData({
-          problem_statement: fwR.data.problem_statement || '',
-          why1: fwR.data.why1 || '', why2: fwR.data.why2 || '', why3: fwR.data.why3 || '',
-          why4: fwR.data.why4 || '', why5: fwR.data.why5 || '',
-          root_cause_category: fwR.data.root_cause_category || '',
-          root_cause_identified: fwR.data.root_cause_identified || '',
-          causal_factors: fwR.data.causal_factors || [],
-          team_leader: fwR.data.team_leader || '',
-          team_members: fwR.data.team_members || ''
-        });
-      }
+      const facMap = {};
+      RCA_CATEGORIES.forEach(c => { facMap[c.key] = { is_factor: false, description: '' }; });
+      (facR.data || []).forEach(f => { facMap[f.category] = { is_factor: !!f.is_factor, description: f.description || '' }; });
+      setRcaFactors(facMap);
 
-      // Load RCA (structured or legacy)
-      if (rcR.data) {
-        setRcaAnalysis(rcR.data.analysis_text || rcR.data.findings || '');
-        setRcaData({
-          problem_statement: rcR.data.problem_statement || '',
-          equipment_factors: rcR.data.equipment_factors || '',
-          procedure_factors: rcR.data.procedure_factors || '',
-          training_factors: rcR.data.training_factors || '',
-          human_factors: rcR.data.human_factors || '',
-          communication_factors: rcR.data.communication_factors || '',
-          supervision_factors: rcR.data.supervision_factors || '',
-          design_factors: rcR.data.design_factors || '',
-          maintenance_factors: rcR.data.maintenance_factors || '',
-          environmental_factors: rcR.data.environmental_factors || '',
-          organizational_factors: rcR.data.organizational_factors || '',
-          root_causes_identified: rcR.data.root_causes_identified || '',
-          contributing_factors_summary: rcR.data.contributing_factors_summary || '',
-          systemic_issues: rcR.data.systemic_issues || '',
-          recommendations: rcR.data.recommendations || '',
-          rca_method: rcR.data.rca_method || 'Other',
-          team_leader: rcR.data.team_leader || '',
-          team_members: rcR.data.team_members || ''
-        });
-      }
-    } catch (e) { console.error(e); alert('Error: ' + e.message); setIncident(null); }
-    finally { setLoading(false); }
-  }
+      setFiveWhy(fwR.data || { why1:'', why2:'', why3:'', why4:'', why5:'', root_cause:'' });
+      setLocalReview(lrR.data || {});
+      setLegacyRcaText(legR.data?.findings || legR.data?.rca_findings || '');
+      setCorrectiveActions(caR.data || []);
+      setLessons(lessR.data || []);
 
-  async function handleLogin(e) { e.preventDefault(); if (userEmail.endsWith('@slpalaska.com')) { localStorage.setItem('slp_investigator_email', userEmail); setAuthenticated(true); loadAll(); } else alert('Restricted to @slpalaska.com'); }
-  async function updateStatus(newStatus) { try { const { error } = await supabase.from('incidents').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id); if (error) throw error; setIncident({ ...incident, status: newStatus }); alert('Status: ' + newStatus); } catch (e) { alert(e.message); } }
-
-  async function saveIncidentField(field, value) {
-    setSaving(true);
-    try {
-      // Coerce boolean fields — Supabase stores these as true/false, not 'YES'/'No'
-      const BOOLEAN_FIELDS = ['is_sif', 'is_sif_p'];
-      let coerced = value;
-      if (BOOLEAN_FIELDS.includes(field)) coerced = (value === 'YES' || value === true);
-      const { error } = await supabase.from('incidents').update({ [field]: coerced, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
-      setIncident({ ...incident, [field]: coerced });
-      setEditingField(null);
-      setIncidentEdits({});
-    } catch (e) { alert('Save failed: ' + e.message); } finally { setSaving(false); }
-  }
-
-  async function addTimelineEvent() { if (!newTimelineEvent.event_date || !newTimelineEvent.event_description) { alert('Fill date+description'); return; } setSaving(true); try { const n=timelineEvents.length+1; const { data, error } = await supabase.from('timeline_events').insert({ incident_id:id, sequence_number:n, event_date:newTimelineEvent.event_date, event_time:newTimelineEvent.event_time||null, event_description:newTimelineEvent.event_description, critical:newTimelineEvent.critical, created_by_email:userEmail }).select().single(); if(error)throw error; setTimelineEvents([...timelineEvents,data]); setNewTimelineEvent({event_date:'',event_time:'',event_description:'',critical:false}); await supabase.from('incidents').update({timeline_event_count:n,timeline_developed:true}).eq('id',id); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function saveTimelineEdit(item) { setSaving(true); try { const{error}=await supabase.from('timeline_events').update({event_date:item.event_date,event_time:item.event_time,event_description:item.event_description,critical:item.critical}).eq('id',item.id); if(error)throw error; setTimelineEvents(timelineEvents.map(e=>e.id===item.id?{...e,...item}:e)); setEditingTimeline(null); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function deleteTimelineEvent(item) { if(!confirm('Delete event?'))return; try { const{error}=await supabase.from('timeline_events').delete().eq('id',item.id); if(error)throw error; const u=timelineEvents.filter(e=>e.id!==item.id); setTimelineEvents(u); await supabase.from('incidents').update({timeline_event_count:u.length}).eq('id',id); } catch(e){alert(e.message);} }
-
-  async function uploadEvidence() { if(!newEvidence.files.length)return; setUploadingEvidence(true); try { for(const file of newEvidence.files){ const ext=file.name.split('.').pop(); const fn=`${incident.incident_id}_ev_${Date.now()}.${ext}`; const fp=`incidents/${id}/${fn}`; const{error:ue}=await supabase.storage.from('evidence').upload(fp,file); if(ue)throw ue; const{data:ud}=supabase.storage.from('evidence').getPublicUrl(fp); const n=evidence.length+1; const{data,error}=await supabase.from('investigation_evidence').insert({incident_id:id,evidence_number:n,evidence_type:newEvidence.type,evidence_category:'Investigation',file_name:fn,file_url:ud.publicUrl,description:newEvidence.description||`${newEvidence.type} from investigation`,uploaded_by_email:userEmail,source:'workbench'}).select().single(); if(error)throw error; setEvidence(prev=>[...prev,data]); } await supabase.from('incidents').update({evidence_count:evidence.length+newEvidence.files.length}).eq('id',id); setNewEvidence({type:'Photo',description:'',files:[]}); setShowEvidenceUpload(false); alert('Uploaded!'); } catch(e){alert(e.message);} finally{setUploadingEvidence(false);} }
-
-  async function addWitness() { if(!newWitness.witness_name||!newWitness.statement_summary){alert('Fill name+statement');return;} setSaving(true); try { const n=witnesses.length+1; const{data,error}=await supabase.from('witness_statements').insert({incident_id:id,witness_number:n,witness_name:newWitness.witness_name,position_role:newWitness.position_role||null,company:newWitness.company||null,statement_summary:newWitness.statement_summary,created_by_email:userEmail}).select().single(); if(error)throw error; setWitnesses([...witnesses,data]); setNewWitness({witness_name:'',position_role:'',company:'',statement_summary:''}); await supabase.from('incidents').update({witness_count:n}).eq('id',id); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function saveWitnessEdit(item) { setSaving(true); try { const{error}=await supabase.from('witness_statements').update({witness_name:item.witness_name,position_role:item.position_role,company:item.company,statement_summary:item.statement_summary}).eq('id',item.id); if(error)throw error; setWitnesses(witnesses.map(w=>w.id===item.id?{...w,...item}:w)); setEditingWitness(null); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function deleteWitness(item) { if(!confirm('Delete witness?'))return; try { const{error}=await supabase.from('witness_statements').delete().eq('id',item.id); if(error)throw error; const u=witnesses.filter(w=>w.id!==item.id); setWitnesses(u); await supabase.from('incidents').update({witness_count:u.length}).eq('id',id); } catch(e){alert(e.message);} }
-
-  async function addCA() { if(!newCA.action_description||!newCA.action_owner_name){alert('Fill action+owner');return;} setSaving(true); try { const n=correctiveActions.length+1; const{data,error}=await supabase.from('investigation_corrective_actions').insert({incident_id:id,action_number:n,action_description:newCA.action_description,hierarchy_control:newCA.hierarchy_control,action_owner_name:newCA.action_owner_name,action_owner_email:newCA.action_owner_email||null,target_date:newCA.target_date||null,action_status:newCA.action_status,created_by_email:userEmail}).select().single(); if(error)throw error; setCorrectiveActions([...correctiveActions,data]); // Send assignment email
-      if(newCA.action_owner_email&&newCA.action_owner_email.includes('@')){
-        try{
-          const incRef=incident?.incident_id||'Investigation';
-          await fetch('https://api.resend.com/emails',{method:'POST',headers:{'Authorization':'Bearer ' + process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:'SLP Alaska Safety <reports@slpalaska.com>',to:[newCA.action_owner_email],subject:`Corrective Action Assigned — ${incRef} — Due ${newCA.target_date||'TBD'}`,html:`<div style="font-family:Arial,sans-serif;max-width:600px"><div style="background:linear-gradient(135deg,#991b1b,#1e3a8a);padding:20px;border-radius:8px 8px 0 0"><h2 style="color:white;margin:0">🔴 Corrective Action Assigned</h2></div><div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0"><p>Hi <strong>${newCA.action_owner_name}</strong>,</p><p>A corrective action has been assigned to you from an incident investigation.</p><table style="width:100%;border-collapse:collapse;margin:15px 0"><tr><td style="padding:8px;background:#991b1b;color:white;font-weight:bold;width:35%">Incident</td><td style="padding:8px;border:1px solid #e2e8f0">${incRef}</td></tr><tr><td style="padding:8px;background:#991b1b;color:white;font-weight:bold">Action Required</td><td style="padding:8px;border:1px solid #e2e8f0">${newCA.action_description}</td></tr><tr><td style="padding:8px;background:#991b1b;color:white;font-weight:bold">Due Date</td><td style="padding:8px;border:1px solid #e2e8f0;color:#dc2626;font-weight:bold">${newCA.target_date||'Not set'}</td></tr></table><a href="https://portal.slpalaska.com/investigation-workbench" style="display:inline-block;padding:12px 24px;background:#991b1b;color:white;text-decoration:none;border-radius:6px;font-weight:bold">View Investigation →</a></div></div>`})});
-        }catch(emailErr){console.error('CA email failed:',emailErr);}
-      }
-      setNewCA({action_description:'',hierarchy_control:'1-Elimination',action_owner_name:'',action_owner_email:'',target_date:'',action_status:'Open'}); await supabase.from('incidents').update({corrective_actions_count:n}).eq('id',id); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function saveCAEdit(item) { setSaving(true); try { const{error}=await supabase.from('investigation_corrective_actions').update({action_description:item.action_description,hierarchy_control:item.hierarchy_control,action_owner_name:item.action_owner_name,target_date:item.target_date||null,action_status:item.action_status}).eq('id',item.id); if(error)throw error; setCorrectiveActions(correctiveActions.map(c=>c.id===item.id?{...c,...item}:c)); setEditingCA(null); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function deleteCA(item) { if(!confirm('Delete action?'))return; try { const{error}=await supabase.from('investigation_corrective_actions').delete().eq('id',item.id); if(error)throw error; const u=correctiveActions.filter(c=>c.id!==item.id); setCorrectiveActions(u); await supabase.from('incidents').update({corrective_actions_count:u.length}).eq('id',id); } catch(e){alert(e.message);} }
-
-  async function addLesson() { if(!newLesson.lesson_title||!newLesson.lesson_description){alert('Fill title+description');return;} setSaving(true); try { const n=lessonsLearned.length+1; const{data,error}=await supabase.from('investigation_lessons_learned').insert({incident_id:id,lesson_number:n,lesson_title:newLesson.lesson_title,lesson_description:newLesson.lesson_description,key_takeaway:newLesson.key_takeaway||null,added_by_email:userEmail}).select().single(); if(error)throw error; setLessonsLearned([...lessonsLearned,data]); setNewLesson({lesson_title:'',lesson_description:'',key_takeaway:''}); await supabase.from('incidents').update({lessons_learned_count:n}).eq('id',id); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function saveLessonEdit(item) { setSaving(true); try { const{error}=await supabase.from('investigation_lessons_learned').update({lesson_title:item.lesson_title,lesson_description:item.lesson_description,key_takeaway:item.key_takeaway}).eq('id',item.id); if(error)throw error; setLessonsLearned(lessonsLearned.map(l=>l.id===item.id?{...l,...item}:l)); setEditingLesson(null); } catch(e){alert(e.message);} finally{setSaving(false);} }
-  async function deleteLesson(item) { if(!confirm('Delete lesson?'))return; try { const{error}=await supabase.from('investigation_lessons_learned').delete().eq('id',item.id); if(error)throw error; const u=lessonsLearned.filter(l=>l.id!==item.id); setLessonsLearned(u); await supabase.from('incidents').update({lessons_learned_count:u.length}).eq('id',id); } catch(e){alert(e.message);} }
-
-  // ============================================================================
-  // STRUCTURED SAVE FUNCTIONS
-  // ============================================================================
-
-  async function saveLocalReview() {
-    setSaving(true);
-    try {
-      const combined = `What Happened: ${localReviewData.what_happened}\n\nImmediate Causes: ${localReviewData.immediate_causes}\n\nIf You Could Do This Over: ${localReviewData.do_differently}\n\nAdditional Notes: ${localReviewData.additional_notes}`;
-      const payload = {
-        incident_id: id,
-        review_text: combined,
-        findings: combined,
-        analysis_text: combined,
-        what_happened: localReviewData.what_happened,
-        immediate_causes: localReviewData.immediate_causes,
-        do_differently: localReviewData.do_differently,
-        additional_notes: localReviewData.additional_notes,
-        updated_at: new Date().toISOString()
-      };
-      const { data: ex } = await supabase.from('local_reviews').select('id').eq('incident_id', id).maybeSingle();
-      if (ex) {
-        const { error } = await supabase.from('local_reviews').update(payload).eq('id', ex.id);
-        if (error) throw error;
-      } else {
-        payload.created_by_email = userEmail;
-        const { error } = await supabase.from('local_reviews').insert(payload);
-        if (error) throw error;
-      }
-      setLocalReview(combined);
-      alert('Local Review saved!');
-    } catch (e) { alert(e.message); } finally { setSaving(false); }
-  }
-
-  async function saveFiveWhyAnalysis() {
-    setSaving(true);
-    try {
-      const combined = `Problem: ${fiveWhyData.problem_statement}\nWhy 1: ${fiveWhyData.why1}\nWhy 2: ${fiveWhyData.why2}\nWhy 3: ${fiveWhyData.why3}\nWhy 4: ${fiveWhyData.why4}\nWhy 5 (Root Cause): ${fiveWhyData.why5}\nRoot Cause Category: ${fiveWhyData.root_cause_category}\nRoot Cause: ${fiveWhyData.root_cause_identified}\nCausal Factors: ${(fiveWhyData.causal_factors||[]).join(', ')}`;
-      const payload = {
-        incident_id: id,
-        analysis_text: combined,
-        findings: combined,
-        review_text: combined,
-        problem_statement: fiveWhyData.problem_statement,
-        why1: fiveWhyData.why1, why2: fiveWhyData.why2, why3: fiveWhyData.why3,
-        why4: fiveWhyData.why4, why5: fiveWhyData.why5,
-        root_cause_category: fiveWhyData.root_cause_category,
-        root_cause_identified: fiveWhyData.root_cause_identified,
-        causal_factors: fiveWhyData.causal_factors,
-        team_leader: fiveWhyData.team_leader,
-        team_members: fiveWhyData.team_members,
-        updated_at: new Date().toISOString()
-      };
-      const { data: ex } = await supabase.from('five_why_analyses').select('id').eq('incident_id', id).maybeSingle();
-      if (ex) {
-        const { error } = await supabase.from('five_why_analyses').update(payload).eq('id', ex.id);
-        if (error) throw error;
-      } else {
-        payload.created_by_email = userEmail;
-        const { error } = await supabase.from('five_why_analyses').insert(payload);
-        if (error) throw error;
-      }
-      setFiveWhy(combined);
-      alert('5-Why Analysis saved!');
-    } catch (e) { alert(e.message); } finally { setSaving(false); }
-  }
-
-  async function saveRCAAnalysis() {
-    setSaving(true);
-    try {
-      const combined = `Problem Statement: ${rcaData.problem_statement}\n\nEquipment: ${rcaData.equipment_factors}\nProcedures: ${rcaData.procedure_factors}\nTraining: ${rcaData.training_factors}\nHuman Factors: ${rcaData.human_factors}\nCommunication: ${rcaData.communication_factors}\nSupervision: ${rcaData.supervision_factors}\nDesign/Engineering: ${rcaData.design_factors}\nMaintenance: ${rcaData.maintenance_factors}\nEnvironmental: ${rcaData.environmental_factors}\nOrganizational: ${rcaData.organizational_factors}\n\nRoot Causes: ${rcaData.root_causes_identified}\nContributing Factors: ${rcaData.contributing_factors_summary}\nSystemic Issues: ${rcaData.systemic_issues}\nRecommendations: ${rcaData.recommendations}`;
-      const payload = {
-        incident_id: id,
-        analysis_text: combined,
-        findings: combined,
-        review_text: combined,
-        problem_statement: rcaData.problem_statement,
-        equipment_factors: rcaData.equipment_factors,
-        procedure_factors: rcaData.procedure_factors,
-        training_factors: rcaData.training_factors,
-        human_factors: rcaData.human_factors,
-        communication_factors: rcaData.communication_factors,
-        supervision_factors: rcaData.supervision_factors,
-        design_factors: rcaData.design_factors,
-        maintenance_factors: rcaData.maintenance_factors,
-        environmental_factors: rcaData.environmental_factors,
-        organizational_factors: rcaData.organizational_factors,
-        root_causes_identified: rcaData.root_causes_identified,
-        contributing_factors_summary: rcaData.contributing_factors_summary,
-        systemic_issues: rcaData.systemic_issues,
-        recommendations: rcaData.recommendations,
-        rca_method: rcaData.rca_method,
-        team_leader: rcaData.team_leader,
-        team_members: rcaData.team_members,
-        updated_at: new Date().toISOString()
-      };
-      const { data: ex } = await supabase.from('rca_analyses').select('id').eq('incident_id', id).maybeSingle();
-      if (ex) {
-        const { error } = await supabase.from('rca_analyses').update(payload).eq('id', ex.id);
-        if (error) throw error;
-      } else {
-        payload.created_by_email = userEmail;
-        const { error } = await supabase.from('rca_analyses').insert(payload);
-        if (error) throw error;
-      }
-      setRcaAnalysis(combined);
-      alert('RCA saved!');
-    } catch (e) { alert(e.message); } finally { setSaving(false); }
-  }
-
-  // Legacy save for backward compat (not used by new structured forms but kept)
-  async function saveAnalysis(type, text) { setSaving(true); try { const tbl={'Local Review':'local_reviews','5-Why Analysis':'five_why_analyses','Full RCA':'rca_analyses','Root Cause Analysis':'rca_analyses'}[type]; if(!tbl)return; const{data:ex}=await supabase.from(tbl).select('id').eq('incident_id',id).maybeSingle(); const p={incident_id:id,findings:text,analysis_text:text,review_text:text,updated_at:new Date().toISOString()}; if(ex){const{error}=await supabase.from(tbl).update(p).eq('id',ex.id);if(error)throw error;}else{p.created_by_email=userEmail;const{error}=await supabase.from(tbl).insert(p);if(error)throw error;} alert('Saved!'); } catch(e){alert(e.message);} finally{setSaving(false);} }
-
-  // ============================================================================
-  // SPELL CHECK & GRAMMAR (US English)
-  // ============================================================================
-  const DICTIONARY = new Set([
-    'psif','stky','lopc','loto','lockout','tagout','jsa','jha','tha','ppe','sif','hse',
-    'spud','bop','blowout','wellbore','casing','tubing','annulus','derrick','drawworks',
-    'roughneck','roustabout','toolpusher','mudlogger','wireline','coiled','slickline',
-    'swamper','hotshot','haul','laydown','rigup','rigdown','nippleup','nippledown',
-    'pikka','kenai','nikiski','kachemak','soldotna','deadhorse','prudhoe','kuparuk',
-    'nuiqsut','colville','dalton','haul','slope','tundra','permafrost','breakup',
-    'hilcorp','conocophillips','santos','eni','repsol','exxon','bp','alyeska','taps',
-    'h2s','lel','scba','msds','sds','gfci','ldar','nfpa','osha','api','ansi',
-    'connex','matting','dunnage','rigging','sling','shackle','turnbuckle','crosby',
-    'hydrotest','psi','psig','bbl','mcf','bopd','mmscfd'
-  ]);
-
-  function checkSpelling(text) {
-    const issues = [];
-    if (!text || text.length < 3) return issues;
-    const words = text.match(/[a-zA-Z']+/g) || [];
-    const COMMON = new Set(['the','be','to','of','and','a','in','that','have','i','it','for','not','on','with','he','as','you','do','at','this','but','his','by','from','they','we','say','her','she','or','an','will','my','one','all','would','there','their','what','so','up','out','if','about','who','get','which','go','me','when','no','make','can','like','time','just','him','know','take','people','into','year','your','good','some','could','them','see','other','than','then','now','look','only','come','its','over','think','also','back','after','use','two','how','our','work','first','well','way','even','new','want','because','any','these','give','day','most','us']);
-    const seen = new Set();
-    words.forEach(word => {
-      const lower = word.toLowerCase();
-      if (lower.length < 3 || COMMON.has(lower) || DICTIONARY.has(lower) || seen.has(lower)) return;
-      if (/^[A-Z]{2,}$/.test(word)) return;
-      if (/^\d/.test(word)) return;
-      seen.add(lower);
-      const MISSPELLINGS = {'recieve':'receive','occured':'occurred','occurence':'occurrence','seperate':'separate','definately':'definitely','accomodate':'accommodate','enviroment':'environment','maintanence':'maintenance','equiptment':'equipment','safty':'safety','hazzard':'hazard','assesment':'assessment','procedur':'procedure','incedent':'incident','investagation':'investigation','immediatly':'immediately','recomendation':'recommendation','comunication':'communication','observaton':'observation','deficency':'deficiency','gaurd':'guard','visable':'visible','availble':'available','neccesary':'necessary','responsable':'responsible','completly':'completely','aproximately':'approximately','consistant':'consistent','dependant':'dependent','occassion':'occasion','personel':'personnel','refered':'referred','similiar':'similar','suficient':'sufficient','untill':'until','vehical':'vehicle','wether':'whether','thier':'their','alot':'a lot','wierd':'weird','calender':'calendar','liason':'liaison','milage':'mileage','noticable':'noticeable','privledge':'privilege','publically':'publicly','rythm':'rhythm','supercede':'supersede','truely':'truly','tyrany':'tyranny','vaccum':'vacuum','writting':'writing'};
-      if (MISSPELLINGS[lower]) issues.push({ word, suggestion: MISSPELLINGS[lower], type: 'spelling', severity: 'error' });
-    });
-    return issues;
-  }
-
-  function checkGrammar(text) {
-    const issues = [];
-    if (!text || text.length < 5) return issues;
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 5);
-    sentences.forEach(sentence => {
-      const trimmed = sentence.trim();
-      const words = trimmed.split(/\s+/);
-      for (let i = 0; i < words.length - 1; i++) {
-        const repeated = [words[i], words[i + 1]];
-        if (repeated[0].toLowerCase() === repeated[1]?.toLowerCase()) {
-          const skip = ['had','that','is','was'];
-          if (skip.includes(repeated[0].toLowerCase())) return;
-          issues.push({ word: `${repeated[0]} ${repeated[1]}`, suggestion: repeated[0], msg: 'Repeated word', type: 'grammar', severity: 'warning' });
-        }
-      }
-    });
-    return issues;
-  }
-
-  function runSpellCheck() {
-    setSpellChecking(true);
-    const allResults = [];
-    const fields = [
-      { section: 'Timeline', field: 'events', text: timelineEvents.map(e => e.event_description).join('. ') },
-      { section: 'Witnesses', field: 'statements', text: witnesses.map(w => w.statement_summary).join('. ') },
-      { section: 'Analysis', id: 'local', field: 'local_review', text: localReview || '' },
-      { section: 'Analysis', id: '5why', field: 'five_why', text: fiveWhy || '' },
-      { section: 'Analysis', id: 'rca', field: 'rca', text: rcaAnalysis || '' },
-      { section: 'Actions', field: 'descriptions', text: correctiveActions.map(ca => ca.action_description).join('. ') },
-      { section: 'Lessons', field: 'descriptions', text: lessonsLearned.map(l => `${l.lesson_title}. ${l.lesson_description}. ${l.key_takeaway||''}`).join('. ') }
-    ];
-    fields.forEach(({ section, field, text }) => {
-      if (!text || text.trim().length < 3) return;
-      const spelling = checkSpelling(text);
-      const grammar = checkGrammar(text);
-      spelling.forEach(issue => {
-        const idx = text.toLowerCase().indexOf(issue.word.toLowerCase());
-        const context = text.substring(Math.max(0, idx - 30), Math.min(text.length, idx + issue.word.length + 30));
-        allResults.push({ ...issue, section, field, context });
-      });
-      grammar.forEach(issue => {
-        const idx = text.toLowerCase().indexOf(issue.word.toLowerCase());
-        const context = text.substring(Math.max(0, idx - 30), Math.min(text.length, idx + issue.word.length + 30));
-        allResults.push({ ...issue, section, field, context });
-      });
-    });
-    setSpellCheckResults(allResults);
-    setSpellChecking(false);
-  }
-
-  // ============================================================================
-  // PDF GENERATION
-  // ============================================================================
-  function generatePDF() {
-    const logoUrl = `${window.location.origin}/Logo.png`;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width; canvas.height = img.height;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      const logoBase64 = canvas.toDataURL('image/png');
-      openPrintWindow(logoBase64);
-    };
-    img.onerror = () => openPrintWindow(null);
-    img.src = logoUrl;
-  }
-
-  function openPrintWindow(logoBase64) {
-    const w = window.open('', '_blank');
-    const logoHtml = logoBase64
-      ? `<img src="${logoBase64}" style="width:56px;height:56px;border-radius:8px;object-fit:contain;background:white;padding:4px;" />`
-      : `<div style="width:56px;height:56px;border-radius:8px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;">SLP</div>`;
-    const sevColor = 'ABCD'.includes(incident.safety_severity||'') ? '#dc2626' : '#3b82f6';
-    w.document.write(`<!DOCTYPE html><html><head><title>${incident.incident_id} - Investigation Report</title><style>
-body{font-family:Arial,Helvetica,sans-serif;max-width:900px;margin:0 auto;padding:40px;color:#1e293b;font-size:12px;line-height:1.6}
-.header{background:linear-gradient(135deg,#991b1b,#c41e3a);color:white;padding:25px;border-radius:10px;margin-bottom:30px}
-.header-title{font-size:22px;font-weight:700;font-family:Arial,Helvetica,sans-serif}
-.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;margin-left:8px;font-family:Arial,Helvetica,sans-serif}
-.section{margin-bottom:25px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
-.section-title{background:#f1f5f9;padding:12px 16px;font-weight:700;font-size:13px;border-bottom:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;text-transform:uppercase;letter-spacing:0.04em;color:#334155}
-.section-body{padding:16px}
-.row{margin-bottom:8px;font-family:Arial,Helvetica,sans-serif}
-.label{font-weight:700;color:#64748b;margin-right:6px;font-family:Arial,Helvetica,sans-serif}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-.timeline-item{padding:8px 0;border-bottom:1px solid #f1f5f9;font-family:Arial,Helvetica,sans-serif}
-.timeline-item:last-child{border-bottom:none}
-.critical{color:#dc2626;font-weight:700}
-.checklist-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-family:Arial,Helvetica,sans-serif}
-.check-yes{width:16px;height:16px;background:#22c55e;border-radius:50%;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:10px}
-.check-no{width:16px;height:16px;background:#e2e8f0;border-radius:50%;display:inline-block}
-.analysis-text{white-space:pre-wrap;font-family:Arial,Helvetica,sans-serif}
-.person-box{background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px;margin-top:12px}
-@media print{body{padding:20px}.header{-webkit-print-color-adjust:exact;print-color-adjust:exact}.section-title{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style></head><body>
-<div class="header">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div style="display:flex;align-items:center;gap:15px">
-      ${logoHtml}
-      <div>
-        <div style="font-size:10px;opacity:0.8;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;font-family:Arial,Helvetica,sans-serif">AnthroSafe&#8482; Field Driven Safety</div>
-        <div class="header-title">${incident.incident_id||'Report'}</div>
-        <div style="font-size:13px;opacity:0.9;font-family:Arial,Helvetica,sans-serif">${incident.investigation_type||''} Investigation</div>
-      </div>
-    </div>
-    <div>
-      ${incident.safety_severity?`<span class="badge" style="background:${sevColor};color:white">Severity ${incident.safety_severity}</span>`:''}
-      ${incident.psif_classification?`<span class="badge" style="background:#1f2937;color:white">${incident.psif_classification}</span>`:''}
-    </div>
-  </div>
-  <div style="display:flex;gap:20px;margin-top:10px;font-size:11px;opacity:0.85;flex-wrap:wrap;font-family:Arial,Helvetica,sans-serif">
-    <span>Date: ${incident.incident_date||'N/A'} ${incident.incident_time||''}</span>
-    <span>Company: ${incident.company_name||'N/A'}</span>
-    <span>Location: ${incident.location_name||'N/A'}</span>
-    <span>Status: ${incident.status||'N/A'}</span>
-  </div>
-</div>
-<div class="section">
-  <div class="section-title">&#128203; Incident Summary</div>
-  <div class="section-body">
-    <div class="two-col">
-      <div>
-        <div class="row"><span class="label">Incident ID:</span>${incident.incident_id||'N/A'}</div>
-        <div class="row"><span class="label">Date:</span>${incident.incident_date||'N/A'}</div>
-        <div class="row"><span class="label">Time:</span>${incident.incident_time||'N/A'}</div>
-        <div class="row"><span class="label">Company:</span>${incident.company_name||'N/A'}</div>
-        <div class="row"><span class="label">Location:</span>${incident.location_name||'N/A'}</div>
-        <div class="row"><span class="label">Incident Type:</span>${incident.incident_type||'N/A'}</div>
-      </div>
-      <div>
-        <div class="row"><span class="label">Status:</span>${incident.status||'N/A'}</div>
-        <div class="row"><span class="label">Severity:</span>${incident.safety_severity||'N/A'}</div>
-        <div class="row"><span class="label">PSIF:</span>${incident.psif_classification||'N/A'}</div>
-        <div class="row"><span class="label">Investigation Type:</span>${incident.investigation_type||'N/A'}</div>
-        <div class="row"><span class="label">SIF Actual:</span>${incident.is_sif?'YES':'No'}</div>
-        <div class="row"><span class="label">SIF Potential:</span>${incident.is_sif_p?'YES':'No'}</div>
-      </div>
-    </div>
-    ${incident.brief_description?`<div style="margin-top:12px"><div class="row"><span class="label">Brief Description:</span></div><div style="font-family:Arial,Helvetica,sans-serif">${incident.brief_description}</div></div>`:''}
-    ${incident.detailed_description?`<div style="margin-top:12px"><div class="row"><span class="label">Detailed Description:</span></div><div style="font-family:Arial,Helvetica,sans-serif">${incident.detailed_description}</div></div>`:''}
-    ${incident.witness_statement_summary?`<div style="margin-top:12px;background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;padding:10px"><span class="label">Initial Witness Info:</span><div style="margin-top:4px;font-family:Arial,Helvetica,sans-serif">${incident.witness_statement_summary}</div></div>`:''}
-    ${(incident.injured_name||incident.injured_company||incident.injury_type||incident.body_part_affected)?`
-    <div class="person-box">
-      <div style="font-weight:700;color:#166534;margin-bottom:8px;font-family:Arial,Helvetica,sans-serif">&#128119; Injured / Involved Person</div>
-      <div class="two-col">
-        <div>
-          ${incident.injured_name?`<div class="row"><span class="label">Name:</span>${incident.injured_name}</div>`:''}
-          ${incident.injured_company?`<div class="row"><span class="label">Company:</span>${incident.injured_company}</div>`:''}
-          ${incident.injured_job_title?`<div class="row"><span class="label">Job Title:</span>${incident.injured_job_title}</div>`:''}
-        </div>
-        <div>
-          ${incident.injury_type?`<div class="row"><span class="label">Injury Type:</span>${incident.injury_type}</div>`:''}
-          ${incident.body_part_affected?`<div class="row"><span class="label">Body Part:</span>${incident.body_part_affected}</div>`:''}
-          ${incident.injured_time_on_task?`<div class="row"><span class="label">Time on Task:</span>${incident.injured_time_on_task}</div>`:''}
-        </div>
-      </div>
-    </div>`:''}
-  </div>
-</div>
-${timelineEvents.length?`<div class="section"><div class="section-title">&#128337; Timeline of Events (${timelineEvents.length})</div><div class="section-body">${timelineEvents.map((e,i)=>`<div class="timeline-item"><strong>${i+1}.</strong> <span style="color:#64748b">${e.event_date} ${e.event_time||''}</span> — <span class="${e.critical?'critical':''}">${e.event_description}</span>${e.critical?' <strong style="color:#dc2626">&#9888; CRITICAL</strong>':''}</div>`).join('')}</div></div>`:''}
-${evidence.length?`<div class="section"><div class="section-title">&#128247; Evidence (${evidence.length})</div><div class="section-body">
-${evidence.map((e,i)=>`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f1f5f9;font-family:Arial,Helvetica,sans-serif">
-  <div class="row"><strong>${i+1}. [${e.evidence_type}]</strong> ${e.description||e.file_name||''}</div>
-  ${(e.evidence_type==='Photo'||e.evidence_type==='Video')&&e.file_url?`<img src="${e.file_url}" style="max-width:420px;max-height:280px;border-radius:6px;border:1px solid #e2e8f0;margin-top:6px;display:block;" onerror="this.style.display='none'" />`:''}
-</div>`).join('')}
-</div></div>`:''}
-${witnesses.length?`<div class="section"><div class="section-title">&#128483; Witness Statements (${witnesses.length})</div><div class="section-body">${witnesses.map(w=>`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f1f5f9"><div style="font-weight:700;font-family:Arial,Helvetica,sans-serif">${w.witness_name}${w.position_role?` <span style="font-weight:400;color:#64748b">(${w.position_role})</span>`:''}${w.company?` — ${w.company}`:''}</div><div style="margin-top:4px;font-family:Arial,Helvetica,sans-serif">${w.statement_summary}</div></div>`).join('')}</div></div>`:''}
-${(localReview||fiveWhy||rcaAnalysis)?`<div class="section"><div class="section-title">&#128270; Analysis — ${incident.investigation_type||'N/A'}</div><div class="section-body"><div class="analysis-text">${localReview||fiveWhy||rcaAnalysis}</div></div></div>`:''}
-${(()=>{
-  const factors=[{key:'equipment_factors',label:'Equipment'},{key:'procedure_factors',label:'Procedures'},{key:'training_factors',label:'Training'},{key:'human_factors',label:'Human Factors'},{key:'communication_factors',label:'Communication'},{key:'supervision_factors',label:'Supervision'},{key:'design_factors',label:'Design/Eng.'},{key:'maintenance_factors',label:'Maintenance'},{key:'environmental_factors',label:'Environmental'},{key:'organizational_factors',label:'Organizational'}];
-  const active=factors.filter(f=>rcaData[f.key]&&rcaData[f.key].trim());
-  if(active.length===0)return '';
-  const svgEl=document.getElementById('causal-tree-svg');
-  const svgHTML=svgEl?new XMLSerializer().serializeToString(svgEl):'';
-  return '<div class="section"><div class="section-title">Causal Tree Diagram</div><div class="section-body" style="text-align:center;overflow:auto">'+svgHTML+'</div></div>';
-})()}
-${correctiveActions.length?`<div class="section"><div class="section-title">&#9989; Corrective Actions (${correctiveActions.length})</div><div class="section-body">${correctiveActions.map((ca,i)=>`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;font-family:Arial,Helvetica,sans-serif"><strong>${i+1}. ${ca.action_description}</strong><div style="margin-top:4px"><span class="label">Control:</span>${ca.hierarchy_control} | <span class="label">Owner:</span>${ca.action_owner_name} | <span class="label">Due:</span>${ca.target_date||'—'} | <span class="label">Status:</span>${ca.action_status}</div></div>`).join('')}</div></div>`:''}
-${lessonsLearned.length?`<div class="section"><div class="section-title">&#128161; Lessons Learned (${lessonsLearned.length})</div><div class="section-body">${lessonsLearned.map(l=>`<div style="margin-bottom:12px;font-family:Arial,Helvetica,sans-serif"><strong>${l.lesson_title}</strong><div style="margin-top:4px">${l.lesson_description}</div>${l.key_takeaway?`<div style="margin-top:6px;font-style:italic;color:#7c3aed;background:#faf5ff;padding:6px 10px;border-radius:4px">Key Takeaway: ${l.key_takeaway}</div>`:''}</div>`).join('')}</div></div>`:''}
-<div class="section"><div class="section-title">&#128203; Investigation Checklist</div><div class="section-body"><div class="two-col"><div><div class="checklist-item"><span class="${timelineEvents.length?'check-yes':'check-no'}">${timelineEvents.length?'&#10003;':''}</span>&nbsp;Timeline (${timelineEvents.length})</div><div class="checklist-item"><span class="${evidence.length?'check-yes':'check-no'}">${evidence.length?'&#10003;':''}</span>&nbsp;Evidence (${evidence.length})</div><div class="checklist-item"><span class="${witnesses.length?'check-yes':'check-no'}">${witnesses.length?'&#10003;':''}</span>&nbsp;Witnesses (${witnesses.length})</div></div><div><div class="checklist-item"><span class="${(localReview||fiveWhy||rcaAnalysis)?'check-yes':'check-no'}">${(localReview||fiveWhy||rcaAnalysis)?'&#10003;':''}</span>&nbsp;Analysis</div><div class="checklist-item"><span class="${correctiveActions.length?'check-yes':'check-no'}">${correctiveActions.length?'&#10003;':''}</span>&nbsp;Actions (${correctiveActions.length})</div><div class="checklist-item"><span class="${lessonsLearned.length?'check-yes':'check-no'}">${lessonsLearned.length?'&#10003;':''}</span>&nbsp;Lessons (${lessonsLearned.length})</div></div></div></div></div>
-<div style="text-align:center;margin-top:30px;padding:20px;color:#64748b;font-size:11px;border-top:2px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif"><strong>AnthroSafe&#8482; Field Driven Safety</strong> | &#169; 2026 SLP Alaska, LLC<br>Generated ${new Date().toLocaleString()}</div>
-</body></html>`);
-    w.document.close();
-    setTimeout(() => w.print(), 800);
-  }
-
-  // ============================================================================
-  // TOGGLE CAUSAL FACTOR
-  // ============================================================================
-  function toggleCausalFactor(factor) {
-    const current = fiveWhyData.causal_factors || [];
-    if (current.includes(factor)) {
-      setFiveWhyData({ ...fiveWhyData, causal_factors: current.filter(f => f !== factor) });
-    } else {
-      setFiveWhyData({ ...fiveWhyData, causal_factors: [...current, factor] });
+      // Resume at first incomplete stage
+      const d = incR.data;
+      if (!d.stage_1_complete) setCurrentStage(1);
+      else if (!d.stage_2_complete) setCurrentStage(2);
+      else if (!d.stage_3_complete) setCurrentStage(3);
+      else setCurrentStage(4);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Failed to load investigation.');
+    } finally {
+      setLoading(false);
     }
   }
 
-  // ============================================================================
-  // EDIT CONTEXT — stable reference passed to EditableText
-  // ============================================================================
-  const editCtx = useMemo(() => ({
-    editingField, incidentEdits, setIncidentEdits, setEditingField, saveIncidentField, saving
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [editingField, incidentEdits, saving]);
+  // -------- Autosave for the incident record --------
+  const autosaveTimer = useRef(null);
+  function queueIncidentSave(patch) {
+    setIncident(prev => ({ ...prev, ...patch }));
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(async () => {
+      setSaving(true);
+      const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
+      if (error) console.error('Autosave failed:', error);
+      else setLastSavedAt(new Date());
+      setSaving(false);
+    }, 1200);
+  }
 
-  if (loading) return <div style={{ minHeight: '100vh', background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '18px' }}>Loading...</div>;
-  if (!authenticated) return <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#1e3a5f,#2d5a87)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ background: 'white', borderRadius: '16px', padding: '40px', maxWidth: '450px', width: '90%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', textAlign: 'center' }}><img src="/Logo.png" alt="SLP" style={{ width: '80px', marginBottom: '15px' }} /><h2>Investigation Workbench</h2><p style={{ color: '#64748b' }}>Restricted to SLP investigators</p><form onSubmit={handleLogin}><input type="email" placeholder="your@slpalaska.com" value={userEmail} onChange={e => setUserEmail(e.target.value)} style={{ ...st.input, marginBottom: '15px' }} /><button type="submit" style={{ ...st.primaryBtn, width: '100%' }}>Sign In</button></form></div></div>;
-  if (!incident) return <div style={{ minHeight: '100vh', background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}><div style={{ textAlign: 'center' }}><h2>Incident Not Found</h2><a href="/investigation-dashboard" style={{ color: '#93c5fd' }}>← Back to Dashboard</a></div></div>;
+  async function markStageComplete(stage) {
+    const patch = { [`stage_${stage}_complete`]: true };
+    setIncident(prev => ({ ...prev, ...patch }));
+    await supabase.from('incidents').update(patch).eq('id', incidentId);
+    if (stage < 4) setCurrentStage(stage + 1);
+  }
 
-  const tabs = ['Overview', 'Timeline', 'Evidence', 'Witnesses', 'Analysis', 'Corrective Actions', 'Lessons Learned', 'Review & Approve'];
-  const analysisHasContent = !!(localReview || fiveWhy || rcaAnalysis || localReviewData.what_happened || fiveWhyData.problem_statement || rcaData.problem_statement);
+  // -------- PDF generation --------
+  async function handleGeneratePDF() {
+    setPdfGenerating(true);
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/generate-investigation-pdf`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ incident_id: incidentId }),
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`PDF generation failed: ${resp.status} ${text}`);
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Investigation-${incident.incident_id || incidentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('PDF generation failed: ' + err.message);
+    } finally {
+      setPdfGenerating(false);
+    }
+  }
+
+  // ==========================================================
+  // Render
+  // ==========================================================
+  if (!authed) return <LoginGate onSubmit={handleLogin} />;
+  if (loading) return <FullScreenMessage text="Loading investigation..." />;
+  if (error)   return <FullScreenMessage text={error} tone="danger" />;
+  if (!incident) return <FullScreenMessage text="Investigation not found." tone="danger" />;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#1e3a5f,#2d5a87)' }}>
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-        <button onClick={()=>window.location.href='/'} style={{ background: '#1e40af', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', textDecoration: 'none', fontSize: '14px' }}>{'\u2190'} Portal</button>
-        <button onClick={()=>window.location.href='/investigation-dashboard'} style={{ background: '#059669', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', textDecoration: 'none', fontSize: '14px' }}>{'\u2190'} Dashboard</button>
-        <button onClick={generatePDF} style={{ background: '#7c3aed', color: 'white', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px' }}>🖨️ Print PDF</button>
+    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: 'system-ui, -apple-system, sans-serif', color: C.text }}>
+      <TopBar
+        incident={incident}
+        saving={saving}
+        lastSavedAt={lastSavedAt}
+        pdfGenerating={pdfGenerating}
+        onPDF={handleGeneratePDF}
+        onBack={() => router.push('/investigation-dashboard')}
+      />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 24, maxWidth: 1400, margin: '0 auto', padding: 24 }}>
+        <Stepper
+          stages={STAGES}
+          current={currentStage}
+          incident={incident}
+          onJump={setCurrentStage}
+        />
+
+        <main>
+          {currentStage === 1 && (
+            <Stage1
+              incident={incident}
+              evidence={evidence}
+              witnesses={witnesses}
+              userEmail={userEmail}
+              incidentId={incidentId}
+              onIncidentChange={queueIncidentSave}
+              onEvidenceReload={async () => {
+                const { data } = await supabase.from('investigation_evidence').select('*').eq('incident_id', incidentId).order('uploaded_at');
+                setEvidence(data || []);
+              }}
+              onWitnessesReload={async () => {
+                const { data } = await supabase.from('witness_statements').select('*').eq('incident_id', incidentId).order('created_at');
+                setWitnesses(data || []);
+              }}
+              onComplete={() => markStageComplete(1)}
+            />
+          )}
+
+          {currentStage === 2 && (
+            <Stage2
+              timeline={timeline}
+              incidentId={incidentId}
+              onReload={async () => {
+                const { data } = await supabase.from('timeline_events').select('*').eq('incident_id', incidentId).order('event_date').order('event_time');
+                setTimeline(data || []);
+              }}
+              onComplete={() => markStageComplete(2)}
+            />
+          )}
+
+          {currentStage === 3 && (
+            <Stage3
+              incident={incident}
+              rcaFactors={rcaFactors}
+              setRcaFactors={setRcaFactors}
+              fiveWhy={fiveWhy}
+              setFiveWhy={setFiveWhy}
+              localReview={localReview}
+              setLocalReview={setLocalReview}
+              legacyRcaText={legacyRcaText}
+              incidentId={incidentId}
+              onIncidentChange={queueIncidentSave}
+              onComplete={() => markStageComplete(3)}
+            />
+          )}
+
+          {currentStage === 4 && (
+            <Stage4
+              incident={incident}
+              correctiveActions={correctiveActions}
+              lessons={lessons}
+              incidentId={incidentId}
+              pdfGenerating={pdfGenerating}
+              onGeneratePDF={handleGeneratePDF}
+              onIncidentChange={queueIncidentSave}
+              onActionsReload={async () => {
+                const { data } = await supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incidentId).order('due_date');
+                setCorrectiveActions(data || []);
+              }}
+              onLessonsReload={async () => {
+                const { data } = await supabase.from('lessons_learned').select('*').eq('incident_id', incidentId).order('created_at');
+                setLessons(data || []);
+              }}
+              onComplete={() => markStageComplete(4)}
+            />
+          )}
+        </main>
       </div>
-
-      <div style={{ background: 'linear-gradient(135deg,#4338ca,#6d28d9)', borderRadius: '16px 16px 0 0', padding: '25px', color: 'white', textAlign: 'center' }}>
-        <img src="/Logo.png" alt="SLP" style={{ width: '60px', marginBottom: '10px' }} />
-        <h1 style={{ margin: 0, fontSize: '26px' }}>Investigation Workbench</h1>
-        <p style={{ margin: '10px 0 0 0', opacity: 0.9 }}>{incident.incident_id} | {incident.investigation_type}</p>
-      </div>
-
-      <div style={{ background: 'white', borderRadius: '0 0 16px 16px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
-        <div style={{ display: 'flex', overflow: 'auto', borderBottom: '2px solid #e2e8f0', background: '#f8fafc' }}>
-          {tabs.map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: '12px 18px', border: 'none', background: activeTab === tab ? 'white' : 'transparent', color: activeTab === tab ? '#1e40af' : '#64748b', cursor: 'pointer', fontWeight: activeTab === tab ? '600' : '400', borderBottom: activeTab === tab ? '3px solid #1e40af' : '3px solid transparent', whiteSpace: 'nowrap', fontSize: '14px' }}>{tab}</button>
-          ))}
-        </div>
-
-        <div style={{ padding: '25px' }}>
-        {/* OVERVIEW */}
-        {activeTab==='Overview' && (()=>{
-          return (
-            <div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}}>
-                <h3 style={{margin:0}}>Incident Summary</h3>
-                <span style={{fontSize:'12px',color:'#94a3b8'}}>Click ✏️ on any field to edit</span>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'20px'}}>
-                <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>
-                  <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>📋 Basic Info</div>
-                  <EditableText field="incident_id" label="Incident ID" value={incident.incident_id} ctx={editCtx} />
-                  <EditableText field="incident_date" label="Date" value={incident.incident_date} type="date" ctx={editCtx} />
-                  <EditableText field="incident_time" label="Time" value={incident.incident_time} type="time" ctx={editCtx} />
-                  <EditableText field="company_name" label="Company" value={incident.company_name} ctx={editCtx} />
-                  <EditableText field="location_name" label="Location" value={incident.location_name} ctx={editCtx} />
-                  <EditableText field="incident_type" label="Incident Type" value={incident.incident_type} options={['Near Miss','First Aid','Medical Treatment','Recordable','Restricted Work','Lost Time','Fatality','Property Damage','Environmental','Vehicle','Fire','Other']} ctx={editCtx} />
-                </div>
-                <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px'}}>
-                  <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>⚠️ Classification</div>
-                  <EditableText field="status" label="Status" value={incident.status} options={['Draft','Submitted','Under Review - Triage','Under Review - First Draft','Under Review - Asset Review','Under Review - Final Review','Pending Approval','Approved','Closed','Reopened','Archived']} ctx={editCtx} />
-                  <EditableText field="safety_severity" label="Severity" value={incident.safety_severity} options={['A','B','C','D','E','F','G']} ctx={editCtx} />
-                  <EditableText field="psif_classification" label="PSIF" value={incident.psif_classification} options={['SIF-Actual','PSIF-Critical','PSIF-High','PSIF-Elevated','STKY-Controlled','Non-STKY']} ctx={editCtx} />
-                  <EditableText field="investigation_type" label="Investigation Type" value={incident.investigation_type} options={['Local Review','5-Why Analysis','Root Cause Analysis','Full RCA','Pending Classification']} ctx={editCtx} />
-                  <EditableText field="is_sif" label="SIF Actual" value={incident.is_sif?'YES':'No'} options={['YES','No']} ctx={editCtx} />
-                  <EditableText field="is_sif_p" label="SIF Potential" value={incident.is_sif_p?'YES':'No'} options={['YES','No']} ctx={editCtx} />
-                </div>
-              </div>
-              <div style={{background:'#f8fafc',padding:'15px',borderRadius:'10px',marginBottom:'16px'}}>
-                <div style={{fontWeight:'600',color:'#1e40af',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>📝 Incident Description</div>
-                <EditableText field="brief_description" label="Brief Description" value={incident.brief_description} type="textarea" ctx={editCtx} />
-                <EditableText field="detailed_description" label="Detailed Description" value={incident.detailed_description} type="textarea" ctx={editCtx} />
-              </div>
-              <div style={{background:'#fffbeb',padding:'15px',borderRadius:'10px',border:'1px solid #fbbf24',marginBottom:'16px'}}>
-                <div style={{fontWeight:'600',color:'#b45309',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>👁️ Witness Info (Initial Report)</div>
-                <EditableText field="witness_statement_summary" label="Initial Witness Summary" value={incident.witness_statement_summary} type="textarea" ctx={editCtx} />
-              </div>
-              <div style={{background:'#f0fdf4',padding:'15px',borderRadius:'10px',border:'1px solid #86efac'}}>
-                <div style={{fontWeight:'600',color:'#166534',marginBottom:'10px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>👷 Injured / Involved Person</div>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 20px'}}>
-                  <EditableText field="injured_name" label="Name" value={incident.injured_name} ctx={editCtx} />
-                  <EditableText field="injured_company" label="Company" value={incident.injured_company} ctx={editCtx} />
-                  <EditableText field="injured_job_title" label="Job Title" value={incident.injured_job_title} ctx={editCtx} />
-                  <EditableText field="injured_time_on_task" label="Time on Task" value={incident.injured_time_on_task} ctx={editCtx} />
-                  <EditableText field="body_part_affected" label="Body Part Affected" value={incident.body_part_affected} ctx={editCtx} />
-                  <EditableText field="injury_type" label="Injury Type" value={incident.injury_type} ctx={editCtx} />
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* TIMELINE */}
-        {activeTab==='Timeline' && <div>
-          <h3>Timeline</h3>
-          <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'20px',display:'grid',gridTemplateColumns:'1fr 1fr 3fr auto',gap:'10px',alignItems:'start'}}>
-            <input type="date" value={newTimelineEvent.event_date} onChange={e=>setNewTimelineEvent({...newTimelineEvent,event_date:e.target.value})} style={st.input} />
-            <input type="time" value={newTimelineEvent.event_time} onChange={e=>setNewTimelineEvent({...newTimelineEvent,event_time:e.target.value})} style={st.input} />
-            <input placeholder="What happened?" value={newTimelineEvent.event_description} onChange={e=>setNewTimelineEvent({...newTimelineEvent,event_description:e.target.value})} style={st.input} />
-            <label style={{display:'flex',alignItems:'center',gap:'5px',whiteSpace:'nowrap'}}><input type="checkbox" checked={newTimelineEvent.critical} onChange={e=>setNewTimelineEvent({...newTimelineEvent,critical:e.target.checked})} /> Critical</label>
-          </div>
-          <button onClick={addTimelineEvent} disabled={saving} style={{...st.primaryBtn,marginBottom:'20px'}}>+ Add Event</button>
-          <div style={{display:'grid',gap:'10px'}}>
-            {timelineEvents.map((ev,i)=>(
-              <div key={ev.id} style={{background:'white',border:`2px solid ${ev.critical?'#dc2626':'#e2e8f0'}`,borderRadius:'8px',padding:'12px'}}>
-                {editingTimeline===ev.id ? <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 3fr auto',gap:'10px',alignItems:'start'}}>
-                  <input type="date" value={ev.event_date||''} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_date:e.target.value}:x))} style={st.input} />
-                  <input type="time" value={ev.event_time||''} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_time:e.target.value}:x))} style={st.input} />
-                  <input value={ev.event_description} onChange={e=>setTimelineEvents(timelineEvents.map(x=>x.id===ev.id?{...x,event_description:e.target.value}:x))} style={st.input} />
-                  <SaveCancelBtns onSave={()=>saveTimelineEdit(ev)} onCancel={()=>{setEditingTimeline(null);loadAll();}} saving={saving} />
-                </div> : <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <div><strong style={{color:ev.critical?'#dc2626':'#1e40af'}}>#{i+1}</strong> <span style={{color:'#64748b'}}>{ev.event_date} {ev.event_time||''}</span> — {ev.event_description} {ev.critical&&<span style={{color:'#dc2626',fontWeight:'600'}}>⚠️ CRITICAL</span>}</div>
-                  <EditDeleteBtns onEdit={()=>setEditingTimeline(ev.id)} onDelete={()=>deleteTimelineEvent(ev)} />
-                </div>}
-              </div>
-            ))}
-          </div>
-        </div>}
-
-        {/* EVIDENCE */}
-        {activeTab==='Evidence' && <div>
-          <h3>Evidence</h3>
-          <button onClick={()=>setShowEvidenceUpload(!showEvidenceUpload)} style={st.primaryBtn}>+ Upload Evidence</button>
-          {showEvidenceUpload && <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginTop:'15px',marginBottom:'20px'}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:'15px',marginBottom:'15px'}}>
-              <div><label style={{display:'block',marginBottom:'5px',fontWeight:'500'}}>Type</label><select value={newEvidence.type} onChange={e=>setNewEvidence({...newEvidence,type:e.target.value})} style={st.input}><option>Photo</option><option>Video</option><option>Document</option><option>Diagram</option><option>Other</option></select></div>
-              <div><label style={{display:'block',marginBottom:'5px',fontWeight:'500'}}>Description</label><input value={newEvidence.description} onChange={e=>setNewEvidence({...newEvidence,description:e.target.value})} placeholder="Brief description..." style={st.input} /></div>
-            </div>
-            <div><label style={{display:'block',marginBottom:'5px',fontWeight:'500'}}>Files</label><input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx" onChange={e=>setNewEvidence({...newEvidence,files:Array.from(e.target.files)})} style={{...st.input,padding:'10px'}} />{newEvidence.files.length>0&&<div style={{marginTop:'10px',fontSize:'14px',color:'#64748b'}}>{newEvidence.files.length} file(s)</div>}</div>
-            <button onClick={uploadEvidence} disabled={uploadingEvidence} style={{...st.primaryBtn,marginTop:'15px'}}>{uploadingEvidence?'Uploading...':'📤 Upload'}</button>
-          </div>}
-          <div style={{display:'grid',gap:'10px',marginTop:'15px'}}>
-            {evidence.map((ev,i)=>(
-              <div key={ev.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <div><strong>#{ev.evidence_number||i+1}</strong> [{ev.evidence_type}] {ev.description||ev.file_name} {ev.file_url && <a href={ev.file_url} target="_blank" style={{color:'#1e40af',marginLeft:'8px'}}>View</a>}</div>
-              </div>
-            ))}
-          </div>
-        </div>}
-
-        {/* WITNESSES */}
-        {activeTab==='Witnesses' && <div>
-          <h3>Witness Statements</h3>
-          <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'20px'}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'10px',marginBottom:'15px'}}>
-              <input placeholder="Name *" value={newWitness.witness_name} onChange={e=>setNewWitness({...newWitness,witness_name:e.target.value})} style={st.input} />
-              <input placeholder="Position/Role" value={newWitness.position_role} onChange={e=>setNewWitness({...newWitness,position_role:e.target.value})} style={st.input} />
-              <input placeholder="Company" value={newWitness.company} onChange={e=>setNewWitness({...newWitness,company:e.target.value})} style={st.input} />
-            </div>
-            <textarea placeholder="Statement *" value={newWitness.statement_summary} onChange={e=>setNewWitness({...newWitness,statement_summary:e.target.value})} style={{...st.input,minHeight:'100px',resize:'vertical',marginBottom:'15px'}} />
-            <button onClick={addWitness} disabled={saving} style={st.primaryBtn}>+ Add Witness</button>
-          </div>
-          <div style={{display:'grid',gap:'15px'}}>
-            {witnesses.map(w=>(
-              <div key={w.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'15px'}}>
-                {editingWitness===w.id ? <div style={{display:'grid',gap:'10px'}}>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'10px'}}>
-                    <input value={w.witness_name} onChange={e=>setWitnesses(witnesses.map(x=>x.id===w.id?{...x,witness_name:e.target.value}:x))} style={st.input} />
-                    <input value={w.position_role||''} onChange={e=>setWitnesses(witnesses.map(x=>x.id===w.id?{...x,position_role:e.target.value}:x))} style={st.input} />
-                    <input value={w.company||''} onChange={e=>setWitnesses(witnesses.map(x=>x.id===w.id?{...x,company:e.target.value}:x))} style={st.input} />
-                  </div>
-                  <textarea value={w.statement_summary} onChange={e=>setWitnesses(witnesses.map(x=>x.id===w.id?{...x,statement_summary:e.target.value}:x))} style={{...st.input,minHeight:'100px',resize:'vertical'}} />
-                  <SaveCancelBtns onSave={()=>saveWitnessEdit(w)} onCancel={()=>{setEditingWitness(null);loadAll();}} saving={saving} />
-                </div> : <div>
-                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
-                    <div><strong>{w.witness_name}</strong> <span style={{color:'#64748b'}}>{w.position_role} {w.company&&`- ${w.company}`}</span></div>
-                    <EditDeleteBtns onEdit={()=>setEditingWitness(w.id)} onDelete={()=>deleteWitness(w)} />
-                  </div>
-                  <p style={{margin:0,color:'#334155'}}>{w.statement_summary}</p>
-                </div>}
-              </div>
-            ))}
-          </div>
-        </div>}
-
-        {/* ============================================================ */}
-        {/* ANALYSIS TAB - FULL STRUCTURED FORMS */}
-        {/* ============================================================ */}
-        {activeTab==='Analysis' && <div>
-          <h3>Analysis</h3>
-
-          {/* Method Selector + Logic Tree Link */}
-          <div style={{background:'#f0f9ff',padding:'16px',borderRadius:'12px',marginBottom:'20px',border:'1px solid #bae6fd'}}>
-            <div style={{display:'flex',alignItems:'center',gap:'15px',flexWrap:'wrap'}}>
-              <span style={{fontWeight:'600',color:'#0369a1'}}>Analysis Method:</span>
-              <select value={incident.investigation_type||'Local Review'} onChange={async(e)=>{const newType=e.target.value;try{const{error}=await supabase.from('incidents').update({investigation_type:newType,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;setIncident({...incident,investigation_type:newType});}catch(err){alert(err.message);}}} style={{padding:'8px 12px',borderRadius:'8px',border:'1px solid #0284c7',fontSize:'14px',fontWeight:'500',background:'white',cursor:'pointer',minWidth:'200px'}}>
-                <option value="Local Review">Local Review</option>
-                <option value="5-Why Analysis">5-Why Analysis</option>
-                <option value="Root Cause Analysis">Root Cause Analysis</option>
-                <option value="Full RCA">Full RCA</option>
-                <option value="Pending Classification">Pending Classification</option>
-              </select>
-              <a href={`/logic-tree?incident=${id}`} target="_blank" style={{background:'#059669',color:'white',padding:'8px 16px',borderRadius:'8px',textDecoration:'none',fontSize:'13px',fontWeight:'500',display:'inline-flex',alignItems:'center',gap:'6px'}}>🌳 Open Logic Tree Builder</a>
-            </div>
-          </div>
-
-          {/* =============================== */}
-          {/* LOCAL REVIEW - STRUCTURED */}
-          {/* =============================== */}
-          {incident.investigation_type==='Local Review' && <div>
-            <div style={st.sectionHeader}>📋 Local Review</div>
-            <p style={{color:'#64748b',marginBottom:'20px'}}>Supervisor-level quick review for lower-risk events.</p>
-
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>What Happened?</div>
-              <div style={st.factorHint}>Describe the event in your own words. What was the sequence of events?</div>
-              <textarea value={localReviewData.what_happened} onChange={e=>setLocalReviewData({...localReviewData,what_happened:e.target.value})} placeholder="Describe what happened leading up to and during the event..." style={{...st.input,minHeight:'120px',resize:'vertical'}} />
-            </div>
-
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>Immediate Causes</div>
-              <div style={st.factorHint}>What were the immediate unsafe acts or conditions?</div>
-              <textarea value={localReviewData.immediate_causes} onChange={e=>setLocalReviewData({...localReviewData,immediate_causes:e.target.value})} placeholder="List the immediate causes identified..." style={{...st.input,minHeight:'100px',resize:'vertical'}} />
-            </div>
-
-            <div style={{...st.factorCard,border:'2px solid #f59e0b',background:'#fffbeb'}}>
-              <div style={st.factorLabel}>⭐ If You Could Do This Over, What Would You Do Differently?</div>
-              <div style={st.factorHint}>This is the most important question. Think about what changes would have prevented this event.</div>
-              <textarea value={localReviewData.do_differently} onChange={e=>setLocalReviewData({...localReviewData,do_differently:e.target.value})} placeholder="If we could go back in time, what would we change?" style={{...st.input,minHeight:'120px',resize:'vertical'}} />
-            </div>
-
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>Additional Notes</div>
-              <textarea value={localReviewData.additional_notes} onChange={e=>setLocalReviewData({...localReviewData,additional_notes:e.target.value})} placeholder="Any other observations, recommendations, or context..." style={{...st.input,minHeight:'80px',resize:'vertical'}} />
-            </div>
-
-            <button onClick={saveLocalReview} disabled={saving} style={{...st.primaryBtn,marginTop:'15px',padding:'12px 30px',fontSize:'16px'}}>{saving?'Saving...':'💾 Save Local Review'}</button>
-          </div>}
-
-          {/* =============================== */}
-          {/* 5-WHY ANALYSIS - STRUCTURED */}
-          {/* =============================== */}
-          {incident.investigation_type==='5-Why Analysis' && <div>
-            <div style={st.sectionHeader}>🔍 5-Why Analysis</div>
-            <p style={{color:'#64748b',marginBottom:'20px'}}>Drill down through 5 levels of "Why?" to find the root cause.</p>
-
-            {/* Team */}
-            <div style={{...st.factorCard,background:'#f0f9ff',border:'1px solid #bae6fd'}}>
-              <div style={st.factorLabel}>👥 Investigation Team</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:'12px',marginTop:'8px'}}>
-                <div><label style={{fontSize:'12px',color:'#64748b'}}>Team Leader</label><input value={fiveWhyData.team_leader} onChange={e=>setFiveWhyData({...fiveWhyData,team_leader:e.target.value})} placeholder="Lead investigator..." style={st.input} /></div>
-                <div><label style={{fontSize:'12px',color:'#64748b'}}>Team Members</label><input value={fiveWhyData.team_members} onChange={e=>setFiveWhyData({...fiveWhyData,team_members:e.target.value})} placeholder="List all team members..." style={st.input} /></div>
-              </div>
-            </div>
-
-            {/* Problem Statement */}
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>📝 Problem Statement</div>
-              <div style={st.factorHint}>Clearly define the incident/problem being investigated</div>
-              <textarea value={fiveWhyData.problem_statement} onChange={e=>setFiveWhyData({...fiveWhyData,problem_statement:e.target.value})} placeholder="Clearly and concisely state the problem..." style={{...st.input,minHeight:'80px',resize:'vertical'}} />
-            </div>
-
-            {/* The 5 Whys */}
-            <div style={{marginTop:'20px'}}>
-              {[
-                {n:1,q:'Why did this incident occur?',key:'why1'},
-                {n:2,q:'Why did that happen?',key:'why2'},
-                {n:3,q:'Why did that happen?',key:'why3'},
-                {n:4,q:'Why did that happen?',key:'why4'},
-                {n:5,q:'Why did that happen? (Root Cause)',key:'why5'}
-              ].map(({n,q,key})=>(
-                <div key={n}>
-                  {n>1 && <div style={st.whyArrow}>↓</div>}
-                  <div style={{...st.whyBox,borderColor:fiveWhyData[key]?'#22c55e':'#e2e8f0'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'10px'}}>
-                      <div style={{...st.whyNumber,background:n===5?'#dc2626':'#1e40af'}}>{n}</div>
-                      <div style={{fontWeight:'600',color:n===5?'#dc2626':'#1e293b'}}>{q}</div>
-                    </div>
-                    <textarea value={fiveWhyData[key]} onChange={e=>setFiveWhyData({...fiveWhyData,[key]:e.target.value})} placeholder={n===5?'This should be the root cause...':'Answer why this happened...'} style={{...st.input,minHeight:n===5?'100px':'70px',resize:'vertical',borderColor:n===5?'#fca5a5':'#d1d5db'}} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Root Cause Classification */}
-            <div style={{...st.sectionHeader,background:'#dc2626',marginTop:'25px'}}>🎯 Root Cause Classification</div>
-
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>Root Cause Category</div>
-              <select value={fiveWhyData.root_cause_category} onChange={e=>setFiveWhyData({...fiveWhyData,root_cause_category:e.target.value,root_cause_identified:''})} style={{...st.input,marginBottom:'12px'}}>
-                <option value="">— Select Category —</option>
-                {Object.keys(ROOT_CAUSE_TAXONOMY).map(cat=><option key={cat} value={cat}>{cat}</option>)}
-              </select>
-              {fiveWhyData.root_cause_category && <>
-                <div style={st.factorLabel}>Specific Root Cause</div>
-                <select value={fiveWhyData.root_cause_identified} onChange={e=>setFiveWhyData({...fiveWhyData,root_cause_identified:e.target.value})} style={st.input}>
-                  <option value="">— Select Root Cause —</option>
-                  {(ROOT_CAUSE_TAXONOMY[fiveWhyData.root_cause_category]||[]).map(rc=><option key={rc} value={rc}>{rc}</option>)}
-                </select>
-              </>}
-            </div>
-
-            {/* Causal Factor Taxonomy */}
-            <div style={{...st.sectionHeader,background:'#f59e0b',color:'#1e293b'}}>🔗 Causal Factors (select all that apply)</div>
-            {Object.entries(CAUSAL_FACTOR_TAXONOMY).map(([group, factors])=>(
-              <div key={group} style={{marginBottom:'15px'}}>
-                <div style={{fontWeight:'600',color:'#475569',marginBottom:'8px',fontSize:'13px',textTransform:'uppercase',letterSpacing:'0.05em'}}>{group}</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:'8px'}}>
-                  {factors.map(f=>{
-                    const selected = (fiveWhyData.causal_factors||[]).includes(f);
-                    return <button key={f} onClick={()=>toggleCausalFactor(f)} style={{padding:'6px 14px',borderRadius:'20px',border:selected?'2px solid #1e40af':'2px solid #d1d5db',background:selected?'#dbeafe':'white',color:selected?'#1e40af':'#64748b',cursor:'pointer',fontSize:'13px',fontWeight:selected?'600':'400',transition:'all 0.15s'}}>{selected?'✓ ':''}{f}</button>;
-                  })}
-                </div>
-              </div>
-            ))}
-
-            <button onClick={saveFiveWhyAnalysis} disabled={saving} style={{...st.primaryBtn,marginTop:'20px',padding:'12px 30px',fontSize:'16px'}}>{saving?'Saving...':'💾 Save 5-Why Analysis'}</button>
-          </div>}
-
-          {/* =============================== */}
-          {/* COMPREHENSIVE RCA - STRUCTURED */}
-          {/* =============================== */}
-          {(incident.investigation_type==='Full RCA'||incident.investigation_type==='Root Cause Analysis') && <div>
-            <div style={st.sectionHeader}>🔬 Comprehensive Root Cause Analysis</div>
-            <p style={{color:'#64748b',marginBottom:'20px'}}>Full multi-factor analysis examining all contributing factor categories.</p>
-
-            {/* Team */}
-            <div style={{...st.factorCard,background:'#f0f9ff',border:'1px solid #bae6fd'}}>
-              <div style={st.factorLabel}>👥 Investigation Team</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:'12px',marginTop:'8px'}}>
-                <div><label style={{fontSize:'12px',color:'#64748b'}}>Team Leader</label><input value={rcaData.team_leader} onChange={e=>setRcaData({...rcaData,team_leader:e.target.value})} placeholder="Lead investigator..." style={st.input} /></div>
-                <div><label style={{fontSize:'12px',color:'#64748b'}}>Team Members</label><input value={rcaData.team_members} onChange={e=>setRcaData({...rcaData,team_members:e.target.value})} placeholder="List all team members..." style={st.input} /></div>
-              </div>
-              <div style={{marginTop:'12px'}}>
-                <label style={{fontSize:'12px',color:'#64748b'}}>RCA Method</label>
-                <select value={rcaData.rca_method} onChange={e=>setRcaData({...rcaData,rca_method:e.target.value})} style={st.input}>
-                  <option value="Fishbone/Ishikawa">Fishbone / Ishikawa</option>
-                  <option value="5-Why">5-Why</option>
-                  <option value="Fault Tree Analysis">Fault Tree Analysis</option>
-                  <option value="Change Analysis">Change Analysis</option>
-                  <option value="Barrier Analysis">Barrier Analysis</option>
-                  <option value="Event Tree Analysis">Event Tree Analysis</option>
-                  <option value="Bow Tie Analysis">Bow Tie Analysis</option>
-                  <option value="TRIPOD Beta">TRIPOD Beta</option>
-                  <option value="Human Factors Analysis">Human Factors Analysis</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Problem Statement */}
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>📝 Problem Statement</div>
-              <div style={st.factorHint}>Clearly define the incident being investigated</div>
-              <textarea value={rcaData.problem_statement} onChange={e=>setRcaData({...rcaData,problem_statement:e.target.value})} placeholder="Clearly and concisely define the problem..." style={{...st.input,minHeight:'100px',resize:'vertical'}} />
-            </div>
-
-            {/* 10 Contributing Factor Categories */}
-            <div style={{...st.sectionHeader,background:'#7c3aed'}}>🔬 Contributing Factor Analysis</div>
-            <p style={{color:'#64748b',marginBottom:'20px'}}>Analyze each category for potential contributing factors. Leave blank if not applicable.</p>
-
-            {[
-              {key:'equipment_factors',icon:'🔧',label:'Equipment / Tools',hint:'Equipment failures, defects, wrong tool for task, design issues, maintenance status...'},
-              {key:'procedure_factors',icon:'📋',label:'Procedures',hint:'Missing procedures, unclear or outdated procedures, procedures not followed, conflicting procedures...'},
-              {key:'training_factors',icon:'🎓',label:'Training',hint:'No training provided, inadequate training, training not current, competency gaps, OJT issues...'},
-              {key:'human_factors',icon:'🧠',label:'Human Factors',hint:'Fatigue, complacency, distraction, rushing, frustration, decision-making, situational awareness...'},
-              {key:'communication_factors',icon:'💬',label:'Communication',hint:'Miscommunication, language barriers, shift handover failures, unclear instructions, missing comms...'},
-              {key:'supervision_factors',icon:'👷',label:'Supervision',hint:'Inadequate oversight, supervisor not present, failed to enforce standards, workload management...'},
-              {key:'design_factors',icon:'📐',label:'Design / Engineering',hint:'Facility design flaws, inadequate engineering controls, missing guards or barriers, ergonomic issues...'},
-              {key:'maintenance_factors',icon:'🔨',label:'Maintenance',hint:'Preventive maintenance missed, corrective maintenance delayed, inadequate maintenance procedures...'},
-              {key:'environmental_factors',icon:'🌡️',label:'Environmental',hint:'Weather conditions, lighting, noise, temperature extremes, surface conditions, visibility, confined space...'},
-              {key:'organizational_factors',icon:'🏢',label:'Organizational / Culture',hint:'Production pressure, inadequate staffing, budget constraints, safety culture, management of change...'}
-            ].map(({key,icon,label,hint})=>(
-              <div key={key} style={st.factorCard}>
-                <div style={st.factorLabel}>{icon} {label}</div>
-                <div style={st.factorHint}>{hint}</div>
-                <textarea value={rcaData[key]} onChange={e=>setRcaData({...rcaData,[key]:e.target.value})} placeholder={`Describe any ${label.toLowerCase()} that contributed to this event...`} style={{...st.input,minHeight:'80px',resize:'vertical'}} />
-              </div>
-            ))}
-
-            {/* Root Causes, Contributing Factors, Systemic Issues, Recommendations */}
-            <div style={{...st.sectionHeader,background:'#dc2626',marginTop:'25px'}}>🎯 Root Cause Identification</div>
-
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>Root Causes Identified</div>
-              <div style={st.factorHint}>Based on the analysis above, what are the fundamental root causes?</div>
-              <textarea value={rcaData.root_causes_identified} onChange={e=>setRcaData({...rcaData,root_causes_identified:e.target.value})} placeholder="List all root causes identified from the analysis..." style={{...st.input,minHeight:'120px',resize:'vertical'}} />
-            </div>
-
-            <div style={st.factorCard}>
-              <div style={st.factorLabel}>Contributing Factors Summary</div>
-              <textarea value={rcaData.contributing_factors_summary} onChange={e=>setRcaData({...rcaData,contributing_factors_summary:e.target.value})} placeholder="Summarize all contributing factors..." style={{...st.input,minHeight:'100px',resize:'vertical'}} />
-            </div>
-
-            <div style={{...st.factorCard,border:'2px solid #f59e0b',background:'#fffbeb'}}>
-              <div style={st.factorLabel}>⚠️ Systemic Issues</div>
-              <div style={st.factorHint}>Are there systemic/organizational issues that allowed this to happen? Could this happen elsewhere?</div>
-              <textarea value={rcaData.systemic_issues} onChange={e=>setRcaData({...rcaData,systemic_issues:e.target.value})} placeholder="Identify any systemic issues that need to be addressed organization-wide..." style={{...st.input,minHeight:'100px',resize:'vertical'}} />
-            </div>
-
-            <div style={{...st.factorCard,border:'2px solid #22c55e',background:'#f0fdf4'}}>
-              <div style={st.factorLabel}>✅ Recommendations</div>
-              <div style={st.factorHint}>What specific recommendations come out of this analysis? (Corrective actions will be tracked separately)</div>
-              <textarea value={rcaData.recommendations} onChange={e=>setRcaData({...rcaData,recommendations:e.target.value})} placeholder="List recommendations for preventing recurrence..." style={{...st.input,minHeight:'120px',resize:'vertical'}} />
-            </div>
-
-            {/* =============================== */}
-            {/* CAUSAL TREE DIAGRAM (auto-generated) */}
-            {/* =============================== */}
-            {(() => {
-              const factors = [
-                {key:'equipment_factors',icon:'🔧',label:'Equipment',color:'#3b82f6'},
-                {key:'procedure_factors',icon:'📋',label:'Procedures',color:'#8b5cf6'},
-                {key:'training_factors',icon:'🎓',label:'Training',color:'#06b6d4'},
-                {key:'human_factors',icon:'🧠',label:'Human Factors',color:'#f59e0b'},
-                {key:'communication_factors',icon:'💬',label:'Communication',color:'#ec4899'},
-                {key:'supervision_factors',icon:'👷',label:'Supervision',color:'#14b8a6'},
-                {key:'design_factors',icon:'📐',label:'Design/Eng.',color:'#6366f1'},
-                {key:'maintenance_factors',icon:'🔨',label:'Maintenance',color:'#f97316'},
-                {key:'environmental_factors',icon:'🌡️',label:'Environmental',color:'#22c55e'},
-                {key:'organizational_factors',icon:'🏢',label:'Organizational',color:'#ef4444'}
-              ];
-              const activeFactors = factors.filter(f => rcaData[f.key] && rcaData[f.key].trim().length > 0);
-              const hasRootCauses = rcaData.root_causes_identified && rcaData.root_causes_identified.trim().length > 0;
-              const hasSystemic = rcaData.systemic_issues && rcaData.systemic_issues.trim().length > 0;
-              const hasEvent = incident.brief_description || incident.detailed_description;
-
-              if (activeFactors.length === 0 && !hasRootCauses) return null;
-
-              const nodeW = 150, nodeH = 56, padX = 16, padY = 70;
-              const tier2Count = activeFactors.length;
-              const tier3Items = [];
-              if (hasRootCauses) {
-                const roots = rcaData.root_causes_identified.split(/\n|;|,/).map(s=>s.trim()).filter(s=>s.length>2);
-                roots.forEach(r => tier3Items.push({label:r,color:'#dc2626'}));
-              }
-              if (hasSystemic) {
-                const sys = rcaData.systemic_issues.split(/\n|;|,/).map(s=>s.trim()).filter(s=>s.length>2);
-                sys.forEach(s => tier3Items.push({label:s,color:'#f59e0b'}));
-              }
-              const tier3Count = tier3Items.length;
-              const maxCols = Math.max(tier2Count, tier3Count, 1);
-              const svgW = Math.max(maxCols * (nodeW + padX) + padX, 600);
-              const svgH = 80 + (tier2Count > 0 ? padY + nodeH : 0) + (tier3Count > 0 ? padY + nodeH : 0) + padY + nodeH + 40;
-
-              const eventX = svgW / 2, eventY = 40;
-              const tier2Y = eventY + padY + nodeH;
-              const tier2StartX = (svgW - tier2Count * (nodeW + padX) + padX) / 2;
-              const tier3Y = tier2Count > 0 ? tier2Y + padY + nodeH : eventY + padY + nodeH;
-              const tier3StartX = (svgW - tier3Count * (nodeW + padX) + padX) / 2;
-
-              function truncate(str, max) {
-                if (!str) return '';
-                const s = str.trim();
-                return s.length > max ? s.substring(0, max-2) + '...' : s;
-              }
-
-              function exportCausalTreeSVG() {
-                const svgEl = document.getElementById('causal-tree-svg');
-                if (!svgEl) return;
-                const svgData = new XMLSerializer().serializeToString(svgEl);
-                const blob = new Blob([svgData], {type: 'image/svg+xml'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `causal-tree-${incident.incident_id || 'diagram'}.svg`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }
-
-              return (
-                <div style={{marginTop:'30px'}}>
-                  <div style={{...st.sectionHeader,background:'#1e293b',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <span>🌳 Causal Tree Diagram</span>
-                    <button onClick={exportCausalTreeSVG} style={{background:'rgba(255,255,255,0.2)',color:'white',border:'1px solid rgba(255,255,255,0.3)',padding:'4px 14px',borderRadius:'6px',cursor:'pointer',fontSize:'12px'}}>📷 Export SVG</button>
-                  </div>
-                  <p style={{color:'#64748b',marginBottom:'15px',fontSize:'13px'}}>Auto-generated from your analysis. Only categories with content appear. Export as SVG for reports.</p>
-                  <div style={{background:'#fafafa',border:'2px solid #e2e8f0',borderRadius:'12px',padding:'20px',overflow:'auto'}}>
-                    <svg id="causal-tree-svg" width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} xmlns="http://www.w3.org/2000/svg" style={{display:'block',margin:'0 auto',maxWidth:'100%'}}>
-                      <rect width={svgW} height={svgH} fill="#fafafa" rx="8"/>
-                      <rect x={eventX - nodeW*0.75} y={eventY - 20} width={nodeW*1.5} height={nodeH} rx="10" fill="#1e293b" stroke="#0f172a" strokeWidth="2"/>
-                      <text x={eventX} y={eventY + 2} textAnchor="middle" fill="white" fontSize="11" fontWeight="600">⚡ INCIDENT EVENT</text>
-                      <text x={eventX} y={eventY + 18} textAnchor="middle" fill="#94a3b8" fontSize="9">{truncate(hasEvent ? (incident.brief_description || incident.detailed_description) : incident.incident_id, 40)}</text>
-                      {activeFactors.map((f, i) => {
-                        const fx = tier2StartX + i * (nodeW + padX) + nodeW/2;
-                        return <line key={`l1-${i}`} x1={eventX} y1={eventY + nodeH - 20} x2={fx} y2={tier2Y - 20} stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4,3"/>;
-                      })}
-                      {activeFactors.map((f, i) => {
-                        const fx = tier2StartX + i * (nodeW + padX);
-                        const cx = fx + nodeW/2;
-                        return (
-                          <g key={`t2-${i}`}>
-                            <rect x={fx} y={tier2Y - 20} width={nodeW} height={nodeH} rx="8" fill="white" stroke={f.color} strokeWidth="2.5"/>
-                            <rect x={fx} y={tier2Y - 20} width={nodeW} height={18} rx="8" fill={f.color}/>
-                            <rect x={fx} y={tier2Y - 10} width={nodeW} height={10} fill={f.color}/>
-                            <text x={cx} y={tier2Y - 5} textAnchor="middle" fill="white" fontSize="9" fontWeight="700">{f.icon} {f.label}</text>
-                            <text x={cx} y={tier2Y + 14} textAnchor="middle" fill="#334155" fontSize="8">{truncate(rcaData[f.key], 22)}</text>
-                            <text x={cx} y={tier2Y + 26} textAnchor="middle" fill="#64748b" fontSize="7">{truncate(rcaData[f.key]?.substring(22), 22)}</text>
-                          </g>
-                        );
-                      })}
-                      {tier3Items.map((item, i) => {
-                        const tx = tier3StartX + i * (nodeW + padX) + nodeW/2;
-                        const sourceY = tier2Count > 0 ? tier2Y + nodeH - 20 : eventY + nodeH - 20;
-                        const sourceX = tier2Count > 0 ? tier2StartX + Math.min(i, tier2Count-1) * (nodeW + padX) + nodeW/2 : eventX;
-                        return <line key={`l2-${i}`} x1={sourceX} y1={sourceY} x2={tx} y2={tier3Y - 20} stroke={item.color} strokeWidth="1.5" strokeDasharray="4,3"/>;
-                      })}
-                      {tier3Items.map((item, i) => {
-                        const tx = tier3StartX + i * (nodeW + padX);
-                        const cx = tx + nodeW/2;
-                        const isSystemic = item.color === '#f59e0b';
-                        return (
-                          <g key={`t3-${i}`}>
-                            <rect x={tx} y={tier3Y - 20} width={nodeW} height={nodeH} rx="8" fill={isSystemic ? '#fffbeb' : '#fef2f2'} stroke={item.color} strokeWidth="2.5"/>
-                            <rect x={tx} y={tier3Y - 20} width={nodeW} height={18} rx="8" fill={item.color}/>
-                            <rect x={tx} y={tier3Y - 10} width={nodeW} height={10} fill={item.color}/>
-                            <text x={cx} y={tier3Y - 5} textAnchor="middle" fill="white" fontSize="9" fontWeight="700">{isSystemic ? '⚠️ SYSTEMIC' : '🎯 ROOT CAUSE'}</text>
-                            <text x={cx} y={tier3Y + 14} textAnchor="middle" fill="#334155" fontSize="8">{truncate(item.label, 22)}</text>
-                            <text x={cx} y={tier3Y + 26} textAnchor="middle" fill="#64748b" fontSize="7">{truncate(item.label?.substring(22), 22)}</text>
-                          </g>
-                        );
-                      })}
-                      <text x={svgW - 10} y={svgH - 8} textAnchor="end" fill="#cbd5e1" fontSize="8">AnthroSafe{'\u2122'} Causal Tree | {incident.incident_id} | {new Date().toLocaleDateString()}</text>
-                    </svg>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <button onClick={saveRCAAnalysis} disabled={saving} style={{...st.primaryBtn,marginTop:'20px',padding:'12px 30px',fontSize:'16px'}}>{saving?'Saving...':'💾 Save Comprehensive RCA'}</button>
-          </div>}
-        </div>}
-
-        {/* CORRECTIVE ACTIONS */}
-        {activeTab==='Corrective Actions' && <div>
-          <h3>Corrective Actions</h3>
-          <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'20px'}}>
-            <textarea placeholder="Action description *" value={newCA.action_description} onChange={e=>setNewCA({...newCA,action_description:e.target.value})} style={{...st.input,minHeight:'80px',resize:'vertical',marginBottom:'15px'}} />
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'10px',marginBottom:'15px'}}>
-              <select value={newCA.hierarchy_control} onChange={e=>setNewCA({...newCA,hierarchy_control:e.target.value})} style={st.input}><option value="1-Elimination">1. Elimination</option><option value="2-Substitution">2. Substitution</option><option value="3-Engineering Controls">3. Engineering Controls</option><option value="4-Administrative Controls">4. Administrative Controls</option><option value="5-PPE">5. PPE</option></select>
-              <input placeholder="Owner *" value={newCA.action_owner_name} onChange={e=>setNewCA({...newCA,action_owner_name:e.target.value})} style={st.input} />
-              <input type="email" placeholder="Owner email" value={newCA.action_owner_email} onChange={e=>setNewCA({...newCA,action_owner_email:e.target.value})} style={st.input}/>
-              <input type="date" value={newCA.target_date} onChange={e=>setNewCA({...newCA,target_date:e.target.value})} style={st.input} />
-              <select value={newCA.action_status} onChange={e=>setNewCA({...newCA,action_status:e.target.value})} style={st.input}><option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Pending Verification">Pending Verification</option><option value="Completed">Completed</option><option value="Verified Effective">Verified Effective</option><option value="Overdue">Overdue</option><option value="Cancelled">Cancelled</option></select>
-            </div>
-            <button onClick={addCA} disabled={saving} style={st.primaryBtn}>+ Add Action</button>
-          </div>
-          <div style={{display:'grid',gap:'15px'}}>
-            {correctiveActions.map(ca=>(
-              <div key={ca.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'15px'}}>
-                {editingCA===ca.id ? <div style={{display:'grid',gap:'10px'}}>
-                  <textarea value={ca.action_description} onChange={e=>setCorrectiveActions(correctiveActions.map(x=>x.id===ca.id?{...x,action_description:e.target.value}:x))} style={{...st.input,minHeight:'80px',resize:'vertical'}} />
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'10px'}}>
-                    <select value={ca.hierarchy_control} onChange={e=>setCorrectiveActions(correctiveActions.map(x=>x.id===ca.id?{...x,hierarchy_control:e.target.value}:x))} style={st.input}><option value="1-Elimination">1. Elimination</option><option value="2-Substitution">2. Substitution</option><option value="3-Engineering Controls">3. Engineering Controls</option><option value="4-Administrative Controls">4. Administrative Controls</option><option value="5-PPE">5. PPE</option></select>
-                    <input value={ca.action_owner_name||''} onChange={e=>setCorrectiveActions(correctiveActions.map(x=>x.id===ca.id?{...x,action_owner_name:e.target.value}:x))} style={st.input} />
-                    <input type="date" value={ca.target_date||''} onChange={e=>setCorrectiveActions(correctiveActions.map(x=>x.id===ca.id?{...x,target_date:e.target.value}:x))} style={st.input} />
-                    <select value={ca.action_status} onChange={e=>setCorrectiveActions(correctiveActions.map(x=>x.id===ca.id?{...x,action_status:e.target.value}:x))} style={st.input}><option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Pending Verification">Pending Verification</option><option value="Completed">Completed</option><option value="Verified Effective">Verified Effective</option><option value="Overdue">Overdue</option><option value="Cancelled">Cancelled</option></select>
-                  </div>
-                  <SaveCancelBtns onSave={()=>saveCAEdit(ca)} onCancel={()=>{setEditingCA(null);loadAll();}} saving={saving} />
-                </div> : <div>
-                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
-                    <div><span style={{background:'#dbeafe',color:'#1e40af',padding:'4px 12px',borderRadius:'6px',fontSize:'12px',marginRight:'8px'}}>{ca.hierarchy_control}</span><span style={{background:ca.action_status==='Completed'?'#dcfce7':ca.action_status==='In Progress'?'#fef3c7':'#fee2e2',color:ca.action_status==='Completed'?'#15803d':ca.action_status==='In Progress'?'#d97706':'#dc2626',padding:'4px 12px',borderRadius:'6px',fontSize:'12px'}}>{ca.action_status}</span></div>
-                    <div style={{display:'flex',gap:'8px',alignItems:'center'}}><span style={{color:'#64748b',fontSize:'13px'}}>Due: {ca.target_date||'—'}</span><EditDeleteBtns onEdit={()=>setEditingCA(ca.id)} onDelete={()=>deleteCA(ca)} /></div>
-                  </div>
-                  <p style={{margin:'10px 0',color:'#334155'}}>{ca.action_description}</p>
-                  <div style={{fontSize:'13px',color:'#64748b'}}>Owner: {ca.action_owner_name}</div>
-                </div>}
-              </div>
-            ))}
-          </div>
-        </div>}
-
-        {/* LESSONS */}
-        {activeTab==='Lessons Learned' && <div>
-          <h3>Lessons Learned</h3>
-          <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'20px'}}>
-            <input placeholder="Title *" value={newLesson.lesson_title} onChange={e=>setNewLesson({...newLesson,lesson_title:e.target.value})} style={{...st.input,marginBottom:'15px'}} />
-            <textarea placeholder="Description *" value={newLesson.lesson_description} onChange={e=>setNewLesson({...newLesson,lesson_description:e.target.value})} style={{...st.input,minHeight:'100px',resize:'vertical',marginBottom:'15px'}} />
-            <input placeholder="Key Takeaway" value={newLesson.key_takeaway} onChange={e=>setNewLesson({...newLesson,key_takeaway:e.target.value})} style={{...st.input,marginBottom:'15px'}} />
-            <button onClick={addLesson} disabled={saving} style={st.primaryBtn}>+ Add Lesson</button>
-          </div>
-          <div style={{display:'grid',gap:'15px'}}>
-            {lessonsLearned.map(l=>(
-              <div key={l.id} style={{background:'white',border:'1px solid #e2e8f0',borderRadius:'8px',padding:'15px'}}>
-                {editingLesson===l.id ? <div style={{display:'grid',gap:'10px'}}>
-                  <input value={l.lesson_title} onChange={e=>setLessonsLearned(lessonsLearned.map(x=>x.id===l.id?{...x,lesson_title:e.target.value}:x))} style={st.input} />
-                  <textarea value={l.lesson_description} onChange={e=>setLessonsLearned(lessonsLearned.map(x=>x.id===l.id?{...x,lesson_description:e.target.value}:x))} style={{...st.input,minHeight:'100px',resize:'vertical'}} />
-                  <input value={l.key_takeaway||''} onChange={e=>setLessonsLearned(lessonsLearned.map(x=>x.id===l.id?{...x,key_takeaway:e.target.value}:x))} placeholder="Key takeaway" style={st.input} />
-                  <SaveCancelBtns onSave={()=>saveLessonEdit(l)} onCancel={()=>{setEditingLesson(null);loadAll();}} saving={saving} />
-                </div> : <div>
-                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:'10px'}}>
-                    <h4 style={{marginTop:0,color:'#1e40af'}}>{l.lesson_title}</h4>
-                    <EditDeleteBtns onEdit={()=>setEditingLesson(l.id)} onDelete={()=>deleteLesson(l)} />
-                  </div>
-                  <p style={{margin:'10px 0',color:'#334155'}}>{l.lesson_description}</p>
-                  {l.key_takeaway && <div style={{background:'#fef3c7',padding:'10px',borderRadius:'6px',marginTop:'10px'}}><strong>Key Takeaway:</strong> {l.key_takeaway}</div>}
-                </div>}
-              </div>
-            ))}
-          </div>
-        </div>}
-
-        {/* REVIEW */}
-        {activeTab==='Review & Approve' && <div>
-          {/* SPELL CHECK SECTION */}
-          <div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'25px',border:'2px solid #e2e8f0'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'15px'}}>
-              <h3 style={{margin:0}}>📝 Spell Check & Grammar Review (US English)</h3>
-              <button onClick={runSpellCheck} disabled={spellChecking} style={{...st.primaryBtn,background:'#7c3aed',padding:'10px 24px'}}>{spellChecking?'Checking...':'🔍 Run Spell Check'}</button>
-            </div>
-            {spellCheckResults===null && <p style={{color:'#64748b',margin:0}}>Run spell check before completing the investigation to catch spelling and grammar issues across all text fields.</p>}
-            {spellCheckResults!==null && spellCheckResults.length===0 && <div style={{background:'#f0fdf4',border:'2px solid #22c55e',borderRadius:'8px',padding:'20px',textAlign:'center'}}><span style={{fontSize:'48px',display:'block',marginBottom:'10px'}}>✅</span><strong style={{color:'#15803d',fontSize:'18px'}}>No issues found!</strong><p style={{color:'#166534',margin:'10px 0 0 0'}}>All text fields pass spelling and grammar checks.</p></div>}
-            {spellCheckResults!==null && spellCheckResults.length>0 && <div>
-              <div style={{display:'flex',gap:'15px',marginBottom:'15px',flexWrap:'wrap'}}>
-                <span style={{background:'#fef2f2',color:'#dc2626',padding:'6px 14px',borderRadius:'8px',fontWeight:'500',fontSize:'14px'}}>🔴 {spellCheckResults.filter(r=>r.severity==='error').length} Spelling</span>
-                <span style={{background:'#fefce8',color:'#ca8a04',padding:'6px 14px',borderRadius:'8px',fontWeight:'500',fontSize:'14px'}}>🟡 {spellCheckResults.filter(r=>r.severity==='warning').length} Grammar</span>
-                <span style={{color:'#64748b',fontSize:'14px',padding:'6px 0'}}>Navigate to each tab to fix issues, then re-run check.</span>
-              </div>
-              <div style={{maxHeight:'400px',overflowY:'auto',border:'1px solid #e2e8f0',borderRadius:'8px'}}>
-                {spellCheckResults.map((r,i)=>(
-                  <div key={i} style={{padding:'12px 16px',borderBottom:'1px solid #f1f5f9',background:r.severity==='error'?'#fef2f2':'#fefce8',display:'flex',gap:'12px',alignItems:'flex-start'}}>
-                    <span style={{fontSize:'18px',flexShrink:0}}>{r.severity==='error'?'🔴':'🟡'}</span>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{display:'flex',gap:'8px',flexWrap:'wrap',marginBottom:'4px'}}>
-                        <span style={{background:'#dbeafe',color:'#1e40af',padding:'2px 10px',borderRadius:'4px',fontSize:'12px',fontWeight:'500'}}>{r.section}</span>
-                        <span style={{color:'#64748b',fontSize:'12px'}}>{r.field}</span>
-                      </div>
-                      <div style={{fontSize:'14px'}}>
-                        {r.type==='spelling' ? <span><strong style={{color:'#dc2626',textDecoration:'line-through'}}>{r.word}</strong> → <strong style={{color:'#15803d'}}>{r.suggestion}</strong></span> : <span><strong style={{color:'#ca8a04'}}>{r.word}</strong> — {r.msg}{r.suggestion&&r.suggestion!=='(review manually)'?<span> → <strong style={{color:'#15803d'}}>{r.suggestion}</strong></span>:''}</span>}
-                      </div>
-                      <div style={{fontSize:'12px',color:'#94a3b8',marginTop:'4px',fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>...{r.context}...</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>}
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:'20px'}}>
-            <div><h3>Status</h3><div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px',marginBottom:'20px'}}><strong>Current:</strong> <span style={{background:'#dbeafe',color:'#1e40af',padding:'6px 15px',borderRadius:'8px',fontWeight:'500'}}>{incident.status}</span></div>
-              <h4>Actions</h4><div style={{display:'flex',flexWrap:'wrap',gap:'10px'}}>
-                {incident.status==='Draft'&&<button onClick={()=>updateStatus('Submitted')} style={st.primaryBtn}>Submit</button>}
-                {incident.status==='Submitted'&&<button onClick={()=>updateStatus('Under Review - Triage')} style={st.primaryBtn}>Start Triage</button>}
-                {incident.status==='Under Review - Triage'&&<button onClick={()=>updateStatus('Under Review - First Draft')} style={st.primaryBtn}>Begin Investigation</button>}
-                {incident.status==='Under Review - First Draft'&&<button onClick={()=>updateStatus('Under Review - Asset Review')} style={st.primaryBtn}>Asset Review</button>}
-                {incident.status==='Under Review - Asset Review'&&<button onClick={()=>updateStatus('Under Review - Final Review')} style={st.primaryBtn}>Final Review</button>}
-                {incident.status==='Under Review - Final Review'&&<button onClick={()=>updateStatus('Pending Approval')} style={st.secondaryBtn}>Submit for Approval</button>}
-                {incident.status==='Pending Approval'&&<><button onClick={()=>updateStatus('Approved')} style={st.primaryBtn}>✅ Approve</button><button onClick={()=>updateStatus('Under Review - Final Review')} style={st.outlineBtn}>Return</button></>}
-                {incident.status==='Approved'&&<button onClick={()=>updateStatus('Closed')} style={{...st.primaryBtn,background:'#059669'}}>🔒 Close</button>}
-                {incident.status==='Closed'&&<div style={{color:'#059669',fontWeight:'500',padding:'10px 20px'}}>✅ Closed</div>}
-              </div>
-            </div>
-            <div><h3>Checklist</h3><div style={{background:'#f8fafc',padding:'20px',borderRadius:'12px'}}>
-              {[{l:'Timeline',d:timelineEvents.length>0,c:timelineEvents.length},{l:'Evidence',d:evidence.length>0,c:evidence.length},{l:'Witnesses',d:witnesses.length>0,c:witnesses.length},{l:'Analysis',d:analysisHasContent,c:null},{l:'Actions',d:correctiveActions.length>0,c:correctiveActions.length},{l:'Lessons',d:lessonsLearned.length>0,c:lessonsLearned.length}].map((item,i)=>(
-                <div key={i} style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
-                  <span style={{width:'24px',height:'24px',borderRadius:'50%',background:item.d?'#22c55e':'#e2e8f0',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'14px'}}>{item.d?'✓':''}</span>
-                  <span>{item.l} {item.c!==null&&`(${item.c})`}</span>
-                </div>
-              ))}
-            </div></div>
-          </div>
-        </div>}
-      </div>
-      </div>
-    </div>
-
-    <div style={st.footer}><span style={{fontWeight:'500'}}>AnthroSafe{'\u2122'} Field Driven Safety</span> | {'\u00A9'} 2026 SLP Alaska, LLC</div>
     </div>
   );
+}
+
+// =====================================================================
+// Top bar
+// =====================================================================
+function TopBar({ incident, saving, lastSavedAt, pdfGenerating, onPDF, onBack }) {
+  return (
+    <div style={{ background: `linear-gradient(135deg, ${C.navy}, ${C.steel})`, color: 'white', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button onClick={onBack} style={btnGhost}>← Dashboard</button>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{incident.incident_id || 'Investigation'}</div>
+          <div style={{ fontSize: 12, opacity: 0.85 }}>{incident.investigation_type} - {incident.location} - {incident.status}</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontSize: 12, opacity: 0.85 }}>
+          {saving ? 'Saving...' : lastSavedAt ? `Saved ${lastSavedAt.toLocaleTimeString()}` : ''}
+        </span>
+        <button onClick={onPDF} disabled={pdfGenerating} style={{ ...btnPrimary, opacity: pdfGenerating ? 0.6 : 1 }}>
+          {pdfGenerating ? 'Generating PDF...' : 'Download PDF'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// Stepper sidebar
+// =====================================================================
+function Stepper({ stages, current, incident, onJump }) {
+  return (
+    <aside style={{ position: 'sticky', top: 24, alignSelf: 'flex-start' }}>
+      <div style={{ background: C.card, border: `1px solid ${C.borderL}`, borderRadius: 12, padding: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+          Investigation Path
+        </div>
+        {stages.map(stage => {
+          const isCurrent = stage.id === current;
+          const isComplete = incident[`stage_${stage.id}_complete`];
+          const dotColor = isComplete ? C.success : isCurrent ? C.steel : C.border;
+          return (
+            <button
+              key={stage.id}
+              onClick={() => onJump(stage.id)}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%',
+                padding: '12px 8px', border: 'none', background: isCurrent ? C.blueL : 'transparent',
+                borderRadius: 8, cursor: 'pointer', textAlign: 'left', marginBottom: 4,
+              }}
+            >
+              <div style={{
+                minWidth: 28, height: 28, borderRadius: '50%', background: dotColor,
+                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: 13,
+              }}>
+                {isComplete ? '✓' : stage.id}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: isCurrent ? C.navy : C.text }}>{stage.title}</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{stage.description}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+// =====================================================================
+// STAGE 1 - Setup & Evidence
+// =====================================================================
+function Stage1({ incident, evidence, witnesses, userEmail, incidentId, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete }) {
+  return (
+    <div>
+      <StageHeader stage={1} title="Setup & Evidence" subtitle="Confirm the scope of this investigation, then gather photos and witness statements." />
+
+      <Card title="Incident Summary">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <Field label="Incident ID"     value={incident.incident_id}     readOnly />
+          <Field label="Date"            value={incident.incident_date}   readOnly />
+          <Field label="Location"        value={incident.location}        readOnly />
+          <Field label="Company"         value={incident.company}         readOnly />
+          <Field label="Severity"        value={incident.safety_severity || incident.severity_safety} readOnly />
+          <Field label="Investigation Type" value={incident.investigation_type} readOnly />
+        </div>
+        <div style={{ marginTop: 14 }}>
+          <Label>Description</Label>
+          <div style={readOnlyBox}>{incident.description || '(no description provided)'}</div>
+        </div>
+      </Card>
+
+      <Card title={`Evidence (${evidence.length})`}>
+        <EvidenceUploader
+          incidentId={incidentId}
+          userEmail={userEmail}
+          onUploaded={onEvidenceReload}
+        />
+        <EvidenceList items={evidence} onChange={onEvidenceReload} />
+      </Card>
+
+      <Card title={`Witnesses (${witnesses.length})`}>
+        <WitnessAdd incidentId={incidentId} onAdded={onWitnessesReload} />
+        <WitnessList items={witnesses} onChange={onWitnessesReload} />
+      </Card>
+
+      <StageFooter
+        complete={incident.stage_1_complete}
+        onComplete={onComplete}
+        nextLabel="Complete & Continue to Timeline"
+      />
+    </div>
+  );
+}
+
+// =====================================================================
+// STAGE 2 - Timeline
+// =====================================================================
+function Stage2({ timeline, incidentId, onReload, onComplete }) {
+  const [form, setForm] = useState({ event_date: '', event_time: '', description: '', is_critical: false });
+  const [busy, setBusy] = useState(false);
+
+  async function addEvent() {
+    if (!form.event_date || !form.description) return alert('Date and description are required.');
+    setBusy(true);
+    const { error } = await supabase.from('timeline_events').insert({ ...form, incident_id: incidentId });
+    setBusy(false);
+    if (error) return alert('Failed to add event: ' + error.message);
+    setForm({ event_date: '', event_time: '', description: '', is_critical: false });
+    onReload();
+  }
+
+  async function removeEvent(id) {
+    if (!confirm('Remove this event?')) return;
+    await supabase.from('timeline_events').delete().eq('id', id);
+    onReload();
+  }
+
+  async function toggleCritical(ev) {
+    await supabase.from('timeline_events').update({ is_critical: !ev.is_critical }).eq('id', ev.id);
+    onReload();
+  }
+
+  return (
+    <div>
+      <StageHeader stage={2} title="What Happened" subtitle="Build a chronological timeline. Flag the critical event(s) where the harm or near-harm occurred." />
+
+      <Card title="Add Timeline Event">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Field type="date" label="Date" value={form.event_date} onChange={v => setForm({ ...form, event_date: v })} />
+          <Field type="time" label="Time" value={form.event_time} onChange={v => setForm({ ...form, event_time: v })} />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <Label>What occurred?</Label>
+          <textarea
+            value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })}
+            rows={3}
+            style={inputStyle}
+            placeholder="Describe this event clearly and factually..."
+          />
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, cursor: 'pointer' }}>
+          <input type="checkbox" checked={form.is_critical} onChange={e => setForm({ ...form, is_critical: e.target.checked })} />
+          <span style={{ fontSize: 13 }}>This is the <strong style={{ color: C.danger }}>critical event</strong> (where the harm/near-harm happened)</span>
+        </label>
+        <button onClick={addEvent} disabled={busy} style={{ ...btnPrimaryDark, marginTop: 14 }}>
+          {busy ? 'Adding...' : '+ Add Event'}
+        </button>
+      </Card>
+
+      <Card title={`Timeline (${timeline.length} events)`}>
+        {timeline.length === 0 ? (
+          <Empty text="No events yet. Add the first one above." />
+        ) : (
+          <div style={{ position: 'relative', paddingLeft: 24 }}>
+            <div style={{ position: 'absolute', left: 8, top: 8, bottom: 8, width: 2, background: C.borderL }} />
+            {timeline.map((ev, i) => (
+              <div key={ev.id} style={{ position: 'relative', marginBottom: 18 }}>
+                <div style={{
+                  position: 'absolute', left: -22, top: 6, width: 14, height: 14, borderRadius: '50%',
+                  background: ev.is_critical ? C.danger : C.steel, border: `3px solid ${C.card}`,
+                }} />
+                <div style={{ background: ev.is_critical ? C.amber : '#f9fafb', border: `1px solid ${ev.is_critical ? C.warning : C.borderL}`, borderRadius: 8, padding: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: ev.is_critical ? C.danger : C.navy }}>
+                        {formatDate(ev.event_date)} {ev.event_time ? `at ${ev.event_time}` : ''}
+                        {ev.is_critical && <span style={{ marginLeft: 8, fontSize: 10, background: C.danger, color: 'white', padding: '2px 6px', borderRadius: 3 }}>CRITICAL</span>}
+                      </div>
+                      <div style={{ fontSize: 13, color: C.text, marginTop: 6, whiteSpace: 'pre-wrap' }}>{ev.description}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => toggleCritical(ev)} style={btnSmall} title="Toggle critical">
+                        {ev.is_critical ? 'Unflag' : 'Flag'}
+                      </button>
+                      <button onClick={() => removeEvent(ev.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <StageFooter complete={false} onComplete={onComplete} nextLabel="Complete & Continue to Analysis" />
+    </div>
+  );
+}
+
+// =====================================================================
+// STAGE 3 - Why It Happened (adaptive: Local Review / 5-Why / RCA)
+// =====================================================================
+function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, localReview, setLocalReview, legacyRcaText, incidentId, onIncidentChange, onComplete }) {
+  const type = (incident.investigation_type || '').toLowerCase();
+  const isLocal  = type.includes('local');
+  const is5Why   = !isLocal && (type.includes('5') || type.includes('why'));
+  const isRCA    = !isLocal && !is5Why;
+
+  return (
+    <div>
+      <StageHeader
+        stage={3}
+        title="Why It Happened"
+        subtitle={
+          isLocal ? 'Guided local review for lower-severity incidents.' :
+          is5Why  ? 'Drill down five times to reach the underlying cause.' :
+                    'Identify which of the ten contributing factor categories played a role.'
+        }
+      />
+
+      {legacyRcaText && (
+        <Card title="Legacy Notes (read-only)" toneAccent={C.warning}>
+          <div style={{ ...readOnlyBox, background: C.amber }}>{legacyRcaText}</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+            These notes were entered before the structured RCA was available. They're preserved for reference.
+          </div>
+        </Card>
+      )}
+
+      {isLocal  && <LocalReviewForm  data={localReview} setData={setLocalReview} incidentId={incidentId} />}
+      {is5Why   && <FiveWhyForm      data={fiveWhy}     setData={setFiveWhy}     incidentId={incidentId} />}
+      {isRCA    && <StructuredRCA    factors={rcaFactors} setFactors={setRcaFactors} incident={incident} onIncidentChange={onIncidentChange} incidentId={incidentId} />}
+
+      <StageFooter complete={false} onComplete={onComplete} nextLabel="Complete & Continue to Closure" />
+    </div>
+  );
+}
+
+function StructuredRCA({ factors, setFactors, incident, onIncidentChange, incidentId }) {
+  async function saveFactor(category, patch) {
+    const next = { ...factors[category], ...patch };
+    setFactors(prev => ({ ...prev, [category]: next }));
+    await supabase.from('rca_factors').upsert(
+      { incident_id: incidentId, category, is_factor: next.is_factor, description: next.description },
+      { onConflict: 'incident_id,category' }
+    );
+  }
+
+  const factorCount = Object.values(factors).filter(f => f.is_factor).length;
+
+  return (
+    <>
+      <Card title={`Contributing Factor Analysis (${factorCount} of 10 flagged)`}>
+        <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>
+          For each category, mark whether it contributed to this incident. If yes, briefly explain how.
+        </div>
+        {RCA_CATEGORIES.map(cat => {
+          const f = factors[cat.key] || { is_factor: false, description: '' };
+          return (
+            <div key={cat.key} style={{
+              border: `1px solid ${f.is_factor ? C.warning : C.borderL}`,
+              background: f.is_factor ? C.amber : '#fafafa',
+              borderRadius: 8, padding: 14, marginBottom: 10,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={f.is_factor}
+                  onChange={e => saveFactor(cat.key, { is_factor: e.target.checked })}
+                  style={{ width: 18, height: 18, cursor: 'pointer' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{cat.label}</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{cat.prompt}</div>
+                </div>
+              </div>
+              {f.is_factor && (
+                <textarea
+                  value={f.description}
+                  onChange={e => saveFactor(cat.key, { description: e.target.value })}
+                  rows={2}
+                  placeholder={`Explain how ${cat.label.toLowerCase()} contributed...`}
+                  style={{ ...inputStyle, marginTop: 6 }}
+                />
+              )}
+            </div>
+          );
+        })}
+      </Card>
+
+      <Card title="Root Cause Summary" toneAccent={C.danger}>
+        <Label>Based on the factors above, what was the underlying root cause?</Label>
+        <textarea
+          value={incident.root_cause_summary || ''}
+          onChange={e => onIncidentChange({ root_cause_summary: e.target.value })}
+          rows={4}
+          placeholder="Synthesize the root cause in 2-4 sentences. This is what shows up most prominently in the PDF report."
+          style={inputStyle}
+        />
+      </Card>
+    </>
+  );
+}
+
+function FiveWhyForm({ data, setData, incidentId }) {
+  async function save(patch) {
+    const next = { ...data, ...patch };
+    setData(next);
+    await supabase.from('five_why_analyses').upsert(
+      { incident_id: incidentId, ...next },
+      { onConflict: 'incident_id' }
+    );
+  }
+  return (
+    <Card title="5-Why Drill-Down">
+      <div style={{ fontSize: 13, color: C.muted, marginBottom: 14 }}>
+        Start with the immediate cause, then ask "why?" four more times to reach the underlying issue.
+      </div>
+      {[1, 2, 3, 4, 5].map(n => (
+        <div key={n} style={{ marginBottom: 12 }}>
+          <Label>Why #{n}</Label>
+          <textarea
+            value={data?.[`why${n}`] || ''}
+            onChange={e => save({ [`why${n}`]: e.target.value })}
+            rows={2}
+            style={inputStyle}
+            placeholder={n === 1 ? 'Why did this incident occur?' : 'And why was that the case?'}
+          />
+        </div>
+      ))}
+      <div style={{ marginTop: 16, padding: 12, background: C.amber, borderRadius: 8 }}>
+        <Label>Root Cause</Label>
+        <textarea
+          value={data?.root_cause || ''}
+          onChange={e => save({ root_cause: e.target.value })}
+          rows={3}
+          style={inputStyle}
+          placeholder="State the underlying root cause clearly."
+        />
+      </div>
+    </Card>
+  );
+}
+
+function LocalReviewForm({ data, setData, incidentId }) {
+  const fields = [
+    { key: 'what_happened',     label: 'What happened?' },
+    { key: 'immediate_cause',   label: 'What was the immediate cause?' },
+    { key: 'contributing',      label: 'What contributing factors were present?' },
+    { key: 'preventive',        label: 'What can prevent recurrence?' },
+  ];
+  async function save(patch) {
+    const next = { ...data, ...patch };
+    setData(next);
+    await supabase.from('local_reviews').upsert(
+      { incident_id: incidentId, ...next },
+      { onConflict: 'incident_id' }
+    );
+  }
+  return (
+    <Card title="Local Review">
+      {fields.map(f => (
+        <div key={f.key} style={{ marginBottom: 12 }}>
+          <Label>{f.label}</Label>
+          <textarea
+            value={data?.[f.key] || ''}
+            onChange={e => save({ [f.key]: e.target.value })}
+            rows={3}
+            style={inputStyle}
+          />
+        </div>
+      ))}
+    </Card>
+  );
+}
+
+// =====================================================================
+// STAGE 4 - Close It Out
+// =====================================================================
+function Stage4({ incident, correctiveActions, lessons, incidentId, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+  return (
+    <div>
+      <StageHeader stage={4} title="Close It Out" subtitle="Define corrective actions using the hierarchy of controls, capture lessons learned, then approve and download the PDF." />
+
+      <Card title={`Corrective Actions (${correctiveActions.length})`}>
+        <CorrectiveActionAdd incidentId={incidentId} onAdded={onActionsReload} />
+        <CorrectiveActionList items={correctiveActions} onChange={onActionsReload} />
+      </Card>
+
+      <Card title={`Lessons Learned (${lessons.length})`}>
+        <LessonAdd incidentId={incidentId} onAdded={onLessonsReload} />
+        <LessonList items={lessons} onChange={onLessonsReload} />
+      </Card>
+
+      <Card title="Status & Approval">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <Label>Current status:</Label>
+          <select
+            value={incident.status || 'First Draft'}
+            onChange={e => onIncidentChange({ status: e.target.value })}
+            style={{ ...inputStyle, width: 'auto', flex: 'none' }}
+          >
+            {STATUS_FLOW.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+        <button onClick={onGeneratePDF} disabled={pdfGenerating} style={{ ...btnPrimaryDark, fontSize: 15 }}>
+          {pdfGenerating ? 'Generating PDF (compressing photos)...' : 'Generate & Download PDF Report'}
+        </button>
+        <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>
+          PDF is server-built with re-compressed photos and targets ~10 MB so it emails cleanly.
+        </div>
+      </Card>
+
+      <StageFooter complete={incident.stage_4_complete} onComplete={onComplete} nextLabel="Mark Investigation Complete" />
+    </div>
+  );
+}
+
+// =====================================================================
+// Evidence
+// =====================================================================
+function EvidenceUploader({ incidentId, userEmail, onUploaded }) {
+  const [busy, setBusy] = useState(false);
+  const [evidenceType, setEvidenceType] = useState('Photo');
+  const [description, setDescription] = useState('');
+  const fileRef = useRef(null);
+
+  async function compressImage(file) {
+    if (!file.type.startsWith('image/')) return file;
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      const reader = new FileReader();
+      reader.onload = e => { img.src = e.target.result; };
+      reader.readAsDataURL(file);
+      img.onload = () => {
+        const maxW = 1920;
+        const scale = img.width > maxW ? maxW / img.width : 1;
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => {
+          const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+          resolve(compressed.size < file.size ? compressed : file);
+        }, 'image/jpeg', 0.7);
+      };
+      img.onerror = () => resolve(file);
+    });
+  }
+
+  async function handleFiles(e) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setBusy(true);
+    for (const raw of files) {
+      try {
+        const file = await compressImage(raw);
+        const ext = file.name.split('.').pop().toLowerCase();
+        const path = `${incidentId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('incident-evidence').upload(path, file, { upsert: false });
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from('incident-evidence').getPublicUrl(path);
+        const { error: insErr } = await supabase.from('investigation_evidence').insert({
+          incident_id: incidentId,
+          evidence_type: evidenceType,
+          description,
+          file_url: urlData.publicUrl,
+          file_name: file.name,
+          uploaded_by: userEmail,
+          uploaded_at: new Date().toISOString(),
+        });
+        if (insErr) throw insErr;
+      } catch (err) {
+        console.error('Upload failed for', raw.name, err);
+        alert(`Upload failed for ${raw.name}: ${err.message}`);
+      }
+    }
+    setBusy(false);
+    setDescription('');
+    if (fileRef.current) fileRef.current.value = '';
+    onUploaded();
+  }
+
+  return (
+    <div style={{ background: '#f9fafb', border: `1px dashed ${C.border}`, borderRadius: 8, padding: 14, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12, marginBottom: 10 }}>
+        <select value={evidenceType} onChange={e => setEvidenceType(e.target.value)} style={inputStyle}>
+          {['Photo', 'Document', 'Video', 'Report', 'Other'].map(t => <option key={t}>{t}</option>)}
+        </select>
+        <input
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="Brief description (optional)"
+          style={inputStyle}
+        />
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        accept="image/*,application/pdf,video/*"
+        onChange={handleFiles}
+        disabled={busy}
+        style={{ fontSize: 13 }}
+      />
+      <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
+        {busy ? 'Uploading and compressing...' : 'Photos auto-compress to ~800 KB before upload.'}
+      </div>
+    </div>
+  );
+}
+
+function EvidenceList({ items, onChange }) {
+  async function remove(item) {
+    if (!confirm('Remove this evidence?')) return;
+    await supabase.from('investigation_evidence').delete().eq('id', item.id);
+    onChange();
+  }
+  if (items.length === 0) return <Empty text="No evidence uploaded yet." />;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+      {items.map(it => (
+        <div key={it.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, overflow: 'hidden', background: C.card }}>
+          {/\.(jpe?g|png|webp|gif)$/i.test(it.file_url) ? (
+            <a href={it.file_url} target="_blank" rel="noreferrer">
+              <img src={it.file_url} alt={it.description} style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
+            </a>
+          ) : (
+            <a href={it.file_url} target="_blank" rel="noreferrer" style={{ display: 'block', height: 120, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, textDecoration: 'none' }}>
+              📄
+            </a>
+          )}
+          <div style={{ padding: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>{it.evidence_type}</div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 2, wordBreak: 'break-word' }}>{it.description || '(no description)'}</div>
+            <button onClick={() => remove(it)} style={{ ...btnSmall, color: C.danger, marginTop: 8 }}>Remove</button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// =====================================================================
+// Witnesses
+// =====================================================================
+function WitnessAdd({ incidentId, onAdded }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', position: '', company: '', summary: '', additional_comments: '', acknowledgment: false });
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!form.name || !form.summary) return alert('Name and summary are required.');
+    setBusy(true);
+    const { error } = await supabase.from('witness_statements').insert({ ...form, incident_id: incidentId });
+    setBusy(false);
+    if (error) return alert('Failed: ' + error.message);
+    setForm({ name: '', position: '', company: '', summary: '', additional_comments: '', acknowledgment: false });
+    setOpen(false);
+    onAdded();
+  }
+
+  if (!open) return <button onClick={() => setOpen(true)} style={btnPrimaryDark}>+ Add Witness Statement</button>;
+  return (
+    <div style={{ background: '#f9fafb', border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 14, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <Field label="Name *"     value={form.name}     onChange={v => setForm({ ...form, name: v })} />
+        <Field label="Position"   value={form.position} onChange={v => setForm({ ...form, position: v })} />
+        <Field label="Company"    value={form.company}  onChange={v => setForm({ ...form, company: v })} />
+      </div>
+      <Label>Summary of statement *</Label>
+      <textarea rows={3} value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} style={inputStyle} />
+      <div style={{ marginTop: 10 }}>
+        <Label>Additional comments</Label>
+        <textarea rows={2} value={form.additional_comments} onChange={e => setForm({ ...form, additional_comments: e.target.value })} style={inputStyle} />
+      </div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13 }}>
+        <input type="checkbox" checked={form.acknowledgment} onChange={e => setForm({ ...form, acknowledgment: e.target.checked })} />
+        Witness has acknowledged the statement is accurate.
+      </label>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button onClick={submit} disabled={busy} style={btnPrimaryDark}>{busy ? 'Saving...' : 'Save Statement'}</button>
+        <button onClick={() => setOpen(false)} style={btnGhostDark}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function WitnessList({ items, onChange }) {
+  async function remove(id) {
+    if (!confirm('Remove this witness statement?')) return;
+    await supabase.from('witness_statements').delete().eq('id', id);
+    onChange();
+  }
+  if (items.length === 0) return <Empty text="No witness statements yet." />;
+  return items.map(w => (
+    <div key={w.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>
+            {w.name}
+            {w.position && <span style={{ fontWeight: 400, color: C.muted, fontSize: 12 }}> — {w.position}</span>}
+            {w.company && <span style={{ fontWeight: 400, color: C.muted, fontSize: 12 }}> ({w.company})</span>}
+          </div>
+          <div style={{ fontSize: 13, marginTop: 6, whiteSpace: 'pre-wrap' }}>{w.summary}</div>
+          {w.additional_comments && (
+            <div style={{ fontSize: 12, marginTop: 8, color: C.muted, whiteSpace: 'pre-wrap' }}><em>Notes:</em> {w.additional_comments}</div>
+          )}
+          {w.acknowledgment && <div style={{ fontSize: 11, color: C.success, marginTop: 6 }}>✓ Acknowledged</div>}
+        </div>
+        <button onClick={() => remove(w.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
+      </div>
+    </div>
+  ));
+}
+
+// =====================================================================
+// Corrective Actions
+// =====================================================================
+function CorrectiveActionAdd({ incidentId, onAdded }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    description: '', owner: '', due_date: '', status: 'Open',
+    hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '',
+  });
+  const [busy, setBusy] = useState(false);
+  const [showPpeWarning, setShowPpeWarning] = useState(false);
+
+  function selectControl(control) {
+    setForm(f => ({ ...f, hierarchy_of_controls: control.name, hierarchy_level: control.level }));
+    setShowPpeWarning(control.level === 5);
+  }
+
+  async function submit() {
+    if (!form.description || !form.owner || !form.due_date) {
+      return alert('Description, owner, and due date are required.');
+    }
+    if (!form.hierarchy_of_controls) {
+      return alert('Please select a hierarchy of controls level.');
+    }
+    if (form.hierarchy_level >= 4 && !form.hierarchy_justification) {
+      return alert(`You picked ${form.hierarchy_of_controls}. Please briefly justify why a stronger control isn't feasible.`);
+    }
+    setBusy(true);
+    const { error } = await supabase.from('investigation_corrective_actions').insert({ ...form, incident_id: incidentId });
+    setBusy(false);
+    if (error) return alert('Failed: ' + error.message);
+    setForm({ description: '', owner: '', due_date: '', status: 'Open', hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '' });
+    setShowPpeWarning(false);
+    setOpen(false);
+    onAdded();
+  }
+
+  if (!open) return <button onClick={() => setOpen(true)} style={btnPrimaryDark}>+ Add Corrective Action</button>;
+  return (
+    <div style={{ background: '#f9fafb', border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 14, marginBottom: 14 }}>
+      <Label>What action will be taken? *</Label>
+      <textarea rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={inputStyle} />
+
+      <div style={{ marginTop: 14 }}>
+        <Label>Hierarchy of Controls *</Label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+          {HIERARCHY_OF_CONTROLS.map(h => {
+            const selected = form.hierarchy_level === h.level;
+            const tone = h.tone === 'strong' ? C.success : h.tone === 'good' ? C.steel : h.tone === 'weak' ? C.warning : C.danger;
+            return (
+              <button
+                key={h.level}
+                onClick={() => selectControl(h)}
+                style={{
+                  border: `2px solid ${selected ? tone : C.borderL}`,
+                  background: selected ? tone : C.card,
+                  color: selected ? 'white' : C.text,
+                  padding: '10px 6px', borderRadius: 6, cursor: 'pointer',
+                  fontSize: 11, fontWeight: 600, textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: 10, opacity: 0.8 }}>Level {h.level}</div>
+                <div>{h.name}</div>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11, color: C.muted, marginTop: 6, display: 'flex', justifyContent: 'space-between' }}>
+          <span>← Stronger (preferred)</span>
+          <span>Weaker →</span>
+        </div>
+      </div>
+
+      {showPpeWarning && (
+        <div style={{ marginTop: 12, padding: 12, background: '#fee2e2', border: `1px solid ${C.danger}`, borderRadius: 8, color: '#7f1d1d', fontSize: 13 }}>
+          <strong>PPE is the weakest control.</strong> Before settling on PPE, ask:
+          <ul style={{ margin: '6px 0 0 18px' }}>
+            <li>Can the hazard be eliminated?</li>
+            <li>Can it be substituted with something safer?</li>
+            <li>Can engineering controls isolate the worker?</li>
+          </ul>
+        </div>
+      )}
+
+      {form.hierarchy_level >= 4 && (
+        <div style={{ marginTop: 12 }}>
+          <Label>Justify why a stronger control isn't feasible</Label>
+          <textarea
+            rows={2}
+            value={form.hierarchy_justification}
+            onChange={e => setForm({ ...form, hierarchy_justification: e.target.value })}
+            style={inputStyle}
+          />
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10, marginTop: 14 }}>
+        <Field label="Owner *"    value={form.owner}    onChange={v => setForm({ ...form, owner: v })} />
+        <Field label="Due Date *" type="date" value={form.due_date} onChange={v => setForm({ ...form, due_date: v })} />
+        <div>
+          <Label>Status</Label>
+          <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} style={inputStyle}>
+            {['Open', 'In Progress', 'Complete', 'Verified'].map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button onClick={submit} disabled={busy} style={btnPrimaryDark}>{busy ? 'Saving...' : 'Save Action'}</button>
+        <button onClick={() => setOpen(false)} style={btnGhostDark}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function CorrectiveActionList({ items, onChange }) {
+  async function updateStatus(item, status) {
+    await supabase.from('investigation_corrective_actions').update({ status }).eq('id', item.id);
+    onChange();
+  }
+  async function remove(id) {
+    if (!confirm('Remove this action?')) return;
+    await supabase.from('investigation_corrective_actions').delete().eq('id', id);
+    onChange();
+  }
+  if (items.length === 0) return <Empty text="No corrective actions yet." />;
+  return items.map(c => {
+    const lvl = c.hierarchy_level;
+    const tone = lvl <= 2 ? C.success : lvl <= 3 ? C.steel : lvl === 4 ? C.warning : C.danger;
+    return (
+      <div key={c.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{c.description}</div>
+            {c.hierarchy_of_controls && (
+              <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, color: 'white', background: tone, padding: '2px 8px', borderRadius: 3, marginTop: 6 }}>
+                {c.hierarchy_of_controls} (Level {lvl})
+              </div>
+            )}
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>
+              Owner: <strong>{c.owner}</strong> &nbsp;|&nbsp;
+              Due: <strong>{formatDate(c.due_date)}</strong>
+            </div>
+            {c.hierarchy_justification && (
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 4, fontStyle: 'italic' }}>
+                Justification: {c.hierarchy_justification}
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+            <select value={c.status || 'Open'} onChange={e => updateStatus(c, e.target.value)} style={{ ...inputStyle, padding: '4px 6px', fontSize: 11, width: 110 }}>
+              {['Open', 'In Progress', 'Complete', 'Verified'].map(s => <option key={s}>{s}</option>)}
+            </select>
+            <button onClick={() => remove(c.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
+          </div>
+        </div>
+      </div>
+    );
+  });
+}
+
+// =====================================================================
+// Lessons
+// =====================================================================
+function LessonAdd({ incidentId, onAdded }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ title: '', description: '', key_takeaway: '' });
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!form.title) return alert('A title is required.');
+    setBusy(true);
+    const { error } = await supabase.from('lessons_learned').insert({ ...form, incident_id: incidentId });
+    setBusy(false);
+    if (error) return alert('Failed: ' + error.message);
+    setForm({ title: '', description: '', key_takeaway: '' });
+    setOpen(false);
+    onAdded();
+  }
+
+  if (!open) return <button onClick={() => setOpen(true)} style={btnPrimaryDark}>+ Add Lesson Learned</button>;
+  return (
+    <div style={{ background: '#f9fafb', border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 14, marginBottom: 14 }}>
+      <Field label="Title *" value={form.title} onChange={v => setForm({ ...form, title: v })} />
+      <div style={{ marginTop: 10 }}>
+        <Label>Description</Label>
+        <textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={inputStyle} />
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <Label>Key takeaway (one sentence)</Label>
+        <input value={form.key_takeaway} onChange={e => setForm({ ...form, key_takeaway: e.target.value })} style={inputStyle} />
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button onClick={submit} disabled={busy} style={btnPrimaryDark}>{busy ? 'Saving...' : 'Save Lesson'}</button>
+        <button onClick={() => setOpen(false)} style={btnGhostDark}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function LessonList({ items, onChange }) {
+  async function remove(id) {
+    if (!confirm('Remove this lesson?')) return;
+    await supabase.from('lessons_learned').delete().eq('id', id);
+    onChange();
+  }
+  if (items.length === 0) return <Empty text="No lessons learned yet." />;
+  return items.map(l => (
+    <div key={l.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{l.title}</div>
+          {l.description  && <div style={{ fontSize: 13, marginTop: 6, whiteSpace: 'pre-wrap' }}>{l.description}</div>}
+          {l.key_takeaway && (
+            <div style={{ fontSize: 12, marginTop: 8, padding: 8, background: C.amber, borderRadius: 4, borderLeft: `3px solid ${C.warning}` }}>
+              <strong>Takeaway:</strong> {l.key_takeaway}
+            </div>
+          )}
+        </div>
+        <button onClick={() => remove(l.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
+      </div>
+    </div>
+  ));
+}
+
+// =====================================================================
+// Building blocks
+// =====================================================================
+function Card({ title, children, toneAccent }) {
+  return (
+    <section style={{
+      background: C.card, border: `1px solid ${C.borderL}`,
+      borderLeft: toneAccent ? `4px solid ${toneAccent}` : `1px solid ${C.borderL}`,
+      borderRadius: 12, padding: 20, marginBottom: 18,
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+    }}>
+      <h3 style={{ margin: '0 0 14px 0', fontSize: 15, fontWeight: 700, color: C.navy }}>{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function StageHeader({ stage, title, subtitle }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+        Stage {stage} of 4
+      </div>
+      <h1 style={{ margin: '4px 0 6px 0', fontSize: 26, fontWeight: 700, color: C.navy }}>{title}</h1>
+      <div style={{ fontSize: 14, color: C.muted }}>{subtitle}</div>
+    </div>
+  );
+}
+
+function StageFooter({ complete, onComplete, nextLabel }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
+      <button onClick={onComplete} style={{ ...btnPrimaryDark, fontSize: 14, padding: '12px 20px' }}>
+        {complete ? '✓ Stage Complete — Re-mark Complete' : nextLabel}
+      </button>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, readOnly, type = 'text' }) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <input
+        type={type}
+        value={value || ''}
+        onChange={e => onChange && onChange(e.target.value)}
+        readOnly={readOnly}
+        style={{ ...inputStyle, background: readOnly ? '#f3f4f6' : C.card }}
+      />
+    </div>
+  );
+}
+
+function Label({ children }) {
+  return <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 4 }}>{children}</div>;
+}
+
+function Empty({ text }) {
+  return <div style={{ fontSize: 13, color: C.muted, fontStyle: 'italic', padding: 12 }}>{text}</div>;
+}
+
+function FullScreenMessage({ text, tone }) {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.bg, padding: 24 }}>
+      <div style={{ background: C.card, padding: 28, borderRadius: 12, border: `1px solid ${C.borderL}`, color: tone === 'danger' ? C.danger : C.text, fontSize: 14 }}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+function LoginGate({ onSubmit }) {
+  return (
+    <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <form onSubmit={onSubmit} style={{ background: C.card, padding: 28, borderRadius: 12, border: `1px solid ${C.borderL}`, width: 360 }}>
+        <h2 style={{ margin: '0 0 6px 0', color: C.navy }}>Investigation Workbench</h2>
+        <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>Restricted to @slpalaska.com accounts.</div>
+        <Label>Email</Label>
+        <input name="email" type="email" required style={inputStyle} placeholder="you@slpalaska.com" />
+        <button type="submit" style={{ ...btnPrimaryDark, marginTop: 14, width: '100%' }}>Continue</button>
+      </form>
+    </div>
+  );
+}
+
+// =====================================================================
+// Style primitives
+// =====================================================================
+const inputStyle = {
+  width: '100%', padding: '8px 10px', fontSize: 13,
+  border: `1px solid ${C.border}`, borderRadius: 6, background: C.card, color: C.text,
+  fontFamily: 'inherit', boxSizing: 'border-box',
+};
+const readOnlyBox = {
+  ...inputStyle, background: '#f9fafb', minHeight: 60, padding: 12, whiteSpace: 'pre-wrap',
+};
+const btnPrimary = {
+  background: 'rgba(255,255,255,0.2)', color: 'white',
+  padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)',
+  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+};
+const btnGhost = {
+  background: 'transparent', color: 'white',
+  padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.4)',
+  fontSize: 13, cursor: 'pointer',
+};
+const btnPrimaryDark = {
+  background: C.navy, color: 'white',
+  padding: '10px 16px', borderRadius: 8, border: 'none',
+  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+};
+const btnGhostDark = {
+  background: C.card, color: C.text,
+  padding: '10px 16px', borderRadius: 8, border: `1px solid ${C.border}`,
+  fontSize: 13, cursor: 'pointer',
+};
+const btnSmall = {
+  background: 'transparent', border: 'none', cursor: 'pointer',
+  fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: 4,
+};
+
+function formatDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
