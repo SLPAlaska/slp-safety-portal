@@ -126,25 +126,27 @@ export default function InvestigationWorkbench() {
     setLoading(true);
     setError('');
     try {
-      const [
-        incR, tlR, wR, evR, facR, fwR, lrR, caR, lessR, legR
-      ] = await Promise.all([
-        supabase.from('incidents').select('*').eq('id', incidentId).single(),
-        supabase.from('timeline_events').select('*').eq('incident_id', incidentId).order('event_date').order('event_time'),
-        supabase.from('witness_statements').select('*').eq('incident_id', incidentId).order('created_at'),
-        supabase.from('investigation_evidence').select('*').eq('incident_id', incidentId).order('uploaded_at'),
-        supabase.from('rca_factors').select('*').eq('incident_id', incidentId),
-        supabase.from('five_why_analyses').select('*').eq('incident_id', incidentId).maybeSingle(),
-        supabase.from('local_reviews').select('*').eq('incident_id', incidentId).maybeSingle(),
-        supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incidentId).order('due_date'),
-        supabase.from('lessons_learned').select('*').eq('incident_id', incidentId).order('created_at'),
-        supabase.from('rca_analyses').select('*').eq('incident_id', incidentId).maybeSingle(),
-      ]);
-
+      // Phase 1: load incident first to get both ID forms
+      const incR = await supabase.from('incidents').select('*').eq('id', incidentId).single();
       if (incR.error) throw incR.error;
       setIncident(incR.data);
 
-      // Log table-level errors instead of failing the whole load
+      const fkText = incR.data.incident_id;  // INC-2026-0051 (used by legacy tables)
+      const fkUuid = incR.data.id;            // UUID (used by rca_factors)
+
+      // Phase 2: parallel load related tables with correct foreign-key form per table
+      const [tlR, wR, evR, facR, fwR, lrR, caR, lessR, legR] = await Promise.all([
+        supabase.from('timeline_events').select('*').eq('incident_id', fkText).order('event_date').order('event_time'),
+        supabase.from('witness_statements').select('*').eq('incident_id', fkText).order('created_at'),
+        supabase.from('investigation_evidence').select('*').eq('incident_id', fkText).order('uploaded_at'),
+        supabase.from('rca_factors').select('*').eq('incident_id', fkUuid),
+        supabase.from('five_why_analyses').select('*').eq('incident_id', fkText).order('updated_at', { ascending: false }).limit(1),
+        supabase.from('local_reviews').select('*').eq('incident_id', fkText).order('updated_at', { ascending: false }).limit(1),
+        supabase.from('investigation_corrective_actions').select('*').eq('incident_id', fkText).order('due_date'),
+        supabase.from('lessons_learned').select('*').eq('incident_id', fkText).order('created_at'),
+        supabase.from('rca_analyses').select('*').eq('incident_id', fkText).maybeSingle(),
+      ]);
+
       const warn = (name, r) => { if (r.error) console.warn(`[Workbench] ${name}: ${r.error.message}`); };
       warn('timeline_events', tlR); warn('witness_statements', wR); warn('investigation_evidence', evR);
       warn('rca_factors', facR); warn('five_why_analyses', fwR); warn('local_reviews', lrR);
@@ -159,8 +161,11 @@ export default function InvestigationWorkbench() {
       (facR.data || []).forEach(f => { facMap[f.category] = { is_factor: !!f.is_factor, description: f.description || '' }; });
       setRcaFactors(facMap);
 
-      setFiveWhy(fwR.data || { why1:'', why2:'', why3:'', why4:'', why5:'', root_cause:'' });
-      setLocalReview(lrR.data || {});
+      // five_why and local_review return arrays (limit 1); take first if exists
+      const fw = Array.isArray(fwR.data) ? fwR.data[0] : fwR.data;
+      const lr = Array.isArray(lrR.data) ? lrR.data[0] : lrR.data;
+      setFiveWhy(fw || { why1:'', why2:'', why3:'', why4:'', why5:'', root_cause:'' });
+      setLocalReview(lr || {});
       setLegacyRcaText(legR.data?.findings || legR.data?.rca_findings || '');
       setCorrectiveActions(caR.data || []);
       setLessons(lessR.data || []);
@@ -269,13 +274,14 @@ export default function InvestigationWorkbench() {
               witnesses={witnesses}
               userEmail={userEmail}
               incidentId={incidentId}
+              fkText={incident.incident_id}
               onIncidentChange={queueIncidentSave}
               onEvidenceReload={async () => {
-                const { data } = await supabase.from('investigation_evidence').select('*').eq('incident_id', incidentId).order('uploaded_at');
+                const { data } = await supabase.from('investigation_evidence').select('*').eq('incident_id', incident.incident_id).order('uploaded_at');
                 setEvidence(data || []);
               }}
               onWitnessesReload={async () => {
-                const { data } = await supabase.from('witness_statements').select('*').eq('incident_id', incidentId).order('created_at');
+                const { data } = await supabase.from('witness_statements').select('*').eq('incident_id', incident.incident_id).order('created_at');
                 setWitnesses(data || []);
               }}
               onComplete={() => markStageComplete(1)}
@@ -285,9 +291,10 @@ export default function InvestigationWorkbench() {
           {currentStage === 2 && (
             <Stage2
               timeline={timeline}
-              incidentId={incidentId}
+              fkText={incident.incident_id}
+              userEmail={userEmail}
               onReload={async () => {
-                const { data } = await supabase.from('timeline_events').select('*').eq('incident_id', incidentId).order('event_date').order('event_time');
+                const { data } = await supabase.from('timeline_events').select('*').eq('incident_id', incident.incident_id).order('event_date').order('event_time');
                 setTimeline(data || []);
               }}
               onComplete={() => markStageComplete(2)}
@@ -305,6 +312,8 @@ export default function InvestigationWorkbench() {
               setLocalReview={setLocalReview}
               legacyRcaText={legacyRcaText}
               incidentId={incidentId}
+              fkText={incident.incident_id}
+              userEmail={userEmail}
               onIncidentChange={queueIncidentSave}
               onComplete={() => markStageComplete(3)}
             />
@@ -315,16 +324,17 @@ export default function InvestigationWorkbench() {
               incident={incident}
               correctiveActions={correctiveActions}
               lessons={lessons}
-              incidentId={incidentId}
+              fkText={incident.incident_id}
+              userEmail={userEmail}
               pdfGenerating={pdfGenerating}
               onGeneratePDF={handleGeneratePDF}
               onIncidentChange={queueIncidentSave}
               onActionsReload={async () => {
-                const { data } = await supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incidentId).order('due_date');
+                const { data } = await supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incident.incident_id).order('due_date');
                 setCorrectiveActions(data || []);
               }}
               onLessonsReload={async () => {
-                const { data } = await supabase.from('lessons_learned').select('*').eq('incident_id', incidentId).order('created_at');
+                const { data } = await supabase.from('lessons_learned').select('*').eq('incident_id', incident.incident_id).order('created_at');
                 setLessons(data || []);
               }}
               onComplete={() => markStageComplete(4)}
@@ -407,7 +417,7 @@ function Stepper({ stages, current, incident, onJump }) {
 // =====================================================================
 // STAGE 1 - Setup & Evidence
 // =====================================================================
-function Stage1({ incident, evidence, witnesses, userEmail, incidentId, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete }) {
+function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete }) {
   return (
     <div>
       <StageHeader stage={1} title="Setup & Evidence" subtitle="Confirm the scope of this investigation, then gather photos and witness statements." />
@@ -462,6 +472,7 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, onIncide
       <Card title={`Evidence (${evidence.length + (Array.isArray(incident.photo_urls) ? incident.photo_urls.length : 0)})`}>
         <EvidenceUploader
           incidentId={incidentId}
+          fkText={fkText}
           userEmail={userEmail}
           onUploaded={onEvidenceReload}
         />
@@ -473,7 +484,7 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, onIncide
       </Card>
 
       <Card title={`Witnesses (${witnesses.length})`}>
-        <WitnessAdd incidentId={incidentId} onAdded={onWitnessesReload} />
+        <WitnessAdd fkText={fkText} userEmail={userEmail} onAdded={onWitnessesReload} />
         <WitnessList items={witnesses} onChange={onWitnessesReload} />
       </Card>
 
@@ -489,7 +500,7 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, onIncide
 // =====================================================================
 // STAGE 2 - Timeline
 // =====================================================================
-function Stage2({ timeline, incidentId, onReload, onComplete }) {
+function Stage2({ timeline, fkText, userEmail, onReload, onComplete }) {
   const [form, setForm] = useState({ event_date: '', event_time: '', description: '', is_critical: false });
   const [busy, setBusy] = useState(false);
 
@@ -497,13 +508,14 @@ function Stage2({ timeline, incidentId, onReload, onComplete }) {
     if (!form.event_date || !form.description) return alert('Date and description are required.');
     setBusy(true);
     const { error } = await supabase.from('timeline_events').insert({
-      incident_id: incidentId,
+      incident_id: fkText,
       event_date: form.event_date,
       event_time: form.event_time,
       description: form.description,
       event_description: form.description,
       is_critical: form.is_critical,
       critical: form.is_critical,
+      created_by_email: userEmail,
     });
     setBusy(false);
     if (error) return alert('Failed to add event: ' + error.message);
@@ -601,7 +613,7 @@ function Stage2({ timeline, incidentId, onReload, onComplete }) {
 // =====================================================================
 // STAGE 3 - Why It Happened (adaptive: Local Review / 5-Why / RCA)
 // =====================================================================
-function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, localReview, setLocalReview, legacyRcaText, incidentId, onIncidentChange, onComplete }) {
+function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, localReview, setLocalReview, legacyRcaText, incidentId, fkText, userEmail, onIncidentChange, onComplete }) {
   const type = (incident.investigation_type || '').toLowerCase();
   const isLocal  = type.includes('local');
   const is5Why   = !isLocal && (type.includes('5') || type.includes('why'));
@@ -628,21 +640,21 @@ function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, loca
         </Card>
       )}
 
-      {isLocal  && <LocalReviewForm  data={localReview} setData={setLocalReview} incidentId={incidentId} />}
-      {is5Why   && <FiveWhyForm      data={fiveWhy}     setData={setFiveWhy}     incidentId={incidentId} />}
-      {isRCA    && <StructuredRCA    factors={rcaFactors} setFactors={setRcaFactors} incident={incident} onIncidentChange={onIncidentChange} incidentId={incidentId} />}
+      {isLocal  && <LocalReviewForm  data={localReview} setData={setLocalReview} fkText={fkText} userEmail={userEmail} />}
+      {is5Why   && <FiveWhyForm      data={fiveWhy}     setData={setFiveWhy}     fkText={fkText} userEmail={userEmail} />}
+      {isRCA    && <StructuredRCA    factors={rcaFactors} setFactors={setRcaFactors} incident={incident} onIncidentChange={onIncidentChange} incidentUuid={incidentId} />}
 
       <StageFooter complete={false} onComplete={onComplete} nextLabel="Complete & Continue to Closure" />
     </div>
   );
 }
 
-function StructuredRCA({ factors, setFactors, incident, onIncidentChange, incidentId }) {
+function StructuredRCA({ factors, setFactors, incident, onIncidentChange, incidentUuid }) {
   async function saveFactor(category, patch) {
     const next = { ...factors[category], ...patch };
     setFactors(prev => ({ ...prev, [category]: next }));
     await supabase.from('rca_factors').upsert(
-      { incident_id: incidentId, category, is_factor: next.is_factor, description: next.description },
+      { incident_id: incidentUuid, category, is_factor: next.is_factor, description: next.description },
       { onConflict: 'incident_id,category' }
     );
   }
@@ -703,14 +715,31 @@ function StructuredRCA({ factors, setFactors, incident, onIncidentChange, incide
   );
 }
 
-function FiveWhyForm({ data, setData, incidentId }) {
+function FiveWhyForm({ data, setData, fkText, userEmail }) {
   async function save(patch) {
+    // Map to legacy column names where they differ
+    const colMap = {
+      root_cause: 'root_cause_identified',
+    };
+    const dbPatch = {};
+    Object.entries(patch).forEach(([k, v]) => {
+      dbPatch[colMap[k] || k] = v;
+      dbPatch[k] = v; // also write the modern name if it exists
+    });
     const next = { ...data, ...patch };
     setData(next);
-    await supabase.from('five_why_analyses').upsert(
-      { incident_id: incidentId, ...next },
-      { onConflict: 'incident_id' }
-    );
+    if (data?.id) {
+      // existing row - update by id
+      await supabase.from('five_why_analyses').update(dbPatch).eq('id', data.id);
+    } else {
+      // no row yet - insert
+      const { data: inserted, error } = await supabase.from('five_why_analyses').insert({
+        incident_id: fkText,
+        created_by_email: userEmail,
+        ...dbPatch,
+      }).select().single();
+      if (!error && inserted) setData({ ...inserted, ...next });
+    }
   }
   return (
     <Card title="5-Why Drill-Down">
@@ -732,7 +761,7 @@ function FiveWhyForm({ data, setData, incidentId }) {
       <div style={{ marginTop: 16, padding: 12, background: C.amber, borderRadius: 8 }}>
         <Label>Root Cause</Label>
         <textarea
-          value={data?.root_cause || ''}
+          value={data?.root_cause || data?.root_cause_identified || ''}
           onChange={e => save({ root_cause: e.target.value })}
           rows={3}
           style={inputStyle}
@@ -743,20 +772,34 @@ function FiveWhyForm({ data, setData, incidentId }) {
   );
 }
 
-function LocalReviewForm({ data, setData, incidentId }) {
+function LocalReviewForm({ data, setData, fkText, userEmail }) {
+  // Map our UI field keys to the actual table columns
   const fields = [
-    { key: 'what_happened',     label: 'What happened?' },
-    { key: 'immediate_cause',   label: 'What was the immediate cause?' },
-    { key: 'contributing',      label: 'What contributing factors were present?' },
-    { key: 'preventive',        label: 'What can prevent recurrence?' },
+    { key: 'what_happened',   label: 'What happened?',                          legacy: null },
+    { key: 'immediate_cause', label: 'What was the immediate cause?',           legacy: 'immediate_causes' },
+    { key: 'contributing',    label: 'What contributing factors were present?', legacy: 'findings' },
+    { key: 'preventive',      label: 'What can prevent recurrence?',            legacy: 'do_differently' },
   ];
-  async function save(patch) {
-    const next = { ...data, ...patch };
+  async function save(uiKey, value) {
+    const f = fields.find(x => x.key === uiKey);
+    const dbPatch = {};
+    if (f.legacy) dbPatch[f.legacy] = value;
+    dbPatch[uiKey] = value;
+    const next = { ...data, [uiKey]: value, ...(f.legacy ? { [f.legacy]: value } : {}) };
     setData(next);
-    await supabase.from('local_reviews').upsert(
-      { incident_id: incidentId, ...next },
-      { onConflict: 'incident_id' }
-    );
+    if (data?.id) {
+      await supabase.from('local_reviews').update(dbPatch).eq('id', data.id);
+    } else {
+      const { data: inserted, error } = await supabase.from('local_reviews').insert({
+        incident_id: fkText,
+        created_by_email: userEmail,
+        ...dbPatch,
+      }).select().single();
+      if (!error && inserted) setData({ ...inserted, ...next });
+    }
+  }
+  function readField(f) {
+    return data?.[f.key] || (f.legacy && data?.[f.legacy]) || '';
   }
   return (
     <Card title="Local Review">
@@ -764,8 +807,8 @@ function LocalReviewForm({ data, setData, incidentId }) {
         <div key={f.key} style={{ marginBottom: 12 }}>
           <Label>{f.label}</Label>
           <textarea
-            value={data?.[f.key] || ''}
-            onChange={e => save({ [f.key]: e.target.value })}
+            value={readField(f)}
+            onChange={e => save(f.key, e.target.value)}
             rows={3}
             style={inputStyle}
           />
@@ -778,18 +821,18 @@ function LocalReviewForm({ data, setData, incidentId }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, correctiveActions, lessons, incidentId, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, correctiveActions, lessons, fkText, userEmail, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
   return (
     <div>
       <StageHeader stage={4} title="Close It Out" subtitle="Define corrective actions using the hierarchy of controls, capture lessons learned, then approve and download the PDF." />
 
       <Card title={`Corrective Actions (${correctiveActions.length})`}>
-        <CorrectiveActionAdd incidentId={incidentId} onAdded={onActionsReload} />
+        <CorrectiveActionAdd fkText={fkText} userEmail={userEmail} onAdded={onActionsReload} />
         <CorrectiveActionList items={correctiveActions} onChange={onActionsReload} />
       </Card>
 
       <Card title={`Lessons Learned (${lessons.length})`}>
-        <LessonAdd incidentId={incidentId} onAdded={onLessonsReload} />
+        <LessonAdd fkText={fkText} userEmail={userEmail} onAdded={onLessonsReload} />
         <LessonList items={lessons} onChange={onLessonsReload} />
       </Card>
 
@@ -820,7 +863,7 @@ function Stage4({ incident, correctiveActions, lessons, incidentId, pdfGeneratin
 // =====================================================================
 // Evidence
 // =====================================================================
-function EvidenceUploader({ incidentId, userEmail, onUploaded }) {
+function EvidenceUploader({ incidentId, fkText, userEmail, onUploaded }) {
   const [busy, setBusy] = useState(false);
   const [evidenceType, setEvidenceType] = useState('Photo');
   const [description, setDescription] = useState('');
@@ -863,7 +906,7 @@ function EvidenceUploader({ incidentId, userEmail, onUploaded }) {
         if (upErr) throw upErr;
         const { data: urlData } = supabase.storage.from('incident-evidence').getPublicUrl(path);
         const { error: insErr } = await supabase.from('investigation_evidence').insert({
-          incident_id: incidentId,
+          incident_id: fkText,
           evidence_type: evidenceType,
           description,
           file_url: urlData.publicUrl,
@@ -1092,7 +1135,7 @@ function prettify(s) {
 // =====================================================================
 // Witnesses
 // =====================================================================
-function WitnessAdd({ incidentId, onAdded }) {
+function WitnessAdd({ fkText, userEmail, onAdded }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', position: '', company: '', summary: '', additional_comments: '', acknowledgment: false });
   const [busy, setBusy] = useState(false);
@@ -1100,7 +1143,19 @@ function WitnessAdd({ incidentId, onAdded }) {
   async function submit() {
     if (!form.name || !form.summary) return alert('Name and summary are required.');
     setBusy(true);
-    const { error } = await supabase.from('witness_statements').insert({ ...form, incident_id: incidentId });
+    const { error } = await supabase.from('witness_statements').insert({
+      incident_id: fkText,
+      name: form.name,
+      witness_name: form.name,
+      position: form.position,
+      position_role: form.position,
+      company: form.company,
+      summary: form.summary,
+      statement_summary: form.summary,
+      additional_comments: form.additional_comments,
+      acknowledgment: form.acknowledgment,
+      created_by_email: userEmail,
+    });
     setBusy(false);
     if (error) return alert('Failed: ' + error.message);
     setForm({ name: '', position: '', company: '', summary: '', additional_comments: '', acknowledgment: false });
@@ -1141,16 +1196,20 @@ function WitnessList({ items, onChange }) {
     onChange();
   }
   if (items.length === 0) return <Empty text="No witness statements yet." />;
-  return items.map(w => (
+  return items.map(w => {
+    const name = w.name || w.witness_name || '(unnamed)';
+    const position = w.position || w.position_role;
+    const summary = w.summary || w.statement_summary;
+    return (
     <div key={w.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>
-            {w.name}
-            {w.position && <span style={{ fontWeight: 400, color: C.muted, fontSize: 12 }}> — {w.position}</span>}
+            {name}
+            {position && <span style={{ fontWeight: 400, color: C.muted, fontSize: 12 }}> — {position}</span>}
             {w.company && <span style={{ fontWeight: 400, color: C.muted, fontSize: 12 }}> ({w.company})</span>}
           </div>
-          <div style={{ fontSize: 13, marginTop: 6, whiteSpace: 'pre-wrap' }}>{w.summary}</div>
+          {summary && <div style={{ fontSize: 13, marginTop: 6, whiteSpace: 'pre-wrap' }}>{summary}</div>}
           {w.additional_comments && (
             <div style={{ fontSize: 12, marginTop: 8, color: C.muted, whiteSpace: 'pre-wrap' }}><em>Notes:</em> {w.additional_comments}</div>
           )}
@@ -1159,13 +1218,14 @@ function WitnessList({ items, onChange }) {
         <button onClick={() => remove(w.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
       </div>
     </div>
-  ));
+    );
+  });
 }
 
 // =====================================================================
 // Corrective Actions
 // =====================================================================
-function CorrectiveActionAdd({ incidentId, onAdded }) {
+function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     description: '', owner: '', due_date: '', status: 'Open',
@@ -1190,7 +1250,23 @@ function CorrectiveActionAdd({ incidentId, onAdded }) {
       return alert(`You picked ${form.hierarchy_of_controls}. Please briefly justify why a stronger control isn't feasible.`);
     }
     setBusy(true);
-    const { error } = await supabase.from('investigation_corrective_actions').insert({ ...form, incident_id: incidentId });
+    const { error } = await supabase.from('investigation_corrective_actions').insert({
+      incident_id: fkText,
+      description: form.description,
+      action_description: form.description,
+      owner: form.owner,
+      action_owner_name: form.owner,
+      action_owner_email: userEmail,
+      due_date: form.due_date,
+      target_date: form.due_date,
+      status: form.status,
+      action_status: form.status,
+      hierarchy_of_controls: form.hierarchy_of_controls,
+      hierarchy_control: form.hierarchy_of_controls,
+      hierarchy_level: form.hierarchy_level,
+      hierarchy_justification: form.hierarchy_justification,
+      created_by_email: userEmail,
+    });
     setBusy(false);
     if (error) return alert('Failed: ' + error.message);
     setForm({ description: '', owner: '', due_date: '', status: 'Open', hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '' });
@@ -1279,7 +1355,7 @@ function CorrectiveActionAdd({ incidentId, onAdded }) {
 
 function CorrectiveActionList({ items, onChange }) {
   async function updateStatus(item, status) {
-    await supabase.from('investigation_corrective_actions').update({ status }).eq('id', item.id);
+    await supabase.from('investigation_corrective_actions').update({ status, action_status: status }).eq('id', item.id);
     onChange();
   }
   async function remove(id) {
@@ -1289,21 +1365,26 @@ function CorrectiveActionList({ items, onChange }) {
   }
   if (items.length === 0) return <Empty text="No corrective actions yet." />;
   return items.map(c => {
+    const description = c.description || c.action_description || '';
+    const owner = c.owner || c.action_owner_name || '';
+    const dueDate = c.due_date || c.target_date;
+    const status = c.status || c.action_status || 'Open';
+    const hierarchyName = c.hierarchy_of_controls || c.hierarchy_control;
     const lvl = c.hierarchy_level;
     const tone = lvl <= 2 ? C.success : lvl <= 3 ? C.steel : lvl === 4 ? C.warning : C.danger;
     return (
       <div key={c.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{c.description}</div>
-            {c.hierarchy_of_controls && (
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{description}</div>
+            {hierarchyName && (
               <div style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, color: 'white', background: tone, padding: '2px 8px', borderRadius: 3, marginTop: 6 }}>
-                {c.hierarchy_of_controls} (Level {lvl})
+                {hierarchyName}{lvl ? ` (Level ${lvl})` : ''}
               </div>
             )}
             <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>
-              Owner: <strong>{c.owner}</strong> &nbsp;|&nbsp;
-              Due: <strong>{formatDate(c.due_date)}</strong>
+              Owner: <strong>{owner || '—'}</strong> &nbsp;|&nbsp;
+              Due: <strong>{formatDate(dueDate)}</strong>
             </div>
             {c.hierarchy_justification && (
               <div style={{ fontSize: 11, color: C.muted, marginTop: 4, fontStyle: 'italic' }}>
@@ -1312,7 +1393,7 @@ function CorrectiveActionList({ items, onChange }) {
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-            <select value={c.status || 'Open'} onChange={e => updateStatus(c, e.target.value)} style={{ ...inputStyle, padding: '4px 6px', fontSize: 11, width: 110 }}>
+            <select value={status} onChange={e => updateStatus(c, e.target.value)} style={{ ...inputStyle, padding: '4px 6px', fontSize: 11, width: 110 }}>
               {['Open', 'In Progress', 'Complete', 'Verified'].map(s => <option key={s}>{s}</option>)}
             </select>
             <button onClick={() => remove(c.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
@@ -1326,7 +1407,7 @@ function CorrectiveActionList({ items, onChange }) {
 // =====================================================================
 // Lessons
 // =====================================================================
-function LessonAdd({ incidentId, onAdded }) {
+function LessonAdd({ fkText, userEmail, onAdded }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', key_takeaway: '' });
   const [busy, setBusy] = useState(false);
@@ -1335,12 +1416,13 @@ function LessonAdd({ incidentId, onAdded }) {
     if (!form.title) return alert('A title is required.');
     setBusy(true);
     const { error } = await supabase.from('lessons_learned').insert({
-      incident_id: incidentId,
+      incident_id: fkText,
       title: form.title,
       lesson_title: form.title,
       description: form.description,
       lesson_description: form.description,
       key_takeaway: form.key_takeaway,
+      added_by: userEmail,
     });
     setBusy(false);
     if (error) return alert('Failed: ' + error.message);
