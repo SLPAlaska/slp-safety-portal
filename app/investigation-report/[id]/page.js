@@ -108,15 +108,38 @@ export default function InvestigationReport() {
 
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [incidentId]);
 
-  // Auto-print when ?print=1 and everything is ready
+  // Auto-print when ?print=1, but wait for images to actually load in DOM first
   useEffect(() => {
     if (loading || !photosReady) return;
     if (typeof window === 'undefined') return;
     const sp = new URLSearchParams(window.location.search);
-    if (sp.get('print') === '1') {
-      const t = setTimeout(() => window.print(), 600);
-      return () => clearTimeout(t);
-    }
+    if (sp.get('print') !== '1') return;
+
+    let cancelled = false;
+    const waitForImagesThenPrint = async () => {
+      // Give the DOM a moment to render the updated <img> tags
+      await new Promise(r => setTimeout(r, 100));
+      const imgs = Array.from(document.querySelectorAll('img'));
+      if (imgs.length === 0) {
+        if (!cancelled) window.print();
+        return;
+      }
+      // Wait for every img to either load or error out
+      await Promise.all(imgs.map(img => {
+        if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+        return new Promise(resolve => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+          // Safety timeout per image - 10s
+          setTimeout(resolve, 10000);
+        });
+      }));
+      // One more paint cycle for safety
+      await new Promise(r => setTimeout(r, 400));
+      if (!cancelled) window.print();
+    };
+    waitForImagesThenPrint();
+    return () => { cancelled = true; };
   }, [loading, photosReady]);
 
   async function loadAll() {
@@ -233,6 +256,12 @@ export default function InvestigationReport() {
         <Section icon={<I.Clipboard size={16} color="#fff" />} title="Incident Summary">
           <IncidentSummary incident={incident} witnesses={witnesses} />
         </Section>
+
+        {(incident.immediate_actions_taken || incident.suspected_root_causes || incident.causal_factors || incident.lessons_learned_initial) && (
+          <Section icon={<I.FileText size={16} color="#fff" />} title="Initial Field-Report Findings">
+            <InitialFindings incident={incident} />
+          </Section>
+        )}
 
         {timeline.length > 0 && (
           <Section icon={<I.Clock size={16} color="#fff" />} title="Timeline of Events" count={timeline.length}>
@@ -496,6 +525,31 @@ function FieldRow({ label, value, compact }) {
     <div style={{ fontSize: compact ? 11 : 12, lineHeight: 1.5, padding: '2px 0' }}>
       <span style={{ fontWeight: 700, color: '#1f2937' }}>{label}: </span>
       <span style={{ color: '#374151' }}>{value}</span>
+    </div>
+  );
+}
+
+// =====================================================================
+// Initial Field-Report Findings
+// =====================================================================
+function InitialFindings({ incident }) {
+  const blocks = [
+    ['Immediate actions taken',  incident.immediate_actions_taken],
+    ['Suspected root causes',    incident.suspected_root_causes],
+    ['Causal factors',           incident.causal_factors],
+    ['Initial lessons learned',  incident.lessons_learned_initial],
+    ['Contributing factors (initial)', incident.contributing_factors_initial],
+  ].filter(([_, v]) => v && typeof v === 'string' && v.trim());
+
+  if (blocks.length === 0) return null;
+  return (
+    <div style={cardStyle}>
+      {blocks.map(([label, val]) => (
+        <div key={label} style={{ marginBottom: 12 }}>
+          <div style={blockLabelStyle}>{label}:</div>
+          <div style={paraStyle}>{val}</div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -919,10 +973,19 @@ function PrintStyles() {
         margin: 0.45in 0.45in 0.55in 0.45in;
       }
       @media print {
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+        html, body {
+          background: white !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         .no-print { display: none !important; }
-        body { background: white !important; }
-        .section { page-break-inside: avoid; }
-        img { max-width: 100% !important; }
+        .section { page-break-inside: avoid; break-inside: avoid; }
+        img { max-width: 100% !important; page-break-inside: avoid; break-inside: avoid; }
       }
       body {
         background: #f3f4f6;
