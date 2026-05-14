@@ -108,39 +108,10 @@ export default function InvestigationReport() {
 
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [incidentId]);
 
-  // Auto-print when ?print=1, but wait for images to actually load in DOM first
-  useEffect(() => {
-    if (loading || !photosReady) return;
-    if (typeof window === 'undefined') return;
-    const sp = new URLSearchParams(window.location.search);
-    if (sp.get('print') !== '1') return;
-
-    let cancelled = false;
-    const waitForImagesThenPrint = async () => {
-      // Give the DOM a moment to render the updated <img> tags
-      await new Promise(r => setTimeout(r, 100));
-      const imgs = Array.from(document.querySelectorAll('img'));
-      if (imgs.length === 0) {
-        if (!cancelled) window.print();
-        return;
-      }
-      // Wait for every img to either load or error out
-      await Promise.all(imgs.map(img => {
-        if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
-        return new Promise(resolve => {
-          img.addEventListener('load', resolve, { once: true });
-          img.addEventListener('error', resolve, { once: true });
-          // Safety timeout per image - 10s
-          setTimeout(resolve, 10000);
-        });
-      }));
-      // One more paint cycle for safety
-      await new Promise(r => setTimeout(r, 400));
-      if (!cancelled) window.print();
-    };
-    waitForImagesThenPrint();
-    return () => { cancelled = true; };
-  }, [loading, photosReady]);
+  // Note: we deliberately do NOT auto-print, even when ?print=1 is present.
+  // Auto-print fires before the user sees the rendered page and Chrome's print
+  // preview occasionally strips colors. The user clicks the prominent "Save as PDF"
+  // button when they're ready - they preview first, then print.
 
   async function loadAll() {
     setLoading(true);
@@ -246,15 +217,18 @@ export default function InvestigationReport() {
         <button onClick={() => router.back()} style={btnGhost}>
           <I.ArrowLeft size={14} /> Back
         </button>
-        <div style={{ color: '#fff', fontSize: 13, opacity: 0.9 }}>
-          {photosReady ? 'Ready to print' : 'Compressing photos for PDF...'}
+        <div style={{ color: '#fff', fontSize: 13, flex: 1, textAlign: 'center' }}>
+          {photosReady
+            ? <span><strong style={{ color: '#fbbf24' }}>Tip:</strong> When printing, expand "More settings" and check <strong>"Background graphics"</strong> for full color.</span>
+            : <span style={{ opacity: 0.85 }}>Compressing photos for PDF... please wait</span>
+          }
         </div>
         <button
           onClick={() => window.print()}
           disabled={!photosReady}
-          style={{ ...btnPrimary, opacity: photosReady ? 1 : 0.6 }}
+          style={{ ...btnPrimary, opacity: photosReady ? 1 : 0.6, fontSize: 14, padding: '10px 18px' }}
         >
-          <I.Download size={14} /> Save as PDF
+          <I.Download size={16} /> Save as PDF
         </button>
       </div>
 
