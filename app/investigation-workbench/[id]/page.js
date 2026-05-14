@@ -207,36 +207,10 @@ export default function InvestigationWorkbench() {
 
   // -------- PDF generation --------
   async function handleGeneratePDF() {
-    setPdfGenerating(true);
-    try {
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/generate-investigation-pdf`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'apikey': SUPABASE_ANON_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ incident_id: incidentId }),
-      });
-      if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(`PDF generation failed: ${resp.status} ${text}`);
-      }
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Investigation-${incident.incident_id || incidentId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      alert('PDF generation failed: ' + err.message);
-    } finally {
-      setPdfGenerating(false);
-    }
+    // Opens the new HTML report page in a new tab with auto-print enabled.
+    // The new page handles photo compression client-side and uses window.print()
+    // to produce a beautifully-formatted PDF.
+    window.open(`/investigation-report/${incidentId}?print=1`, '_blank', 'noopener');
   }
 
   // ==========================================================
@@ -848,10 +822,10 @@ function Stage4({ incident, correctiveActions, lessons, fkText, userEmail, pdfGe
           </select>
         </div>
         <button onClick={onGeneratePDF} disabled={pdfGenerating} style={{ ...btnPrimaryDark, fontSize: 15 }}>
-          {pdfGenerating ? 'Generating PDF (compressing photos)...' : 'Generate & Download PDF Report'}
+          {pdfGenerating ? 'Opening report...' : 'Open Printable Report (PDF)'}
         </button>
         <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>
-          PDF is server-built with re-compressed photos and targets ~10 MB so it emails cleanly.
+          Opens a beautifully-formatted report in a new tab. Photos are auto-compressed and the print dialog opens automatically — choose "Save as PDF" as the destination to download.
         </div>
       </Card>
 
