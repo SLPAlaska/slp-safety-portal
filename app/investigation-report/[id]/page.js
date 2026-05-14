@@ -152,16 +152,18 @@ export default function InvestigationReport() {
 
       const fkText = incR.data.incident_id;
       const fkUuid = incR.data.id;
+      // Legacy tables key off either form - search both to be safe
+      const fkBoth = [fkText, fkUuid].filter(Boolean);
 
       const [tlR, wR, evR, facR, fwR, lrR, caR, lessR] = await Promise.all([
-        supabase.from('timeline_events').select('*').eq('incident_id', fkText).order('event_date').order('event_time'),
-        supabase.from('witness_statements').select('*').eq('incident_id', fkText).order('created_at'),
-        supabase.from('investigation_evidence').select('*').eq('incident_id', fkText).order('uploaded_at'),
+        supabase.from('timeline_events').select('*').in('incident_id', fkBoth).order('event_date').order('event_time'),
+        supabase.from('witness_statements').select('*').in('incident_id', fkBoth).order('created_at'),
+        supabase.from('investigation_evidence').select('*').in('incident_id', fkBoth).order('uploaded_at'),
         supabase.from('rca_factors').select('*').eq('incident_id', fkUuid),
-        supabase.from('five_why_analyses').select('*').eq('incident_id', fkText).order('updated_at', { ascending: false }).limit(1),
-        supabase.from('local_reviews').select('*').eq('incident_id', fkText).order('updated_at', { ascending: false }).limit(1),
-        supabase.from('investigation_corrective_actions').select('*').eq('incident_id', fkText).order('due_date'),
-        supabase.from('lessons_learned').select('*').eq('incident_id', fkText).order('created_at'),
+        supabase.from('five_why_analyses').select('*').in('incident_id', fkBoth).order('updated_at', { ascending: false }).limit(1),
+        supabase.from('local_reviews').select('*').in('incident_id', fkBoth).order('updated_at', { ascending: false }).limit(1),
+        supabase.from('investigation_corrective_actions').select('*').in('incident_id', fkBoth).order('due_date'),
+        supabase.from('lessons_learned').select('*').in('incident_id', fkBoth).order('created_at'),
       ]);
 
       setTimeline(tlR.data || []);
@@ -173,16 +175,22 @@ export default function InvestigationReport() {
       setCorrectiveActions(caR.data || []);
       setLessons(lessR.data || []);
 
-      // Collect all photo URLs - initial field-report photos + workbench-uploaded evidence
-      const initialUrls = Array.isArray(incR.data.photo_urls) ? incR.data.photo_urls : [];
+      // Collect photos from multiple possible sources:
+      // (a) investigation_evidence rows (workbench-uploaded)
+      // (b) incident.evidence JSONB array (legacy field-report photos)
       const evidenceUrls = (evR.data || [])
         .filter(e => e.file_url && /\.(jpe?g|png|webp|gif)$/i.test(e.file_url))
         .map(e => e.file_url);
-      const allUrls = [...new Set([...initialUrls, ...evidenceUrls])].filter(Boolean);
+
+      const jsonbEvidence = Array.isArray(incR.data.evidence) ? incR.data.evidence : [];
+      const jsonbUrls = jsonbEvidence
+        .map(e => (typeof e === 'string' ? e : (e?.url || e?.file_url || e?.path)))
+        .filter(u => u && typeof u === 'string' && /\.(jpe?g|png|webp|gif)$/i.test(u));
+
+      const allUrls = [...new Set([...jsonbUrls, ...evidenceUrls])].filter(Boolean);
 
       setLoading(false);
 
-      // Compress all photos in parallel - this can take a few seconds
       const compMap = {};
       await Promise.all(allUrls.map(async (url) => {
         compMap[url] = await compressPhoto(url);
@@ -706,12 +714,32 @@ function Witnesses({ witnesses }) {
 // =====================================================================
 function LocalReviewSection({ data }) {
   if (!data) return <EmptyMsg text="No local review entered yet." />;
+
+  // Start with structured fields (new + legacy column names)
+  let what       = data.what_happened || '';
+  let immediate  = data.immediate_cause || data.immediate_causes || '';
+  let contrib    = data.contributing    || data.findings         || '';
+  let preventive = data.preventive      || data.do_differently   || '';
+  let notes      = data.additional_notes || '';
+
+  // Legacy rows often have everything dumped into analysis_text or review_text
+  // as a single blob with embedded section headers. Parse it back into sections.
+  const blob = data.analysis_text || data.review_text || '';
+  if (blob && blob.length > (what.length + immediate.length + 80)) {
+    const sections = parseAnalysisBlob(blob);
+    if (sections.what_happened && sections.what_happened.length > what.length) what = sections.what_happened;
+    if (!immediate  && sections.immediate_causes) immediate  = sections.immediate_causes;
+    if (!contrib    && sections.contributing)     contrib    = sections.contributing;
+    if (!preventive && sections.do_differently)   preventive = sections.do_differently;
+    if (!notes      && sections.additional_notes) notes      = sections.additional_notes;
+  }
+
   const blocks = [
-    ['What Happened',             data.what_happened],
-    ['Immediate Causes',          data.immediate_cause || data.immediate_causes],
-    ['Contributing Factors',      data.contributing || data.findings],
-    ['If You Could Do This Over', data.preventive || data.do_differently],
-    ['Additional Notes',          data.additional_notes],
+    ['What Happened',             what],
+    ['Immediate Causes',          immediate],
+    ['Contributing Factors',      contrib],
+    ['If You Could Do This Over', preventive],
+    ['Additional Notes',          notes],
   ].filter(([_, v]) => v && typeof v === 'string' && v.trim());
 
   if (blocks.length === 0) return <EmptyMsg text="Local review fields are empty." />;
@@ -725,6 +753,35 @@ function LocalReviewSection({ data }) {
       ))}
     </div>
   );
+}
+
+// Detect section headers like "What Happened:", "Immediate Causes:", etc. inside
+// a single text blob and split them back into structured sections
+function parseAnalysisBlob(text) {
+  if (!text || typeof text !== 'string') return {};
+  const labels = [
+    { key: 'what_happened',    re: /^\s*What\s+Happened\s*:\s*/im },
+    { key: 'immediate_causes', re: /^\s*Immediate\s+Causes?\s*:\s*/im },
+    { key: 'contributing',     re: /^\s*Contributing(?:\s+Factors?)?\s*:\s*/im },
+    { key: 'findings',         re: /^\s*Findings\s*:\s*/im },
+    { key: 'do_differently',   re: /^\s*If\s+You\s+Could\s+Do\s+This\s+Over\s*:\s*/im },
+    { key: 'additional_notes', re: /^\s*Additional\s+Notes\s*:\s*/im },
+    { key: 'recommendations',  re: /^\s*Recommendations\s*:\s*/im },
+  ];
+  const hits = [];
+  for (const { key, re } of labels) {
+    const m = text.match(re);
+    if (m && typeof m.index === 'number') hits.push({ key, start: m.index, headerLen: m[0].length });
+  }
+  hits.sort((a, b) => a.start - b.start);
+  const out = {};
+  for (let i = 0; i < hits.length; i++) {
+    const h = hits[i];
+    const contentStart = h.start + h.headerLen;
+    const contentEnd = i + 1 < hits.length ? hits[i + 1].start : text.length;
+    out[h.key] = text.substring(contentStart, contentEnd).trim();
+  }
+  return out;
 }
 
 function FiveWhySection({ data }) {
