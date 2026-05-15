@@ -134,7 +134,7 @@ export default function InvestigationReport() {
         supabase.from('five_why_analyses').select('*').in('incident_id', fkBoth).order('updated_at', { ascending: false }).limit(1),
         supabase.from('local_reviews').select('*').in('incident_id', fkBoth).order('updated_at', { ascending: false }).limit(1),
         supabase.from('investigation_corrective_actions').select('*').in('incident_id', fkBoth).order('due_date'),
-        supabase.from('lessons_learned').select('*').in('incident_id', fkBoth).order('created_at'),
+        supabase.from('lessons_learned').select('*').eq('incident_id', fkUuid).order('created_at'),
       ]);
 
       setTimeline(tlR.data || []);

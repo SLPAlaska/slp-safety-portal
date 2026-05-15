@@ -143,7 +143,7 @@ export default function InvestigationWorkbench() {
         supabase.from('five_why_analyses').select('*').eq('incident_id', fkText).order('updated_at', { ascending: false }).limit(1),
         supabase.from('local_reviews').select('*').eq('incident_id', fkText).order('updated_at', { ascending: false }).limit(1),
         supabase.from('investigation_corrective_actions').select('*').eq('incident_id', fkText).order('due_date'),
-        supabase.from('lessons_learned').select('*').eq('incident_id', fkText).order('created_at'),
+        supabase.from('lessons_learned').select('*').eq('incident_id', fkUuid).order('created_at'),
         supabase.from('rca_analyses').select('*').eq('incident_id', fkText).maybeSingle(),
       ]);
 
@@ -299,6 +299,7 @@ export default function InvestigationWorkbench() {
               correctiveActions={correctiveActions}
               lessons={lessons}
               fkText={incident.incident_id}
+              fkUuid={incident.id}
               userEmail={userEmail}
               pdfGenerating={pdfGenerating}
               onGeneratePDF={handleGeneratePDF}
@@ -308,7 +309,7 @@ export default function InvestigationWorkbench() {
                 setCorrectiveActions(data || []);
               }}
               onLessonsReload={async () => {
-                const { data } = await supabase.from('lessons_learned').select('*').eq('incident_id', incident.incident_id).order('created_at');
+                const { data } = await supabase.from('lessons_learned').select('*').eq('incident_id', incident.id).order('created_at');
                 setLessons(data || []);
               }}
               onComplete={() => markStageComplete(4)}
@@ -795,7 +796,7 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, correctiveActions, lessons, fkText, userEmail, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, correctiveActions, lessons, fkText, fkUuid, userEmail, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
   return (
     <div>
       <StageHeader stage={4} title="Close It Out" subtitle="Define corrective actions using the hierarchy of controls, capture lessons learned, then approve and download the PDF." />
@@ -806,7 +807,7 @@ function Stage4({ incident, correctiveActions, lessons, fkText, userEmail, pdfGe
       </Card>
 
       <Card title={`Lessons Learned (${lessons.length})`}>
-        <LessonAdd fkText={fkText} userEmail={userEmail} onAdded={onLessonsReload} />
+        <LessonAdd fkUuid={fkUuid} userEmail={userEmail} onAdded={onLessonsReload} />
         <LessonList items={lessons} onChange={onLessonsReload} />
       </Card>
 
@@ -1381,7 +1382,7 @@ function CorrectiveActionList({ items, onChange }) {
 // =====================================================================
 // Lessons
 // =====================================================================
-function LessonAdd({ fkText, userEmail, onAdded }) {
+function LessonAdd({ fkUuid, userEmail, onAdded }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', key_takeaway: '' });
   const [busy, setBusy] = useState(false);
@@ -1390,7 +1391,7 @@ function LessonAdd({ fkText, userEmail, onAdded }) {
     if (!form.title) return alert('A title is required.');
     setBusy(true);
     const { error } = await supabase.from('lessons_learned').insert({
-      incident_id: fkText,
+      incident_id: fkUuid,
       title: form.title,
       lesson_title: form.title,
       description: form.description,
