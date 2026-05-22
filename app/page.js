@@ -24,6 +24,7 @@ const FORM_CATEGORIES = [
     icon: '📋',
     forms: [
       { name: 'BBS Observation', href: '/bbs-form', isLocal: true },
+      { name: 'Camp Inspection', href: '/camp-inspection', isLocal: true },
       { name: 'Cold Weather Operating Risk Assessment', href: '/cold-weather-form', isLocal: true },
       { name: 'Dropped Object Prevention Audit', href: '/dropped-object-audit', isLocal: true },
       { name: 'E-Line Safety Audit', href: '/e-line-safety-audit', isLocal: true },
