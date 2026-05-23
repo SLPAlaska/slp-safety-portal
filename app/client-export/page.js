@@ -18,6 +18,7 @@ const COMPANY_CREDENTIALS = {
   'CINGSA2026': { company: 'CINGSA', searchTerms: ['CINGSA'], password: 'PSA2026$$SLP' },
   'NARWHAL2026': { company: 'Narwhal Exploration', searchTerms: ['Narwhal', 'Narwhal Exploration'], password: 'PSA2026$$SLP' },
   'HARVEST2026': { company: 'Harvest Midstream', searchTerms: ['Harvest Midstream', 'Harvest'], password: 'PSA2026$$SLP' },
+  'APACHE2026': { company: 'Apache Corp.', searchTerms: ['Apache Corp.', 'Apache Corp', 'Apache', 'Apache Corporation'], password: 'PSA2026$$SLP' },
 };
 
 // Categories mirror portal homepage exactly (excluding PSA tools, ASH Book, Client Export)
@@ -47,6 +48,7 @@ const FORM_CATEGORIES = {
     icon: '\u{1F4CB}',
     forms: {
       'BBS Observation': 'bbs_observations',
+      'Camp Inspection': 'camp_inspections',
       'Cold Weather Operating Risk Assessment': 'cold_weather_assessments',
       'Dropped Object Prevention Audit': 'dropped_object_audits',
       'E-Line Safety Audit': 'eline_safety_audits',
