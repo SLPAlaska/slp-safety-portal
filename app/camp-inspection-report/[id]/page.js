@@ -35,6 +35,35 @@ export default function CampInspectionReport() {
   const [cas, setCas] = useState([]);
   const [error, setError] = useState('');
 
+  // Inline editor for overall_findings
+  const [editingFindings, setEditingFindings] = useState(false);
+  const [findingsDraft, setFindingsDraft] = useState('');
+  const [savingFindings, setSavingFindings] = useState(false);
+
+  function startEditFindings() {
+    setFindingsDraft(insp?.overall_findings || '');
+    setEditingFindings(true);
+  }
+
+  async function saveFindings() {
+    if (!insp) return;
+    setSavingFindings(true);
+    try {
+      const value = (findingsDraft || '').trim() || null;
+      const { error: se } = await supabase
+        .from('camp_inspections')
+        .update({ overall_findings: value })
+        .eq('id', insp.id);
+      if (se) throw se;
+      setInsp({ ...insp, overall_findings: value });
+      setEditingFindings(false);
+    } catch (e) {
+      alert('Save failed: ' + e.message);
+    } finally {
+      setSavingFindings(false);
+    }
+  }
+
   useEffect(() => { if (id) loadData(id); }, [id]);
 
   async function loadData(inspectionId) {
@@ -178,13 +207,44 @@ export default function CampInspectionReport() {
         </Box>
       )}
 
-      {/* Overall Condition & Findings (narrative) */}
-      {insp.overall_findings && (
-        <Box className="print-card" style={{ marginBottom: 14, borderLeft: `4px solid ${BRAND_RED}` }}>
-          <h3 style={sectionTitleStyle()}>Overall Condition & Findings</h3>
-          <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, color: '#374151', lineHeight: 1.6 }}>{insp.overall_findings}</div>
-        </Box>
-      )}
+      {/* Overall Condition & Findings (always editable; hidden in print if empty) */}
+      <Box className={`print-card ${!insp.overall_findings && !editingFindings ? 'no-print' : ''}`} style={{ marginBottom: 14, borderLeft: `4px solid ${BRAND_RED}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8, paddingBottom: 6, borderBottom: '2px solid #E5E7EB' }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: BRAND_DARK, margin: 0 }}>Overall Condition & Findings</h3>
+          {!editingFindings && (
+            <button className="no-print" type="button" onClick={startEditFindings}
+              style={{ padding: '4px 12px', background: '#fff', color: BRAND_RED, border: `1px solid ${BRAND_RED}`, borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+              {insp.overall_findings ? '✏ Edit' : '+ Add Findings'}
+            </button>
+          )}
+        </div>
+        {editingFindings ? (
+          <div className="no-print">
+            <textarea rows={10} value={findingsDraft} onChange={e => setFindingsDraft(e.target.value)}
+              placeholder="Overall condition summary, key strengths, areas of concern, recommendations…"
+              style={{ width: '100%', padding: 10, fontSize: 14, borderRadius: 4, border: '1px solid #D1D5DB', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', minHeight: 200, lineHeight: 1.5 }} />
+            <div style={{ fontSize: 11, color: '#6B7280', marginTop: 4, marginBottom: 8, textAlign: 'right' }}>
+              {findingsDraft.length} character{findingsDraft.length !== 1 ? 's' : ''}
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setEditingFindings(false)} disabled={savingFindings}
+                style={{ padding: '6px 14px', background: '#fff', color: '#374151', border: '1px solid #D1D5DB', borderRadius: 4, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Cancel</button>
+              <button type="button" onClick={saveFindings} disabled={savingFindings}
+                style={{ padding: '6px 16px', background: BRAND_RED, color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                {savingFindings ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          insp.overall_findings ? (
+            <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, color: '#374151', lineHeight: 1.6 }}>{insp.overall_findings}</div>
+          ) : (
+            <div className="no-print" style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>
+              No narrative summary entered yet. Click <strong style={{ color: BRAND_RED, fontStyle: 'normal' }}>+ Add Findings</strong> above to enter one.
+            </div>
+          )
+        )}
+      </Box>
 
       {/* General notes */}
       {insp.general_notes && (
