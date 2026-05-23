@@ -178,6 +178,14 @@ export default function CampInspectionReport() {
         </Box>
       )}
 
+      {/* Overall Condition & Findings (narrative) */}
+      {insp.overall_findings && (
+        <Box className="print-card" style={{ marginBottom: 14, borderLeft: `4px solid ${BRAND_RED}` }}>
+          <h3 style={sectionTitleStyle()}>Overall Condition & Findings</h3>
+          <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, color: '#374151', lineHeight: 1.6 }}>{insp.overall_findings}</div>
+        </Box>
+      )}
+
       {/* General notes */}
       {insp.general_notes && (
         <Box className="print-card" style={{ marginBottom: 14 }}>

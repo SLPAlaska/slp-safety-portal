@@ -67,7 +67,8 @@ export default function CampInspection() {
     weather_conditions: '',
     gps_lat: null,
     gps_lng: null,
-    general_notes: ''
+    general_notes: '',
+    overall_findings: ''
   });
 
   // responses[qid] = { response, comment, photo_urls: [] }
@@ -111,8 +112,16 @@ export default function CampInspection() {
       const r = responses[q.id];
       if (r && r.response) map[q.sectionOrder].answered++;
     });
+    // Free-text sections (e.g. section 12) — total=1, answered=1 if any text entered
+    SECTIONS.forEach(s => {
+      if (s.freeText) {
+        map[s.order].total = 1;
+        const txt = (s.order === 12 ? (meta.overall_findings || '') : '').trim();
+        map[s.order].answered = txt.length > 0 ? 1 : 0;
+      }
+    });
     return map;
-  }, [responses]);
+  }, [responses, meta.overall_findings]);
 
   // -------------------------------------------------------------------------
   // GPS capture (optional)
@@ -284,6 +293,7 @@ export default function CampInspection() {
           submitted_by_email: meta.inspector_email || null,
           go_no_go: goNoGo,
           general_notes: meta.general_notes.trim() || null,
+          overall_findings: (meta.overall_findings || '').trim() || null,
           total_questions: total,
           compliant_count: counters.compliant,
           non_compliant_count: counters.non_compliant,
@@ -363,6 +373,7 @@ export default function CampInspection() {
           <SectionWizard
             inspectionId={inspectionId}
             meta={meta}
+            setMeta={setMeta}
             currentSection={currentSection}
             setCurrentSection={setCurrentSection}
             responses={responses}
@@ -371,6 +382,7 @@ export default function CampInspection() {
             removePhoto={removePhoto}
             uploading={uploading}
             saveStatus={saveStatus}
+            setSaveStatus={setSaveStatus}
             sectionProgress={sectionProgress}
             counters={counters}
             onGoToReview={() => { setStep('review'); window.scrollTo(0, 0); }}
@@ -509,7 +521,7 @@ function HeaderForm({ meta, setMeta, handleStart, starting, captureGps, gettingG
 // ============================================================================
 // Step 2: Section wizard (one section at a time)
 // ============================================================================
-function SectionWizard({ inspectionId, meta, currentSection, setCurrentSection, responses, updateResponse, handlePhotoUpload, removePhoto, uploading, saveStatus, sectionProgress, counters, onGoToReview }) {
+function SectionWizard({ inspectionId, meta, setMeta, currentSection, setCurrentSection, responses, updateResponse, handlePhotoUpload, removePhoto, uploading, saveStatus, setSaveStatus, sectionProgress, counters, onGoToReview }) {
   const section = SECTIONS.find(s => s.order === currentSection);
   const questions = CAMP_QUESTIONS.filter(q => q.sectionOrder === currentSection);
   const sp = sectionProgress[currentSection];
@@ -538,24 +550,35 @@ function SectionWizard({ inspectionId, meta, currentSection, setCurrentSection, 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <SectionTitle text={`Section ${currentSection} of ${SECTIONS.length}`} />
           <div style={{ fontSize: 13, color: '#6B7280' }}>
-            {sp.answered} / {sp.total} answered in this section
+            {section.freeText
+              ? (sp.answered ? 'Filled in' : 'Not yet filled in')
+              : `${sp.answered} / ${sp.total} answered in this section`}
           </div>
         </div>
         <div style={{ fontSize: 16, fontWeight: 600, color: BRAND_DARK, marginBottom: 4 }}>{section.name.replace(/^\d+\.\s*/, '')}</div>
 
         <SectionNav currentSection={currentSection} setCurrentSection={setCurrentSection} sectionProgress={sectionProgress} />
 
-        {questions.map(q => (
-          <QuestionCard
-            key={q.id}
-            q={q}
-            r={responses[q.id] || {}}
-            updateResponse={updateResponse}
-            handlePhotoUpload={handlePhotoUpload}
-            removePhoto={removePhoto}
-            uploading={!!uploading[q.id]}
+        {section.freeText ? (
+          <OverallFindingsBlock
+            inspectionId={inspectionId}
+            value={meta.overall_findings || ''}
+            onChange={v => setMeta(m => ({ ...m, overall_findings: v }))}
+            setSaveStatus={setSaveStatus}
           />
-        ))}
+        ) : (
+          questions.map(q => (
+            <QuestionCard
+              key={q.id}
+              q={q}
+              r={responses[q.id] || {}}
+              updateResponse={updateResponse}
+              handlePhotoUpload={handlePhotoUpload}
+              removePhoto={removePhoto}
+              uploading={!!uploading[q.id]}
+            />
+          ))
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
           <button type="button" onClick={prev} disabled={currentSection === 1} style={secondaryButton()}>← Previous Section</button>
@@ -565,6 +588,54 @@ function SectionWizard({ inspectionId, meta, currentSection, setCurrentSection, 
         </div>
       </div>
     </>
+  );
+}
+
+// ============================================================================
+// Overall Condition & Findings — free-text section (section 12)
+// ============================================================================
+function OverallFindingsBlock({ inspectionId, value, onChange, setSaveStatus }) {
+  const timer = useRef(null);
+
+  function handleChange(v) {
+    onChange(v);
+    if (!inspectionId) return;
+    if (timer.current) clearTimeout(timer.current);
+    setSaveStatus('saving');
+    timer.current = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('camp_inspections')
+          .update({ overall_findings: v || null })
+          .eq('id', inspectionId);
+        if (error) throw error;
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 1500);
+      } catch (e) {
+        setSaveStatus('error');
+        console.error('Save overall_findings failed:', e);
+      }
+    }, 700);
+  }
+
+  return (
+    <div style={{ padding: 16, background: '#FAFAFA', borderRadius: 8, border: '1px solid #E5E7EB' }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Narrative Summary</div>
+      <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 10, lineHeight: 1.5 }}>
+        Free-text section. Capture overall camp condition, notable observations not covered by the audit questions,
+        qualitative concerns, recommendations, and anything else worth noting on the final report.
+      </div>
+      <textarea
+        rows={16}
+        value={value}
+        onChange={e => handleChange(e.target.value)}
+        placeholder="Overall condition summary, key strengths, areas of concern, recommendations…"
+        style={{ width: '100%', padding: 10, fontSize: 14, borderRadius: 4, border: '1px solid #D1D5DB', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', minHeight: 240, lineHeight: 1.5 }}
+      />
+      <div style={{ fontSize: 11, color: '#6B7280', marginTop: 4, textAlign: 'right' }}>
+        {value.length} character{value.length !== 1 ? 's' : ''}
+      </div>
+    </div>
   );
 }
 
