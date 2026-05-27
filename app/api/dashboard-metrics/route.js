@@ -22,7 +22,7 @@
 // Returns the full getDashboardData() response as JSON, or 401/500 on error.
 // ============================================================================
 import { NextResponse } from 'next/server';
-import { getDashboardData } from '@/lib/supabase';
+import { getDashboardData } from '../../../lib/supabase';
 
 // Force Node.js runtime (not Edge) so we can use the full supabase-js client
 // the same way the in-browser Dashboard does.
