@@ -173,6 +173,7 @@ export default function CoursePlayer() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showQuiz, setShowQuiz] = useState(false)
+  const [quizMounted, setQuizMounted] = useState(false)
   const [passed, setPassed] = useState(false)
   const [certificateId, setCertificateId] = useState(null)
   const [narrating, setNarrating] = useState(false)
@@ -245,6 +246,7 @@ export default function CoursePlayer() {
       // Check if already passed
       if (course?.status === 'Complete') {
         setPassed(true)
+        setQuizMounted(true)
         setCertificateId(course.certificate_id)
       }
 
@@ -431,6 +433,7 @@ export default function CoursePlayer() {
       }, 50)
     } else {
       window.speechSynthesis?.cancel()
+      setQuizMounted(true)
       setShowQuiz(true)
     }
   }
@@ -532,7 +535,7 @@ export default function CoursePlayer() {
             )
           })}
           <div
-            onClick={() => setShowQuiz(true)}
+            onClick={() => { setQuizMounted(true); setShowQuiz(true) }}
             style={{
               ...P.thumb,
               border: showQuiz ? '2px solid #b71c1c' : passed ? '2px solid #2e7d32' : '2px solid #ddd',
@@ -548,8 +551,9 @@ export default function CoursePlayer() {
 
         {/* Main Content */}
         <div style={P.mainArea}>
-          {showQuiz ? (
-            <div style={P.quizWrap}>
+          {/* Quiz stays mounted once reached, so reviewing a slide doesn't reset answers */}
+          {quizMounted && (
+            <div style={{ ...P.quizWrap, display: showQuiz ? 'block' : 'none' }}>
               {passed ? (
                 <div style={P.passCard}>
                   <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎓</div>
@@ -575,7 +579,9 @@ export default function CoursePlayer() {
                 />
               )}
             </div>
-          ) : (
+          )}
+
+          {!showQuiz && (
             <div style={P.slideArea}>
               {/* Slide Image */}
               <div style={P.slideFrame} onContextMenu={e => e.preventDefault()}>
@@ -604,8 +610,8 @@ export default function CoursePlayer() {
               {/* Transcript */}
               {showTranscript && currentSlide?.speaker_notes && (
                 <div style={P.transcript}>
-                  <strong style={{ fontSize: '12px', color: '#999', textTransform: 'uppercase' }}>Transcript</strong>
-                  <p style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: '1.6', color: '#333' }}>
+                  <strong style={{ fontSize: '12px', color: '#bbb', textTransform: 'uppercase' }}>Transcript</strong>
+                  <p style={{ margin: '8px 0 0', fontSize: '14px', lineHeight: '1.6', color: '#f0f0f0' }}>
                     {currentSlide.speaker_notes}
                   </p>
                 </div>
@@ -719,7 +725,7 @@ const P = {
   slideImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', userSelect: 'none', pointerEvents: 'none' },
   slideNoImage: { textAlign: 'center', color: '#fff' },
   narrationBadge: { position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' },
-  transcript: { background: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 20px', maxHeight: '120px', overflowY: 'auto' },
+  transcript: { background: 'rgba(0,0,0,0.45)', borderTop: '1px solid rgba(255,255,255,0.1)', padding: '12px 20px', maxHeight: '120px', overflowY: 'auto' },
   controls: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: 'rgba(0,0,0,0.3)', gap: '12px', flexShrink: 0 },
   navBtn: { background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' },
   skipBtn: { background: '#fbbf24', color: '#1a1a2e', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' },
