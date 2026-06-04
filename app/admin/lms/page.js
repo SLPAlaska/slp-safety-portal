@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import BulkImportModal from '@/components/lms/BulkImportModal'
 
-const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments', 'Grant Credit']
+const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments', 'Grant Credit', 'Revoke Credit']
 
 function Modal({ title, onClose, children }) {
   return (
@@ -1364,6 +1364,7 @@ export default function AdminLmsPage() {
         {activeTab==='Required Courses'       && <RequiredCoursesTab />}
         {activeTab==='Individual Assignments' && <IndividualAssignmentsTab />}
         {activeTab === 'Grant Credit'            && <GrantCreditTab />}
+        {activeTab === 'Revoke Credit'           && <RevokeCreditTab />}
       </div>
     </div>
   )
@@ -1618,3 +1619,268 @@ function GrantCreditTab() {
   )
 }
 
+// ─── REVOKE CREDIT TAB ──────────────────────────────────────
+function RevokeCreditTab() {
+  const [users, setUsers] = useState([])
+  const [courses, setCourses] = useState([])
+  const [companies, setCompanies] = useState([])
+  const [companyFilter, setCompanyFilter] = useState('')
+  const [nameSearch, setNameSearch] = useState('')
+  const [selectedUserIds, setSelectedUserIds] = useState([])
+  const [courseScope, setCourseScope] = useState('all') // 'all' | 'selected'
+  const [courseIds, setCourseIds] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [preview, setPreview] = useState(null)
+  const [result, setResult] = useState(null)
+
+  const load = useCallback(async () => {
+    const [ur, cor, comr] = await Promise.all([
+      fetch('/api/lms/users'),
+      fetch('/api/lms/courses'),
+      fetch('/api/lms/companies'),
+    ])
+    const [ud, cod, comd] = await Promise.all([ur.json(), cor.json(), comr.json()])
+    setUsers((ud.users || []).filter(u => u.active))
+    setCourses((cod.courses || []).filter(c => c.active))
+    setCompanies((comd.companies || []).filter(c => c.active !== false))
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filteredUsers = users.filter(u => {
+    if (companyFilter && u.company_id !== companyFilter) return false
+    if (nameSearch && !(u.full_name || '').toLowerCase().includes(nameSearch.toLowerCase())) return false
+    return true
+  })
+
+  function getToken() {
+    try {
+      const raw = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+      if (raw) return JSON.parse(localStorage.getItem(raw))?.access_token
+    } catch {}
+    return null
+  }
+
+  function toggleUser(id) {
+    setPreview(null); setResult(null)
+    setSelectedUserIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id])
+  }
+
+  function selectAllVisible() {
+    setPreview(null); setResult(null)
+    setSelectedUserIds(filteredUsers.map(u => u.id))
+  }
+
+  function clearSelection() {
+    setPreview(null); setResult(null)
+    setSelectedUserIds([])
+  }
+
+  function toggleCourse(id) {
+    setPreview(null); setResult(null)
+    setCourseIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id])
+  }
+
+  // Build the payload from current selections. company_id is included only when
+  // every selected user shares the same company (lets the API enforce the company
+  // membership safety filter); otherwise we send just user_ids.
+  function buildPayload() {
+    const payload = { user_ids: selectedUserIds }
+    const companyIds = new Set(
+      selectedUserIds.map(id => users.find(u => u.id === id)?.company_id).filter(Boolean)
+    )
+    if (companyIds.size === 1) payload.company_id = [...companyIds][0]
+    if (courseScope === 'selected' && courseIds.length > 0) payload.course_ids = courseIds
+    return payload
+  }
+
+  async function handlePreview() {
+    setError(''); setResult(null); setPreview(null); setSaving(true)
+    const token = getToken()
+    const res = await fetch('/api/lms/revoke-credit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ ...buildPayload(), dry_run: true }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error || 'Preview failed.'); return }
+    setPreview(data)
+  }
+
+  async function handleRevoke() {
+    const names = selectedUserIds
+      .map(id => users.find(u => u.id === id)?.full_name)
+      .filter(Boolean)
+    const scopeText = courseScope === 'selected'
+      ? `${courseIds.length} selected course${courseIds.length === 1 ? '' : 's'}`
+      : 'ALL courses'
+    const msg = `PERMANENTLY REVOKE CREDIT?\n\n`
+      + `This deletes completions, certificates, quiz attempts, and progress for:\n`
+      + `${names.length} employee${names.length === 1 ? '' : 's'} × ${scopeText}\n\n`
+      + `The employees are NOT deleted — they keep their logins and assigned courses, `
+      + `but affected courses return to "Not Started".\n\n`
+      + `THIS CANNOT BE UNDONE. Continue?`
+    if (!confirm(msg)) return
+
+    setError(''); setResult(null); setSaving(true)
+    const token = getToken()
+    const res = await fetch('/api/lms/revoke-credit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify(buildPayload()),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error || 'Revoke failed.'); return }
+    setResult(data)
+    setPreview(null)
+    setSelectedUserIds([])
+    setCourseIds([])
+    setCourseScope('all')
+  }
+
+  return (
+    <div>
+      <div style={S.tabHeader}>
+        <h2 style={S.tabTitle}>Revoke Course Credit</h2>
+      </div>
+      <div style={{ ...S.infoBox, background: '#fff3e0', border: '1px solid #ffe0b2', color: '#b71c1c' }}>
+        <strong>Destructive action.</strong> Revoking deletes completions, certificates, quiz attempts,
+        and progress for the selected employees — they drop back to "Not Started" but are <strong>not</strong> deleted
+        and keep their logins and course assignments. Always run <strong>Preview</strong> first. This cannot be undone.
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', gap: 12, margin: '16px 0', flexWrap: 'wrap', alignItems: 'center' }}>
+        <select
+          value={companyFilter}
+          onChange={e => { setCompanyFilter(e.target.value) }}
+          style={{ ...S.input, minWidth: 220, margin: 0 }}
+        >
+          <option value="">All companies</option>
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={nameSearch}
+          onChange={e => setNameSearch(e.target.value)}
+          style={{ ...S.input, minWidth: 240, margin: 0 }}
+        />
+        <button style={{ ...S.btnSmall, margin: 0 }} onClick={selectAllVisible}>Select all {filteredUsers.length}</button>
+        {selectedUserIds.length > 0 && (
+          <button style={{ ...S.btnSmall, margin: 0 }} onClick={clearSelection}>Clear ({selectedUserIds.length})</button>
+        )}
+      </div>
+
+      <label style={S.label}>Employees ({selectedUserIds.length} selected)</label>
+      <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 6, padding: 12 }}>
+        {filteredUsers.length === 0 && <div style={{ color: '#6b7280', fontSize: 14 }}>No employees match the current filters.</div>}
+        {filteredUsers.map(u => {
+          const companyName = u.lms_companies?.name
+            || companies.find(c => c.id === u.company_id)?.name
+            || ''
+          return (
+            <label key={u.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 0' }}>
+              <input
+                type="checkbox"
+                checked={selectedUserIds.includes(u.id)}
+                onChange={() => toggleUser(u.id)}
+                style={{ marginRight: 8 }}
+              />
+              {u.full_name}{companyName ? ` — ${companyName}` : ''}
+            </label>
+          )
+        })}
+      </div>
+
+      {selectedUserIds.length > 0 && (
+        <>
+          <label style={S.label}>Course scope</label>
+          <div style={{ display: 'flex', gap: 16, margin: '4px 0 8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center' }}>
+              <input type="radio" name="scope" checked={courseScope === 'all'}
+                onChange={() => { setCourseScope('all'); setPreview(null); setResult(null) }}
+                style={{ marginRight: 6 }} />
+              All courses
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center' }}>
+              <input type="radio" name="scope" checked={courseScope === 'selected'}
+                onChange={() => { setCourseScope('selected'); setPreview(null); setResult(null) }}
+                style={{ marginRight: 6 }} />
+              Selected courses only
+            </label>
+          </div>
+
+          {courseScope === 'selected' && (
+            <>
+              <label style={S.label}>Courses ({courseIds.length} selected)</label>
+              <div style={{ maxHeight: 280, overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: 6, padding: 12 }}>
+                {courses.map(c => (
+                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', padding: '6px 0' }}>
+                    <input
+                      type="checkbox"
+                      checked={courseIds.includes(c.id)}
+                      onChange={() => toggleCourse(c.id)}
+                      style={{ marginRight: 8 }}
+                    />
+                    {c.title}
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+            <button
+              style={S.btnPrimary}
+              onClick={handlePreview}
+              disabled={saving || selectedUserIds.length === 0 || (courseScope === 'selected' && courseIds.length === 0)}
+            >
+              {saving ? 'Working…' : 'Preview'}
+            </button>
+            <button
+              style={{ ...S.btnPrimary, background: '#b71c1c' }}
+              onClick={handleRevoke}
+              disabled={saving || selectedUserIds.length === 0 || (courseScope === 'selected' && courseIds.length === 0)}
+            >
+              {saving ? 'Revoking…' : 'Revoke Credit'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {error && <div style={{ ...S.errorBox, marginTop: 16 }}>{error}</div>}
+
+      {preview && (
+        <div style={{ marginTop: 16, border: '1px solid #ffe0b2', background: '#fff8f0', borderRadius: 6, padding: 12 }}>
+          <strong>Preview — nothing deleted yet:</strong>
+          <ul style={{ margin: '8px 0 0 20px' }}>
+            <li>Employees targeted: {preview.users_targeted}</li>
+            <li>Course scope: {preview.course_scope === 'ALL' ? 'All courses' : `${preview.course_scope} course(s)`}</li>
+            <li>Completions to delete: {preview.would_delete?.completions?.count ?? '—'}</li>
+            <li>Certificates to delete: {preview.would_delete?.certificates?.count ?? '—'}</li>
+            <li>Quiz attempts to delete: {preview.would_delete?.quiz_attempts?.count ?? '—'}</li>
+            <li>Progress rows to delete: {preview.would_delete?.progress?.count ?? '—'}</li>
+          </ul>
+        </div>
+      )}
+
+      {result && (
+        <div style={{ marginTop: 16, border: '1px solid #c8e6c9', background: '#f1f8f4', borderRadius: 6, padding: 12 }}>
+          <strong style={{ color: '#16a34a' }}>✓ Credit revoked.</strong>
+          <ul style={{ margin: '8px 0 0 20px' }}>
+            <li>Employees affected: {result.users_affected}</li>
+            <li>Course scope: {result.course_scope === 'ALL' ? 'All courses' : `${result.course_scope} course(s)`}</li>
+            <li>Completions deleted: {result.deleted?.lms_completions ?? 0}</li>
+            <li>Certificates deleted: {result.deleted?.lms_certificates ?? 0}</li>
+            <li>Quiz attempts deleted: {result.deleted?.lms_quiz_attempts ?? 0}</li>
+            <li>Progress rows deleted: {result.deleted?.lms_progress ?? 0}</li>
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
