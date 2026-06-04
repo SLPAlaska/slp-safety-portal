@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { isSuperAdmin } from '@/lib/superAdmins'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -26,6 +27,14 @@ export default function LmsLoginPage() {
     if (signInError) {
       setError('Invalid email or password. Please try again.')
       setLoading(false)
+      return
+    }
+
+    // Super Admins (brian@ / britney@) don't have an lms_users row, so the
+    // learner check-user call below would 404 and sign them out. Route them
+    // straight to the Super Admin page BEFORE that check runs.
+    if (isSuperAdmin(data.session.user.email)) {
+      window.location.href = '/admin/lms'
       return
     }
 

@@ -3,7 +3,15 @@
 import { useRouter } from 'next/navigation'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import BulkImportModal from '@/components/lms/BulkImportModal'
+import { isSuperAdmin } from '@/lib/superAdmins'
+
+const supabaseAuth = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
+
 
 const TABS = ['Companies', 'Users', 'Courses', 'Quiz Builder', 'Required Courses', 'Individual Assignments', 'Grant Credit', 'Revoke Credit']
 
@@ -1341,7 +1349,29 @@ function IndividualAssignmentsTab() {
 
 // ─── MAIN PAGE ──────────────────────────────────────────────
 export default function AdminLmsPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('Companies')
+  const [authState, setAuthState] = useState('checking') // 'checking' | 'allowed'
+
+  // Gate the whole page to platform Super Admins only. Company admins and
+  // learners (including @slpalaska.com learners) are redirected away — they
+  // must never be able to load this page. See app/lib/superAdmins.js.
+  useEffect(() => {
+    supabaseAuth.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { router.replace('/lms/login'); return }
+      if (!isSuperAdmin(session.user?.email)) { router.replace('/lms/dashboard'); return }
+      setAuthState('allowed')
+    })
+  }, [router])
+
+  if (authState !== 'allowed') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f0f2f5' }}>
+        <div style={{ color: '#999', fontFamily: 'Arial, Helvetica, sans-serif' }}>Loading…</div>
+      </div>
+    )
+  }
+
   return (
     <div style={S.page}>
       <div style={S.pageHeader}>

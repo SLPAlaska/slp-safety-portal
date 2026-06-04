@@ -5,7 +5,7 @@
 // and lms_progress so affected learners drop back to "Not Started"
 // WITHOUT deleting the users themselves.
 //
-// Auth: platform super admin only (@slpalaska.com email on the auth user).
+// Auth: platform super admin only (email allowlist in app/lib/superAdmins.js).
 //
 // Payload (all combinations supported):
 //   { company_id }                              -> wipe ALL employees, ALL courses
@@ -21,12 +21,14 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { isSuperAdmin } from '@/lib/superAdmins'
 
 async function getSuperAdmin(supabaseAdmin, token) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
   if (error || !user) return null
-  // Platform super admins are the @slpalaska.com accounts (no lms_users row).
-  if (!user.email || !user.email.toLowerCase().endsWith('@slpalaska.com')) return null
+  // Platform super admins are an explicit email allowlist (NOT a domain check —
+  // real learners also have @slpalaska.com emails). See app/lib/superAdmins.js.
+  if (!isSuperAdmin(user.email)) return null
   return user
 }
 
