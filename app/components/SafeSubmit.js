@@ -260,4 +260,24 @@ export async function retryEmergencySubmissions() {
   return processOfflineQueue();
 }
 
+/**
+ * safeInsert - drop-in replacement for supabase.from(table).insert(rows)
+ * Returns { error } exactly like the raw client call, so existing
+ * error-handling in migrated forms keeps working unchanged, while the
+ * submission gets the full SafeSubmit pipeline (offline queue, backup
+ * table, admin alerts).
+ */
+export async function safeInsert(table, rows, formType) {
+  const list = Array.isArray(rows) ? rows : [rows];
+  for (const row of list) {
+    const result = await safeSubmit({ table, data: row, formType: formType || table });
+    if (result.photoWarning) console.warn(result.photoWarning);
+    if (!result.success) {
+      const msg = (result.error && result.error.message) ? result.error.message : (result.error || 'Submission failed. Please try again.');
+      return { error: new Error(msg) };
+    }
+  }
+  return { error: null };
+}
+
 export default safeSubmit;

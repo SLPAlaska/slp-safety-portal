@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -51,7 +52,7 @@ export default function VehicleInspection(){
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('vehicle_inspections').insert([{
+      const{error}=await safeInsert('vehicle_inspections', [{
         driver_name:formData.driverName,date:formData.date,location:formData.location,company:formData.company,vehicle_number:formData.vehicleNumber,license_plate:formData.licensePlate,vehicle_type:formData.vehicleType,odometer:formData.odometer,trailer_number:formData.trailerNumber,trailer_license:formData.trailerLicense,
         engine_compartment:formData.engineCompartment,oil_level:formData.oilLevel,coolant_level:formData.coolantLevel,power_steering:formData.powerSteering,belts_hoses:formData.beltsHoses,leaks:formData.leaks,
         headlights:formData.headlights,turn_signals:formData.turnSignals,brake_lights:formData.brakeLights,hazard_lights:formData.hazardLights,clearance_lights:formData.clearanceLights,reflectors:formData.reflectors,

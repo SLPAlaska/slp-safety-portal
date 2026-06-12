@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -37,7 +38,7 @@ export default function SafetyMeeting(){
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('safety_meetings').insert([{
+      const{error}=await safeInsert('safety_meetings', [{
         person_leading:formData.personLeading,
         meeting_date:formData.meetingDate || null,
         company:formData.company,

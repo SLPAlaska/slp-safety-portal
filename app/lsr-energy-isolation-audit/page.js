@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 import AddToSailLog from '@/components/AddToSailLog';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
@@ -93,9 +94,7 @@ export default function LSREnergyIsolationAudit() {
         photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
-      const { error } = await supabase
-        .from('lsr_energy_isolation_audits')
-        .insert([{
+      const { error } = await safeInsert('lsr_energy_isolation_audits', [{
           ...formData,
           photo_urls: photoUrls.length > 0 ? photoUrls : null
         }]);

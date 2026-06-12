@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -177,7 +178,7 @@ export default function GoodCatchNearMissForm() {
         photo_urls: photoUrls.length > 0 ? photoUrls : null
       };
 
-      const { data, error } = await supabase.from('good_catch_near_miss').insert([submitData]).select();
+      const { error } = await safeInsert('good_catch_near_miss', [submitData], 'good-catch');
 
       if (error) throw error;
 

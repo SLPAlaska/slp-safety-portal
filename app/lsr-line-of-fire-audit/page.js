@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 import AddToSailLog from '@/components/AddToSailLog';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
@@ -82,9 +83,7 @@ export default function LSRLineOfFireAudit() {
         photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
-      const { error } = await supabase
-        .from('lsr_line_of_fire_audits')
-        .insert([{
+      const { error } = await safeInsert('lsr_line_of_fire_audits', [{
           ...formData,
           photo_urls: photoUrls.length > 0 ? photoUrls : null
         }]);

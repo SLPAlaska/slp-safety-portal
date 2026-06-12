@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -65,7 +66,7 @@ export default function DailyActivityLog(){
     }
     setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('daily_activity_logs').insert([{
+      const{error}=await safeInsert('daily_activity_logs', [{
         name:formData.name,
         date:formData.date,
         company:formData.company,

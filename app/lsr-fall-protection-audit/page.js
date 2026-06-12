@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 import AddToSailLog from '@/components/AddToSailLog';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
@@ -87,9 +88,7 @@ export default function LSRFallProtectionAudit() {
         photoUrls = await photoRef.current.uploadAll(submissionId);
       }
 
-      const { error } = await supabase
-        .from('lsr_fall_protection_audits')
-        .insert([{
+      const { error } = await safeInsert('lsr_fall_protection_audits', [{
           ...formData,
           photo_urls: photoUrls.length > 0 ? photoUrls : null
         }]);
