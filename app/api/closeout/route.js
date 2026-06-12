@@ -45,12 +45,27 @@ const ALLOW = {
   unit_work_permits: {
     idCol: 'permit_number',
     cols: ['job_completed', 'work_area_secured', 'bypassed_systems_restored', 'dsd_log_updated', 'time_permit_closed', 'close_out_by', 'area_operator_close_out', 'closed_at']
+  },
+  camp_inspections: {
+    idCol: 'id',
+    cols: ['status', 'submitted_at', 'submitted_by_email', 'go_no_go', 'general_notes', 'overall_findings', 'total_questions', 'compliant_count', 'non_compliant_count', 'needs_action_count', 'na_count', 'not_verified_count', 'critical_findings_count', 'compliance_percent']
+  },
+  camp_inspection_responses: {
+    idCol: 'inspection_id',
+    cols: ['inspection_id', 'question_id', 'section', 'section_order', 'subsection', 'question_text', 'criticality', 'response', 'comment', 'photo_urls'],
+    codeTable: 'camp_inspections',
+    mode: 'upsert',
+    onConflict: 'inspection_id,question_id'
+  },
+  tha_assessments: {
+    idCol: 'tha_number',
+    cols: ['status', 'scope_changed', 'tha_updated_if_changed', 'client_rep_visited', 'hse_visited', 'job_stopped', 'housekeeping_complete', 'all_permits_closed', 'info_passed_to_oncoming', 'aar_went_well', 'aar_didnt_go_as_planned', 'aar_how_improve', 'lessons_learned', 'crew_comments', 'closed_by', 'closed_at', 'last_modified']
   }
 };
 
 export async function POST(req) {
   try {
-    const { table, id, code, updates, codeId } = await req.json();
+    const { table, id, code, updates, codeId, mode } = await req.json();
 
     const cfg = ALLOW[table];
     if (!cfg) {
@@ -93,7 +108,13 @@ export async function POST(req) {
     }
 
     // 3) Apply
-    const { error: updErr } = await admin.from(table).update(clean).eq(cfg.idCol, id);
+    let updErr = null;
+    if (cfg.mode === 'upsert' && mode === 'upsert') {
+      clean[cfg.idCol] = id; // pin to the code-validated record
+      ({ error: updErr } = await admin.from(table).upsert([clean], { onConflict: cfg.onConflict }));
+    } else {
+      ({ error: updErr } = await admin.from(table).update(clean).eq(cfg.idCol, id));
+    }
     if (updErr) {
       return Response.json({ error: updErr.message }, { status: 500 });
     }

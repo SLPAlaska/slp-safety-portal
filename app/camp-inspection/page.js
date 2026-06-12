@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeCloseout, makeRecordKey, registerRecordKey } from '@/components/SafeSubmit';
 import {
   CAMP_QUESTIONS,
   SECTIONS,
@@ -54,6 +55,7 @@ function defaultDueDate(criticality) {
 export default function CampInspection() {
   const [step, setStep] = useState('header'); // 'header' | 'section' | 'review' | 'complete'
   const [inspectionId, setInspectionId] = useState(null);
+  const [inspectionCode, setInspectionCode] = useState(null);
   const [currentSection, setCurrentSection] = useState(1);
 
   const [meta, setMeta] = useState({
@@ -176,6 +178,7 @@ export default function CampInspection() {
         .select()
         .single();
       if (error) throw error;
+      const code=makeRecordKey();await registerRecordKey('camp_inspections',data.id,code);setInspectionCode(code);
       setInspectionId(data.id);
       setStep('section');
       setCurrentSection(1);
@@ -202,9 +205,7 @@ export default function CampInspection() {
     const q = CAMP_QUESTIONS.find(x => x.id === qid);
     const r = responses[qid] || {};
     try {
-      const { error } = await supabase
-        .from('camp_inspection_responses')
-        .upsert([{
+      const { error } = await safeCloseout('camp_inspection_responses', inspectionId, inspectionCode, {
           inspection_id: inspectionId,
           question_id: q.id,
           section: q.section,
@@ -215,7 +216,7 @@ export default function CampInspection() {
           response: r.response || null,
           comment: r.comment || null,
           photo_urls: r.photo_urls && r.photo_urls.length ? r.photo_urls : null
-        }], { onConflict: 'inspection_id,question_id' });
+        }, inspectionId, 'upsert');
       if (error) throw error;
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 1500);
@@ -285,9 +286,7 @@ export default function CampInspection() {
         : 0;
 
       // Update parent inspection
-      const { error: updErr } = await supabase
-        .from('camp_inspections')
-        .update({
+      const { error: updErr } = await safeCloseout('camp_inspections', inspectionId, inspectionCode, {
           status: 'submitted',
           submitted_at: new Date().toISOString(),
           submitted_by_email: meta.inspector_email || null,
@@ -302,8 +301,7 @@ export default function CampInspection() {
           not_verified_count: counters.not_verified,
           critical_findings_count: counters.critical_findings,
           compliance_percent: compliancePercent
-        })
-        .eq('id', inspectionId);
+        });
       if (updErr) throw updErr;
 
       // Spawn corrective actions for non-compliant + needs-action items
@@ -604,10 +602,7 @@ function OverallFindingsBlock({ inspectionId, value, onChange, setSaveStatus }) 
     setSaveStatus('saving');
     timer.current = setTimeout(async () => {
       try {
-        const { error } = await supabase
-          .from('camp_inspections')
-          .update({ overall_findings: v || null })
-          .eq('id', inspectionId);
+        const { error } = await safeCloseout('camp_inspections', inspectionId, inspectionCode, { overall_findings: v || null });
         if (error) throw error;
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 1500);

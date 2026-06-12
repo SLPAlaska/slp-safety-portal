@@ -319,12 +319,12 @@ export async function registerRecordKey(table, recordId, code) {
 }
 
 /** Server-validated close-out. Returns { error } like a raw supabase call. */
-export async function safeCloseout(table, id, code, updates, codeId) {
+export async function safeCloseout(table, id, code, updates, codeId, mode) {
   try {
     const res = await fetch('/api/closeout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ table, id, code, updates, codeId })
+      body: JSON.stringify({ table, id, code, updates, codeId, mode })
     });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) return { error: new Error(j.error || `Close-out failed (${res.status})`) };
