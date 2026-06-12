@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -90,7 +91,7 @@ export default function FieldEnvironmentalAuditForm() {
       }
       submitData.photo_urls = photoUrls.length > 0 ? photoUrls : null;
 
-      const { error } = await supabase.from('field_environmental_audits').insert([submitData]).select();
+      const { error } = await safeInsert('field_environmental_audits', [submitData]);
 
       if (error) throw error;
 

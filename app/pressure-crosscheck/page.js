@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -95,9 +96,7 @@ export default function PressureCrosscheck() {
         photoUrl = publicUrl
       }
 
-      const { error } = await supabase
-        .from('pressure_crosscheck')
-        .insert([{
+      const { error } = await safeInsert('pressure_crosscheck', [{
           ...formData,
           last_similar_job_date: formData.last_similar_job_date || null,
           photo_url: photoUrl,

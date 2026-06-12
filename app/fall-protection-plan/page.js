@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -444,7 +445,7 @@ export default function FallProtectionPlan(){
     setIsSubmitting(true);
     const newPlanNumber='FPP-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+String(Math.floor(Math.random()*9999)).padStart(4,'0');
     try{
-      const{error}=await supabase.from('fall_protection_plans').insert([{
+      const { error } = await safeInsert('fall_protection_plans', [{
         plan_number:newPlanNumber,dates_of_work:formData.datesOfWork,company:formData.company,location:formData.location,specific_location:formData.specificLocation,work_tasks:formData.workTasks,
         work_environment:formData.workEnvironment,aerial_lift_type:formData.aerialLiftType,roof_type:formData.roofType,
         height_above_lower:formData.heightAboveLower||null,landing_hazard_present:formData.landingHazardPresent,landing_hazard_desc:formData.landingHazardDesc,fall_hazard_types:formData.fallHazardTypes.join(', '),fall_hazard_details:formData.fallHazardDetails,

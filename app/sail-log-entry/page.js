@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -94,9 +95,7 @@ export default function SAILLogEntry() {
         created_at: new Date().toISOString()
       }
 
-      const { error } = await supabase
-        .from('sail_log')
-        .insert([submitData])
+      const { error } = await safeInsert('sail_log', [submitData])
 
       if (error) throw error
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -95,9 +96,7 @@ export default function MBWAForm() {
         photoUrl = publicUrl
       }
 
-      const { error } = await supabase
-        .from('mbwa')
-        .insert([{
+      const { error } = await safeInsert('mbwa', [{
           ...formData,
           photo_url: photoUrl,
           created_at: new Date().toISOString()

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -151,7 +152,7 @@ export default function FlammableStorageAuditForm() {
 
       setStatus('Submitting to database...')
 
-      const { data, error } = await supabase.from('flammable_storage_audits').insert([dataToSubmit]).select()
+      const { error } = await safeInsert('flammable_storage_audits', [dataToSubmit])
       
       if (error) {
         console.error('Supabase error:', error)

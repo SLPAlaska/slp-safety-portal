@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -45,7 +46,7 @@ export default function PPEInspection(){
     if(formData.footProtectionInspected==='Yes')sectionsInspected.push('Foot');
     if(formData.fallProtectionInspected==='Yes')sectionsInspected.push('Fall');
     try{
-      const{error}=await supabase.from('ppe_inspections').insert([{
+      const { error } = await safeInsert('ppe_inspections', [{
         inspector_name:formData.inspectorName,date:formData.date,company:formData.company,location:formData.location,employee_name:formData.employeeName,employee_id:formData.employeeId,sections_inspected:sectionsInspected.join(', '),
         head_protection_inspected:formData.headProtectionInspected,hard_hat_type:formData.hardHatType,hard_hat_condition:formData.hardHatCondition,suspension_system:formData.suspensionSystem,shell_cracks:formData.shellCracks,expiration_date_check:formData.expirationDateCheck,chin_strap:formData.chinStrap,head_protection_result:formData.headProtectionResult,
         eye_face_protection_inspected:formData.eyeFaceProtectionInspected,eye_protection_type:formData.eyeProtectionType,lens_condition:formData.lensCondition,frame_condition:formData.frameCondition,anti_fog_coating:formData.antiFogCoating,side_shields:formData.sideShields,face_shield_condition:formData.faceShieldCondition,eye_face_protection_result:formData.eyeFaceProtectionResult,

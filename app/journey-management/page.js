@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -128,7 +129,7 @@ export default function JourneyManagementForm() {
       }
       submitData.photo_urls = photoUrls.length > 0 ? photoUrls : null;
 
-      const { error } = await supabase.from('journey_management').insert([submitData]).select();
+      const { error } = await safeInsert('journey_management', [submitData]);
 
       if (error) throw error;
 

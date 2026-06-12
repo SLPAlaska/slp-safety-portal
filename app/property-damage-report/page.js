@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -109,7 +110,7 @@ export default function PropertyDamageReport(){
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('property_damage_reports').insert([{
+      const { error } = await safeInsert('property_damage_reports', [{
         person_name:formData.personName,incident_date:formData.incidentDate || null,company:formData.company,location:formData.location,
         security_notified:formData.securityNotified,injuries_involved:formData.injuriesInvolved,
         spill_involved:formData.spillInvolved,spill_volume_outside:formData.spillVolumeOutside||null,total_spill_volume:formData.totalSpillVolume||null,

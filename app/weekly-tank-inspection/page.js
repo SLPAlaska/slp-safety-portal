@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -221,9 +222,7 @@ export default function WeeklyTankInspection() {
         photos: photoUrls,
       };
 
-      const { error } = await supabase
-        .from('weekly_tank_inspections')
-        .insert([submitData]);
+      const { error } = await safeInsert('weekly_tank_inspections', [submitData]);
 
       if (error) throw error;
       setSuccess(true);

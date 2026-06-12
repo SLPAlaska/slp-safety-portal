@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const COMPANIES = [
   'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
@@ -336,7 +337,7 @@ export default function CriticalLiftPlanForm() {
         return
       }
 
-      const { data, error } = await supabase.from('critical_lift_plans').insert([{
+      const { error } = await safeInsert('critical_lift_plans', [{
         lift_plan_number: formData.liftPlanNumber,
         date: formData.date,
         prepared_by: formData.preparedBy,

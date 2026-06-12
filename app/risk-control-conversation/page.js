@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -97,9 +98,7 @@ export default function RiskControlConversation() {
     setSubmitStatus(null)
 
     try {
-      const { error } = await supabase
-        .from('risk_control_conversation')
-        .insert([{
+      const { error } = await safeInsert('risk_control_conversation', [{
           ...formData,
           energy_types: formData.energy_types.join(', '),
           control_types: formData.control_types.join(', '),

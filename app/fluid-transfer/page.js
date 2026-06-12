@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -108,10 +109,7 @@ export default function FluidTransferAuditForm() {
         photo_urls: photoUrls.length > 0 ? photoUrls : null
       };
 
-      const { data, error } = await supabase
-        .from('fluid_transfer_audits')
-        .insert([submitData])
-        .select();
+      const { error } = await safeInsert('fluid_transfer_audits', [submitData]);
 
       if (error) {
         console.error('Supabase error:', error);

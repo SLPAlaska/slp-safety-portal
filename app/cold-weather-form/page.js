@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const COMPANIES = [
   'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
@@ -72,7 +73,7 @@ export default function ColdWeatherAssessment() {
     setMessage({ type: '', text: '' })
 
     try {
-      const { error } = await supabase.from('cold_weather_assessments').insert([{
+      const { error } = await safeInsert('cold_weather_assessments', [{
         assessor_name: formData.assessorName,
         assessment_date: formData.date || null,
         location: formData.location,
