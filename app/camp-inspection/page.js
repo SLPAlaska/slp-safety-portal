@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeCloseout, makeRecordKey, registerRecordKey } from '@/components/SafeSubmit';
+import { safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
 import {
   CAMP_QUESTIONS,
   SECTIONS,
@@ -328,10 +328,7 @@ export default function CampInspection() {
 
       if (caRows.length) {
         // Attach response_id to each CA where possible (need fresh response IDs)
-        const { data: respRows } = await supabase
-          .from('camp_inspection_responses')
-          .select('id, question_id')
-          .eq('inspection_id', inspectionId);
+        const { rows: respRows } = await fieldData('camp_responses', { inspection: inspectionId, code: inspectionCode });
         const idMap = {};
         (respRows || []).forEach(r => { idMap[r.question_id] = r.id; });
         caRows.forEach(c => { c.response_id = idMap[c.question_id] || null; });

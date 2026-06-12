@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeInsert } from '@/components/SafeSubmit';
+import { safeInsert, fieldData } from '@/components/SafeSubmit';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
@@ -100,13 +100,7 @@ export default function ChainHoistInspection() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data, error } = await supabase
-      .from('chain_hoist_inspections')
-      .select('date, inspector_name')
-      .ilike('hoist_id', hoistId)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-      .limit(1);
+    let data = []; try { data = (await fieldData('recent_check', { table: 'chain_hoist_inspections', id: hoistId })).rows; } catch (e) { console.error(e); } const error = null;
 
     if (data && data.length > 0) {
       const lastInspection = data[0];

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey } from '@/components/SafeSubmit';
+import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -73,7 +73,7 @@ export default function OpeningBlindingPermit(){
 
   useEffect(()=>{if(activeTab==='closeout')loadOpenPermits();},[activeTab]);
 
-  const loadOpenPermits=async()=>{try{const{data}=await supabase.from('opening_blinding_permits').select('*').eq('permit_status','Open').order('created_at',{ascending:false});setOpenPermits(data||[]);}catch(e){console.error(e);}};
+  const loadOpenPermits=async()=>{try{const{rows}=await fieldData('open_permits',{table:'opening_blinding_permits'});setOpenPermits(rows||[]);}catch(e){console.error(e);}};
 
   const handleChange=(e)=>{const{name,value}=e.target;setFormData(p=>({...p,[name]:value}));};
   const handleHazmatToggle=(id)=>{setFormData(p=>({...p,hazardousMaterials:{...p.hazardousMaterials,[id]:!p.hazardousMaterials[id]}}));};

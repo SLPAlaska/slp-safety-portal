@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeInsert } from '@/components/SafeSubmit';
+import { safeInsert, fieldData } from '@/components/SafeSubmit';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
@@ -91,13 +91,7 @@ export default function AEDInspection() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data, error } = await supabase
-      .from('aed_inspections')
-      .select('date, inspector_name')
-      .ilike('aed_id', aedId)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-      .limit(1);
+    let data = []; try { data = (await fieldData('recent_check', { table: 'aed_inspections', id: aedId })).rows; } catch (e) { console.error(e); } const error = null;
 
     if (data && data.length > 0) {
       const lastInspection = data[0];

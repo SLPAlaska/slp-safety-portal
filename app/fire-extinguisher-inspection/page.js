@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
-import { safeSubmit } from '@/components/SafeSubmit';
+import { safeSubmit, fieldData } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -94,13 +94,7 @@ export default function FireExtinguisherInspection() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data, error } = await supabase
-      .from('fire_extinguisher_inspections')
-      .select('date, inspector_name')
-      .ilike('extinguisher_id', extinguisherId)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-      .limit(1);
+    let data = []; try { data = (await fieldData('recent_check', { table: 'fire_extinguisher_inspections', id: extinguisherId })).rows; } catch (e) { console.error(e); } const error = null;
 
     if (data && data.length > 0) {
       const lastInspection = data[0];

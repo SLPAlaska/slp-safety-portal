@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
-import { safeSubmit } from '@/components/SafeSubmit';
+import { safeSubmit, fieldData } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -104,13 +104,7 @@ export default function EyewashStationInspection() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data, error } = await supabase
-      .from('eyewash_station_inspections')
-      .select('date, inspector_name')
-      .ilike('station_id', stationId)
-      .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-      .limit(1);
+    let data = []; try { data = (await fieldData('recent_check', { table: 'eyewash_station_inspections', id: stationId })).rows; } catch (e) { console.error(e); } const error = null;
 
     if (data && data.length > 0) {
       const lastInspection = data[0];

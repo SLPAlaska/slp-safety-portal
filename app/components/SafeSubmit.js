@@ -319,6 +319,15 @@ export async function registerRecordKey(table, recordId, code) {
 }
 
 /** Server-validated close-out. Returns { error } like a raw supabase call. */
+// ── Server-side field data (replaces anonymous SELECT) ──────────────────────
+export async function fieldData(view, params = {}) {
+  const qs = new URLSearchParams({ view, ...params }).toString();
+  const res = await fetch('/api/field-data?' + qs);
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error || 'Field data load failed (' + res.status + ')');
+  return j;
+}
+
 export async function safeCloseout(table, id, code, updates, codeId, mode) {
   try {
     const res = await fetch('/api/closeout', {

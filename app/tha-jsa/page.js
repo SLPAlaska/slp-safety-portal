@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey } from '@/components/SafeSubmit';
+import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -90,12 +90,10 @@ export default function THAForm(){
 
   useEffect(()=>{if(activeTab==='open'||activeTab==='closeout')loadOpenTHAs();},[activeTab]);
 
-  const loadOpenTHAs=async()=>{setLoadingOpenTHAs(true);try{const{data,error}=await supabase.from('tha_assessments').select('*').eq('status','Open').order('created_at',{ascending:false});if(error){console.error('loadOpenTHAs error:',error);throw error;}setOpenTHAs(data||[]);}catch(e){console.error('loadOpenTHAs catch:',e);}finally{setLoadingOpenTHAs(false);}};
+  const loadOpenTHAs=async()=>{setLoadingOpenTHAs(true);try{const{rows}=await fieldData('open_thas',{});setOpenTHAs(rows||[]);}catch(e){console.error('loadOpenTHAs catch:',e);}finally{setLoadingOpenTHAs(false);}};
 
   const loadTHADetails=async(thaNumber)=>{try{
-    const{data:tha}=await supabase.from('tha_assessments').select('*').eq('tha_number',thaNumber).single();
-    const{data:steps}=await supabase.from('tha_task_steps').select('*').eq('tha_number',thaNumber).order('step_number');
-    const{data:crew}=await supabase.from('tha_crew_signoff').select('*').eq('tha_number',thaNumber);
+    const{tha,steps,crew}=await fieldData('tha_detail',{tha:thaNumber});
     setThaDetails({...tha,taskSteps:steps||[],crewMembers:crew||[]});setSelectedTHA(thaNumber);setNewTaskSteps([]);setNewCrewMembers([]);setUpdateSuccess(false);
   }catch(e){console.error(e);alert('Error: '+e.message);}};
 

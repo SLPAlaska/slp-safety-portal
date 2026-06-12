@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey } from '@/components/SafeSubmit';
+import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -72,7 +72,7 @@ export default function HotWorkPermit(){
 
   useEffect(()=>{if(activeTab==='closeout')loadOpenPermits();},[activeTab]);
 
-  const loadOpenPermits=async()=>{try{const{data}=await supabase.from('hot_work_permits').select('*').eq('permit_status','Open').order('created_at',{ascending:false});setOpenPermits(data||[]);}catch(e){console.error(e);}};
+  const loadOpenPermits=async()=>{try{const{rows}=await fieldData('open_permits',{table:'hot_work_permits'});setOpenPermits(rows||[]);}catch(e){console.error(e);}};
 
   const handleChange=(e)=>{const{name,value}=e.target;setFormData(p=>({...p,[name]:value}));};
   const handleHazardToggle=(id)=>{setFormData(p=>({...p,hazardCategories:{...p.hazardCategories,[id]:!p.hazardCategories[id]}}));};
