@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -120,9 +121,7 @@ export default function ScaffoldInspectionForm() {
         submission_date: new Date().toISOString()
       }
 
-      const { error } = await supabase
-        .from('scaffold_inspections')
-        .insert([dataToSubmit])
+      const { error } = await safeInsert('scaffold_inspections', [dataToSubmit])
 
       if (error) throw error
 

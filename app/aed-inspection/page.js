@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
@@ -147,9 +148,7 @@ export default function AEDInspection() {
         photo_urls:               photoUrls.length > 0 ? photoUrls : null
       };
 
-      const { error } = await supabase
-        .from('aed_inspections')
-        .insert([sanitized]);
+      const { error } = await safeInsert('aed_inspections', [sanitized]);
 
       if (error) throw error;
       setSubmitted(true);

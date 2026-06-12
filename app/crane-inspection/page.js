@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -50,7 +51,7 @@ export default function CraneInspection(){
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('crane_inspections').insert([{
+      const { error } = await safeInsert('crane_inspections', [{
         operator_name:formData.operatorName,date:formData.date,shift:formData.shift,location:formData.location,company:formData.company,crane_number:formData.craneNumber,crane_type:formData.craneType,make:formData.make,model:formData.model,serial_number:formData.serialNumber,capacity:formData.capacity,hour_meter:formData.hourMeter,last_annual_inspection:formData.lastAnnualInspection||null,
         engine_oil:formData.engineOil,hydraulic_fluid:formData.hydraulicFluid,coolant:formData.coolant,fuel:formData.fuel,def:formData.def,leaks_check:formData.leaksCheck,belts_hoses:formData.beltsHoses,air_filter:formData.airFilter,battery:formData.battery,
         boom_condition:formData.boomCondition,boom_pins:formData.boomPins,boom_sections:formData.boomSections,jib_condition:formData.jibCondition,jib_pins:formData.jibPins,

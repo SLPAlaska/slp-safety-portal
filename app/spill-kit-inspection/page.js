@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -35,7 +36,7 @@ export default function SpillKitInspection(){
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('spill_kit_inspections').insert([{
+      const { error } = await safeInsert('spill_kit_inspections', [{
         inspector_name:formData.inspectorName,inspection_date:formData.inspectionDate || null,company:formData.company,location:formData.location,
         kit_id:formData.kitId,kit_type:formData.kitType,kit_location_description:formData.kitLocationDescription,inspection_reason:formData.inspectionReason,
         container_condition:formData.containerCondition,container_sealed:formData.containerSealed,signage_visible:formData.signageVisible,easily_accessible:formData.easilyAccessible,

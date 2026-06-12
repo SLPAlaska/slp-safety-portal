@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -191,7 +192,7 @@ export default function AerialLiftPractical() {
         evaluator_comments: formData.evaluator_comments || null
       };
 
-      const { error } = await supabase.from('aerial_lift_evaluations').insert([submitData]);
+      const { error } = await safeInsert('aerial_lift_evaluations', [submitData]);
       if (error) throw error;
 
       setAssessmentId(newAssessmentId);

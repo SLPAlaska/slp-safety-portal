@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -141,9 +142,7 @@ export default function PhaseConditionRiskAssessment() {
         photoUrl = publicUrl
       }
 
-      const { error } = await supabase
-        .from('phase_condition_risk_assessment')
-        .insert([{
+      const { error } = await safeInsert('phase_condition_risk_assessment', [{
           ...formData,
           hazards_risks: formData.hazards_risks.join(', '),
           risk_controls: formData.risk_controls.join(', '),

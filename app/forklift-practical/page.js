@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -201,7 +202,7 @@ export default function ForkliftPractical() {
         evaluator_comments: formData.evaluator_comments || null
       };
 
-      const { error } = await supabase.from('forklift_evaluations').insert([submitData]);
+      const { error } = await safeInsert('forklift_evaluations', [submitData]);
       if (error) throw error;
 
       setAssessmentId(newAssessmentId);

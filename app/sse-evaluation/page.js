@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -31,7 +32,7 @@ export default function SSEEvaluation(){
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('sse_evaluations').insert([{
+      const { error } = await safeInsert('sse_evaluations', [{
         evaluator_name:formData.evaluatorName,
         company:formData.company,
         location:formData.location,

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { safeInsert } from '@/components/SafeSubmit';
 
 const COMPANIES = [
   'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
@@ -58,7 +59,7 @@ export default function CompetentPersonForm() {
 
     try {
       const inspectionNumber = `CP-${Date.now()}`
-      const { error } = await supabase.from('competent_person_inspections').insert([{
+      const { error } = await safeInsert('competent_person_inspections', [{
         inspection_number: inspectionNumber,
         inspection_date: formData.inspectionDate || null,
         inspection_time: formData.inspectionTime,

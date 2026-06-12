@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -211,7 +212,7 @@ export default function CraneBoomPractical() {
         evaluator_comments: formData.evaluator_comments || null
       };
 
-      const { error } = await supabase.from('crane_boom_evaluations').insert([submitData]);
+      const { error } = await safeInsert('crane_boom_evaluations', [submitData]);
       if (error) throw error;
 
       setAssessmentId(newAssessmentId);

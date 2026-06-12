@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -52,7 +53,7 @@ export default function ForkliftInspection(){
 
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     try{
-      const{error}=await supabase.from('forklift_inspections').insert([{
+      const { error } = await safeInsert('forklift_inspections', [{
         operator_name:formData.operatorName,date:formData.date,shift:formData.shift,location:formData.location,company:formData.company,forklift_number:formData.forkliftNumber,forklift_type:formData.forkliftType,make:formData.make,model:formData.model,hour_meter:formData.hourMeter,
         fuel_battery:formData.fuelBattery,engine_oil:formData.engineOil,hydraulic_fluid:formData.hydraulicFluid,coolant:formData.coolant,leaks_check:formData.leaksCheck,
         battery_condition:formData.batteryCondition,battery_connections:formData.batteryConnections,electrolyte_level:formData.electrolyteLevel,charger_condition:formData.chargerCondition,

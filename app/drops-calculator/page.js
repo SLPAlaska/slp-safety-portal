@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -200,7 +201,7 @@ export default function DropsCalculator() {
           notes: formData.notes,
         };
     
-        const { error } = await supabase.from('drops_calculations').insert([record]);
+        const { error } = await safeInsert('drops_calculations', [record]);
         setSaving(false);
         if (error) {
           console.error('Save error:', error);
