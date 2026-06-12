@@ -337,7 +337,7 @@ export async function safeCloseout(table, id, code, updates, codeId, mode) {
     });
     const j = await res.json().catch(() => ({}));
     if (!res.ok) return { error: new Error(j.error || `Close-out failed (${res.status})`) };
-    return { error: null };
+    return { error: null, row: j.row || null };
   } catch (e) {
     return { error: e };
   }

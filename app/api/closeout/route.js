@@ -60,6 +60,10 @@ const ALLOW = {
   tha_assessments: {
     idCol: 'tha_number',
     cols: ['status', 'scope_changed', 'tha_updated_if_changed', 'client_rep_visited', 'hse_visited', 'job_stopped', 'housekeeping_complete', 'all_permits_closed', 'info_passed_to_oncoming', 'aar_went_well', 'aar_didnt_go_as_planned', 'aar_how_improve', 'lessons_learned', 'crew_comments', 'closed_by', 'closed_at', 'last_modified']
+  },
+  incidents: {
+    idCol: 'id',
+    cols: ['brief_description', 'causal_factors', 'company_name', 'containment_method', 'created_by_email', 'date_of_hire', 'date_shift_began', 'decs_present', 'detailed_description', 'direct_control_status', 'energy_release_occurred', 'energy_types', 'energy_types_text', 'environmental_release', 'environmental_severity', 'evidence_count', 'gps_latitude', 'gps_longitude', 'high_energy_present', 'immediate_actions_taken', 'incident_date', 'incident_time', 'incident_types', 'incident_types_text', 'injured_body_parts', 'injured_person_company', 'injured_person_name', 'injured_person_position', 'injured_person_work_phone', 'injury_nature', 'injury_occurred', 'investigation_deadline', 'investigation_deadline_reason', 'investigation_type', 'is_pse', 'is_sif', 'is_sif_p', 'jsa_permit_prepared', 'lessons_learned_initial', 'location_name', 'mentor_name', 'operation_type', 'other_vehicle_involved', 'physician_phone', 'potential_safety_severity', 'property_damage', 'property_damage_cost', 'property_damage_description', 'ps_tier', 'pse_type', 'psif_classification', 'release_location_type', 'release_material', 'release_volume', 'release_volume_unit', 'reported_by_email', 'reported_by_name', 'reported_by_phone', 'risk_ranking', 'rotation_length', 'safety_severity', 'safety_severity_description', 'scene_preservation_level', 'short_service_employee', 'specific_location_onsite', 'spill_contained', 'status', 'stky_event', 'supervisor_contact', 'supervisor_name', 'supervisor_title', 'suspected_root_causes', 'temperature', 'timeline_developed', 'timeline_event_count', 'treating_physician', 'treatment_provided', 'updated_at', 'vehicle_damage_description', 'vehicle_id', 'vehicle_incident', 'vehicle_type', 'wind_speed', 'witness_count', 'witness_statement_summary']
   }
 };
 
@@ -109,17 +113,20 @@ export async function POST(req) {
 
     // 3) Apply
     let updErr = null;
+    let updatedRow = null;
     if (cfg.mode === 'upsert' && mode === 'upsert') {
       clean[cfg.idCol] = id; // pin to the code-validated record
       ({ error: updErr } = await admin.from(table).upsert([clean], { onConflict: cfg.onConflict }));
     } else {
-      ({ error: updErr } = await admin.from(table).update(clean).eq(cfg.idCol, id));
+      const upd = await admin.from(table).update(clean).eq(cfg.idCol, id).select().maybeSingle();
+      updErr = upd.error;
+      updatedRow = upd.data || null;
     }
     if (updErr) {
       return Response.json({ error: updErr.message }, { status: 500 });
     }
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, row: updatedRow });
   } catch (e) {
     return Response.json({ error: e?.message || 'Unexpected error.' }, { status: 500 });
   }

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -605,6 +606,16 @@ export default function IncidentReportForm() {
   const [createdIncidentUUID, setCreatedIncidentUUID] = useState('');
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftId, setDraftId] = useState(null); // tracks if we're editing an existing draft
+  const [incidentCode, setIncidentCode] = useState(null); // claim ticket for server-validated updates
+
+  // Updates incidents via the code-validated server route when we hold a
+  // ticket (field flow); falls back to a direct authenticated update (staff).
+  async function updIncident(id, patch, codeOverride) {
+    const code = codeOverride || incidentCode;
+    if (code) return await safeCloseout('incidents', id, code, patch);
+    const { data, error } = await supabase.from('incidents').update(patch).eq('id', id).select().maybeSingle();
+    return { row: data, error };
+  }
 
   // ============================================================================
   // EFFECTS - Auto-calculate classifications
@@ -719,8 +730,10 @@ export default function IncidentReportForm() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const editId = params.get('draft');
+    const editKey = (params.get('key') || '').toUpperCase();
     if (editId) {
-      loadDraft(editId);
+      if (editKey) setIncidentCode(editKey);
+      loadDraft(editId, editKey);
     }
     // Auto-detect GPS location
     if (navigator.geolocation) {
@@ -737,16 +750,22 @@ export default function IncidentReportForm() {
     }
   }, []);
 
-  async function loadDraft(incidentUUID) {
+  async function loadDraft(incidentUUID, key) {
     try {
-      const { data, error } = await supabase
-        .from('incidents')
-        .select('*')
-        .eq('id', incidentUUID)
-        .eq('status', 'Draft')
-        .single();
-
-      if (error || !data) return;
+      let data = null;
+      if (key) {
+        try { data = (await fieldData('incident_draft', { id: incidentUUID, key })).row; } catch (_) {}
+      }
+      if (!data) {
+        const r = await supabase
+          .from('incidents')
+          .select('*')
+          .eq('id', incidentUUID)
+          .eq('status', 'Draft')
+          .single();
+        data = r.data;
+      }
+      if (!data) return;
 
       setDraftId(data.id);
       setFormData(prev => ({
@@ -917,12 +936,10 @@ export default function IncidentReportForm() {
 
       if (draftId) {
         // Update existing draft
-        const { error } = await supabase
-          .from('incidents')
-          .update(draftData)
-          .eq('id', draftId);
+        const { error } = await updIncident(draftId, draftData);
         if (error) throw error;
-        alert('✅ Draft updated! You can close this page and finish later from the Investigation Dashboard.');
+        alert('✅ Draft updated! You can close this page and finish later from the Investigation Dashboard.'
+          + (incidentCode ? '\n\nResume link (save it):\n' + window.location.origin + '/incident-report?draft=' + draftId + '&key=' + incidentCode : ''));
       } else {
         // Create new draft
         const { data, error } = await supabase
@@ -932,6 +949,9 @@ export default function IncidentReportForm() {
           .single();
         if (error) throw error;
         setDraftId(data.id);
+        const newCode = makeRecordKey();
+        await registerRecordKey('incidents', data.id, newCode);
+        setIncidentCode(newCode);
         // Upload any photos already selected
         if (photos.length > 0 && data) {
           for (let i = 0; i < photos.length; i++) {
@@ -950,9 +970,9 @@ export default function IncidentReportForm() {
               });
             }
           }
-          await supabase.from('incidents').update({ evidence_count: photos.length }).eq('id', data.id);
+          await updIncident(data.id, { evidence_count: photos.length }, newCode);
         }
-        alert('✅ Draft saved! ID: ' + data.incident_id + '\n\nYou can close this page and finish later from the Investigation Dashboard.');
+        alert('✅ Draft saved! ID: ' + data.incident_id + '\n\nResume link (save it):\n' + window.location.origin + '/incident-report?draft=' + data.id + '&key=' + newCode + '\n\nYou can also finish later from the Investigation Dashboard.');
       }
     } catch (e) {
       console.error('Save draft error:', e);
@@ -1065,14 +1085,9 @@ export default function IncidentReportForm() {
       let data;
       if (draftId) {
         // Update existing draft to Submitted
-        const { data: updated, error } = await supabase
-          .from('incidents')
-          .update(incidentData)
-          .eq('id', draftId)
-          .select()
-          .single();
+        const { row: updated, error } = await updIncident(draftId, incidentData);
         if (error) throw error;
-        data = updated;
+        data = updated || { id: draftId, incident_id: 'INC' };
       } else {
         // New insert
         const { data: inserted, error } = await supabase
@@ -1082,6 +1097,10 @@ export default function IncidentReportForm() {
           .single();
         if (error) throw error;
         data = inserted;
+        const freshCode = makeRecordKey();
+        await registerRecordKey('incidents', data.id, freshCode);
+        setIncidentCode(freshCode);
+        data._code = freshCode;
       }
 
       // Upload photos if any
@@ -1120,10 +1139,7 @@ export default function IncidentReportForm() {
         }
 
         // Update evidence count
-        await supabase
-          .from('incidents')
-          .update({ evidence_count: photos.length + jsaFiles.length })
-          .eq('id', data.id);
+        await updIncident(data.id, { evidence_count: photos.length + jsaFiles.length }, data._code);
       }
 
       // Upload JSA/Permit files if any
@@ -1160,10 +1176,7 @@ export default function IncidentReportForm() {
         }
 
         // Update evidence count with JSA files
-        await supabase
-          .from('incidents')
-          .update({ evidence_count: photos.length + jsaFiles.length })
-          .eq('id', data.id);
+        await updIncident(data.id, { evidence_count: photos.length + jsaFiles.length }, data._code);
       }
 
       // Log activity
@@ -1193,7 +1206,7 @@ export default function IncidentReportForm() {
           critical: isSIF || isSIFP,
           created_by_email: formData.reported_by_email
         });
-        await supabase.from('incidents').update({ timeline_event_count: 1, timeline_developed: true }).eq('id', data.id);
+        await updIncident(data.id, { timeline_event_count: 1, timeline_developed: true }, data._code);
       } catch (tlErr) { console.warn('Timeline auto-create:', tlErr); }
 
       // Auto-create initial witness statement if witness info was provided
@@ -1208,7 +1221,7 @@ export default function IncidentReportForm() {
             statement_summary: formData.witness_statement_summary,
             created_by_email: formData.reported_by_email
           });
-          await supabase.from('incidents').update({ witness_count: 1 }).eq('id', data.id);
+          await updIncident(data.id, { witness_count: 1 }, data._code);
         } catch (wErr) { console.warn('Witness auto-create:', wErr); }
       }
 

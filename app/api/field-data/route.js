@@ -142,6 +142,29 @@ export async function GET(request) {
       return NextResponse.json({ rows: data || [] });
     }
 
+    if (view === 'incident_draft') {
+      const id = searchParams.get('id');
+      const key = (searchParams.get('key') || '').trim().toUpperCase();
+      if (!id || !key) return NextResponse.json({ error: 'id and key required' }, { status: 400 });
+      const { data: rk, error: keyErr } = await admin.from('record_keys')
+        .select('code')
+        .eq('table_name', 'incidents')
+        .eq('record_id', String(id))
+        .maybeSingle();
+      if (keyErr) throw keyErr;
+      if (!rk || rk.code !== key) {
+        return NextResponse.json({ error: 'Invalid key for this draft' }, { status: 403 });
+      }
+      const { data, error } = await admin.from('incidents')
+        .select('*')
+        .eq('id', id)
+        .eq('status', 'Draft')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+      return NextResponse.json({ row: data });
+    }
+
     return NextResponse.json({ error: 'Unknown view' }, { status: 400 });
   } catch (err) {
     console.error('[field-data]', view, err);
