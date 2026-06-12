@@ -1,11 +1,20 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://iypezirwdlqpptjpeeyf.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4'
-);
+// Singleton + lock-free auth client. Portal pages each create their own
+// Supabase client (legacy pattern), and they all brawl over the shared
+// browser auth lock — the gate refuses to join that fight: one instance,
+// no lock participation, so its session checks can't be "stolen."
+function makeAuthClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://iypezirwdlqpptjpeeyf.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4',
+    { auth: { lock: async (_name, _timeout, fn) => await fn() } }
+  );
+}
+const supabase = (typeof globalThis !== 'undefined' && globalThis.__slpAuthClient)
+  || (globalThis.__slpAuthClient = makeAuthClient());
 
 /**
  * AdminGate — wraps management pages with magic-link authentication.
@@ -24,26 +33,65 @@ export default function AdminGate({ children }) {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // Guards: never run two checks at once, never re-check needlessly,
+  // and NEVER destroy a session from inside the gate.
+  const checking = useRef(false);
+  const statusRef = useRef('loading');
+  const setStatusSafe = (s) => { statusRef.current = s; setStatus(s); };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => evaluate(session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => evaluate(session));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') { setStatusSafe('signedout'); return; }
+      // Already open and still holding a session? Nothing to do.
+      if (statusRef.current === 'ready' && session) return;
+      evaluate(session);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   async function evaluate(session) {
-    if (!session?.user?.email) { setStatus('signedout'); return; }
+    if (!session?.user?.email) { setStatusSafe('signedout'); return; }
+    if (checking.current) return; // a check is already in flight
+    checking.current = true;
     setUserEmail(session.user.email);
+
+    const check = () => supabase
+      .from('portal_staff')
+      .select('email')
+      .eq('email', session.user.email.toLowerCase())
+      .maybeSingle();
+
     try {
-      const { data, error } = await supabase
-        .from('portal_staff')
-        .select('email')
-        .eq('email', session.user.email.toLowerCase())
-        .maybeSingle();
-      if (error) throw error;
-      setStatus(data ? 'ready' : 'unauthorized');
+      let { data, error } = await check();
+      if (error && /lock/i.test(error.message || '')) {
+        // Another client stole the auth lock mid-check — wait out the brawl
+        // and try once more.
+        await new Promise(r => setTimeout(r, 400));
+        ({ data, error } = await check());
+      }
+      if (error) {
+        // Possibly a stale token: refresh once and retry the check.
+        const { data: refreshed } = await supabase.auth.refreshSession().catch(() => ({ data: null }));
+        if (refreshed?.session) {
+          ({ data, error } = await check());
+        }
+      }
+      if (error) {
+        // Could not VERIFY membership (network/session hiccup). Ask for a
+        // fresh sign-in — but do NOT touch the stored session; if it's
+        // healthy, the next page load will sail through.
+        console.error('Staff check could not complete:', error.message);
+        setStatusSafe('signedout');
+        return;
+      }
+      // Definitive answer from the database:
+      setStatusSafe(data ? 'ready' : 'unauthorized');
     } catch (e) {
       console.error('Staff check failed:', e.message);
-      setStatus('unauthorized');
+      setStatusSafe('signedout');
+    } finally {
+      checking.current = false;
     }
   }
 
