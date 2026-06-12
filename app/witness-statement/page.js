@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { safeInsert } from '@/components/SafeSubmit';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -34,7 +35,7 @@ export default function WitnessStatement(){
   const handleSubmit=async(e)=>{e.preventDefault();setIsSubmitting(true);
     const newStatementId=generateStatementId();
     try{
-      const{error}=await supabase.from('witness_statements').insert([{
+      const { error } = await safeInsert('witness_statements', [{
         statement_id:newStatementId,
         report_type:formData.reportType,
         incident_date:formData.incidentDate || null,
