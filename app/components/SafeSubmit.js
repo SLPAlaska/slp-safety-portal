@@ -280,4 +280,58 @@ export async function safeInsert(table, rows, formType) {
   return { error: null };
 }
 
+// ── Close-out claim tickets (Step 2B) ───────────────────────────────────────
+
+const KEY_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L
+
+/** Generate a short human-friendly close-out code. */
+export function makeRecordKey(len = 6) {
+  let out = '';
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const buf = new Uint32Array(len);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < len; i++) out += KEY_ALPHABET[buf[i] % KEY_ALPHABET.length];
+  } else {
+    for (let i = 0; i < len; i++) out += KEY_ALPHABET[Math.floor(Math.random() * KEY_ALPHABET.length)];
+  }
+  return out;
+}
+
+/** Deposit the code in the record_keys vault. Call right after a successful insert. */
+export async function registerRecordKey(table, recordId, code) {
+  try {
+    const { error } = await supabase.from('record_keys').insert([{
+      table_name: table, record_id: String(recordId), code
+    }]);
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    console.error('Record key registration failed:', e.message);
+    alertAdmin({
+      form_type: table,
+      alert_type: 'record_key_registration_failed',
+      error_message: e.message,
+      target_table: 'record_keys',
+      details: `record_id=${recordId} — close-out will require staff assistance`
+    });
+    return false;
+  }
+}
+
+/** Server-validated close-out. Returns { error } like a raw supabase call. */
+export async function safeCloseout(table, id, code, updates) {
+  try {
+    const res = await fetch('/api/closeout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table, id, code, updates })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: new Error(j.error || `Close-out failed (${res.status})`) };
+    return { error: null };
+  } catch (e) {
+    return { error: e };
+  }
+}
+
 export default safeSubmit;
