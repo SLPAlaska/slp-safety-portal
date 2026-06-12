@@ -15,18 +15,42 @@ import { createClient } from '@supabase/supabase-js';
 const ALLOW = {
   hot_work_permits: {
     idCol: 'permit_number',
-    cols: [
-      'permit_status', 'job_completed', 'work_area_secured', 'systems_returned',
-      'safety_defeated_log', 'fire_watch_completed', 'time_permit_closed',
-      'close_out_worker', 'close_out_operator', 'closed_at'
-    ]
+    cols: ['permit_status', 'job_completed', 'work_area_secured', 'systems_returned', 'safety_defeated_log', 'fire_watch_completed', 'time_permit_closed', 'close_out_worker', 'close_out_operator', 'closed_at']
+  },
+  cse_permits: {
+    idCol: 'permit_number',
+    cols: ['all_entrants_exited', 'space_secured', 'equipment_retrieved', 'ventilation_secured', 'time_permit_closed', 'close_out_entry_supervisor', 'close_out_attendant', 'closed_at']
+  },
+  eew_permits: {
+    idCol: 'permit_number',
+    cols: ['work_completed', 'area_secured', 'equipment_restored', 'barricades_removed', 'time_permit_closed', 'close_out_worker', 'close_out_supervisor', 'closed_at']
+  },
+  ei_permits: {
+    idCol: 'permit_number',
+    cols: ['all_workers_signed_out', 'personal_locks_removed', 'device_locks_removed', 'tags_removed_matched', 'equipment_clear', 'safe_to_reenergize', 'time_permit_closed', 'close_out_by', 'closed_at']
+  },
+  ei_worker_log: {
+    idCol: 'id',
+    cols: ['sign_out_time'],
+    codeTable: 'ei_permits'
+  },
+  excavation_permits: {
+    idCol: 'permit_number',
+    cols: ['job_completed', 'excavation_backfilled', 'area_restored', 'utilities_verified', 'time_permit_closed', 'close_out_worker', 'close_out_supervisor', 'closed_at']
+  },
+  opening_blinding_permits: {
+    idCol: 'permit_number',
+    cols: ['line_restored', 'blinds_removed', 'system_pressure_tested', 'leak_check_performed', 'time_permit_closed', 'close_out_operator', 'close_out_supervisor', 'closed_at']
+  },
+  unit_work_permits: {
+    idCol: 'permit_number',
+    cols: ['job_completed', 'work_area_secured', 'bypassed_systems_restored', 'dsd_log_updated', 'time_permit_closed', 'close_out_by', 'area_operator_close_out', 'closed_at']
   }
-  // Additional permit/camp/THA tables are added here as each form is migrated.
 };
 
 export async function POST(req) {
   try {
-    const { table, id, code, updates } = await req.json();
+    const { table, id, code, updates, codeId } = await req.json();
 
     const cfg = ALLOW[table];
     if (!cfg) {
@@ -45,8 +69,8 @@ export async function POST(req) {
     const { data: key, error: keyErr } = await admin
       .from('record_keys')
       .select('code')
-      .eq('table_name', table)
-      .eq('record_id', String(id))
+      .eq('table_name', cfg.codeTable || table)
+      .eq('record_id', String(codeId || id))
       .maybeSingle();
 
     if (keyErr) {
