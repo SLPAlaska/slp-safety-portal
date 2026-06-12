@@ -62,9 +62,15 @@ export default function AdminGate({ children }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
-    setStatus('signedout');
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (e) {
+      console.warn('Sign-out error (clearing local session anyway):', e?.message);
+    }
+    setUserEmail('');
+    setEmail('');
     setSent(false);
+    setStatus('signedout');
   }
 
   if (status === 'ready') return children;
