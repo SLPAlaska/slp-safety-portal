@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { useState, useRef } from 'react'
+import MultiPhotoUpload from '@/components/MultiPhotoUpload'
+import { safeSubmit } from '@/components/SafeSubmit'
 import AddToSailLog from '@/components/AddToSailLog'
 
 const COMPANIES = [
@@ -55,6 +56,7 @@ export default function BBSObservationForm() {
   })
   
   const [submitting, setSubmitting] = useState(false)
+  const photoRef = useRef()
   const [submitted, setSubmitted] = useState(false)
   const [submittedData, setSubmittedData] = useState(null)
 
@@ -95,25 +97,34 @@ export default function BBSObservationForm() {
     setSubmitting(true)
 
     try {
-      const { error } = await supabase.from('bbs_observations').insert([{
-        client_company: formData.clientCompany,
-        submitter_name: formData.submitterName,
-        observation_date: formData.date || null,
-        location: formData.location,
-        project: formData.project || null,
-        observation_type: formData.observationType,
-        observation_category: formData.observationCategory,
-        job_stop_required: formData.jobStopRequired === 'Yes',
-        near_miss: formData.nearMiss === 'Yes',
-        potential_equipment_damage: formData.potentialEquipmentDamage === 'Yes',
-        stky_event: formData.stkyEvent === 'Yes',
-        what_did_you_see: formData.whatDidYouSee,
-        what_did_you_talk_about: formData.whatDidYouTalkAbout || null,
-        action_taken: formData.actionTaken || null,
-        observed_agree: formData.observedAgree
-      }])
+      const result = await safeSubmit({
+        table: 'bbs_observations',
+        data: {
+          client_company: formData.clientCompany,
+          submitter_name: formData.submitterName,
+          observation_date: formData.date || null,
+          location: formData.location,
+          project: formData.project || null,
+          observation_type: formData.observationType,
+          observation_category: formData.observationCategory,
+          job_stop_required: formData.jobStopRequired === 'Yes',
+          near_miss: formData.nearMiss === 'Yes',
+          potential_equipment_damage: formData.potentialEquipmentDamage === 'Yes',
+          stky_event: formData.stkyEvent === 'Yes',
+          what_did_you_see: formData.whatDidYouSee,
+          what_did_you_talk_about: formData.whatDidYouTalkAbout || null,
+          action_taken: formData.actionTaken || null,
+          observed_agree: formData.observedAgree
+        },
+        photoRef: photoRef,
+        formType: 'bbs-observation'
+      })
 
-      if (error) throw error
+      if (!result.success) throw new Error(result.error || 'Submission failed. Please try again.')
+      if (result.photoWarning) {
+        console.warn(result.photoWarning)
+        alert(result.photoWarning)
+      }
 
       // Store submitted data for SAIL Log prefill
       setSubmittedData({...formData})
@@ -127,6 +138,7 @@ export default function BBSObservationForm() {
   }
 
   const resetForm = () => {
+    if (photoRef.current) photoRef.current.reset()
     setFormData({
       clientCompany: '',
       submitterName: '',
@@ -702,6 +714,11 @@ export default function BBSObservationForm() {
             </div>
           </div>
           
+          <div className="form-group">
+            <label>Photos (optional)</label>
+            <MultiPhotoUpload ref={photoRef} formType="bbs-observation" />
+          </div>
+
           <button type="submit" className="submit-btn" disabled={submitting}>
             {submitting ? 'Submitting...' : 'Submit Observation'}
           </button>
