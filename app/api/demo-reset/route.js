@@ -56,6 +56,22 @@ export async function POST(request) {
       if (error) throw error;
       removed += (rows || []).length;
     }
+    // LMS demo learners (@demo.local): completions, lms rows, AND their
+    // auth accounts (seed learners @demo-seed.local are never touched)
+    const { data: demoUsers } = await admin
+      .from('lms_users').select('id, auth_user_id').like('email', '%@demo.local');
+    const ids = (demoUsers || []).map(u => u.id);
+    if (ids.length) {
+      const { data: dc } = await admin
+        .from('lms_completions').delete().in('user_id', ids).select('id');
+      removed += (dc || []).length;
+      await admin.from('lms_users').delete().in('id', ids);
+      for (const u of demoUsers) {
+        if (u.auth_user_id) {
+          await admin.auth.admin.deleteUser(u.auth_user_id).catch(() => {});
+        }
+      }
+    }
     return NextResponse.json({ ok: true, removed });
   } catch (err) {
     console.error('[demo-reset]', err);

@@ -133,6 +133,19 @@ export default function DemoPage() {
     finally { setBusy(false); }
   }
 
+  async function logTraining(score) {
+    // Writes a REAL LMS completion for the demo learner so the dashboard's
+    // Training panel moves. Fire-and-forget; certificate shows regardless.
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await fetch('/api/demo-training', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (session?.access_token || '') },
+        body: JSON.stringify({ name: name.trim() || 'Demo Learner', score })
+      });
+    } catch (e) { console.error('demo-training:', e); }
+  }
+
   function calcDrops() {
     const w = parseFloat(f.weight), h = parseFloat(f.height), lk = parseInt(f.likelihood || '0');
     if (!w || !h) { alert('Enter object weight and drop height.'); return; }
@@ -479,7 +492,14 @@ export default function DemoPage() {
           <p style={{ ...S.sub, margin: 0, fontWeight: 700, color: '#0e7490' }}>QUIZ — {qIdx + 1} of {LESSON.quiz.length}</p>
           <h1 style={{ ...S.h1, fontSize: '20px' }}>{q.q}</h1>
           {q.a.map((opt, i) => (
-            <button key={i} style={{ ...S.big, ...S.ghost, textAlign: 'left' }} onClick={() => setAnswers([...answers, i])}>{opt}</button>
+            <button key={i} style={{ ...S.big, ...S.ghost, textAlign: 'left' }} onClick={() => {
+              const next = [...answers, i];
+              setAnswers(next);
+              if (next.length === LESSON.quiz.length) {
+                const sc = next.filter((a, idx) => a === LESSON.quiz[idx].correct).length;
+                logTraining(sc);
+              }
+            }}>{opt}</button>
           ))}
         </div></div>
       );
