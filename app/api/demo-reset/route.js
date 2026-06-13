@@ -16,7 +16,9 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://iypezirwdl
 // Anything for Demo Energy Co created AFTER this moment is a demo-session
 // submission and gets wiped on reset. The seed script's rows are all dated
 // before it. (Adjust if you ever re-seed.)
-const SEED_CUTOFF = '2026-06-13T02:00:00Z';
+// Seeds are all dated 2+ days before seeding day; anything created on or
+// after 2026-06-12 is demo-session traffic.
+const SEED_CUTOFF = '2026-06-12T00:00:00Z';
 
 export async function POST(request) {
   const admin = createClient(SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -33,16 +35,28 @@ export async function POST(request) {
     .maybeSingle();
   if (!staff) return NextResponse.json({ error: 'Staff only' }, { status: 403 });
 
-  // ---- Wipe demo-session submissions ----
+  // ---- Wipe demo-session submissions across all demo forms ----
+  const TARGETS = [
+    { table: 'hazard_id_reports',          companyCol: 'company' },
+    { table: 'bbs_observations',           companyCol: 'client_company' },
+    { table: 'good_catch_near_miss',       companyCol: 'company' },
+    { table: 'stop_take_5',                companyCol: 'company' },
+    { table: 'synthetic_sling_inspections', companyCol: 'company' },
+    { table: 'drops_calculations',         companyCol: 'company' },
+  ];
   try {
-    const { data: removedRows, error } = await admin
-      .from('hazard_id_reports')
-      .delete()
-      .eq('company', 'Demo Energy Co')
-      .gt('created_at', SEED_CUTOFF)
-      .select('id');
-    if (error) throw error;
-    return NextResponse.json({ ok: true, removed: (removedRows || []).length });
+    let removed = 0;
+    for (const t of TARGETS) {
+      const { data: rows, error } = await admin
+        .from(t.table)
+        .delete()
+        .eq(t.companyCol, 'Demo Energy Co')
+        .gt('created_at', SEED_CUTOFF)
+        .select('id');
+      if (error) throw error;
+      removed += (rows || []).length;
+    }
+    return NextResponse.json({ ok: true, removed });
   } catch (err) {
     console.error('[demo-reset]', err);
     return NextResponse.json({ error: err?.message || 'Reset failed' }, { status: 500 });
