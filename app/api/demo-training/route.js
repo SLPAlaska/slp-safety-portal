@@ -82,16 +82,15 @@ export async function POST(request) {
       for (let i = 0; i < SEED_CREW.length; i++) {
         seedLearners.push(await ensureLearner(`demo-crew-${i + 1}@demo-seed.local`, SEED_CREW[i]));
       }
-      const rows = [];
-      for (let i = 0; i < 8; i++) {
-        const daysAgo = 5 + Math.random() * 140;
-        rows.push({
-          user_id: seedLearners[i % 5].id, course_id: course.id,
-          completed_at: new Date(Date.now() - daysAgo * 86400000).toISOString(),
-          grant_note: 'Demo seed'
-        });
-      }
-      await admin.from('lms_completions').insert(rows);
+      // One completion per learner — (user_id, course_id) is UNIQUE.
+      const rows = seedLearners.map((l, i) => ({
+        user_id: l.id, course_id: course.id,
+        completed_at: new Date(Date.now() - (5 + Math.random() * 140) * 86400000).toISOString(),
+        grant_note: 'Demo seed'
+      }));
+      // upsert so re-runs never collide on the unique constraint
+      await admin.from('lms_completions')
+        .upsert(rows, { onConflict: 'user_id,course_id', ignoreDuplicates: true });
     }
 
     // The prospect's learner (@demo.local = reset target)
@@ -100,11 +99,11 @@ export async function POST(request) {
 
     const { error: compErr } = await admin
       .from('lms_completions')
-      .insert({
+      .upsert({
         user_id: learner.id, course_id: course.id,
         completed_at: new Date().toISOString(),
         grant_note: `Live demo — scored ${score ?? '?'}/3`
-      });
+      }, { onConflict: 'user_id,course_id' });
     if (compErr) throw compErr;
 
     return NextResponse.json({ ok: true });
