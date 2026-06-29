@@ -3,6 +3,12 @@ export const dynamic = 'force-dynamic'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+function isHepBCourse(course) {
+  const ref = (course?.regulation_ref || '')
+  const title = (course?.title || '')
+  return ref.includes('1910.1030') || /bloodborne/i.test(title)
+}
+
 export async function GET(request) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -50,6 +56,36 @@ function generateCertNumber() {
   let suffix = ''
   for (let i = 0; i < 6; i++) suffix += chars[Math.floor(Math.random() * chars.length)]
   return 'SLP-' + year + '-' + suffix
+}
+
+async function issueCertificate(supabaseAdmin, { lmsUser, course, course_id, attempt, score }) {
+  const certNum = generateCertNumber()
+  const expiresAt = new Date()
+  expiresAt.setFullYear(expiresAt.getFullYear() + 3)
+
+  const completionText = course.completion_text ||
+    'Has successfully completed the ' + course.title + ' training course' +
+    (course.regulation_ref ? ' in accordance with ' + course.regulation_ref : '') + '.'
+
+  const { data: cert } = await supabaseAdmin
+    .from('lms_certificates')
+    .insert({
+      cert_number: certNum,
+      user_id: lmsUser.id,
+      course_id,
+      quiz_attempt_id: attempt.id,
+      full_name: lmsUser.full_name,
+      company_name: lmsUser.lms_companies?.name || null,
+      job_title: lmsUser.job_title || null,
+      course_title: course.title,
+      regulation_ref: course.regulation_ref || null,
+      completion_text: completionText,
+      score_achieved: score,
+      expires_at: expiresAt.toISOString(),
+    })
+    .select().single()
+
+  return cert
 }
 
 export async function POST(request) {
@@ -110,8 +146,23 @@ export async function POST(request) {
     .select().single()
 
   let certNumber = null
+  let requiresHepbForm = false
 
   if (passed) {
+    const hepbGated = isHepBCourse(course)
+
+    // For Hep B course, the signed acceptance/declination must exist before any cert is issued.
+    let hepbOnFile = true
+    if (hepbGated) {
+      const { data: hepbRecord } = await supabaseAdmin
+        .from('lms_hepb_declinations')
+        .select('id')
+        .eq('user_id', lmsUser.id)
+        .eq('course_id', course_id)
+        .maybeSingle()
+      hepbOnFile = !!hepbRecord
+    }
+
     const { data: existing } = await supabaseAdmin
       .from('lms_completions')
       .select('id, certificate_id')
@@ -119,34 +170,12 @@ export async function POST(request) {
       .eq('course_id', course_id)
       .maybeSingle()
 
-    if (!existing) {
-      // Generate certificate
-      const certNum = generateCertNumber()
-      const expiresAt = new Date()
-      expiresAt.setFullYear(expiresAt.getFullYear() + 3)
-
-      const completionText = course.completion_text ||
-        'Has successfully completed the ' + course.title + ' training course' +
-        (course.regulation_ref ? ' in accordance with ' + course.regulation_ref : '') + '.'
-
-      const { data: cert } = await supabaseAdmin
-        .from('lms_certificates')
-        .insert({
-          cert_number: certNum,
-          user_id: lmsUser.id,
-          course_id,
-          quiz_attempt_id: attempt.id,
-          full_name: lmsUser.full_name,
-          company_name: lmsUser.lms_companies?.name || null,
-          job_title: lmsUser.job_title || null,
-          course_title: course.title,
-          regulation_ref: course.regulation_ref || null,
-          completion_text: completionText,
-          score_achieved: score,
-          expires_at: expiresAt.toISOString(),
-        })
-        .select().single()
-
+    if (hepbGated && !hepbOnFile) {
+      // Passed, but cannot issue cert yet -- learner must complete the Hep B form.
+      requiresHepbForm = true
+      certNumber = null
+    } else if (!existing) {
+      const cert = await issueCertificate(supabaseAdmin, { lmsUser, course, course_id, attempt, score })
       if (cert) {
         await supabaseAdmin
           .from('lms_completions')
@@ -154,34 +183,9 @@ export async function POST(request) {
         certNumber = cert.cert_number
       }
     } else {
-      // Return existing cert number
       certNumber = existing.certificate_id || null
-
-      // If existing completion has no cert, generate one now
       if (!certNumber) {
-        const certNum = generateCertNumber()
-        const expiresAt = new Date()
-        expiresAt.setFullYear(expiresAt.getFullYear() + 3)
-        const completionText = course.completion_text ||
-          'Has successfully completed the ' + course.title + ' training course' +
-          (course.regulation_ref ? ' in accordance with ' + course.regulation_ref : '') + '.'
-        const { data: cert } = await supabaseAdmin
-          .from('lms_certificates')
-          .insert({
-            cert_number: certNum,
-            user_id: lmsUser.id,
-            course_id,
-            quiz_attempt_id: attempt.id,
-            full_name: lmsUser.full_name,
-            company_name: lmsUser.lms_companies?.name || null,
-            job_title: lmsUser.job_title || null,
-            course_title: course.title,
-            regulation_ref: course.regulation_ref || null,
-            completion_text: completionText,
-            score_achieved: score,
-            expires_at: expiresAt.toISOString(),
-          })
-          .select().single()
+        const cert = await issueCertificate(supabaseAdmin, { lmsUser, course, course_id, attempt, score })
         if (cert) {
           await supabaseAdmin
             .from('lms_completions')
@@ -196,6 +200,7 @@ export async function POST(request) {
   return NextResponse.json({
     score, passed, correct, total,
     certificate_id: certNumber,
+    requires_hepb_form: requiresHepbForm,
     attempt_id: attempt.id,
   })
 }
