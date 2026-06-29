@@ -14,6 +14,12 @@ const DECLINATION_TEXT =
   'other potentially infectious materials and I want to be vaccinated with hepatitis B ' +
   'vaccine, I can receive the vaccination series at no charge to me.'
 
+// Per-company notification recipients. Add other companies here when ready.
+// Keyed by exact lms_companies.name. Companies not listed get NO email.
+const COMPANY_NOTIFY = {
+  'MagTec Alaska': ['maryp@magtecalaska.com', 'hr@magtecalaska.com'],
+}
+
 function generateCertNumber() {
   const year = new Date().getFullYear()
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -49,6 +55,66 @@ async function issueCertificate(supabaseAdmin, { lmsUser, course, course_id, sco
     .select().single()
 
   return cert
+}
+
+// Fire-and-logged notification. Never throws -- a mail failure must not block the cert.
+async function sendHepBNotification({ companyName, employeeName, jobTitle, decision, signedDate, declinationText }) {
+  try {
+    const recipients = COMPANY_NOTIFY[companyName]
+    if (!recipients || recipients.length === 0) return // non-MagTec: no email
+
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) { console.error('HepB notify: RESEND_API_KEY missing'); return }
+
+    const decisionLabel = decision === 'accept' ? 'Acceptance' : 'Declination'
+    const subject = 'Hep B Vaccination ' + decisionLabel + ' \u2014 ' + employeeName
+
+    let bodyRows =
+      '<tr><td style="padding:6px 12px;font-weight:bold;">Employee</td><td style="padding:6px 12px;">' + employeeName + '</td></tr>' +
+      '<tr><td style="padding:6px 12px;font-weight:bold;">Company</td><td style="padding:6px 12px;">' + (companyName || '') + '</td></tr>' +
+      '<tr><td style="padding:6px 12px;font-weight:bold;">Job Title</td><td style="padding:6px 12px;">' + (jobTitle || '\u2014') + '</td></tr>' +
+      '<tr><td style="padding:6px 12px;font-weight:bold;">Decision</td><td style="padding:6px 12px;">' + (decision === 'accept' ? 'ACCEPTED vaccination' : 'DECLINED vaccination') + '</td></tr>' +
+      '<tr><td style="padding:6px 12px;font-weight:bold;">Signed Date</td><td style="padding:6px 12px;">' + signedDate + '</td></tr>'
+
+    let extra = ''
+    if (decision === 'accept') {
+      extra = '<p style="margin:16px 0;padding:12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;font-size:13px;color:#5d4037;">' +
+        'This employee has <strong>elected to receive</strong> the hepatitis B vaccination series. ' +
+        'Under 29 CFR 1910.1030(f), the series must be made available at no cost to the employee. ' +
+        'Please arrange the vaccination and record the doses.</p>'
+    } else {
+      extra = '<p style="margin:16px 0 6px;font-weight:bold;font-size:13px;">Signed declination statement (29 CFR 1910.1030 Appendix A):</p>' +
+        '<p style="margin:0;padding:12px;background:#f5f5f5;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;color:#333;line-height:1.6;">' + declinationText + '</p>'
+    }
+
+    const html =
+      '<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e;">' +
+      '<div style="background:#D71919;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0;">' +
+      '<h2 style="margin:0;font-size:18px;">Hepatitis B Vaccination ' + decisionLabel + '</h2>' +
+      '<p style="margin:4px 0 0;font-size:13px;opacity:0.9;">Bloodborne Pathogens Training \u2014 Record on File</p>' +
+      '</div>' +
+      '<div style="border:1px solid #e0e0e0;border-top:none;padding:20px;border-radius:0 0 8px 8px;">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:14px;">' + bodyRows + '</table>' +
+      extra +
+      '<p style="margin:20px 0 0;font-size:11px;color:#999;">AnthroSafe\u2122 Field Driven Safety  \u2022  \u00A9 2026 SLP Alaska, LLC</p>' +
+      '</div></div>'
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'reports@slpalaska.com',
+        to: recipients,
+        subject,
+        html,
+      }),
+    })
+  } catch (err) {
+    console.error('HepB notify failed:', err?.message || err)
+  }
 }
 
 export async function POST(request) {
@@ -115,6 +181,16 @@ export async function POST(request) {
 
   if (signErr)
     return NextResponse.json({ error: 'Could not save form: ' + signErr.message }, { status: 500 })
+
+  // Notify the company (MagTec only, per COMPANY_NOTIFY). Never blocks the cert.
+  await sendHepBNotification({
+    companyName: lmsUser.lms_companies?.name || null,
+    employeeName: lmsUser.full_name,
+    jobTitle: lmsUser.job_title,
+    decision,
+    signedDate: signed_date,
+    declinationText: DECLINATION_TEXT,
+  })
 
   // Now that the form is on file, issue the certificate (or return the existing one).
   let certNumber = null
