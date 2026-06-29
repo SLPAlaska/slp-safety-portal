@@ -58,7 +58,7 @@ function HepBForm({ courseId, token, onComplete }) {
   return (
     <div style={H.wrap}>
       <div style={H.header}>
-        <h2 style={H.title}>Hepatitis B Vaccination \u2014 Required Acknowledgment</h2>
+        <h2 style={H.title}>Hepatitis B Vaccination — Required Acknowledgment</h2>
         <p style={H.subtitle}>
           You passed the quiz. Before your certificate is issued, OSHA 29 CFR 1910.1030
           requires a record of your hepatitis B vaccination decision. This is part of your
@@ -123,13 +123,13 @@ function HepBForm({ courseId, token, onComplete }) {
         onClick={handleSubmit}
         disabled={submitting}
       >
-        {submitting ? 'Submitting\u2026' : 'Sign & Submit \u2014 Issue My Certificate'}
+        {submitting ? 'Submitting…' : 'Sign & Submit — Issue My Certificate'}
       </button>
     </div>
   )
 }
 
-// \u2500\u2500\u2500 QUIZ COMPONENT \u2500\u2500\u2500
+// QUIZ COMPONENT
 function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})
@@ -175,7 +175,7 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
 
   if (questions.length === 0) return (
     <div style={Q.empty}>
-      <div style={{ fontSize: '48px' }}>\u{1F4DD}</div>
+      <div style={{ fontSize: '48px' }}>📝</div>
       <p>No quiz questions have been added to this course yet.</p>
       <p style={{ color: '#999', fontSize: '13px' }}>Contact your administrator.</p>
     </div>
@@ -185,15 +185,15 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
     <div style={Q.wrap}>
       <div style={Q.header}>
         <h2 style={Q.title}>Knowledge Check</h2>
-        <p style={Q.subtitle}>Passing score: {passScore}% \u2014 Answer all questions, then submit.</p>
+        <p style={Q.subtitle}>Passing score: {passScore}% — Answer all questions, then submit.</p>
       </div>
 
       {submitted && result && (
         <div style={{ ...Q.resultBanner, background: result.passed ? '#e8f5e9' : '#fff0f0', borderColor: result.passed ? '#a5d6a7' : '#ffcdd2' }}>
-          <div style={{ fontSize: '32px' }}>{result.passed ? '\u{1F389}' : '\u274C'}</div>
+          <div style={{ fontSize: '32px' }}>{result.passed ? '🎉' : '❌'}</div>
           <div>
             <div style={{ fontWeight: '700', fontSize: '18px', color: result.passed ? '#2e7d32' : '#c62828' }}>
-              {result.passed ? 'Congratulations! You passed!' : 'Not quite \u2014 try again'}
+              {result.passed ? 'Congratulations! You passed!' : 'Not quite — try again'}
             </div>
             <div style={{ color: '#555', fontSize: '14px', marginTop: '4px' }}>
               Score: {result.score}% ({result.correct} of {result.total} correct)
@@ -226,7 +226,7 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
                   style={Q.reviewBtn}
                   onClick={() => onReviewSlide(q.slide_reference)}
                 >
-                  \u{1F4D6} Review Slide {q.slide_reference}
+                  📖 Review Slide {q.slide_reference}
                 </button>
               )}
 
@@ -249,8 +249,8 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
                     >
                       <span style={Q.optKey}>{opt.key}</span>
                       <span>{opt.text}</span>
-                      {correct && <span style={{ marginLeft: 'auto', color: '#2e7d32' }}>\u2713</span>}
-                      {wrong && <span style={{ marginLeft: 'auto', color: '#c62828' }}>\u2717</span>}
+                      {correct && <span style={{ marginLeft: 'auto', color: '#2e7d32' }}>✓</span>}
+                      {wrong && <span style={{ marginLeft: 'auto', color: '#c62828' }}>✗</span>}
                     </button>
                   )
                 })}
@@ -268,7 +268,7 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
           onClick={handleSubmit}
           disabled={submitting}
         >
-          {submitting ? 'Grading\u2026' : `Submit Quiz (${Object.keys(answers).length}/${questions.length} answered)`}
+          {submitting ? 'Grading…' : `Submit Quiz (${Object.keys(answers).length}/${questions.length} answered)`}
         </button>
       )}
 
@@ -281,7 +281,7 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   )
 }
 
-// \u2500\u2500\u2500 MAIN COURSE PLAYER \u2500\u2500\u2500
+// MAIN COURSE PLAYER
 export default function CoursePlayer() {
   const router = useRouter()
   const params = useParams()
@@ -353,25 +353,21 @@ export default function CoursePlayer() {
       setSlides(loadedSlides)
       setLmsUserId(slidesData.lmsUserId)
 
-      // Build progress map
       const progressMap = {}
       ;(slidesData.progress || []).forEach(p => {
         progressMap[p.slide_id] = p
       })
       setProgress(progressMap)
 
-      // Find course info for pass score
       const course = (courseData.courses || []).find(c => c.id === courseId)
       setCourseInfo(course)
 
-      // Check if already passed
       if (course?.status === 'Complete') {
         setPassed(true)
         setQuizMounted(true)
         setCertificateId(course.certificate_id)
       }
 
-      // Resume from last viewed slide
       const lastViewed = slidesData.progress
         ?.sort((a, b) => new Date(b.last_viewed) - new Date(a.last_viewed))[0]
       if (lastViewed) {
@@ -381,7 +377,6 @@ export default function CoursePlayer() {
 
       setLoading(false)
 
-      // Start session
       const sessionRes = await fetch('/api/lms/learner/session', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -395,13 +390,12 @@ export default function CoursePlayer() {
     load()
   }, [token, courseId, router])
 
-  // End session reliably -- handles tab close, navigation, and unmount
+  // End session reliably
   useEffect(() => {
     function endSession() {
       const sid = sessionIdRef.current
       const tok = tokenRef.current
       if (!sid || !tok) return
-      // Use sendBeacon for tab close -- it survives page unload
       const payload = JSON.stringify({ action: 'end', course_id: courseId, session_id: sid, slides_viewed: slidesViewedRef.current })
       const blob = new Blob([payload], { type: 'application/json' })
       navigator.sendBeacon
@@ -425,7 +419,6 @@ export default function CoursePlayer() {
     }
   }, [courseId])
 
-  // Save slide progress
   const saveProgress = useCallback(async (slideId, timeSpent) => {
     if (!token || !lmsUserId) return
     await fetch('/api/lms/learner/progress', {
@@ -441,7 +434,6 @@ export default function CoursePlayer() {
     setProgress(prev => ({ ...prev, [slideId]: { ...prev[slideId], completed: true } }))
   }, [token, lmsUserId, courseId])
 
-  // Narrate current slide -- use ElevenLabs MP3 if available, fallback to Web Speech
   const narrateSlide = useCallback((slide, rate) => {
     window.speechSynthesis?.cancel()
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
@@ -459,7 +451,6 @@ export default function CoursePlayer() {
 
     const audioUrl = getAudioUrl(slide.audio_path)
     if (audioUrl) {
-      // Use ElevenLabs MP3
       const audio = new Audio(audioUrl)
       audioRef.current = audio
       audio.onended = () => {
@@ -478,7 +469,6 @@ export default function CoursePlayer() {
         setCanAdvance(true)
       })
     } else if (slide.speaker_notes) {
-      // Fallback to Web Speech API
       const utterance = new SpeechSynthesisUtterance(slide.speaker_notes)
       utterance.rate = rate || 1
       utterance.onend = () => {
@@ -498,7 +488,6 @@ export default function CoursePlayer() {
     }
   }, [])
 
-  // When slide changes -- reset state, user must click Play or Next to trigger narration
   useEffect(() => {
     if (loading || slides.length === 0 || showQuiz) return
     window.speechSynthesis?.cancel()
@@ -523,7 +512,6 @@ export default function CoursePlayer() {
     }
   }, [currentIndex, loading, slides, showQuiz, speechRate])
 
-  // When speech rate changes mid-narration
   function handleRateChange(newRate) {
     setSpeechRate(newRate)
     const slide = slides[currentIndex]
@@ -547,7 +535,6 @@ export default function CoursePlayer() {
     if (currentIndex < slides.length - 1) {
       const nextIdx = currentIndex + 1
       setCurrentIndex(nextIdx)
-      // Narrate next slide directly from user gesture -- satisfies browser autoplay policy
       setTimeout(() => {
         const nextSlide = slides[nextIdx]
         if (nextSlide) narrateSlide(nextSlide, speechRate)
@@ -582,7 +569,6 @@ export default function CoursePlayer() {
 
   function handleQuizPass(result) {
     if (result.requires_hepb_form) {
-      // Passed, but cert is gated behind the Hep B acknowledgment form.
       setNeedsHepBForm(true)
       setPassed(false)
       setCertificateId(null)
@@ -602,7 +588,7 @@ export default function CoursePlayer() {
   if (loading) return (
     <div style={P.loadPage}>
       <div style={P.spinner} />
-      <p style={{ color: '#fff', marginTop: '16px' }}>Loading course\u2026</p>
+      <p style={{ color: '#fff', marginTop: '16px' }}>Loading course…</p>
     </div>
   )
 
@@ -611,9 +597,8 @@ export default function CoursePlayer() {
 
   return (
     <div style={P.page}>
-      {/* Top Bar */}
       <div style={P.topBar}>
-        <button style={P.backBtn} onClick={() => router.push('/lms/dashboard')}>\u2190 Dashboard</button>
+        <button style={P.backBtn} onClick={() => router.push('/lms/dashboard')}>← Dashboard</button>
         <div style={P.topCenter}>
           <span style={P.slideCounter}>
             {showQuiz ? 'Knowledge Check' : `Slide ${currentIndex + 1} of ${slides.length}`}
@@ -623,7 +608,6 @@ export default function CoursePlayer() {
           </div>
         </div>
         <div style={P.topRight}>
-          {/* Speech rate */}
           {!showQuiz && (
             <select
               value={speechRate}
@@ -638,14 +622,13 @@ export default function CoursePlayer() {
           )}
           {!showQuiz && currentSlide?.speaker_notes && (
             <button style={P.iconBtn} onClick={() => setShowTranscript(t => !t)} title="Toggle transcript">
-              \u{1F4C4}
+              📄
             </button>
           )}
         </div>
       </div>
 
       <div style={P.body}>
-        {/* Slide Thumbnail Strip */}
         <div style={P.thumbStrip}>
           {slides.map((slide, idx) => {
             const isViewed = progress[slide.id]?.completed
@@ -664,7 +647,7 @@ export default function CoursePlayer() {
                   ? <img src={slide.image_url} alt={`Slide ${idx + 1}`} style={P.thumbImg} />
                   : <div style={P.thumbPlaceholder}>{idx + 1}</div>
                 }
-                {isViewed && <div style={P.thumbCheck}>\u2713</div>}
+                {isViewed && <div style={P.thumbCheck}>✓</div>}
                 <div style={P.thumbNum}>{idx + 1}</div>
               </div>
             )
@@ -678,30 +661,28 @@ export default function CoursePlayer() {
             }}
           >
             <div style={{ fontSize: '20px', textAlign: 'center', paddingTop: '12px' }}>
-              {passed ? '\u2705' : '\u{1F4DD}'}
+              {passed ? '✅' : '📝'}
             </div>
             <div style={P.thumbNum}>Quiz</div>
           </div>
         </div>
 
-        {/* Main Content */}
         <div style={P.mainArea}>
-          {/* Quiz stays mounted once reached, so reviewing a slide doesn't reset answers */}
           {quizMounted && (
             <div style={{ ...P.quizWrap, display: showQuiz ? 'block' : 'none' }}>
               {passed ? (
                 <div style={P.passCard}>
-                  <div style={{ fontSize: '64px', marginBottom: '16px' }}>\u{1F393}</div>
+                  <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎓</div>
                   <h2 style={{ color: '#2e7d32', fontSize: '24px', margin: '0 0 8px' }}>Course Complete!</h2>
                   <p style={{ color: '#555', marginBottom: '24px' }}>You have successfully completed this course.</p>
                   {certificateId && (
                     <button style={P.certBtn} onClick={() => router.push(`/lms/certificate/${certificateId}`)}>
-                      \u{1F393} Download Certificate
+                      🎓 Download Certificate
                     </button>
                   )}
                   <button style={{ ...P.certBtn, background: '#f5f5f5', color: '#333', marginTop: '12px' }}
                     onClick={() => router.push('/lms/dashboard')}>
-                    \u2190 Back to Dashboard
+                    ← Back to Dashboard
                   </button>
                 </div>
               ) : needsHepBForm ? (
@@ -724,7 +705,6 @@ export default function CoursePlayer() {
 
           {!showQuiz && (
             <div style={P.slideArea}>
-              {/* Slide Image */}
               <div style={P.slideFrame} onContextMenu={e => e.preventDefault()}>
                 {currentSlide?.image_url ? (
                   <img
@@ -735,20 +715,18 @@ export default function CoursePlayer() {
                   />
                 ) : (
                   <div style={P.slideNoImage}>
-                    <div style={{ fontSize: '48px' }}>\u{1F4C4}</div>
+                    <div style={{ fontSize: '48px' }}>📄</div>
                     <p>Slide {currentIndex + 1}</p>
                   </div>
                 )}
 
-                {/* Narration indicator */}
                 {narrating && (
                   <div style={P.narrationBadge}>
-                    \u{1F50A} Playing narration\u2026
+                    🔊 Playing narration…
                   </div>
                 )}
               </div>
 
-              {/* Transcript */}
               {showTranscript && currentSlide?.speaker_notes && (
                 <div style={P.transcript}>
                   <strong style={{ fontSize: '12px', color: '#bbb', textTransform: 'uppercase' }}>Transcript</strong>
@@ -758,7 +736,6 @@ export default function CoursePlayer() {
                 </div>
               )}
 
-              {/* Controls */}
               <div style={P.controls}>
                 <button
                   style={{ ...P.navBtn, opacity: currentIndex === 0 ? 0.4 : 1 }}
@@ -815,7 +792,6 @@ export default function CoursePlayer() {
   )
 }
 
-// Hep B form styles
 const H = {
   wrap: { maxWidth: '720px', margin: '0 auto', padding: '32px 24px' },
   header: { marginBottom: '24px' },
@@ -836,7 +812,6 @@ const H = {
   submitBtn: { width: '100%', background: '#D71919', color: '#fff', border: 'none', borderRadius: '10px', padding: '15px', fontSize: '15px', fontWeight: '700', cursor: 'pointer' },
 }
 
-// Quiz styles
 const Q = {
   wrap: { maxWidth: '720px', margin: '0 auto', padding: '24px' },
   header: { marginBottom: '24px' },
@@ -860,7 +835,6 @@ const Q = {
   retryBtn: { width: '100%', background: '#e3f2fd', color: '#1565c0', border: 'none', borderRadius: '10px', padding: '14px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '12px' },
 }
 
-// Player styles
 const P = {
   page: { display: 'flex', flexDirection: 'column', height: '100vh', background: '#1a1a2e', fontFamily: 'Arial, Helvetica, sans-serif', overflow: 'hidden' },
   loadPage: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#1a1a2e' },
