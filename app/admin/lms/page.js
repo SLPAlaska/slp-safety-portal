@@ -207,6 +207,17 @@ function UsersTab() {
     load()
   }
 
+  async function handleResetPw(user) {
+    if (!confirm(`Reset ${user.full_name}'s password to the default temporary password (1234567!)?\n\nThey will be required to set a new password at next login.`)) return
+    const res = await fetch('/api/lms/admin-reset-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ user_id:user.id })
+    })
+    const d = await res.json().catch(()=>({}))
+    if (res.ok) alert(`Password for ${user.full_name} reset to 1234567!`)
+    else alert('Reset failed: ' + (d.error || 'Unknown error'))
+  }
+
   async function handleDeleteUser(user) {
     if (!confirm(`PERMANENTLY DELETE "${user.full_name}"?\n\nThis will remove the user, all training records, certificates, and completions. This CANNOT be undone.`)) return
     const res = await fetch('/api/lms/delete-user-permanent', {
@@ -264,6 +275,7 @@ function UsersTab() {
               <td style={S.td}><span style={u.active?S.badgeGreen:S.badgeGray}>{u.active?(u.must_change_pw?'Pending Login':'Active'):'Inactive'}</span></td>
               <td style={{...S.td,display:'flex',gap:'5px',flexWrap:'wrap'}} onClick={e=>e.stopPropagation()}>
                 <button style={S.btnSmall} onClick={()=>openEdit(u)}>Edit</button>
+                <button style={S.btnSmall} onClick={()=>handleResetPw(u)}>Reset PW</button>
                 {u.active
                   ? <button style={S.btnSmallRed} onClick={()=>handleDeactivate(u)}>Deactivate</button>
                   : <button style={S.btnSmall} onClick={()=>handleReactivate(u)}>Reactivate</button>
