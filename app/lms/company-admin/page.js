@@ -101,6 +101,8 @@ function EmployeesTab({ token, companyId }) {
   const [resetting, setResetting] = useState(null)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
+  const [actionError, setActionError] = useState('')
   const [form, setForm] = useState({ full_name: '', email: '', username: '', job_title: '', work_location: '', department: '', employee_id: '', hire_date: '' })
 
   // Edit-employee state
@@ -172,21 +174,33 @@ function EmployeesTab({ token, companyId }) {
   }
 
   async function handleDeactivate(user) {
-    if (!confirm(`Deactivate ${user.full_name}? They will lose access immediately.`)) return
-    await fetch('/api/lms/delete-user', {
+    if (!confirm(`Deactivate ${user.full_name}? They will lose access immediately. Their training history is kept.`)) return
+    setActionError('')
+    const res = await fetch('/api/lms/delete-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id, auth_user_id: user.auth_user_id })
+      body: JSON.stringify({ user_id: user.id })
     })
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setActionError(`Could not deactivate ${user.full_name}: ${d.error || 'unknown error'}`)
+      return
+    }
     load()
   }
 
   async function handleReactivate(user) {
-    await fetch('/api/lms/reactivate-user', {
+    setActionError('')
+    const res = await fetch('/api/lms/reactivate-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id, auth_user_id: user.auth_user_id })
+      body: JSON.stringify({ user_id: user.id })
     })
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setActionError(`Could not reactivate ${user.full_name}: ${d.error || 'unknown error'}`)
+      return
+    }
     load()
   }
 
@@ -204,13 +218,17 @@ function EmployeesTab({ token, companyId }) {
   }
 
   const filtered = users.filter(u =>
-    u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    u.email?.toLowerCase().includes(search.toLowerCase()) ||
-    u.job_title?.toLowerCase().includes(search.toLowerCase())
+    (showInactive || u.active) &&
+    (
+      u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.email?.toLowerCase().includes(search.toLowerCase()) ||
+      u.job_title?.toLowerCase().includes(search.toLowerCase())
+    )
   )
 
   const active = users.filter(u => u.active).length
   const pending = users.filter(u => u.active && u.must_change_pw).length
+  const inactiveCount = users.length - active
 
   return (
     <div>
@@ -224,12 +242,19 @@ function EmployeesTab({ token, companyId }) {
         <div style={S.statBox}><div style={{ ...S.statNum, color: '#f57c00' }}>{pending}</div><div style={S.statLbl}>Pending Login</div></div>
         <div style={S.statBox}><div style={{ ...S.statNum, color: '#b71c1c' }}>{users.length - active}</div><div style={S.statLbl}>Inactive</div></div>
       </div>
-      <input
-        style={{ ...S.input, maxWidth: '320px', marginBottom: '16px' }}
-        placeholder="Search employees..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <input
+          style={{ ...S.input, maxWidth: '320px' }}
+          placeholder="Search employees..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: '#444', cursor: 'pointer', userSelect: 'none' }}>
+          <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
+          Show inactive {inactiveCount > 0 ? `(${inactiveCount})` : ''}
+        </label>
+      </div>
+      {actionError && <div style={{ ...S.error, marginBottom: '16px' }}>{actionError}</div>}
       <table style={S.table}>
         <thead><tr>{['Name', 'Email', 'Job Title', 'Location', 'Status', 'Actions'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr></thead>
         <tbody>
