@@ -9,127 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-// Canonical OSHA Appendix A declination language (29 CFR 1910.1030), shown to the learner.
-const HEPB_DECLINATION_TEXT =
-  'I understand that due to my occupational exposure to blood or other potentially ' +
-  'infectious materials I may be at risk of acquiring hepatitis B virus (HBV) infection. ' +
-  'I have been given the opportunity to be vaccinated with hepatitis B vaccine, at no ' +
-  'charge to myself. However, I decline hepatitis B vaccination at this time. I understand ' +
-  'that by declining this vaccine, I continue to be at risk of acquiring hepatitis B, a ' +
-  'serious disease. If in the future I continue to have occupational exposure to blood or ' +
-  'other potentially infectious materials and I want to be vaccinated with hepatitis B ' +
-  'vaccine, I can receive the vaccination series at no charge to me.'
-
-// --- HEP B FORM COMPONENT ---------------------------------------------------
-function HepBForm({ courseId, token, onComplete }) {
-  const [decision, setDecision] = useState('')
-  const [signatureName, setSignatureName] = useState('')
-  const [signedDate, setSignedDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-
-  async function handleSubmit() {
-    if (!decision) { setError('Please choose to accept or decline the hepatitis B vaccination.'); return }
-    if (!signatureName.trim()) { setError('Please type your full name as your signature.'); return }
-    if (!signedDate) { setError('Please provide the date.'); return }
-    setError('')
-    setSubmitting(true)
-    try {
-      const res = await fetch('/api/lms/learner/hepb', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          course_id: courseId,
-          decision,
-          signature_name: signatureName.trim(),
-          signed_date: signedDate,
-        }),
-      })
-      const data = await res.json()
-      setSubmitting(false)
-      if (!res.ok) { setError(data.error || 'Submission failed.'); return }
-      onComplete(data.certificate_id)
-    } catch (e) {
-      setSubmitting(false)
-      setError('Submission failed. Please try again.')
-    }
-  }
-
-  return (
-    <div style={H.wrap}>
-      <div style={H.header}>
-        <h2 style={H.title}>Hepatitis B Vaccination — Required Acknowledgment</h2>
-        <p style={H.subtitle}>
-          You passed the quiz. Before your certificate is issued, OSHA 29 CFR 1910.1030
-          requires a record of your hepatitis B vaccination decision. This is part of your
-          permanent training record.
-        </p>
-      </div>
-
-      <div style={H.choiceBlock}>
-        <label style={{ ...H.choice, borderColor: decision === 'accept' ? '#2e7d32' : '#e0e0e0', background: decision === 'accept' ? '#e8f5e9' : '#fff' }}>
-          <input type="radio" name="hepb" checked={decision === 'accept'} onChange={() => setDecision('accept')} style={H.radio} />
-          <div>
-            <div style={H.choiceLabel}>I elect to RECEIVE the hepatitis B vaccination</div>
-            <div style={H.choiceHelp}>
-              I request the hepatitis B vaccination series, provided at no cost to me. My employer
-              will arrange the vaccination and record the doses.
-            </div>
-          </div>
-        </label>
-
-        <label style={{ ...H.choice, borderColor: decision === 'decline' ? '#c62828' : '#e0e0e0', background: decision === 'decline' ? '#fff0f0' : '#fff' }}>
-          <input type="radio" name="hepb" checked={decision === 'decline'} onChange={() => setDecision('decline')} style={H.radio} />
-          <div>
-            <div style={H.choiceLabel}>I DECLINE the hepatitis B vaccination</div>
-            <div style={H.choiceHelp}>By selecting this, I acknowledge the declination statement below.</div>
-          </div>
-        </label>
-      </div>
-
-      {decision === 'decline' && (
-        <div style={H.declinationBox}>
-          <strong style={H.declinationHead}>Declination Statement (29 CFR 1910.1030, Appendix A)</strong>
-          <p style={H.declinationText}>{HEPB_DECLINATION_TEXT}</p>
-        </div>
-      )}
-
-      <div style={H.sigRow}>
-        <div style={{ flex: 2 }}>
-          <label style={H.fieldLabel}>Type your full name (electronic signature)</label>
-          <input
-            type="text"
-            value={signatureName}
-            onChange={e => setSignatureName(e.target.value)}
-            placeholder="Full legal name"
-            style={H.input}
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label style={H.fieldLabel}>Date</label>
-          <input
-            type="date"
-            value={signedDate}
-            onChange={e => setSignedDate(e.target.value)}
-            style={H.input}
-          />
-        </div>
-      </div>
-
-      {error && <div style={H.error}>{error}</div>}
-
-      <button
-        style={{ ...H.submitBtn, opacity: submitting ? 0.7 : 1 }}
-        onClick={handleSubmit}
-        disabled={submitting}
-      >
-        {submitting ? 'Submitting…' : 'Sign & Submit — Issue My Certificate'}
-      </button>
-    </div>
-  )
-}
-
-// QUIZ COMPONENT
+// ─── QUIZ COMPONENT ────────────────────────────────────────────────────────
 function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState({})
@@ -139,10 +19,23 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  // Access tokens expire after ~1 hour. A long course can outlast the token
+  // captured at page load, which caused "Unauthorized" on submit. Always pull
+  // a fresh token from Supabase (auto-refreshes) right before each request.
+  async function freshToken() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      return session?.access_token || token
+    } catch {
+      return token
+    }
+  }
+
   useEffect(() => {
     async function load() {
+      const tok = await freshToken()
       const res = await fetch(`/api/lms/learner/quiz?course_id=${courseId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${tok}` }
       })
       const data = await res.json()
       setQuestions(data.questions || [])
@@ -158,14 +51,46 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
     }
     setError('')
     setSubmitting(true)
+    const tok = await freshToken()
     const res = await fetch('/api/lms/learner/quiz', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ course_id: courseId, answers }),
     })
-    const data = await res.json()
+    let data = {}
+    try { data = await res.json() } catch { /* non-JSON */ }
     setSubmitting(false)
-    if (!res.ok) { setError(data.error); return }
+    if (!res.ok) {
+      // One automatic retry on auth failure: force a session refresh and resend.
+      if (res.status === 401) {
+        try {
+          const { data: { session } } = await supabase.auth.refreshSession()
+          const retryTok = session?.access_token
+          if (retryTok) {
+            setSubmitting(true)
+            const res2 = await fetch('/api/lms/learner/quiz', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${retryTok}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ course_id: courseId, answers }),
+            })
+            let data2 = {}
+            try { data2 = await res2.json() } catch { /* non-JSON */ }
+            setSubmitting(false)
+            if (res2.ok) {
+              setResult(data2); setSubmitted(true)
+              if (data2.passed) onPass(data2)
+              return
+            }
+            setError(data2.error || 'Your session expired. Please refresh the page and submit again — your answers are still here.')
+            return
+          }
+        } catch { /* fall through to message below */ }
+        setError('Your session expired. Please refresh the page and submit again — your answers are still here.')
+        return
+      }
+      setError(data.error || 'Submit failed. Please try again.')
+      return
+    }
     setResult(data)
     setSubmitted(true)
     if (data.passed) onPass(data)
@@ -281,7 +206,7 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   )
 }
 
-// MAIN COURSE PLAYER
+// ─── MAIN COURSE PLAYER ────────────────────────────────────────────────────
 export default function CoursePlayer() {
   const router = useRouter()
   const params = useParams()
@@ -296,7 +221,6 @@ export default function CoursePlayer() {
   const [quizMounted, setQuizMounted] = useState(false)
   const [passed, setPassed] = useState(false)
   const [certificateId, setCertificateId] = useState(null)
-  const [needsHepBForm, setNeedsHepBForm] = useState(false)
   const [narrating, setNarrating] = useState(false)
   const [canAdvance, setCanAdvance] = useState(false)
   const [skipVisible, setSkipVisible] = useState(false)
@@ -353,21 +277,25 @@ export default function CoursePlayer() {
       setSlides(loadedSlides)
       setLmsUserId(slidesData.lmsUserId)
 
+      // Build progress map
       const progressMap = {}
       ;(slidesData.progress || []).forEach(p => {
         progressMap[p.slide_id] = p
       })
       setProgress(progressMap)
 
+      // Find course info for pass score
       const course = (courseData.courses || []).find(c => c.id === courseId)
       setCourseInfo(course)
 
+      // Check if already passed
       if (course?.status === 'Complete') {
         setPassed(true)
         setQuizMounted(true)
         setCertificateId(course.certificate_id)
       }
 
+      // Resume from last viewed slide
       const lastViewed = slidesData.progress
         ?.sort((a, b) => new Date(b.last_viewed) - new Date(a.last_viewed))[0]
       if (lastViewed) {
@@ -377,6 +305,7 @@ export default function CoursePlayer() {
 
       setLoading(false)
 
+      // Start session
       const sessionRes = await fetch('/api/lms/learner/session', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -390,12 +319,13 @@ export default function CoursePlayer() {
     load()
   }, [token, courseId, router])
 
-  // End session reliably
+  // End session reliably -- handles tab close, navigation, and unmount
   useEffect(() => {
     function endSession() {
       const sid = sessionIdRef.current
       const tok = tokenRef.current
       if (!sid || !tok) return
+      // Use sendBeacon for tab close -- it survives page unload
       const payload = JSON.stringify({ action: 'end', course_id: courseId, session_id: sid, slides_viewed: slidesViewedRef.current })
       const blob = new Blob([payload], { type: 'application/json' })
       navigator.sendBeacon
@@ -419,6 +349,7 @@ export default function CoursePlayer() {
     }
   }, [courseId])
 
+  // Save slide progress
   const saveProgress = useCallback(async (slideId, timeSpent) => {
     if (!token || !lmsUserId) return
     await fetch('/api/lms/learner/progress', {
@@ -434,6 +365,7 @@ export default function CoursePlayer() {
     setProgress(prev => ({ ...prev, [slideId]: { ...prev[slideId], completed: true } }))
   }, [token, lmsUserId, courseId])
 
+  // Narrate current slide -- use ElevenLabs MP3 if available, fallback to Web Speech
   const narrateSlide = useCallback((slide, rate) => {
     window.speechSynthesis?.cancel()
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
@@ -451,6 +383,7 @@ export default function CoursePlayer() {
 
     const audioUrl = getAudioUrl(slide.audio_path)
     if (audioUrl) {
+      // Use ElevenLabs MP3
       const audio = new Audio(audioUrl)
       audioRef.current = audio
       audio.onended = () => {
@@ -469,6 +402,7 @@ export default function CoursePlayer() {
         setCanAdvance(true)
       })
     } else if (slide.speaker_notes) {
+      // Fallback to Web Speech API
       const utterance = new SpeechSynthesisUtterance(slide.speaker_notes)
       utterance.rate = rate || 1
       utterance.onend = () => {
@@ -488,6 +422,7 @@ export default function CoursePlayer() {
     }
   }, [])
 
+  // When slide changes -- reset state, user must click Play or Next to trigger narration
   useEffect(() => {
     if (loading || slides.length === 0 || showQuiz) return
     window.speechSynthesis?.cancel()
@@ -512,6 +447,7 @@ export default function CoursePlayer() {
     }
   }, [currentIndex, loading, slides, showQuiz, speechRate])
 
+  // When speech rate changes mid-narration
   function handleRateChange(newRate) {
     setSpeechRate(newRate)
     const slide = slides[currentIndex]
@@ -535,6 +471,7 @@ export default function CoursePlayer() {
     if (currentIndex < slides.length - 1) {
       const nextIdx = currentIndex + 1
       setCurrentIndex(nextIdx)
+      // Narrate next slide directly from user gesture -- satisfies browser autoplay policy
       setTimeout(() => {
         const nextSlide = slides[nextIdx]
         if (nextSlide) narrateSlide(nextSlide, speechRate)
@@ -568,21 +505,8 @@ export default function CoursePlayer() {
   }
 
   function handleQuizPass(result) {
-    if (result.requires_hepb_form) {
-      setNeedsHepBForm(true)
-      setPassed(false)
-      setCertificateId(null)
-    } else {
-      setPassed(true)
-      setNeedsHepBForm(false)
-      setCertificateId(result.certificate_id)
-    }
-  }
-
-  function handleHepBComplete(certId) {
-    setNeedsHepBForm(false)
     setPassed(true)
-    setCertificateId(certId)
+    setCertificateId(result.certificate_id)
   }
 
   if (loading) return (
@@ -597,6 +521,7 @@ export default function CoursePlayer() {
 
   return (
     <div style={P.page}>
+      {/* Top Bar */}
       <div style={P.topBar}>
         <button style={P.backBtn} onClick={() => router.push('/lms/dashboard')}>← Dashboard</button>
         <div style={P.topCenter}>
@@ -608,6 +533,7 @@ export default function CoursePlayer() {
           </div>
         </div>
         <div style={P.topRight}>
+          {/* Speech rate */}
           {!showQuiz && (
             <select
               value={speechRate}
@@ -629,6 +555,7 @@ export default function CoursePlayer() {
       </div>
 
       <div style={P.body}>
+        {/* Slide Thumbnail Strip */}
         <div style={P.thumbStrip}>
           {slides.map((slide, idx) => {
             const isViewed = progress[slide.id]?.completed
@@ -667,7 +594,9 @@ export default function CoursePlayer() {
           </div>
         </div>
 
+        {/* Main Content */}
         <div style={P.mainArea}>
+          {/* Quiz stays mounted once reached, so reviewing a slide doesn't reset answers */}
           {quizMounted && (
             <div style={{ ...P.quizWrap, display: showQuiz ? 'block' : 'none' }}>
               {passed ? (
@@ -685,12 +614,6 @@ export default function CoursePlayer() {
                     ← Back to Dashboard
                   </button>
                 </div>
-              ) : needsHepBForm ? (
-                <HepBForm
-                  courseId={courseId}
-                  token={token}
-                  onComplete={handleHepBComplete}
-                />
               ) : (
                 <QuizPanel
                   courseId={courseId}
@@ -705,6 +628,7 @@ export default function CoursePlayer() {
 
           {!showQuiz && (
             <div style={P.slideArea}>
+              {/* Slide Image */}
               <div style={P.slideFrame} onContextMenu={e => e.preventDefault()}>
                 {currentSlide?.image_url ? (
                   <img
@@ -720,6 +644,7 @@ export default function CoursePlayer() {
                   </div>
                 )}
 
+                {/* Narration indicator */}
                 {narrating && (
                   <div style={P.narrationBadge}>
                     🔊 Playing narration…
@@ -727,6 +652,7 @@ export default function CoursePlayer() {
                 )}
               </div>
 
+              {/* Transcript */}
               {showTranscript && currentSlide?.speaker_notes && (
                 <div style={P.transcript}>
                   <strong style={{ fontSize: '12px', color: '#bbb', textTransform: 'uppercase' }}>Transcript</strong>
@@ -736,6 +662,7 @@ export default function CoursePlayer() {
                 </div>
               )}
 
+              {/* Controls */}
               <div style={P.controls}>
                 <button
                   style={{ ...P.navBtn, opacity: currentIndex === 0 ? 0.4 : 1 }}
@@ -792,26 +719,7 @@ export default function CoursePlayer() {
   )
 }
 
-const H = {
-  wrap: { maxWidth: '720px', margin: '0 auto', padding: '32px 24px' },
-  header: { marginBottom: '24px' },
-  title: { fontSize: '22px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 8px' },
-  subtitle: { fontSize: '14px', color: '#555', margin: 0, lineHeight: '1.6' },
-  choiceBlock: { display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' },
-  choice: { display: 'flex', gap: '12px', alignItems: 'flex-start', padding: '16px', border: '2px solid', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.15s' },
-  radio: { marginTop: '3px', width: '18px', height: '18px', flexShrink: 0, cursor: 'pointer' },
-  choiceLabel: { fontSize: '15px', fontWeight: '700', color: '#1a1a2e', marginBottom: '4px' },
-  choiceHelp: { fontSize: '13px', color: '#666', lineHeight: '1.5' },
-  declinationBox: { background: '#fafafa', border: '1px solid #e0e0e0', borderRadius: '10px', padding: '16px', marginBottom: '20px' },
-  declinationHead: { fontSize: '12px', textTransform: 'uppercase', color: '#c62828', letterSpacing: '0.5px' },
-  declinationText: { fontSize: '13px', color: '#333', lineHeight: '1.7', margin: '8px 0 0' },
-  sigRow: { display: 'flex', gap: '16px', marginBottom: '20px' },
-  fieldLabel: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#444', marginBottom: '6px' },
-  input: { width: '100%', boxSizing: 'border-box', padding: '12px 14px', fontSize: '14px', border: '1px solid #ccc', borderRadius: '8px', fontFamily: 'inherit' },
-  error: { background: '#fff0f0', border: '1px solid #ffcdd2', color: '#c62828', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', marginBottom: '16px' },
-  submitBtn: { width: '100%', background: '#D71919', color: '#fff', border: 'none', borderRadius: '10px', padding: '15px', fontSize: '15px', fontWeight: '700', cursor: 'pointer' },
-}
-
+// Quiz styles
 const Q = {
   wrap: { maxWidth: '720px', margin: '0 auto', padding: '24px' },
   header: { marginBottom: '24px' },
@@ -835,6 +743,7 @@ const Q = {
   retryBtn: { width: '100%', background: '#e3f2fd', color: '#1565c0', border: 'none', borderRadius: '10px', padding: '14px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '12px' },
 }
 
+// Player styles
 const P = {
   page: { display: 'flex', flexDirection: 'column', height: '100vh', background: '#1a1a2e', fontFamily: 'Arial, Helvetica, sans-serif', overflow: 'hidden' },
   loadPage: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#1a1a2e' },
