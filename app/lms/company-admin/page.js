@@ -11,6 +11,10 @@ const supabase = createClient(
 
 const TABS = ['Employees', 'Assign Courses', 'Training Matrix', 'Reports']
 
+// Default temporary password for new employees and password resets.
+// Learners are flagged must_change_pw, so they set their own on first login.
+const DEFAULT_TEMP_PASSWORD = '1234567!'
+
 function Modal({ title, onClose, children }) {
   return (
     <div style={S.overlay}>
@@ -34,6 +38,61 @@ function Field({ label, children }) {
   )
 }
 
+// Format seconds -> "Xh Ym" / "Ym Zs" / "—"
+function fmtTime(seconds) {
+  const s = Math.round(seconds || 0)
+  if (s <= 0) return '—'
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m ${sec}s`
+  return `${sec}s`
+}
+
+// Work-location dropdown: auto-built from existing locations + "Add new…" inline.
+// Renders as a real <select> with explicit colors so options are always readable.
+function LocationField({ label = 'Work Location', value, options, onChange }) {
+  const ADD = '__add_new__'
+  const [adding, setAdding] = useState(false)
+  // If the current value isn't in the known options, surface it as a selectable option too.
+  const opts = [...new Set([...(options || []), value].filter(Boolean))].sort()
+
+  if (adding) {
+    return (
+      <Field label={label}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input
+            autoFocus
+            style={S.input}
+            value={value || ''}
+            placeholder="Type new location (e.g. Slope, Kenai)"
+            onChange={e => onChange(e.target.value)}
+          />
+          <button type="button" style={S.btnSmall} onClick={() => setAdding(false)}>Pick from list</button>
+        </div>
+      </Field>
+    )
+  }
+
+  return (
+    <Field label={label}>
+      <select
+        style={S.select}
+        value={opts.includes(value) ? value : ''}
+        onChange={e => {
+          if (e.target.value === ADD) { onChange(''); setAdding(true) }
+          else onChange(e.target.value)
+        }}
+      >
+        <option value="">— Select Location —</option>
+        {opts.map(o => <option key={o} value={o}>{o}</option>)}
+        <option value={ADD}>+ Add new location…</option>
+      </select>
+    </Field>
+  )
+}
+
 // ─── EMPLOYEES TAB ──────────────────────────────────────────
 function EmployeesTab({ token, companyId }) {
   const [users, setUsers] = useState([])
@@ -42,7 +101,7 @@ function EmployeesTab({ token, companyId }) {
   const [resetting, setResetting] = useState(null)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [form, setForm] = useState({ full_name: '', email: '', username: '', job_title: '', password: '', work_location: '', department: '', employee_id: '', hire_date: '' })
+  const [form, setForm] = useState({ full_name: '', email: '', username: '', job_title: '', work_location: '', department: '', employee_id: '', hire_date: '' })
 
   // Edit-employee state
   const [editingEmployee, setEditingEmployee] = useState(null)
@@ -50,12 +109,18 @@ function EmployeesTab({ token, companyId }) {
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState('')
 
+  // Known work locations (auto-built for the dropdown)
+  const [locations, setLocations] = useState([])
+
   const load = useCallback(async () => {
     const res = await fetch('/api/lms/company-admin/users', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const data = await res.json()
     setUsers(data.users || [])
+    // Refresh location options from the live roster
+    const locs = [...new Set((data.users || []).map(u => (u.work_location || '').trim()).filter(Boolean))].sort()
+    setLocations(locs)
   }, [token])
 
   useEffect(() => { if (token) load() }, [token, load])
@@ -65,13 +130,13 @@ function EmployeesTab({ token, companyId }) {
     const res = await fetch('/api/lms/create-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, company_id: companyId, role: 'learner' })
+      body: JSON.stringify({ ...form, password: DEFAULT_TEMP_PASSWORD, company_id: companyId, role: 'learner' })
     })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
     setShowModal(false)
-    setForm({ full_name: '', email: '', username: '', job_title: '', password: '', work_location: '', department: '', employee_id: '', hire_date: '' })
+    setForm({ full_name: '', email: '', username: '', job_title: '', work_location: '', department: '', employee_id: '', hire_date: '' })
     load()
   }
 
@@ -126,16 +191,16 @@ function EmployeesTab({ token, companyId }) {
   }
 
   async function handleResetPassword(user) {
-    const newPw = prompt(`Set new temporary password for ${user.full_name} (min 8 characters):`)
-    if (!newPw || newPw.length < 8) { alert('Password must be at least 8 characters.'); return }
+    if (!confirm(`Reset ${user.full_name}'s password to the default temporary password (${DEFAULT_TEMP_PASSWORD})?\n\nThey will be required to set a new password on their next login.`)) return
     setResetting(user.id)
     const res = await fetch('/api/lms/company-admin/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ user_id: user.id, password: newPw })
+      body: JSON.stringify({ user_id: user.id, password: DEFAULT_TEMP_PASSWORD })
     })
     setResetting(null)
-    if (res.ok) { alert(`Password reset for ${user.full_name}.`) } else { alert('Reset failed.') }
+    if (res.ok) { alert(`Password reset for ${user.full_name} to ${DEFAULT_TEMP_PASSWORD}.`) } else { alert('Reset failed.') }
+    load()
   }
 
   const filtered = users.filter(u =>
@@ -203,13 +268,13 @@ function EmployeesTab({ token, companyId }) {
           <Field label="Email *"><input style={S.input} type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></Field>
           <Field label="Username *"><input style={S.input} value={form.username} placeholder="Unique login name" onChange={e => setForm(f => ({ ...f, username: e.target.value }))} /></Field>
           <Field label="Job Title"><input style={S.input} value={form.job_title} onChange={e => setForm(f => ({ ...f, job_title: e.target.value }))} /></Field>
-          <Field label="Work Location"><input style={S.input} value={form.work_location} onChange={e => setForm(f => ({ ...f, work_location: e.target.value }))} /></Field>
+          <LocationField value={form.work_location} options={locations} onChange={v => setForm(f => ({ ...f, work_location: v }))} />
           <Field label="Department"><input style={S.input} value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} /></Field>
           <Field label="Employee ID"><input style={S.input} value={form.employee_id} onChange={e => setForm(f => ({ ...f, employee_id: e.target.value }))} /></Field>
           <Field label="Hire Date"><input style={S.input} type="date" value={form.hire_date} onChange={e => setForm(f => ({ ...f, hire_date: e.target.value }))} /></Field>
-          <Field label="Temporary Password *"><input style={S.input} type="password" value={form.password} placeholder="Min 8 characters" onChange={e => setForm(f => ({ ...f, password: e.target.value }))} /></Field>
+          <div style={S.infoBox}>New employees start with the temporary password <strong>{DEFAULT_TEMP_PASSWORD}</strong> and will be prompted to set their own on first login.</div>
           {error && <div style={S.error}>{error}</div>}
-          <button style={S.btnPrimary} onClick={handleCreate} disabled={saving || !form.full_name || !form.email || !form.username || !form.password}>
+          <button style={S.btnPrimary} onClick={handleCreate} disabled={saving || !form.full_name || !form.email || !form.username}>
             {saving ? 'Creating…' : 'Create Account'}
           </button>
         </Modal>
@@ -221,7 +286,7 @@ function EmployeesTab({ token, companyId }) {
           <Field label="Email"><input style={S.input} type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} /></Field>
           <Field label="Username *"><input style={S.input} value={editForm.username} onChange={e => setEditForm(f => ({ ...f, username: e.target.value }))} /></Field>
           <Field label="Job Title"><input style={S.input} value={editForm.job_title} onChange={e => setEditForm(f => ({ ...f, job_title: e.target.value }))} /></Field>
-          <Field label="Work Location"><input style={S.input} value={editForm.work_location} onChange={e => setEditForm(f => ({ ...f, work_location: e.target.value }))} /></Field>
+          <LocationField value={editForm.work_location} options={locations} onChange={v => setEditForm(f => ({ ...f, work_location: v }))} />
           <Field label="Client / Project"><input style={S.input} value={editForm.client_project} onChange={e => setEditForm(f => ({ ...f, client_project: e.target.value }))} /></Field>
           <Field label="Department"><input style={S.input} value={editForm.department} onChange={e => setEditForm(f => ({ ...f, department: e.target.value }))} /></Field>
           <Field label="Employee ID"><input style={S.input} value={editForm.employee_id} onChange={e => setEditForm(f => ({ ...f, employee_id: e.target.value }))} /></Field>
@@ -335,7 +400,7 @@ function AssignCoursesTab({ token, companyId }) {
       {showModal && (
         <Modal title="Assign Courses" onClose={() => { setShowModal(false); setForm({ user_id: '', course_ids: [], due_date: '' }); setError('') }}>
           <Field label="Employee *">
-            <select style={S.input} value={form.user_id} onChange={e => setForm(f => ({ ...f, user_id: e.target.value, course_ids: [] }))}>
+            <select style={S.select} value={form.user_id} onChange={e => setForm(f => ({ ...f, user_id: e.target.value, course_ids: [] }))}>
               <option value="">— Select Employee —</option>
               {users.map(u => <option key={u.id} value={u.id}>{u.full_name} {u.job_title ? `(${u.job_title})` : ''}</option>)}
             </select>
@@ -381,35 +446,110 @@ function AssignCoursesTab({ token, companyId }) {
 function TrainingMatrixTab({ token }) {
   const [matrix, setMatrix] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [busyCell, setBusyCell] = useState(null) // `${userId}|${courseId}` while toggling
+  const [showTime, setShowTime] = useState(false)
 
-  useEffect(() => {
-    async function load() {
-      const res = await fetch('/api/lms/company-admin/dashboard', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      const data = await res.json()
-      setMatrix(data)
-      setLoading(false)
-    }
-    if (token) load()
+  // Slicers
+  const [locFilter, setLocFilter] = useState('')
+  const [jobFilter, setJobFilter] = useState('')
+
+  const load = useCallback(async () => {
+    const res = await fetch('/api/lms/company-admin/dashboard', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    const data = await res.json()
+    setMatrix(data)
+    setLoading(false)
   }, [token])
+
+  useEffect(() => { if (token) load() }, [token, load])
+
+  // Toggle a required course on/off for one learner (inline cell click)
+  async function toggleExclusion(emp, course, currentlyExcluded) {
+    if (!course.is_required) return // only required courses can be de-selected
+    const key = `${emp.id}|${course.id}`
+    setBusyCell(key)
+    const method = currentlyExcluded ? 'DELETE' : 'POST'
+    await fetch('/api/lms/company-admin/exclusions', {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ user_id: emp.id, course_id: course.id })
+    })
+    await load()
+    setBusyCell(null)
+  }
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>Loading matrix...</div>
   if (!matrix) return <div style={S.empty}>Could not load matrix data.</div>
 
-  const { employees = [], courses = [] } = matrix
+  const {
+    employees = [], courses = [],
+    work_locations = [], job_titles = [],
+    overall_completion_pct = 0, total_employees = 0,
+  } = matrix
+
+  // Apply slicers
+  const filtered = employees.filter(e =>
+    (!locFilter || e.work_location === locFilter) &&
+    (!jobFilter || e.job_title === jobFilter)
+  )
+
+  // Completion % for the current (filtered) view
+  const viewApplicable = filtered.reduce((s, e) => s + e.required_applicable, 0)
+  const viewComplete = filtered.reduce((s, e) => s + e.required_complete, 0)
+  const viewPct = viewApplicable > 0 ? Math.round((viewComplete / viewApplicable) * 100) : 0
+  const pctColor = viewPct >= 80 ? '#2e7d32' : viewPct >= 50 ? '#f57c00' : '#c62828'
 
   return (
     <div>
       <div style={S.tabHeader}>
         <h2 style={S.tabTitle}>Training Matrix</h2>
+        <button style={S.btnSmall} onClick={() => setShowTime(t => !t)}>
+          {showTime ? 'Show Status' : 'Show Training Time'}
+        </button>
       </div>
+
+      {/* Summary + slicers */}
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '16px' }}>
+        <div style={S.statBox}>
+          <div style={{ ...S.statNum, color: pctColor }}>{viewPct}%</div>
+          <div style={S.statLbl}>Required Complete</div>
+        </div>
+        <div style={S.statBox}>
+          <div style={S.statNum}>{filtered.length}</div>
+          <div style={S.statLbl}>Employees Shown</div>
+        </div>
+        <div style={S.statBox}>
+          <div style={{ ...S.statNum, color: '#666' }}>{overall_completion_pct}%</div>
+          <div style={S.statLbl}>Company-wide</div>
+        </div>
+
+        <div style={{ ...S.field, minWidth: '180px' }}>
+          <label style={S.label}>Work Location</label>
+          <select style={S.select} value={locFilter} onChange={e => setLocFilter(e.target.value)}>
+            <option value="">All Locations</option>
+            {work_locations.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+        </div>
+        <div style={{ ...S.field, minWidth: '180px' }}>
+          <label style={S.label}>Job Title</label>
+          <select style={S.select} value={jobFilter} onChange={e => setJobFilter(e.target.value)}>
+            <option value="">All Job Titles</option>
+            {job_titles.map(j => <option key={j} value={j}>{j}</option>)}
+          </select>
+        </div>
+        {(locFilter || jobFilter) && (
+          <button style={S.btnSmall} onClick={() => { setLocFilter(''); setJobFilter('') }}>Clear filters</button>
+        )}
+      </div>
+
       <div style={{ overflowX: 'auto' }}>
         <table style={{ ...S.table, fontSize: '12px', minWidth: '600px' }}>
           <thead>
             <tr>
               <th style={{ ...S.th, minWidth: '160px' }}>Employee</th>
               <th style={{ ...S.th, minWidth: '120px' }}>Job Title</th>
+              <th style={{ ...S.th, minWidth: '70px', textAlign: 'center' }}>%</th>
               {courses.map(c => (
                 <th key={c.id} style={{ ...S.th, maxWidth: '100px', whiteSpace: 'normal', lineHeight: '1.3' }}>
                   {c.title}{c.is_required ? ' *' : ''}
@@ -418,30 +558,73 @@ function TrainingMatrixTab({ token }) {
             </tr>
           </thead>
           <tbody>
-            {employees.map(emp => (
-              <tr key={emp.id} style={S.tr}>
-                <td style={{ ...S.td, fontWeight: '600' }}>{emp.full_name}</td>
-                <td style={{ ...S.td, color: '#666' }}>{emp.job_title || '—'}</td>
-                {courses.map(c => {
-                  const cell = emp.courseData?.find(d => d.course_id === c.id)
-                  const status = cell?.status || 'N/A'
-                  const bg = status === 'Complete' ? '#e8f5e9' : status === 'In Progress' ? '#fff8e1' : status === 'Not Started' ? '#fff0f0' : '#f5f5f5'
-                  const color = status === 'Complete' ? '#2e7d32' : status === 'In Progress' ? '#f57c00' : status === 'Not Started' ? '#c62828' : '#999'
-                  return (
-                    <td key={c.id} style={{ ...S.td, background: bg, textAlign: 'center' }}>
-                      <span style={{ color, fontWeight: '600', fontSize: '11px' }}>
-                        {status === 'Complete' && cell?.date ? new Date(cell.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' }) : status === 'In Progress' ? `${cell?.pct || 0}%` : status === 'N/A' ? '—' : status}
-                      </span>
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-            {employees.length === 0 && <tr><td colSpan={courses.length + 2} style={S.empty}>No employee data.</td></tr>}
+            {filtered.map(emp => {
+              const ec = emp.completion_pct
+              const ecColor = ec >= 80 ? '#2e7d32' : ec >= 50 ? '#f57c00' : '#c62828'
+              return (
+                <tr key={emp.id} style={S.tr}>
+                  <td style={{ ...S.td, fontWeight: '600' }}>{emp.full_name}</td>
+                  <td style={{ ...S.td, color: '#666' }}>{emp.job_title || '—'}</td>
+                  <td style={{ ...S.td, textAlign: 'center', fontWeight: '700', color: ecColor }}>{ec}%</td>
+                  {courses.map(c => {
+                    const cell = emp.courseData?.find(d => d.course_id === c.id)
+                    const status = cell?.status || 'N/A'
+                    const excluded = cell?.excluded
+                    const key = `${emp.id}|${c.id}`
+                    const busy = busyCell === key
+
+                    // Excluded required course = visually struck out, click to re-require
+                    const bg = excluded ? '#fafafa'
+                      : status === 'Complete' ? '#e8f5e9'
+                      : status === 'In Progress' ? '#fff8e1'
+                      : status === 'Not Started' ? '#fff0f0' : '#f5f5f5'
+                    const color = excluded ? '#bbb'
+                      : status === 'Complete' ? '#2e7d32'
+                      : status === 'In Progress' ? '#f57c00'
+                      : status === 'Not Started' ? '#c62828' : '#999'
+
+                    let label
+                    if (busy) label = '…'
+                    else if (showTime) label = fmtTime(cell?.seconds)
+                    else if (excluded) label = 'N/R'
+                    else if (status === 'Complete' && cell?.date) label = new Date(cell.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })
+                    else if (status === 'In Progress') label = `${cell?.pct || 0}%`
+                    else if (status === 'N/A') label = '—'
+                    else label = status
+
+                    const clickable = c.is_required
+                    const title = !clickable ? '' : excluded
+                      ? 'Excluded for this employee — click to require again'
+                      : 'Required — click to de-select for this employee'
+
+                    return (
+                      <td
+                        key={c.id}
+                        title={title}
+                        onClick={() => clickable && !busy && toggleExclusion(emp, c, excluded)}
+                        style={{
+                          ...S.td, background: bg, textAlign: 'center',
+                          cursor: clickable ? 'pointer' : 'default',
+                          textDecoration: excluded ? 'line-through' : 'none',
+                          userSelect: 'none',
+                        }}
+                      >
+                        <span style={{ color, fontWeight: '600', fontSize: '11px' }}>{label}</span>
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+            {filtered.length === 0 && <tr><td colSpan={courses.length + 3} style={S.empty}>No employees match these filters.</td></tr>}
           </tbody>
         </table>
       </div>
-      <div style={{ marginTop: '12px', fontSize: '12px', color: '#666' }}>* Required course</div>
+      <div style={{ marginTop: '12px', fontSize: '12px', color: '#666', lineHeight: 1.7 }}>
+        * Required course&nbsp;&nbsp;•&nbsp;&nbsp;<strong>N/R</strong> = not required for this employee (de-selected)&nbsp;&nbsp;•&nbsp;&nbsp;
+        Click any required-course cell to toggle it on/off for that person.&nbsp;&nbsp;•&nbsp;&nbsp;
+        Use “Show Training Time” to see hours logged per course.
+      </div>
     </div>
   )
 }
@@ -578,6 +761,7 @@ const S = {
   field: { display: 'flex', flexDirection: 'column', gap: '5px' },
   label: { fontSize: '13px', fontWeight: '600', color: '#444' },
   input: { padding: '9px 12px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box' },
+  select: { padding: '9px 12px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box', background: '#fff', color: '#1a1a2e', appearance: 'auto', cursor: 'pointer' },
   textarea: { padding: '9px 12px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '14px', outline: 'none', width: '100%', boxSizing: 'border-box', minHeight: '80px', resize: 'vertical' },
   error: { background: '#fff0f0', border: '1px solid #ffcdd2', color: '#c62828', borderRadius: '8px', padding: '10px 14px', fontSize: '13px' },
   infoBox: { background: '#e3f2fd', border: '1px solid #bbdefb', color: '#1565c0', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', lineHeight: '1.6' },
