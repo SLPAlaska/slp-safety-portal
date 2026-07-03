@@ -130,7 +130,8 @@ const FORM_CATEGORIES = {
     forms: {
       'Daily Scaffold Inspection': 'scaffold_inspections',
       'Exc. & Trench Competent Person Daily Inspection': 'competent_person_inspections',
-      'THA / JSA': 'tha_assessments',
+      'THA / JSA': 'tha_submissions',
+      'THA / JSA (Legacy Jotform)': 'tha_assessments',
     }
   },
   'Incident & Investigation': {
@@ -296,6 +297,33 @@ export default function ClientExport() {
   const selectedCount = Object.values(selectedForms).filter(Boolean).length;
   const totalFormCount = Object.values(FORM_CATEGORIES).reduce((sum, cat) => sum + Object.keys(cat.forms).length, 0);
 
+  // --- Location grouping helpers ---
+  // Case-insensitive location key so field-entry variants (e.g. "PIKKA" vs "Pikka") group together
+  const locKey = (row) => (row.location === null || row.location === undefined) ? '' : String(row.location).trim().toUpperCase();
+
+  const displayLocation = (row) => {
+    const v = (row.location === null || row.location === undefined) ? '' : String(row.location).trim();
+    return v === '' ? '(No Location Specified)' : v;
+  };
+
+  // Sort rows by location A-Z (blanks last), then newest first within each location
+  const sortByLocation = (data) => {
+    return [...data].sort((a, b) => {
+      const la = locKey(a), lb = locKey(b);
+      if (la !== lb) {
+        if (la === '') return 1;
+        if (lb === '') return -1;
+        return la < lb ? -1 : 1;
+      }
+      const da = new Date(a.created_at || a.date || 0);
+      const db = new Date(b.created_at || b.date || 0);
+      return db - da;
+    });
+  };
+
+  // Only show location section headers if the table actually has location data
+  const hasLocationData = (data) => data.some(row => row.location && String(row.location).trim() !== '');
+
   const handleExport = async () => {
     const selected = Object.entries(selectedForms).filter(([_, v]) => v);
     if (selected.length === 0) { setExportStatus('Please select at least one form type.'); return; }
@@ -330,7 +358,7 @@ export default function ClientExport() {
           .gte('created_at', start)
           .lte('created_at', end);
         
-        // Filter by company — OR across all search terms to catch alternate names
+        // Filter by company - OR across all search terms to catch alternate names
         if (companyCol && searchTerms.length > 0) {
           const orFilter = searchTerms.map(term => `${companyCol}.ilike.%${term}%`).join(',');
           query = query.or(orFilter);
@@ -345,11 +373,11 @@ export default function ClientExport() {
           if (selectedLocation !== 'All') {
             const filtered = data.filter(row => row.location && row.location.toLowerCase().includes(selectedLocation.toLowerCase()));
             if (filtered.length > 0) {
-              results[formName] = filtered;
+              results[formName] = sortByLocation(filtered);
               totalRecords += filtered.length;
             }
           } else {
-            results[formName] = data;
+            results[formName] = sortByLocation(data);
             totalRecords += data.length;
           }
         }
@@ -410,10 +438,14 @@ export default function ClientExport() {
   };
 
   const SKIP_COLS = ['id', 'photo_url', 'photo_urls', 'pdf_url', 'last_modified'];
+  const PRIORITY_COLS = ['tha_number', 'date', 'created_at', 'location', 'work_area'];
 
   const getVisibleHeaders = (data) => {
     if (!data || data.length === 0) return [];
-    return Object.keys(data[0]).filter(h => !SKIP_COLS.includes(h));
+    const cols = Object.keys(data[0]).filter(h => !SKIP_COLS.includes(h));
+    const front = PRIORITY_COLS.filter(c => cols.includes(c));
+    const rest = cols.filter(c => !front.includes(c));
+    return [...front, ...rest];
   };
 
   const downloadExcel = (formName, data) => {
@@ -422,7 +454,7 @@ export default function ClientExport() {
 
     let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
     html += '<head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>' + formName + '</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
-    html += '<style>td,th{font-family:Calibri;font-size:12pt;text-align:center;vertical-align:middle;border:1px solid #ccc;padding:6px 10px;}th{font-weight:bold;background-color:#1e3a5f;color:white;}.title{font-size:16pt;font-weight:bold;text-align:center;border:none;color:#1e3a5f;}.subtitle{font-size:10pt;text-align:center;border:none;color:#666;}.footer{font-size:9pt;text-align:center;border:none;color:#999;font-style:italic;}</style></head><body>';
+    html += '<style>td,th{font-family:Calibri;font-size:12pt;text-align:center;vertical-align:middle;border:1px solid #ccc;padding:6px 10px;}th{font-weight:bold;background-color:#1e3a5f;color:white;}.title{font-size:16pt;font-weight:bold;text-align:center;border:none;color:#1e3a5f;}.subtitle{font-size:10pt;text-align:center;border:none;color:#666;}.footer{font-size:9pt;text-align:center;border:none;color:#999;font-style:italic;}.locsection{font-weight:bold;background-color:#b91c1c;color:white;text-align:left;font-size:12pt;padding:6px 10px;}</style></head><body>';
 
     html += '<table>';
     html += '<tr><td colspan="' + headers.length + '" class="title">SLP Alaska - ' + companyName + '</td></tr>';
@@ -433,7 +465,17 @@ export default function ClientExport() {
     headers.forEach(h => { html += '<th>' + formatHeader(h) + '</th>'; });
     html += '</tr>';
 
+    const useLocationSections = hasLocationData(data);
+    let currentLocKey = null;
     data.forEach(row => {
+      if (useLocationSections) {
+        const rowKey = locKey(row);
+        if (rowKey !== currentLocKey) {
+          currentLocKey = rowKey;
+          const count = data.filter(r => locKey(r) === rowKey).length;
+          html += '<tr><td colspan="' + headers.length + '" class="locsection">' + displayLocation(row).replace(/</g, '&lt;').replace(/>/g, '&gt;') + ' &mdash; ' + count + ' record' + (count !== 1 ? 's' : '') + '</td></tr>';
+        }
+      }
       html += '<tr>';
       headers.forEach(h => { html += '<td>' + formatCell(row[h]).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</td>'; });
       html += '</tr>';
@@ -479,6 +521,7 @@ export default function ClientExport() {
     html += 'th{background:#1e3a5f;color:white;font-weight:bold;font-size:9pt;padding:6px 4px;text-align:center;border:1px solid #ccc;}';
     html += 'td{font-size:9pt;padding:5px 4px;text-align:center;border:1px solid #ddd;word-wrap:break-word;max-width:200px;}';
     html += 'tr:nth-child(even) td{background:#f8fafc;}';
+    html += 'td.locsection{background:#b91c1c;color:white;font-weight:bold;text-align:left;font-size:10pt;padding:6px 8px;max-width:none;}';
     html += '.footer{text-align:center;margin-top:20px;padding-top:10px;border-top:2px solid #1e3a5f;font-size:8pt;color:#999;}';
     html += '.stats{display:flex;justify-content:center;gap:30px;margin:10px 0;font-size:10pt;}';
     html += '.stats span{background:#f0f9ff;padding:4px 12px;border-radius:4px;border:1px solid #bae6fd;}';
@@ -499,7 +542,17 @@ export default function ClientExport() {
     headers.forEach(h => { html += '<th>' + formatHeader(h) + '</th>'; });
     html += '</tr></thead><tbody>';
 
+    const useLocationSections = hasLocationData(data);
+    let currentLocKey = null;
     data.forEach(row => {
+      if (useLocationSections) {
+        const rowKey = locKey(row);
+        if (rowKey !== currentLocKey) {
+          currentLocKey = rowKey;
+          const count = data.filter(r => locKey(r) === rowKey).length;
+          html += '<tr><td colspan="' + headers.length + '" class="locsection">' + displayLocation(row).replace(/</g, '&lt;').replace(/>/g, '&gt;') + ' &mdash; ' + count + ' record' + (count !== 1 ? 's' : '') + '</td></tr>';
+        }
+      }
       html += '<tr>';
       headers.forEach(h => { html += '<td>' + formatCell(row[h]).replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</td>'; });
       html += '</tr>';
