@@ -131,7 +131,6 @@ const FORM_CATEGORIES = {
       'Daily Scaffold Inspection': 'scaffold_inspections',
       'Exc. & Trench Competent Person Daily Inspection': 'competent_person_inspections',
       'THA / JSA': 'tha_submissions',
-      'THA / JSA (Legacy Jotform)': 'tha_assessments',
     }
   },
   'Incident & Investigation': {
@@ -324,6 +323,30 @@ export default function ClientExport() {
   // Only show location section headers if the table actually has location data
   const hasLocationData = (data) => data.some(row => row.location && String(row.location).trim() !== '');
 
+  // Tables that should be merged into a single export result.
+  // Key = primary table (as mapped in FORM_CATEGORIES); value = { extra: [tables], labels: {table: SourceLabel} }
+  const MERGE_TABLES = {
+    'tha_submissions': {
+      extra: ['tha_assessments'],
+      labels: { 'tha_submissions': 'Portal', 'tha_assessments': 'Legacy Jotform' }
+    }
+  };
+
+  // Query one table for the current company + date range. Returns { data, error }.
+  const queryTable = async (table, start, end) => {
+    const companyCol = COMPANY_COLUMN_MAP.hasOwnProperty(table) ? COMPANY_COLUMN_MAP[table] : 'company';
+    let query = supabase
+      .from(table)
+      .select('*')
+      .gte('created_at', start)
+      .lte('created_at', end);
+    if (companyCol && searchTerms.length > 0) {
+      const orFilter = searchTerms.map(term => `${companyCol}.ilike.%${term}%`).join(',');
+      query = query.or(orFilter);
+    }
+    return await query.order('created_at', { ascending: false });
+  };
+
   const handleExport = async () => {
     const selected = Object.entries(selectedForms).filter(([_, v]) => v);
     if (selected.length === 0) { setExportStatus('Please select at least one form type.'); return; }
@@ -350,35 +373,39 @@ export default function ClientExport() {
       try {
         setExportStatus('Querying ' + formName + '...');
 
-        const companyCol = COMPANY_COLUMN_MAP.hasOwnProperty(table) ? COMPANY_COLUMN_MAP[table] : 'company';
-        
-        let query = supabase
-          .from(table)
-          .select('*')
-          .gte('created_at', start)
-          .lte('created_at', end);
-        
-        // Filter by company - OR across all search terms to catch alternate names
-        if (companyCol && searchTerms.length > 0) {
-          const orFilter = searchTerms.map(term => `${companyCol}.ilike.%${term}%`).join(',');
-          query = query.or(orFilter);
-        }
-        
-        const { data, error } = await query.order('created_at', { ascending: false });
+        // Determine which tables feed this form (one, or several if merged)
+        const mergeCfg = MERGE_TABLES[table];
+        const tablesToQuery = mergeCfg ? [table, ...mergeCfg.extra] : [table];
 
-        if (error) {
-          console.error('Query error for', table, ':', error);
-          errorList.push(formName + ': ' + error.message);
-        } else if (data && data.length > 0) {
+        let combined = [];
+        let formError = null;
+
+        for (const t of tablesToQuery) {
+          const { data, error } = await queryTable(t, start, end);
+          if (error) {
+            console.error('Query error for', t, ':', error);
+            formError = (formError ? formError + '; ' : '') + t + ': ' + error.message;
+          } else if (data && data.length > 0) {
+            // Tag every row with its source so merged sheets stay traceable
+            const sourceLabel = mergeCfg ? (mergeCfg.labels[t] || t) : null;
+            const tagged = sourceLabel ? data.map(row => ({ source_system: sourceLabel, ...row })) : data;
+            combined = combined.concat(tagged);
+          }
+        }
+
+        // If every table for this form errored and nothing came back, record the error
+        if (formError && combined.length === 0) {
+          errorList.push(formName + ': ' + formError);
+        } else if (combined.length > 0) {
           if (selectedLocation !== 'All') {
-            const filtered = data.filter(row => row.location && row.location.toLowerCase().includes(selectedLocation.toLowerCase()));
+            const filtered = combined.filter(row => row.location && row.location.toLowerCase().includes(selectedLocation.toLowerCase()));
             if (filtered.length > 0) {
               results[formName] = sortByLocation(filtered);
               totalRecords += filtered.length;
             }
           } else {
-            results[formName] = sortByLocation(data);
-            totalRecords += data.length;
+            results[formName] = sortByLocation(combined);
+            totalRecords += combined.length;
           }
         }
       } catch (err) {
@@ -403,6 +430,7 @@ export default function ClientExport() {
 
   const NICE_HEADERS = {
     id: 'ID', created_at: 'Created', tha_number: 'THA Number', status: 'Status', date: 'Date',
+    source_system: 'Source',
     company: 'Company', location: 'Location', work_area: 'Work Area', crew_lead: 'Crew Lead',
     phone_radio: 'Phone/Radio', task_description: 'Task Description', job_planning_notes: 'Job Planning Notes',
     procedure_exists: 'Procedure Exists', procedure_reviewed: 'Procedure Reviewed',
@@ -438,11 +466,14 @@ export default function ClientExport() {
   };
 
   const SKIP_COLS = ['id', 'photo_url', 'photo_urls', 'pdf_url', 'last_modified'];
-  const PRIORITY_COLS = ['tha_number', 'date', 'created_at', 'location', 'work_area'];
+  const PRIORITY_COLS = ['source_system', 'tha_number', 'date', 'created_at', 'location', 'work_area'];
 
   const getVisibleHeaders = (data) => {
     if (!data || data.length === 0) return [];
-    const cols = Object.keys(data[0]).filter(h => !SKIP_COLS.includes(h));
+    // Union columns across ALL rows (merged tables can have differing schemas)
+    const seen = new Set();
+    data.forEach(row => Object.keys(row).forEach(k => seen.add(k)));
+    const cols = [...seen].filter(h => !SKIP_COLS.includes(h));
     const front = PRIORITY_COLS.filter(c => cols.includes(c));
     const rest = cols.filter(c => !front.includes(c));
     return [...front, ...rest];
