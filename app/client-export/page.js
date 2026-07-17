@@ -1,11 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  'https://iypezirwdlqpptjpeeyf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4'
-);
 
 const COMPANY_CREDENTIALS = {
   'MAGTEC2026': { company: 'MagTec Alaska', searchTerms: ['MagTec', 'Mag Tec', 'MagTec Alaska'], password: 'PSA2026$$SLP' },
@@ -22,17 +16,6 @@ const COMPANY_CREDENTIALS = {
 };
 
 // Categories mirror portal homepage exactly (excluding PSA tools, ASH Book, Client Export)
-// Tables that use a different column name for company
-const COMPANY_COLUMN_MAP = {
-  'bbs_observations': 'client_company',
-  'pressure_crosscheck': 'client_company',
-  'sail_log': 'client_company',
-  'toolbox_meeting_assessment': 'client',
-  'incidents': 'company_name',
-  'lessons_learned': 'company_name',
-  'management_of_change': 'company'  // Added company column
-};
-
 const FORM_CATEGORIES = {
   'Training & Competency': {
     icon: '\u{1F3AF}',
@@ -323,64 +306,6 @@ export default function ClientExport() {
   // Only show location section headers if the table actually has location data
   const hasLocationData = (data) => data.some(row => row.location && String(row.location).trim() !== '');
 
-  // Tables that should be merged into a single export result.
-  // Key = primary table (as mapped in FORM_CATEGORIES); value = { extra: [tables], labels: {table: SourceLabel} }
-  const MERGE_TABLES = {
-    'tha_submissions': {
-      extra: ['tha_assessments'],
-      labels: { 'tha_submissions': 'Portal', 'tha_assessments': 'Legacy Jotform' }
-    }
-  };
-
-  // Query one table for the current company + date range. Returns { data, error }.
-  // Runs one query PER search term and unions results (deduped by id). This avoids
-  // PostgREST's .or() comma-join, which silently fails when a search term contains
-  // spaces or reserved characters (e.g. "Pollard Wireline") - returning zero rows
-  // even though each ILIKE matches fine on its own.
-  const queryTable = async (table, start, end) => {
-    const companyCol = COMPANY_COLUMN_MAP.hasOwnProperty(table) ? COMPANY_COLUMN_MAP[table] : 'company';
-
-    // No company column or no terms: single unfiltered (by company) query
-    if (!companyCol || searchTerms.length === 0) {
-      return await supabase
-        .from(table)
-        .select('*')
-        .gte('created_at', start)
-        .lte('created_at', end)
-        .order('created_at', { ascending: false });
-    }
-
-    const byId = new Map();
-    let lastError = null;
-
-    for (const term of searchTerms) {
-      const { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .gte('created_at', start)
-        .lte('created_at', end)
-        .ilike(companyCol, `%${term}%`)
-        .order('created_at', { ascending: false });
-      if (error) {
-        lastError = error;
-      } else if (data) {
-        // Dedupe across terms (e.g. "Pollard" and "Pollard Wireline" both match the same rows)
-        data.forEach(row => { byId.set(row.id, row); });
-      }
-    }
-
-    const merged = [...byId.values()].sort((a, b) => {
-      const da = new Date(a.created_at || 0), db = new Date(b.created_at || 0);
-      return db - da;
-    });
-
-    // Only surface an error if we got nothing AND an error occurred
-    if (merged.length === 0 && lastError) {
-      return { data: null, error: lastError };
-    }
-    return { data: merged, error: null };
-  };
-
   const handleExport = async () => {
     const selected = Object.entries(selectedForms).filter(([_, v]) => v);
     if (selected.length === 0) { setExportStatus('Please select at least one form type.'); return; }
@@ -391,61 +316,68 @@ export default function ClientExport() {
 
     const { start, end } = getDateRange();
 
-    const results = {};
-    let totalRecords = 0;
-    let errorList = [];
-
+    // Map selected form display names -> primary table names
     const tableMap = {};
     Object.values(FORM_CATEGORIES).forEach(cat => {
       Object.entries(cat.forms).forEach(([name, table]) => { tableMap[name] = table; });
     });
+    const requestedTables = selected
+      .map(([formName]) => tableMap[formName])
+      .filter(Boolean);
+    // Reverse lookup: table -> form display name (for building results object)
+    const tableToForm = {};
+    selected.forEach(([formName]) => { if (tableMap[formName]) tableToForm[tableMap[formName]] = formName; });
 
-    for (const [formName] of selected) {
-      const table = tableMap[formName];
-      if (!table) { continue; }
+    const results = {};
+    let totalRecords = 0;
+    let errorList = [];
 
-      try {
-        setExportStatus('Querying ' + formName + '...');
+    try {
+      const resp = await fetch('/api/client-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: companyCode,
+          password: password,
+          tables: requestedTables,
+          start,
+          end
+        })
+      });
 
-        // Determine which tables feed this form (one, or several if merged)
-        const mergeCfg = MERGE_TABLES[table];
-        const tablesToQuery = mergeCfg ? [table, ...mergeCfg.extra] : [table];
-
-        let combined = [];
-        let formError = null;
-
-        for (const t of tablesToQuery) {
-          const { data, error } = await queryTable(t, start, end);
-          if (error) {
-            console.error('Query error for', t, ':', error);
-            formError = (formError ? formError + '; ' : '') + t + ': ' + error.message;
-          } else if (data && data.length > 0) {
-            // Tag every row with its source so merged sheets stay traceable
-            const sourceLabel = mergeCfg ? (mergeCfg.labels[t] || t) : null;
-            const tagged = sourceLabel ? data.map(row => ({ source_system: sourceLabel, ...row })) : data;
-            combined = combined.concat(tagged);
-          }
-        }
-
-        // If every table for this form errored and nothing came back, record the error
-        if (formError && combined.length === 0) {
-          errorList.push(formName + ': ' + formError);
-        } else if (combined.length > 0) {
-          if (selectedLocation !== 'All') {
-            const filtered = combined.filter(row => row.location && row.location.toLowerCase().includes(selectedLocation.toLowerCase()));
-            if (filtered.length > 0) {
-              results[formName] = sortByLocation(filtered);
-              totalRecords += filtered.length;
-            }
-          } else {
-            results[formName] = sortByLocation(combined);
-            totalRecords += combined.length;
-          }
-        }
-      } catch (err) {
-        console.error('Catch error for', formName, ':', err);
-        errorList.push(formName + ': ' + err.message);
+      if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        setExportStatus('Export failed: ' + (errBody.error || ('HTTP ' + resp.status)));
+        setExporting(false);
+        return;
       }
+
+      const payload = await resp.json();
+      const serverResults = payload.results || {};
+
+      for (const table of requestedTables) {
+        const formName = tableToForm[table];
+        const entry = serverResults[table];
+        if (!entry) { continue; }
+        if (entry.error && (!entry.rows || entry.rows.length === 0)) {
+          errorList.push(formName + ': ' + entry.error);
+          continue;
+        }
+        let rows = entry.rows || [];
+        if (rows.length === 0) { continue; }
+
+        if (selectedLocation !== 'All') {
+          rows = rows.filter(row => row.location && row.location.toLowerCase().includes(selectedLocation.toLowerCase()));
+        }
+        if (rows.length > 0) {
+          results[formName] = sortByLocation(rows);
+          totalRecords += rows.length;
+        }
+      }
+    } catch (err) {
+      setExportStatus('Export failed: ' + (err.message || 'network error'));
+      setExporting(false);
+      return;
     }
 
     if (totalRecords === 0 && errorList.length === 0) {
