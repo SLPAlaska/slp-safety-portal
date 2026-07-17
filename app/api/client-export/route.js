@@ -31,7 +31,9 @@ const COMPANY_COLUMN_MAP = {
   'toolbox_meeting_assessment': 'client',
   'incidents': 'company_name',
   'lessons_learned': 'company_name',
-  'management_of_change': 'company'
+  'management_of_change': 'company',
+  'slickline_safety_audit': 'client_company',
+  'risk_control_conversation': 'client_company'
 };
 
 // Tables merged into a single logical form (portal + legacy)
@@ -45,6 +47,12 @@ const MERGE_TABLES = {
 // Allowlist: the ONLY tables this endpoint may read. Anything not here is rejected,
 // so the route can never be coerced into reading arbitrary tables.
 const ALLOWED_TABLES = new Set([
+  'slickline_safety_audit',
+  'task_crew_audit',
+  'welding_fab_shop_audit',
+  'welding_grinding_audit',
+  'surface_condition_audit',
+  'risk_control_conversation',
   'aed_inspections',
   'aerial_lift_evaluations',
   'bbs_observations',
