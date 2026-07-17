@@ -138,14 +138,31 @@ async function queryTable(table, searchTerms, start, end) {
 
   const byId = new Map();
   let lastError = null;
+  let missingColumn = false;
   for (const term of searchTerms) {
     const { data, error } = await supabaseAdmin.from(table).select('*')
       .gte('created_at', start).lte('created_at', end)
       .ilike(companyCol, `%${term}%`)
       .order('created_at', { ascending: false });
-    if (error) lastError = error;
-    else if (data) data.forEach(row => byId.set(row.id, row));
+    if (error) {
+      lastError = error;
+      // Postgres 42703 = undefined_column. This table has no company column to
+      // filter on (e.g. a child table of incidents). Stop trying to filter it.
+      if (error.code === '42703' || /column .* does not exist/i.test(error.message || '')) {
+        missingColumn = true;
+        break;
+      }
+    } else if (data) {
+      data.forEach(row => byId.set(row.id, row));
+    }
   }
+
+  // If the table simply has no company column, return empty rather than erroring.
+  // (Company-less child tables aren't meaningfully client-scoped exports.)
+  if (missingColumn) {
+    return { data: [], error: null };
+  }
+
   const merged = [...byId.values()].sort((a, b) =>
     new Date(b.created_at || 0) - new Date(a.created_at || 0));
   if (merged.length === 0 && lastError) return { data: null, error: lastError };

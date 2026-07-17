@@ -122,7 +122,6 @@ const FORM_CATEGORIES = {
       'Incident Report': 'incidents',
       'Property Damage Report': 'property_damage_reports',
       'Witness Statement': 'witness_statements',
-      'Corrective Actions': 'investigation_corrective_actions',
       'Lessons Learned': 'lessons_learned',
     }
   },
