@@ -333,18 +333,52 @@ export default function ClientExport() {
   };
 
   // Query one table for the current company + date range. Returns { data, error }.
+  // Runs one query PER search term and unions results (deduped by id). This avoids
+  // PostgREST's .or() comma-join, which silently fails when a search term contains
+  // spaces or reserved characters (e.g. "Pollard Wireline") - returning zero rows
+  // even though each ILIKE matches fine on its own.
   const queryTable = async (table, start, end) => {
     const companyCol = COMPANY_COLUMN_MAP.hasOwnProperty(table) ? COMPANY_COLUMN_MAP[table] : 'company';
-    let query = supabase
-      .from(table)
-      .select('*')
-      .gte('created_at', start)
-      .lte('created_at', end);
-    if (companyCol && searchTerms.length > 0) {
-      const orFilter = searchTerms.map(term => `${companyCol}.ilike.%${term}%`).join(',');
-      query = query.or(orFilter);
+
+    // No company column or no terms: single unfiltered (by company) query
+    if (!companyCol || searchTerms.length === 0) {
+      return await supabase
+        .from(table)
+        .select('*')
+        .gte('created_at', start)
+        .lte('created_at', end)
+        .order('created_at', { ascending: false });
     }
-    return await query.order('created_at', { ascending: false });
+
+    const byId = new Map();
+    let lastError = null;
+
+    for (const term of searchTerms) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .gte('created_at', start)
+        .lte('created_at', end)
+        .ilike(companyCol, `%${term}%`)
+        .order('created_at', { ascending: false });
+      if (error) {
+        lastError = error;
+      } else if (data) {
+        // Dedupe across terms (e.g. "Pollard" and "Pollard Wireline" both match the same rows)
+        data.forEach(row => { byId.set(row.id, row); });
+      }
+    }
+
+    const merged = [...byId.values()].sort((a, b) => {
+      const da = new Date(a.created_at || 0), db = new Date(b.created_at || 0);
+      return db - da;
+    });
+
+    // Only surface an error if we got nothing AND an error occurred
+    if (merged.length === 0 && lastError) {
+      return { data: null, error: lastError };
+    }
+    return { data: merged, error: null };
   };
 
   const handleExport = async () => {
