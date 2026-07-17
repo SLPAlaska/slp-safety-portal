@@ -177,7 +177,7 @@ const FORM_CATEGORIES = {
   },
 };
 
-const DATE_RANGES = ['Last Week', 'Last Month', 'Last 3 Months', 'Last Year', 'Year to Date', 'Custom Range'];
+const DATE_RANGES = ['All Time', 'Last Week', 'Last Month', 'Last 3 Months', 'Last Year', 'Year to Date', 'Custom Range'];
 
 const LOCATIONS = [
   'All', 'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',
@@ -194,7 +194,7 @@ export default function ClientExport() {
   const [error, setError] = useState('');
 
   const [selectedForms, setSelectedForms] = useState({});
-  const [dateRange, setDateRange] = useState('Year to Date');
+  const [dateRange, setDateRange] = useState('All Time');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('All');
@@ -256,6 +256,8 @@ export default function ClientExport() {
     const now = new Date();
     let start, end = now.toISOString();
     switch (dateRange) {
+      case 'All Time':
+        start = new Date('2000-01-01T00:00:00.000Z').toISOString(); break;
       case 'Last Week':
         start = new Date(now - 7 * 86400000).toISOString(); break;
       case 'Last Month':
