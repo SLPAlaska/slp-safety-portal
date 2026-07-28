@@ -284,18 +284,20 @@ export default function InvestigationReport() {
           </Section>
         )}
 
-        <Section icon={<I.BadgeCheck size={16} color="#fff" />} title="Investigation Checklist">
-          <Checklist
-            timeline={timeline}
-            photos={allPhotos}
-            witnesses={witnesses}
-            actions={correctiveActions}
-            lessons={lessons}
-            hasAnalysis={isLocal ? !!localReview : is5Why ? !!fiveWhy : rcaFactors.some(f => f.is_factor)}
-          />
-        </Section>
+        <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+          <Section icon={<I.BadgeCheck size={16} color="#fff" />} title="Investigation Checklist">
+            <Checklist
+              timeline={timeline}
+              photos={allPhotos}
+              witnesses={witnesses}
+              actions={correctiveActions}
+              lessons={lessons}
+              hasAnalysis={isLocal ? !!localReview : is5Why ? !!fiveWhy : rcaFactors.some(f => f.is_factor)}
+            />
+          </Section>
 
-        <ReportFooter />
+          <ReportFooter />
+        </div>
       </div>
     </>
   );
@@ -529,7 +531,7 @@ function InitialFindings({ incident }) {
   return (
     <div style={cardStyle}>
       {blocks.map(([label, val]) => (
-        <div key={label} style={{ marginBottom: 12 }}>
+        <div key={label} style={{ marginBottom: 12, breakInside: 'avoid', pageBreakInside: 'avoid' }}>
           <div style={blockLabelStyle}>{label}:</div>
           <div style={paraStyle}>{val}</div>
         </div>
@@ -964,9 +966,13 @@ function Checklist({ timeline, photos, witnesses, actions, lessons, hasAnalysis 
 function ReportFooter() {
   return (
     <div style={{
-      marginTop: 28, paddingTop: 14,
+      marginTop: 20, paddingTop: 14,
       borderTop: '2px solid #d71919',
       textAlign: 'center',
+      pageBreakBefore: 'avoid',
+      breakBefore: 'avoid',
+      pageBreakInside: 'avoid',
+      breakInside: 'avoid',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
         <img src={LOGO_URL} alt="" style={{ height: 24, width: 'auto', objectFit: 'contain' }} />
@@ -1018,6 +1024,8 @@ function PrintStyles() {
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
           color-adjust: exact !important;
+          orphans: 3;
+          widows: 3;
         }
         html, body {
           background: white !important;
@@ -1032,7 +1040,10 @@ function PrintStyles() {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
-        .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+        .avoid-break, .keep-together {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
         img { max-width: 100% !important; page-break-inside: avoid; break-inside: avoid; }
         h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
       }
@@ -1074,12 +1085,16 @@ const blockLabelStyle = {
   fontWeight: 700,
   color: '#1f2937',
   marginBottom: 4,
+  pageBreakAfter: 'avoid',
+  breakAfter: 'avoid',
 };
 const paraStyle = {
   fontSize: 12,
   lineHeight: 1.55,
   color: '#374151',
   whiteSpace: 'pre-wrap',
+  orphans: 3,
+  widows: 3,
 };
 const btnPrimary = {
   display: 'inline-flex', alignItems: 'center', gap: 6,
