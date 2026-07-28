@@ -396,8 +396,8 @@ function Pill({ label, tone }) {
 // =====================================================================
 function Section({ icon, title, count, children }) {
   return (
-    <section style={{ marginBottom: 18, pageBreakInside: 'auto' }} className="section">
-      <div style={{
+    <section style={{ marginBottom: 16, pageBreakInside: 'auto', breakInside: 'auto' }} className="section">
+      <div className="section-header" style={{
         background: 'linear-gradient(90deg, #d71919 0%, #a80a0a 100%)',
         color: 'white',
         padding: '10px 16px',
@@ -410,11 +410,13 @@ function Section({ icon, title, count, children }) {
         alignItems: 'center',
         gap: 10,
         boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        pageBreakAfter: 'avoid',
+        breakAfter: 'avoid',
       }}>
         {icon}
         <span>{title}{count !== undefined ? ` (${count})` : ''}</span>
       </div>
-      <div style={{ padding: '14px 4px' }}>
+      <div style={{ padding: '12px 4px 0' }}>
         {children}
       </div>
     </section>
@@ -610,24 +612,32 @@ function Timeline({ events }) {
 // =====================================================================
 function Evidence({ photos, compressedMap, ready }) {
   return (
-    <div>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: 14,
+    }}>
       {photos.map((p, idx) => {
         const src = compressedMap[p.url] || p.url;
         return (
-          <div key={p.key} style={{ marginBottom: 22, pageBreakInside: 'avoid' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+          <div key={p.key} style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#1f2937', marginBottom: 5 }}>
               {idx + 1}. {p.caption}
               {p.tag === 'INITIAL' && (
                 <span style={{ marginLeft: 8, fontSize: 9, padding: '1px 6px', background: '#dbeafe', color: '#1e40af', borderRadius: 3, fontWeight: 700 }}>FIELD REPORT</span>
               )}
             </div>
-            <div style={{ textAlign: 'center', background: '#f9fafb', padding: 6, borderRadius: 6 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#f9fafb', padding: 6, borderRadius: 6,
+              height: 260, overflow: 'hidden',
+            }}>
               <img
                 src={src}
                 alt={p.caption}
                 style={{
                   maxWidth: '100%',
-                  maxHeight: 360,
+                  maxHeight: 248,
                   objectFit: 'contain',
                   borderRadius: 4,
                   border: '1px solid #e5e7eb',
@@ -638,7 +648,7 @@ function Evidence({ photos, compressedMap, ready }) {
         );
       })}
       {!ready && (
-        <div style={{ fontSize: 11, fontStyle: 'italic', color: '#6b7280', textAlign: 'center', padding: 10 }}>
+        <div style={{ gridColumn: '1 / -1', fontSize: 11, fontStyle: 'italic', color: '#6b7280', textAlign: 'center', padding: 10 }}>
           Compressing photos for PDF... they will be embedded once ready.
         </div>
       )}
@@ -978,7 +988,7 @@ function ReportFooter() {
 function FullScreenMessage({ text, tone }) {
   return (
     <div style={{
-      minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: '#f3f4f6', padding: 24, fontFamily: 'system-ui, -apple-system, sans-serif',
     }}>
       <div style={{
@@ -1016,6 +1026,12 @@ function PrintStyles() {
         }
         .no-print { display: none !important; }
         .section { page-break-inside: auto; break-inside: auto; }
+        .section-header {
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
         .avoid-break { page-break-inside: avoid; break-inside: avoid; }
         img { max-width: 100% !important; page-break-inside: avoid; break-inside: avoid; }
         h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
