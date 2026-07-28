@@ -396,7 +396,7 @@ function Pill({ label, tone }) {
 // =====================================================================
 function Section({ icon, title, count, children }) {
   return (
-    <section style={{ marginBottom: 18, pageBreakInside: 'avoid' }} className="section">
+    <section style={{ marginBottom: 18, pageBreakInside: 'auto' }} className="section">
       <div style={{
         background: 'linear-gradient(90deg, #d71919 0%, #a80a0a 100%)',
         color: 'white',
@@ -978,7 +978,7 @@ function ReportFooter() {
 function FullScreenMessage({ text, tone }) {
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: '#f3f4f6', padding: 24, fontFamily: 'system-ui, -apple-system, sans-serif',
     }}>
       <div style={{
@@ -1015,8 +1015,10 @@ function PrintStyles() {
           print-color-adjust: exact !important;
         }
         .no-print { display: none !important; }
-        .section { page-break-inside: avoid; break-inside: avoid; }
+        .section { page-break-inside: auto; break-inside: auto; }
+        .avoid-break { page-break-inside: avoid; break-inside: avoid; }
         img { max-width: 100% !important; page-break-inside: avoid; break-inside: avoid; }
+        h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
       }
       body {
         background: #f3f4f6;
@@ -1038,7 +1040,6 @@ const reportContainerStyle = {
   margin: '0 auto',
   padding: '24px',
   background: 'white',
-  minHeight: '100vh',
   boxShadow: '0 0 20px rgba(0,0,0,0.06)',
 };
 const topBarStyle = {
