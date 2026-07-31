@@ -19,6 +19,27 @@ const ADMIN_EMAIL = 'brian@slpalaska.com';
  * 5. Offline submissions queue and auto-retry when connection returns
  */
 
+/**
+ * Convert top-level '' values to null.
+ *
+ * Blank optional fields arrive from the forms as empty strings. Postgres
+ * accepts '' for text columns but rejects it for date/numeric/uuid
+ * ('invalid input syntax for type date: ""'), which is what lands rows in
+ * failed_submissions.
+ *
+ * Deliberately exact and shallow: only a strict '' becomes null. 0, false,
+ * null, undefined, whitespace-only strings, nested objects and array members
+ * are left exactly as they are. No truthiness tests.
+ */
+export function nullifyEmptyStrings(obj) {
+  if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+  const out = { ...obj };
+  for (const key of Object.keys(out)) {
+    if (out[key] === '') out[key] = null;
+  }
+  return out;
+}
+
 export async function safeSubmit({ table, data, photoRef, formType }) {
   const result = {
     success: false,
@@ -64,7 +85,7 @@ export async function safeSubmit({ table, data, photoRef, formType }) {
   }
 
   // Step 2: Build submission data
-  const submitData = { ...data };
+  let submitData = { ...data };
   if (photoUrls && photoUrls.length > 0) {
     submitData.photo_urls = photoUrls;
   }
@@ -79,6 +100,8 @@ export async function safeSubmit({ table, data, photoRef, formType }) {
   }
 
   // Step 4: Try primary insert
+  submitData = nullifyEmptyStrings(submitData);
+
   try {
     const { error } = await supabase.from(table).insert([submitData]);
     if (error) throw error;
@@ -185,12 +208,13 @@ export async function processOfflineQueue() {
 
     for (const item of queue) {
       try {
-        const { error } = await supabase.from(item.target_table).insert([item.data]);
+        const replayData = nullifyEmptyStrings(item.data);
+        const { error } = await supabase.from(item.target_table).insert([replayData]);
         if (error) {
           const { error: backupErr } = await supabase.from('failed_submissions').insert([{
             form_type: item.form_type,
             target_table: item.target_table,
-            submission_data: item.data,
+            submission_data: replayData,
             error_message: `Offline retry: ${error.message}`,
             status: 'pending',
             created_at: item.timestamp
