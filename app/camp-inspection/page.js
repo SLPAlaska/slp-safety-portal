@@ -20,7 +20,7 @@ const supabase = createClient(
 // NOTE: Sync this list with your other Field Forms (e.g. app/safety-meetings/page.js)
 // if you've added/edited companies elsewhere. Apache Corp. is present per Trent's note.
 const COMPANIES = [
-  'A-C Electric','AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services',
+  'A-C Electric','Ace Energy Services', 'AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services',
   'CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction',
   'ConocoPhillips','Fox Energy Services','GBR','Harvest Midstream','MagTec Alaska',
   'Pollard Wireline','Ridgeline','SLP Alaska','Other'

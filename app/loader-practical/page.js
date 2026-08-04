@@ -9,7 +9,7 @@ const supabase = createClient(
 );
 
 const COMPANIES = [
-  'A-C Electric', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
+  'A-C Electric', 'Ace Energy Services', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
   'CCI-Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction',
   'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West',
   'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream',
