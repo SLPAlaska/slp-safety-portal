@@ -9,6 +9,33 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// Maps GoTrue sign-in failures to messages that tell the user what actually
+// happened. Previously every failure collapsed into "Invalid email or
+// password", which made a fixable account state (unconfirmed email) look
+// identical to a wrong password.
+function describeSignInError(signInError) {
+  const code = (signInError?.code || '').toLowerCase()
+  const msg  = (signInError?.message || '').toLowerCase()
+  const has  = (...needles) => needles.some(n => msg.includes(n))
+
+  if (code === 'email_not_confirmed' || has('not confirmed', 'email not confirmed')) {
+    return 'This account has not been activated yet. Contact your SLP Alaska administrator to finish setup.'
+  }
+  if (code === 'user_banned' || has('banned')) {
+    return 'This account is locked. Contact your SLP Alaska administrator.'
+  }
+  if (code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit' || has('rate limit')) {
+    return 'Too many sign-in attempts. Wait about a minute, then try again.'
+  }
+  if (code === 'email_provider_disabled' || has('logins are disabled', 'signups not allowed')) {
+    return 'Email sign-in is currently disabled. Contact your SLP Alaska administrator.'
+  }
+  if (code === 'invalid_credentials' || has('invalid login credentials')) {
+    return 'Invalid email or password. Please try again.'
+  }
+  return 'Unable to sign in. Contact your SLP Alaska administrator.'
+}
+
 export default function LmsLoginPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -19,13 +46,33 @@ export default function LmsLoginPage() {
     setError('')
     setLoading(true)
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    })
+    let data, signInError
+    try {
+      const result = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+      data = result.data
+      signInError = result.error
+    } catch (err) {
+      console.error('[lms/login] sign-in threw:', err)
+      setError('Could not reach the sign-in service. Check your connection and try again.')
+      setLoading(false)
+      return
+    }
 
     if (signInError) {
-      setError('Invalid email or password. Please try again.')
+      // Raw code/message kept in the console so an admin can diagnose without
+      // guessing, while the learner sees plain language.
+      console.warn('[lms/login] sign-in failed:', signInError.code, signInError.message)
+      setError(describeSignInError(signInError))
+      setLoading(false)
+      return
+    }
+
+    if (!data?.session?.access_token) {
+      console.warn('[lms/login] sign-in returned no session')
+      setError('Sign-in did not complete. Contact your SLP Alaska administrator.')
       setLoading(false)
       return
     }
@@ -38,14 +85,36 @@ export default function LmsLoginPage() {
       return
     }
 
-    const res = await fetch('/api/lms/learner/check-user', {
-      headers: { 'Authorization': `Bearer ${data.session.access_token}` }
-    })
-    const userData = await res.json()
+    let res, userData
+    try {
+      res = await fetch('/api/lms/learner/check-user', {
+        headers: { 'Authorization': `Bearer ${data.session.access_token}` }
+      })
+      userData = await res.json()
+    } catch (err) {
+      console.error('[lms/login] check-user failed:', err)
+      await supabase.auth.signOut()
+      setError('Could not load your training profile. Contact your SLP Alaska administrator.')
+      setLoading(false)
+      return
+    }
 
     if (!res.ok) {
+      console.warn('[lms/login] check-user rejected:', res.status, userData)
       await supabase.auth.signOut()
-      setError(userData.error || 'Account not found. Contact your administrator.')
+
+      let profileMsg = userData?.error
+      if (!profileMsg) {
+        if (res.status === 403) {
+          profileMsg = 'This account is inactive. Contact your SLP Alaska administrator.'
+        } else if (res.status === 404) {
+          profileMsg = 'No training profile is linked to this login. Contact your SLP Alaska administrator.'
+        } else {
+          profileMsg = 'Account not found. Contact your administrator.'
+        }
+      }
+
+      setError(profileMsg)
       setLoading(false)
       return
     }
