@@ -49,7 +49,11 @@ export default function Survey() {
   const [workLocation, setWorkLocation] = useState('')
   const [locationError, setLocationError] = useState('')
 
+  const [respondentName, setRespondentName] = useState('')
+  const [respondentRole, setRespondentRole] = useState('')
+
   const [answers, setAnswers] = useState({})
+  const [elaborations, setElaborations] = useState({})
   const [showMissing, setShowMissing] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
@@ -70,6 +74,10 @@ export default function Survey() {
 
   const setAnswer = (questionId, value) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }))
+  }
+
+  const setElaboration = (questionId, value) => {
+    setElaborations(prev => ({ ...prev, [questionId]: value }))
   }
 
   const handleLookup = async (e) => {
@@ -143,7 +151,12 @@ export default function Survey() {
       if (q.qtype === 'likert5') {
         payload.push({ question_id: q.question_id, likert: value })
       } else if (q.qtype === 'select') {
-        payload.push({ question_id: q.question_id, choice: value })
+        const elab = (elaborations[q.question_id] || '').trim()
+        payload.push({
+          question_id: q.question_id,
+          choice: value,
+          ...(elab ? { free_text: elab } : {})
+        })
       } else if (q.qtype === 'text') {
         const text = (value || '').trim()
         if (text) payload.push({ question_id: q.question_id, free_text: text })
@@ -153,7 +166,9 @@ export default function Survey() {
     const { error } = await supabase.rpc('submit_survey', {
       p_token: code,
       p_work_location: workLocation,
-      p_answers: payload
+      p_answers: payload,
+      p_name: respondentName.trim() || null,
+      p_role: respondentRole.trim() || null
     })
 
     if (error) {
@@ -179,7 +194,13 @@ export default function Survey() {
         <div className="card-header">
           <img src="/Logo.png" alt="SLP Alaska" />
           <h1>{screen === 'code' ? 'Safety Culture Survey' : title}</h1>
-          {screen === 'questions' && <p>Responding as {roleBand} &middot; {workLocation}</p>}
+          {screen === 'questions' && (
+            <p>
+              {respondentRole.trim()
+                ? `Responding as ${respondentRole.trim()} \u00B7 ${workLocation}`
+                : `Responding \u00B7 ${workLocation}`}
+            </p>
+          )}
         </div>
 
         {screen === 'code' && (
@@ -205,7 +226,7 @@ export default function Survey() {
                   placeholder="ENTER CODE"
                   disabled={loading}
                 />
-                <p className="hint">Your answers are not tied to your name.</p>
+                <p className="hint">Anonymous unless you choose to add your name on the next screen.</p>
               </div>
 
               {codeError && <div className="alert error">{codeError}</div>}
@@ -219,18 +240,49 @@ export default function Survey() {
 
         {screen === 'intro' && (
           <div className="card-body">
-            <p className="role-band">You are responding as: <strong>{roleBand}</strong></p>
-
             <div className="privacy">
               <p>
-                Your answers are not linked to your name, your code, or your device. SLP Alaska
-                sees results by role and location only, and only once at least five people in a
-                group have responded. MagTec receives the summary, not individual responses.
+                This survey is anonymous unless you choose to add your name below. Name and
+                role are completely optional &mdash; leave them blank and your answers are not
+                linked to you, your code, or your device.
               </p>
               <p>
                 Written comments are shown to leadership word for word. Write them the way you
                 would be comfortable having them read aloud.
               </p>
+            </div>
+
+            <div className="name-role-grid">
+              <div className="form-group">
+                <label htmlFor="respondent-name">
+                  Name <span className="optional">(Optional)</span>
+                </label>
+                <input
+                  id="respondent-name"
+                  className="text-input"
+                  type="text"
+                  autoComplete="off"
+                  maxLength={80}
+                  value={respondentName}
+                  onChange={(e) => setRespondentName(e.target.value)}
+                  placeholder="Leave blank to stay anonymous"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="respondent-role">
+                  Role / Position <span className="optional">(Optional)</span>
+                </label>
+                <input
+                  id="respondent-role"
+                  className="text-input"
+                  type="text"
+                  autoComplete="off"
+                  maxLength={80}
+                  value={respondentRole}
+                  onChange={(e) => setRespondentRole(e.target.value)}
+                  placeholder="e.g. Operator, Lead, Manager"
+                />
+              </div>
             </div>
 
             <div className="form-group">
@@ -311,18 +363,34 @@ export default function Survey() {
                     )}
 
                     {q.qtype === 'select' && (
-                      <div className="select-list">
-                        {toOptions(q.options).map(option => (
-                          <button
-                            key={option}
-                            type="button"
-                            className={`choice ${answers[q.question_id] === option ? 'selected' : ''}`}
-                            onClick={() => setAnswer(q.question_id, option)}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
+                      <>
+                        <div className="select-list">
+                          {toOptions(q.options).map(option => (
+                            <button
+                              key={option}
+                              type="button"
+                              className={`choice ${answers[q.question_id] === option ? 'selected' : ''}`}
+                              onClick={() => setAnswer(q.question_id, option)}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        {answers[q.question_id] != null && (
+                          <div className="elaboration">
+                            <label className="elaboration-label">
+                              Please elaborate specifically on the task or location or issue
+                              that made you choose this response. <span className="optional">(Optional)</span>
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={elaborations[q.question_id] || ''}
+                              onChange={(e) => setElaboration(q.question_id, e.target.value)}
+                              placeholder="Task, location, or issue behind your answer."
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {q.qtype === 'text' && (
@@ -448,10 +516,43 @@ export default function Survey() {
           color: #6b7280;
         }
 
-        .role-band {
-          font-size: 17px;
+        .name-role-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+        }
+
+        .text-input {
+          width: 100%;
+          padding: 14px;
+          min-height: 52px;
+          border: 2px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 16px;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+
+        .text-input:focus {
+          outline: none;
+          border-color: #1e40af;
+        }
+
+        .elaboration {
+          margin-top: 14px;
+          padding: 14px;
+          background: #f3f4f6;
+          border-left: 4px solid #1e40af;
+          border-radius: 6px;
+        }
+
+        .elaboration-label {
+          display: block;
+          margin-bottom: 10px;
+          font-size: 15px;
+          font-weight: 500;
           color: #1f2937;
-          margin: 0 0 20px;
+          line-height: 1.5;
         }
 
         .privacy {
@@ -712,6 +813,10 @@ export default function Survey() {
             margin: 0 -20px;
             padding-left: 20px;
             padding-right: 20px;
+          }
+
+          .name-role-grid {
+            grid-template-columns: 1fr;
           }
 
           .likert-grid {
