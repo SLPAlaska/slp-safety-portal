@@ -15,8 +15,10 @@ const SLP_TEAM = [
   { name: 'Brian', email: 'brian@slpalaska.com', role: 'Admin' },
   { name: 'Daniel', email: 'daniel@slpalaska.com', role: 'Investigator' },
   { name: 'Mick', email: 'mick@slpalaska.com', role: 'Investigator' },
-  { name: 'Lonnie', email: 'lonnie@slpalaska.com', role: 'Investigator' },
   { name: 'Todd', email: 'todd@slpalaska.com', role: 'Investigator' },
+  { name: 'Ty', email: 'ty@slpalaska.com', role: 'Investigator' },
+  { name: 'Scott', email: 'scott@slpalaska.com', role: 'Investigator' },
+  { name: 'Clyde', email: 'clyde@slpalaska.com', role: 'Investigator' },
   { name: 'Krystal', email: 'krystal@slpalaska.com', role: 'Coordinator' },
   { name: 'Britney', email: 'britney@slpalaska.com', role: 'Coordinator' }
 ];
