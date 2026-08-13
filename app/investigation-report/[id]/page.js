@@ -246,13 +246,13 @@ export default function InvestigationReport() {
         )}
 
         {timeline.length > 0 && (
-          <Section icon={<I.Clock size={16} color="#fff" />} title="Timeline of Events" count={timeline.length}>
+          <Section icon={<I.Clock size={16} color="#fff" />} title="Timeline of Events" count={timeline.length} breakBefore>
             <Timeline events={timeline} />
           </Section>
         )}
 
         {allPhotos.length > 0 && (
-          <Section icon={<I.Camera size={16} color="#fff" />} title="Evidence" count={allPhotos.length}>
+          <Section icon={<I.Camera size={16} color="#fff" />} title="Evidence" count={allPhotos.length} breakBefore>
             <Evidence photos={allPhotos} compressedMap={compressedMap} ready={photosReady} />
           </Section>
         )}
@@ -279,7 +279,7 @@ export default function InvestigationReport() {
         )}
 
         {lessons.length > 0 && (
-          <Section icon={<I.Lightbulb size={16} color="#fff" />} title="Lessons Learned" count={lessons.length} breakBefore>
+          <Section icon={<I.Lightbulb size={16} color="#fff" />} title="Lessons Learned" count={lessons.length}>
             <LessonsLearned lessons={lessons} />
           </Section>
         )}
@@ -627,8 +627,8 @@ function Evidence({ photos, compressedMap, ready }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: 12,
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: 14,
     }}>
       {photos.map((p, idx) => {
         const src = compressedMap[p.url] || p.url;
@@ -643,14 +643,14 @@ function Evidence({ photos, compressedMap, ready }) {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#f9fafb', padding: 6, borderRadius: 6,
-              height: 200, overflow: 'hidden',
+              height: 240, overflow: 'hidden',
             }}>
               <img
                 src={src}
                 alt={p.caption}
                 style={{
                   maxWidth: '100%',
-                  maxHeight: 188,
+                  maxHeight: 228,
                   objectFit: 'contain',
                   borderRadius: 4,
                   border: '1px solid #e5e7eb',
