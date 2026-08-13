@@ -252,13 +252,13 @@ export default function InvestigationReport() {
         )}
 
         {allPhotos.length > 0 && (
-          <Section icon={<I.Camera size={16} color="#fff" />} title="Evidence" count={allPhotos.length} breakBefore>
+          <Section icon={<I.Camera size={16} color="#fff" />} title="Evidence" count={allPhotos.length}>
             <Evidence photos={allPhotos} compressedMap={compressedMap} ready={photosReady} />
           </Section>
         )}
 
         {witnesses.length > 0 && (
-          <Section icon={<I.Users size={16} color="#fff" />} title="Witness Statements" count={witnesses.length} breakBefore>
+          <Section icon={<I.Users size={16} color="#fff" />} title="Witness Statements" count={witnesses.length}>
             <Witnesses witnesses={witnesses} />
           </Section>
         )}
@@ -485,14 +485,16 @@ function IncidentSummary({ incident, witnesses }) {
         </div>
       )}
 
-      {/* Initial Witness callout (yellow) */}
+      {/* Initial Witness callout (yellow) — always opens page 2 */}
       {witnesses.length > 0 && (
-        <Callout tone="warning" title="Initial Witness Info" icon={<I.Users size={14} color="#92400e" />}>
-          {witnesses.map((w, i) => {
-            const name = w.name || w.witness_name;
-            return <span key={w.id}>{i > 0 && ', '}{name || 'Unnamed'}</span>;
-          })}
-        </Callout>
+        <div style={{ pageBreakBefore: 'always', breakBefore: 'page' }}>
+          <Callout tone="warning" title="Initial Witness Info" icon={<I.Users size={14} color="#92400e" />}>
+            {witnesses.map((w, i) => {
+              const name = w.name || w.witness_name;
+              return <span key={w.id}>{i > 0 && ', '}{name || 'Unnamed'}</span>;
+            })}
+          </Callout>
+        </div>
       )}
 
       {/* Injured Person callout (green) - only if injury_occurred */}
@@ -625,8 +627,8 @@ function Evidence({ photos, compressedMap, ready }) {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: 14,
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: 12,
     }}>
       {photos.map((p, idx) => {
         const src = compressedMap[p.url] || p.url;
@@ -641,14 +643,14 @@ function Evidence({ photos, compressedMap, ready }) {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#f9fafb', padding: 6, borderRadius: 6,
-              height: 240, overflow: 'hidden',
+              height: 200, overflow: 'hidden',
             }}>
               <img
                 src={src}
                 alt={p.caption}
                 style={{
                   maxWidth: '100%',
-                  maxHeight: 228,
+                  maxHeight: 188,
                   objectFit: 'contain',
                   borderRadius: 4,
                   border: '1px solid #e5e7eb',
@@ -913,9 +915,8 @@ function LessonsLearned({ lessons }) {
           <div key={l.id} style={{
             marginBottom: 14, paddingBottom: 14,
             borderBottom: i < lessons.length - 1 ? '1px solid #f3f4f6' : 'none',
-            pageBreakInside: 'avoid',
           }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{title}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>{title}</div>
             {description && (
               <div style={{ ...paraStyle, marginTop: 6 }}>{description}</div>
             )}
@@ -924,6 +925,7 @@ function LessonsLearned({ lessons }) {
                 marginTop: 10, padding: '10px 12px',
                 background: '#fef3c7', borderLeft: '4px solid #f59e0b', borderRadius: 4,
                 fontSize: 12, color: '#7c2d12', fontStyle: 'italic',
+                pageBreakInside: 'avoid', breakInside: 'avoid',
               }}>
                 <strong style={{ fontStyle: 'normal', color: '#92400e' }}>Key Takeaway: </strong>
                 {l.key_takeaway}
