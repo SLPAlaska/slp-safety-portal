@@ -266,6 +266,7 @@ export default function InvestigationWorkbench() {
             <Stage2
               timeline={timeline}
               fkText={incident.incident_id}
+              incidentDate={incident.incident_date}
               userEmail={userEmail}
               onReload={async () => {
                 const { data } = await supabase.from('timeline_events').select('*').eq('incident_id', incident.incident_id).order('event_date').order('event_time');
@@ -296,6 +297,8 @@ export default function InvestigationWorkbench() {
           {currentStage === 4 && (
             <Stage4
               incident={incident}
+              timeline={timeline}
+              witnesses={witnesses}
               correctiveActions={correctiveActions}
               lessons={lessons}
               fkText={incident.incident_id}
@@ -475,8 +478,8 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, 
 // =====================================================================
 // STAGE 2 - Timeline
 // =====================================================================
-function Stage2({ timeline, fkText, userEmail, onReload, onComplete }) {
-  const [form, setForm] = useState({ event_date: '', event_time: '', description: '', is_critical: false });
+function Stage2({ timeline, fkText, incidentDate, userEmail, onReload, onComplete }) {
+  const [form, setForm] = useState({ event_date: incidentDate || '', event_time: '', description: '', is_critical: false });
   const [busy, setBusy] = useState(false);
 
   async function addEvent() {
@@ -494,7 +497,7 @@ function Stage2({ timeline, fkText, userEmail, onReload, onComplete }) {
     });
     setBusy(false);
     if (error) return alert('Failed to add event: ' + error.message);
-    setForm({ event_date: '', event_time: '', description: '', is_critical: false });
+    setForm({ event_date: incidentDate || '', event_time: '', description: '', is_critical: false });
     onReload();
   }
 
@@ -796,7 +799,101 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, correctiveActions, lessons, fkText, fkUuid, userEmail, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+  const [gateBusy, setGateBusy] = useState(false);
+  const [gateIssues, setGateIssues] = useState(null); // null = modal closed
+
+  function collectReportText() {
+    const items = [];
+    const push = (key, table, id, column, text, mirror) => {
+      if (id && column && text && String(text).trim()) {
+        items.push({ key, table, id, column, mirror: mirror || null, text: String(text) });
+      }
+    };
+    push('Brief Description',      'incidents', incident.id, 'brief_description',       incident.brief_description);
+    push('Detailed Description',   'incidents', incident.id, 'detailed_description',    incident.detailed_description);
+    push('Suspected Root Causes',  'incidents', incident.id, 'suspected_root_causes',   incident.suspected_root_causes);
+    push('Causal Factors',         'incidents', incident.id, 'causal_factors',          incident.causal_factors);
+    push('Initial Lessons',        'incidents', incident.id, 'lessons_learned_initial', incident.lessons_learned_initial);
+    (timeline || []).forEach((ev, i) => {
+      const col = ev.description !== undefined ? 'description' : 'event_description';
+      const mirror = (ev.description !== undefined && ev.event_description !== undefined) ? 'event_description' : null;
+      push(`Timeline Event ${i + 1}`, 'timeline_events', ev.id, col, ev.description || ev.event_description, mirror);
+    });
+    (witnesses || []).forEach((w, i) => {
+      const col = w.summary !== undefined ? 'summary' : 'statement_summary';
+      push(`Witness ${i + 1}`, 'witness_statements', w.id, col, w.summary || w.statement_summary);
+    });
+    (correctiveActions || []).forEach((c, i) => {
+      push(`Corrective Action ${i + 1}`, 'investigation_corrective_actions', c.id, 'description', c.description);
+    });
+    (lessons || []).forEach((l, i) => {
+      const titleCol = l.title !== undefined ? 'title' : 'lesson_title';
+      const descCol  = l.description !== undefined ? 'description' : 'lesson_description';
+      push(`Lesson ${i + 1} Title`,    'lessons_learned', l.id, titleCol, l.title || l.lesson_title);
+      push(`Lesson ${i + 1} Text`,     'lessons_learned', l.id, descCol,  l.description || l.lesson_description);
+      push(`Lesson ${i + 1} Takeaway`, 'lessons_learned', l.id, 'key_takeaway', l.key_takeaway);
+    });
+    return items;
+  }
+
+  async function approveDirect() {
+    const { error } = await supabase.from('incidents').update({ status: 'Approved' }).eq('id', incident.id);
+    if (error) return alert('Failed to set status: ' + error.message);
+    window.location.reload();
+  }
+
+  async function handleStatusChange(next) {
+    if (next !== 'Approved') {
+      onIncidentChange({ status: next });
+      return;
+    }
+    // Spell-check gate: Approved is not allowed until the text is reviewed.
+    setGateBusy(true);
+    try {
+      const items = collectReportText();
+      if (items.length === 0) { setGateBusy(false); return approveDirect(); }
+      const res = await fetch('/api/spellcheck', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: items.map(({ key, text }) => ({ key, text })) }),
+      });
+      if (!res.ok) throw new Error('Spell check service returned ' + res.status);
+      const { results } = await res.json();
+      const byKey = Object.fromEntries((results || []).map(r => [r.key, r]));
+      const issues = items
+        .map(it => ({ ...it, corrected: byKey[it.key]?.corrected ?? it.text }))
+        .filter(it => it.corrected.trim() !== it.text.trim());
+      setGateBusy(false);
+      if (issues.length === 0) {
+        alert('Spell check passed — no issues found. Approving.');
+        return approveDirect();
+      }
+      setGateIssues(issues);
+    } catch (err) {
+      setGateBusy(false);
+      if (confirm('Spell check could not run (' + err.message + ').\n\nApprove WITHOUT the spelling review?')) {
+        return approveDirect();
+      }
+    }
+  }
+
+  async function applyAndApprove() {
+    setGateBusy(true);
+    try {
+      for (const it of gateIssues) {
+        const patch = { [it.column]: it.corrected };
+        if (it.mirror) patch[it.mirror] = it.corrected;
+        const { error } = await supabase.from(it.table).update(patch).eq('id', it.id);
+        if (error) throw new Error(`${it.key}: ${error.message}`);
+      }
+      await approveDirect();
+    } catch (err) {
+      setGateBusy(false);
+      alert('Failed to apply corrections: ' + err.message);
+    }
+  }
+
   return (
     <div>
       <StageHeader stage={4} title="Close It Out" subtitle="Define corrective actions using the hierarchy of controls, capture lessons learned, then approve and download the PDF." />
@@ -816,11 +913,16 @@ function Stage4({ incident, correctiveActions, lessons, fkText, fkUuid, userEmai
           <Label>Current status:</Label>
           <select
             value={incident.status || 'First Draft'}
-            onChange={e => onIncidentChange({ status: e.target.value })}
+            onChange={e => handleStatusChange(e.target.value)}
+            disabled={gateBusy}
             style={{ ...inputStyle, width: 'auto', flex: 'none' }}
           >
             {STATUS_FLOW.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          {gateBusy && <span style={{ fontSize: 12, color: C.muted }}>Running spelling &amp; grammar review…</span>}
+        </div>
+        <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>
+          Setting status to <strong>Approved</strong> runs an automatic spelling &amp; grammar review of all report text first.
         </div>
         <button onClick={onGeneratePDF} disabled={pdfGenerating} style={{ ...btnPrimaryDark, fontSize: 15 }}>
           {pdfGenerating ? 'Opening report...' : 'Open Printable Report (PDF)'}
@@ -831,6 +933,63 @@ function Stage4({ incident, correctiveActions, lessons, fkText, fkUuid, userEmai
       </Card>
 
       <StageFooter complete={incident.stage_4_complete} onComplete={onComplete} nextLabel="Mark Investigation Complete" />
+
+      {gateIssues && (
+        <SpellGateModal
+          issues={gateIssues}
+          busy={gateBusy}
+          onApply={applyAndApprove}
+          onOverride={() => { setGateIssues(null); approveDirect(); }}
+          onCancel={() => setGateIssues(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// =====================================================================
+// Spell-check gate modal (module level - never define inside render)
+// =====================================================================
+function SpellGateModal({ issues, busy, onApply, onOverride, onCancel }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }}>
+      <div style={{ background: 'white', borderRadius: 12, maxWidth: 780, width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>
+            Spelling &amp; Grammar Review — {issues.length} field{issues.length === 1 ? '' : 's'} need attention
+          </div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+            This report cannot be Approved until the issues below are corrected or explicitly overridden.
+          </div>
+        </div>
+        <div style={{ padding: '12px 20px', overflowY: 'auto', flex: 1 }}>
+          {issues.map(it => (
+            <div key={it.key} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #f3f4f6' }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#111827', marginBottom: 6 }}>{it.key}</div>
+              <div style={{ fontSize: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 10px', color: '#7f1d1d', whiteSpace: 'pre-wrap', marginBottom: 6 }}>
+                {it.text}
+              </div>
+              <div style={{ fontSize: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '8px 10px', color: '#14532d', whiteSpace: 'pre-wrap' }}>
+                {it.corrected}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '14px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          <button onClick={onCancel} disabled={busy} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #d1d5db', background: 'white', fontSize: 13, cursor: 'pointer' }}>
+            Cancel — keep editing
+          </button>
+          <button onClick={onOverride} disabled={busy} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #f59e0b', background: '#fffbeb', color: '#92400e', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+            Approve As-Is (override)
+          </button>
+          <button onClick={onApply} disabled={busy} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#16a34a', color: 'white', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
+            {busy ? 'Applying…' : 'Apply Corrections & Approve'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1579,7 +1738,12 @@ const btnSmall = {
 
 function formatDate(d) {
   if (!d) return '';
-  const dt = new Date(d);
+  // Bare YYYY-MM-DD strings parse as UTC midnight and display as the
+  // PREVIOUS day in Alaska. Parse date-only strings as LOCAL dates.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d).trim());
+  const dt = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(d);
   if (isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
