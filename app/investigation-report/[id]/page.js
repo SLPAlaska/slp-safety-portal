@@ -258,7 +258,7 @@ export default function InvestigationReport() {
         )}
 
         {witnesses.length > 0 && (
-          <Section icon={<I.Users size={16} color="#fff" />} title="Witness Statements" count={witnesses.length}>
+          <Section icon={<I.Users size={16} color="#fff" />} title="Witness Statements" count={witnesses.length} breakBefore>
             <Witnesses witnesses={witnesses} />
           </Section>
         )}
@@ -396,9 +396,18 @@ function Pill({ label, tone }) {
 // =====================================================================
 // Section with red ribbon header
 // =====================================================================
-function Section({ icon, title, count, children }) {
+function Section({ icon, title, count, children, breakBefore }) {
   return (
-    <section style={{ marginBottom: 16, pageBreakInside: 'auto', breakInside: 'auto' }} className="section">
+    <section
+      style={{
+        marginBottom: 16,
+        pageBreakInside: 'auto',
+        breakInside: 'auto',
+        pageBreakBefore: breakBefore ? 'always' : 'auto',
+        breakBefore: breakBefore ? 'page' : 'auto',
+      }}
+      className={breakBefore ? 'section section-break-before' : 'section'}
+    >
       <div className="section-header" style={{
         background: 'linear-gradient(90deg, #d71919 0%, #a80a0a 100%)',
         color: 'white',
@@ -1044,6 +1053,10 @@ function PrintStyles() {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
+        .section-break-before {
+          page-break-before: always !important;
+          break-before: page !important;
+        }
         img { max-width: 100% !important; page-break-inside: avoid; break-inside: avoid; }
         h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
       }
@@ -1114,7 +1127,13 @@ const btnGhost = {
 // =====================================================================
 function formatDate(d) {
   if (!d) return '';
-  const dt = new Date(d);
+  // CRITICAL: bare YYYY-MM-DD strings (Postgres `date` columns) are parsed by
+  // new Date() as midnight UTC, which renders as the PREVIOUS day in Alaska.
+  // Parse date-only strings as LOCAL dates so Aug 11 stays Aug 11.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d).trim());
+  const dt = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(d);
   if (isNaN(dt.getTime())) return d;
   return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
