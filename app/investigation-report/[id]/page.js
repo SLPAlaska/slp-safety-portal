@@ -279,7 +279,7 @@ export default function InvestigationReport() {
         )}
 
         {lessons.length > 0 && (
-          <Section icon={<I.Lightbulb size={16} color="#fff" />} title="Lessons Learned" count={lessons.length}>
+          <Section icon={<I.Lightbulb size={16} color="#fff" />} title="Lessons Learned" count={lessons.length} breakBefore>
             <LessonsLearned lessons={lessons} />
           </Section>
         )}
