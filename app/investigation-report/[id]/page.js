@@ -279,7 +279,7 @@ export default function InvestigationReport() {
         )}
 
         {lessons.length > 0 && (
-          <Section icon={<I.Lightbulb size={16} color="#fff" />} title="Lessons Learned" count={lessons.length}>
+          <Section icon={<I.Lightbulb size={16} color="#fff" />} title="Lessons Learned" count={lessons.length} breakBefore>
             <LessonsLearned lessons={lessons} />
           </Section>
         )}
@@ -583,7 +583,7 @@ function Timeline({ events }) {
       {events.map((e, idx) => {
         const isCritical = e.is_critical || e.critical;
         const description = e.description || e.event_description || '';
-        const dt = `${e.event_date || ''}${e.event_time ? ' ' + e.event_time.replace(/:\d\d$/, '') : ''}`.trim();
+        const dt = `${e.event_date ? formatDate(e.event_date) : ''}${e.event_time ? ' — ' + formatTime(e.event_time) : ''}`.trim();
         return (
           <div key={e.id} style={{
             display: 'flex', gap: 10,
@@ -1127,6 +1127,18 @@ const btnGhost = {
 // =====================================================================
 // Utilities
 // =====================================================================
+function formatTime(t) {
+  if (!t) return '';
+  // Accepts 'HH:MM' or 'HH:MM:SS'; renders 12-hour like '3:25 PM'.
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t).trim());
+  if (!m) return t;
+  let h = Number(m[1]);
+  const min = m[2];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${min} ${ampm}`;
+}
+
 function formatDate(d) {
   if (!d) return '';
   // CRITICAL: bare YYYY-MM-DD strings (Postgres `date` columns) are parsed by
