@@ -751,47 +751,78 @@ function FiveWhyForm({ data, setData, fkText, userEmail }) {
 }
 
 function LocalReviewForm({ data, setData, fkText, userEmail }) {
-  // Map our UI field keys to the actual table columns
+  // Columns verified against the live local_reviews schema on 2026-08-12.
+  // Do NOT add columns here without checking information_schema first.
   const fields = [
-    { key: 'what_happened',   label: 'What happened?',                          legacy: null },
-    { key: 'immediate_cause', label: 'What was the immediate cause?',           legacy: 'immediate_causes' },
-    { key: 'contributing',    label: 'What contributing factors were present?', legacy: 'findings' },
-    { key: 'preventive',      label: 'What can prevent recurrence?',            legacy: 'do_differently' },
+    { col: 'what_happened',    label: 'What happened?' },
+    { col: 'immediate_causes', label: 'What was the immediate cause?' },
+    { col: 'findings',         label: 'What contributing factors were present?' },
+    { col: 'do_differently',   label: 'What can prevent recurrence?' },
+    { col: 'additional_notes', label: 'Additional notes (optional)' },
   ];
-  async function save(uiKey, value) {
-    const f = fields.find(x => x.key === uiKey);
-    const dbPatch = {};
-    if (f.legacy) dbPatch[f.legacy] = value;
-    dbPatch[uiKey] = value;
-    const next = { ...data, [uiKey]: value, ...(f.legacy ? { [f.legacy]: value } : {}) };
-    setData(next);
-    if (data?.id) {
-      await supabase.from('local_reviews').update(dbPatch).eq('id', data.id);
-    } else {
-      const { data: inserted, error } = await supabase.from('local_reviews').insert({
-        incident_id: fkText,
-        created_by_email: userEmail,
-        ...dbPatch,
-      }).select().single();
-      if (!error && inserted) setData({ ...inserted, ...next });
+  const [form, setForm] = useState(() =>
+    Object.fromEntries(fields.map(f => [f.col, (data && data[f.col]) || '']))
+  );
+  const [saveMsg, setSaveMsg] = useState('');
+  const createPromiseRef = useRef(null);
+  const rowIdRef = useRef(data?.id || null);
+
+  async function persist(col) {
+    const value = form[col];
+    const already = (data && data[col]) || '';
+    if (value === already && rowIdRef.current) return; // nothing new to save
+    const patch = { [col]: value, updated_at: new Date().toISOString() };
+    try {
+      if (!rowIdRef.current) {
+        // First save creates the row exactly once; concurrent blurs share the same insert.
+        if (!createPromiseRef.current) {
+          createPromiseRef.current = supabase
+            .from('local_reviews')
+            .insert({ incident_id: fkText, created_by_email: userEmail, ...patch })
+            .select()
+            .single();
+        }
+        const { data: inserted, error } = await createPromiseRef.current;
+        if (error) { createPromiseRef.current = null; throw error; }
+        rowIdRef.current = inserted.id;
+        // If this blur wasn't the one that rode along with the insert, write it now.
+        if (inserted[col] !== value) {
+          const { error: e2 } = await supabase.from('local_reviews').update(patch).eq('id', inserted.id);
+          if (e2) throw e2;
+        }
+        setData({ ...inserted, ...patch, id: inserted.id });
+      } else {
+        const { error } = await supabase.from('local_reviews').update(patch).eq('id', rowIdRef.current);
+        if (error) throw error;
+        setData({ ...(data || {}), ...patch, id: rowIdRef.current });
+      }
+      setSaveMsg(`Saved ${new Date().toLocaleTimeString()}`);
+    } catch (err) {
+      alert(
+        'SAVE FAILED for "' + col + '": ' + (err.message || err) +
+        '\n\nYour text is still on screen but NOT saved to the database.' +
+        '\nDo not leave this stage until it saves. Try clicking out of the field again.'
+      );
     }
   }
-  function readField(f) {
-    return data?.[f.key] || (f.legacy && data?.[f.legacy]) || '';
-  }
+
   return (
     <Card title="Local Review">
       {fields.map(f => (
-        <div key={f.key} style={{ marginBottom: 12 }}>
+        <div key={f.col} style={{ marginBottom: 12 }}>
           <Label>{f.label}</Label>
           <textarea
-            value={readField(f)}
-            onChange={e => save(f.key, e.target.value)}
+            value={form[f.col]}
+            onChange={e => setForm({ ...form, [f.col]: e.target.value })}
+            onBlur={() => persist(f.col)}
             rows={3}
             style={inputStyle}
           />
         </div>
       ))}
+      <div style={{ fontSize: 11, color: saveMsg ? '#16a34a' : C.muted }}>
+        {saveMsg || 'Each field saves when you click out of it.'}
+      </div>
     </Card>
   );
 }
