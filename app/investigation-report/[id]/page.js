@@ -252,7 +252,7 @@ export default function InvestigationReport() {
         )}
 
         {allPhotos.length > 0 && (
-          <Section icon={<I.Camera size={16} color="#fff" />} title="Evidence" count={allPhotos.length}>
+          <Section icon={<I.Camera size={16} color="#fff" />} title="Evidence" count={allPhotos.length} breakBefore>
             <Evidence photos={allPhotos} compressedMap={compressedMap} ready={photosReady} />
           </Section>
         )}
@@ -641,14 +641,14 @@ function Evidence({ photos, compressedMap, ready }) {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#f9fafb', padding: 6, borderRadius: 6,
-              height: 260, overflow: 'hidden',
+              height: 240, overflow: 'hidden',
             }}>
               <img
                 src={src}
                 alt={p.caption}
                 style={{
                   maxWidth: '100%',
-                  maxHeight: 248,
+                  maxHeight: 228,
                   objectFit: 'contain',
                   borderRadius: 4,
                   border: '1px solid #e5e7eb',
