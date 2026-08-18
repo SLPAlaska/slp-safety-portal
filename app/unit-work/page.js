@@ -104,7 +104,7 @@ export default function UnitWorkPermit(){
       // Insert crew members
       if(validCrew.length>0){
         const crewRows=validCrew.map(c=>({permit_number:permitNumber,crew_name:c.name,company:c.company,acknowledged_hazards:'Yes'}));
-        await supabase.from('unit_work_crew_log').insert(crewRows);
+        await safeInsert('unit_work_crew_log', crewRows, 'unit-work');
       }
       
       await registerRecordKey('unit_work_permits',permitNumber,code);

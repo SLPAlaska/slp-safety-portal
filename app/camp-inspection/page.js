@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
+import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
 import {
   CAMP_QUESTIONS,
   SECTIONS,
@@ -333,7 +333,7 @@ export default function CampInspection() {
         (respRows || []).forEach(r => { idMap[r.question_id] = r.id; });
         caRows.forEach(c => { c.response_id = idMap[c.question_id] || null; });
 
-        const { error: caErr } = await supabase.from('camp_corrective_actions').insert(caRows);
+        const { error: caErr } = await safeInsert('camp_corrective_actions', caRows, 'camp-inspection');
         if (caErr) throw caErr;
       }
 
@@ -366,6 +366,7 @@ export default function CampInspection() {
 
         {step === 'section' && (
           <SectionWizard
+            inspectionCode={inspectionCode}
             inspectionId={inspectionId}
             meta={meta}
             setMeta={setMeta}
@@ -516,7 +517,7 @@ function HeaderForm({ meta, setMeta, handleStart, starting, captureGps, gettingG
 // ============================================================================
 // Step 2: Section wizard (one section at a time)
 // ============================================================================
-function SectionWizard({ inspectionId, meta, setMeta, currentSection, setCurrentSection, responses, updateResponse, handlePhotoUpload, removePhoto, uploading, saveStatus, setSaveStatus, sectionProgress, counters, onGoToReview }) {
+function SectionWizard({ inspectionId, inspectionCode, meta, setMeta, currentSection, setCurrentSection, responses, updateResponse, handlePhotoUpload, removePhoto, uploading, saveStatus, setSaveStatus, sectionProgress, counters, onGoToReview }) {
   const section = SECTIONS.find(s => s.order === currentSection);
   const questions = CAMP_QUESTIONS.filter(q => q.sectionOrder === currentSection);
   const sp = sectionProgress[currentSection];
@@ -556,6 +557,7 @@ function SectionWizard({ inspectionId, meta, setMeta, currentSection, setCurrent
 
         {section.freeText ? (
           <OverallFindingsBlock
+            inspectionCode={inspectionCode}
             inspectionId={inspectionId}
             value={meta.overall_findings || ''}
             onChange={v => setMeta(m => ({ ...m, overall_findings: v }))}
@@ -589,7 +591,7 @@ function SectionWizard({ inspectionId, meta, setMeta, currentSection, setCurrent
 // ============================================================================
 // Overall Condition & Findings — free-text section (section 12)
 // ============================================================================
-function OverallFindingsBlock({ inspectionId, value, onChange, setSaveStatus }) {
+function OverallFindingsBlock({ inspectionId, inspectionCode, value, onChange, setSaveStatus }) {
   const timer = useRef(null);
 
   function handleChange(v) {

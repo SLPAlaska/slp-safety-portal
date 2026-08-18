@@ -96,7 +96,7 @@ export default function EnergyIsolation(){
       
       // Auto sign-in authorized person
       if(formData.authorizedPersonName){
-        await supabase.from('ei_worker_log').insert([{permit_number:permitNumber,worker_name:formData.authorizedPersonName,company:formData.company,personal_lock_number:formData.authorizedPersonLock||'N/A',working_under:'Authorized Person',verified_isolation:'Yes',verified_zero_energy:'Yes'}]);
+        await safeInsert('ei_worker_log', [{permit_number:permitNumber,worker_name:formData.authorizedPersonName,company:formData.company,personal_lock_number:formData.authorizedPersonLock||'N/A',working_under:'Authorized Person',verified_isolation:'Yes',verified_zero_energy:'Yes'}], 'energy-isolation');
       }
       await registerRecordKey('ei_permits',permitNumber,code);
       setPermitCode(code);setSubmittedPermit(permitNumber);setSubmitted(true);
@@ -105,7 +105,7 @@ export default function EnergyIsolation(){
 
   const signInWorker=async()=>{if(!workerSelectedPermit){alert('Select a permit');return;}if(!workerData.workerName||!workerData.personalLockNumber){alert('Name and lock # required');return;}
     setIsSubmitting(true);try{
-      const{error}=await supabase.from('ei_worker_log').insert([{permit_number:workerSelectedPermit,worker_name:workerData.workerName,company:workerData.company,personal_lock_number:workerData.personalLockNumber,working_under:workerData.workingUnder,verified_isolation:workerData.verifiedIsolation,verified_zero_energy:workerData.verifiedZeroEnergy}]);
+      const{error}=await safeInsert('ei_worker_log', [{permit_number:workerSelectedPermit,worker_name:workerData.workerName,company:workerData.company,personal_lock_number:workerData.personalLockNumber,working_under:workerData.workingUnder,verified_isolation:workerData.verifiedIsolation,verified_zero_energy:workerData.verifiedZeroEnergy}], 'energy-isolation');
       if(error)throw error;
       setWorkerMessage(workerData.workerName+' signed in successfully!');setWorkerSuccess(true);
     }catch(e){console.error(e);alert('Error: '+e.message);}finally{setIsSubmitting(false);}
