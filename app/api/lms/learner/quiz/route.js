@@ -15,6 +15,62 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
+// ── GET: serve quiz questions to the learner ──────────────────────────────
+// This handler was accidentally dropped in the 8/18/2026 deploy of the
+// hardened POST, which removed quiz loading for every learner (infinite
+// spinner on the Knowledge Check). Restored here. Do not deploy this file
+// without BOTH the GET and POST exports.
+export async function GET(request) {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const token = authHeader.replace('Bearer ', '')
+  const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token)
+  if (authErr || !user) {
+    if (authErr) console.error('[QUIZ-GET] Auth error:', authErr.message)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(request.url)
+  const courseId = searchParams.get('course_id')
+  if (!courseId) return NextResponse.json({ error: 'Missing course_id' }, { status: 400 })
+
+  const { data: allQuestions, error: qErr } = await supabaseAdmin
+    .from('lms_quiz_questions')
+    .select('id, question_order, question_text, option_a, option_b, option_c, option_d, correct_answer, slide_reference, is_ai_generated, always_include')
+    .eq('course_id', courseId)
+    .order('question_order')
+
+  if (qErr) {
+    console.error('[QUIZ-GET] Questions fetch error:', 'course_id=' + courseId, 'message=' + qErr.message)
+    return NextResponse.json({ error: 'Failed to load quiz questions: ' + qErr.message }, { status: 500 })
+  }
+
+  if (!allQuestions?.length) return NextResponse.json({ questions: [] })
+
+  const alwaysInclude = allQuestions.filter(q => !q.is_ai_generated || q.always_include)
+  const aiBank = allQuestions.filter(q => q.is_ai_generated && !q.always_include)
+
+  const TARGET_QUESTIONS = Math.min(15, allQuestions.length)
+  const manualCount = alwaysInclude.length
+  const aiNeeded = Math.max(0, TARGET_QUESTIONS - manualCount)
+
+  const shuffled = [...aiBank].sort(() => Math.random() - 0.5)
+  const selectedAI = shuffled.slice(0, aiNeeded)
+
+  const finalQuestions = [...alwaysInclude, ...selectedAI]
+    .sort(() => Math.random() - 0.5)
+    .map((q, idx) => ({ ...q, question_order: idx + 1 }))
+
+  return NextResponse.json({ questions: finalQuestions })
+}
+
 function generateCertNumber() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   const year = new Date().getFullYear()

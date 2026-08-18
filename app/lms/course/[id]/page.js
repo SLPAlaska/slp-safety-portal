@@ -16,6 +16,8 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -32,17 +34,39 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   }
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      const tok = await freshToken()
-      const res = await fetch(`/api/lms/learner/quiz?course_id=${courseId}`, {
-        headers: { 'Authorization': `Bearer ${tok}` }
-      })
-      const data = await res.json()
-      setQuestions(data.questions || [])
-      setLoading(false)
+      setLoading(true)
+      setLoadError('')
+      try {
+        const tok = await freshToken()
+        const res = await fetch(`/api/lms/learner/quiz?course_id=${courseId}`, {
+          headers: { 'Authorization': `Bearer ${tok}` }
+        })
+        if (!res.ok) {
+          let msg = 'Server error (' + res.status + ')'
+          try {
+            const d = await res.json()
+            if (d && d.error) msg = d.error
+          } catch { /* non-JSON error body */ }
+          if (!cancelled) { setLoadError(msg); setLoading(false) }
+          return
+        }
+        const data = await res.json()
+        if (!cancelled) {
+          setQuestions(data.questions || [])
+          setLoading(false)
+        }
+      } catch {
+        if (!cancelled) {
+          setLoadError('Could not load the quiz. Check your internet connection and try again.')
+          setLoading(false)
+        }
+      }
     }
     load()
-  }, [courseId, token])
+    return () => { cancelled = true }
+  }, [courseId, token, retryCount])
 
   async function handleSubmit() {
     if (Object.keys(answers).length < questions.length) {
@@ -97,6 +121,20 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
   }
 
   if (loading) return <div style={Q.center}><div style={Q.spinner} /></div>
+
+  if (loadError) return (
+    <div style={Q.empty}>
+      <div style={{ fontSize: '48px' }}>⚠️</div>
+      <p style={{ fontWeight: '600', color: '#c62828' }}>Unable to load the quiz</p>
+      <p style={{ color: '#666', fontSize: '14px' }}>{loadError}</p>
+      <button
+        style={{ marginTop: '16px', background: '#b71c1c', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
+        onClick={() => setRetryCount(c => c + 1)}
+      >
+        Try Again
+      </button>
+    </div>
+  )
 
   if (questions.length === 0) return (
     <div style={Q.empty}>
