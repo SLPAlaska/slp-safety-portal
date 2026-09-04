@@ -34,7 +34,7 @@ function TopNav({ onSignOut }) {
   )
 }
 
-function EditModal({ employee, onSave, onClose }) {
+function EditModal({ employee, onSave, onClose, onResetPassword }) {
   const [form, setForm] = useState({
     job_title: employee.job_title || '',
     work_location: employee.work_location || '',
@@ -44,6 +44,18 @@ function EditModal({ employee, onSave, onClose }) {
     supervisor: employee.supervisor || '',
     hire_date: employee.hire_date || '',
   })
+  const [resetting, setResetting] = useState(false)
+  const [resetResult, setResetResult] = useState(null)
+
+  async function doReset() {
+    if (!confirm(`Reset password for ${employee.full_name} to the temporary password 1234567! ? They will be required to change it the next time they log in.`)) return
+    setResetting(true)
+    setResetResult(null)
+    const result = await onResetPassword(employee)
+    setResetting(false)
+    setResetResult(result)
+  }
+
   return (
     <div style={S.overlay}>
       <div style={S.modal}>
@@ -65,6 +77,22 @@ function EditModal({ employee, onSave, onClose }) {
           <label style={S.label}>Hire Date</label>
           <input type="date" style={S.input} value={form.hire_date} onChange={e => setForm(f => ({ ...f, hire_date: e.target.value }))} />
         </div>
+
+        <div style={S.resetSection}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#444' }}>Password</div>
+              <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Resets to 1234567! and requires a new password at next login.</div>
+            </div>
+            <button style={S.resetBtn} onClick={doReset} disabled={resetting}>
+              {resetting ? 'Resetting…' : 'Reset Password'}
+            </button>
+          </div>
+          {resetResult && (
+            <div style={resetResult.ok ? S.resetOk : S.resetErr}>{resetResult.message}</div>
+          )}
+        </div>
+
         <div style={{ display: 'flex', gap: '10px' }}>
           <button style={S.btnPrimary} onClick={() => onSave(form)}>Save Changes</button>
           <button style={S.btnSecondary} onClick={onClose}>Cancel</button>
@@ -200,6 +228,25 @@ export default function CompanyDashboard() {
       body: JSON.stringify({ user_id: emp.id, auth_user_id: emp.auth_user_id })
     })
     load()
+  }
+
+  async function handleResetPassword(emp) {
+    try {
+      const res = await fetch('/api/lms/company-admin/reset-password', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: emp.id }),
+      })
+      let data = null
+      try { data = await res.json() } catch (e) { data = null }
+      if (!res.ok) {
+        return { ok: false, message: (data && data.error) ? data.error : `Reset failed (HTTP ${res.status})` }
+      }
+      load()
+      return { ok: true, message: (data && data.message) ? data.message : 'Password reset.' }
+    } catch (err) {
+      return { ok: false, message: 'Network error: ' + err.message }
+    }
   }
 
   function toggleMultiCourse(userId, courseId) {
@@ -514,6 +561,7 @@ export default function CompanyDashboard() {
           employee={editingEmployee}
           onSave={handleSaveEdit}
           onClose={() => setEditingEmployee(null)}
+          onResetPassword={handleResetPassword}
         />
       )}
 
@@ -577,5 +625,9 @@ const S = {
   field: { display: 'flex', flexDirection: 'column', gap: '4px' },
   label: { fontSize: '12px', fontWeight: '600', color: '#444' },
   input: { padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', outline: 'none' },
+  resetSection: { border: '1px solid #eee', borderRadius: '8px', padding: '12px 14px', background: '#fafafa', display: 'flex', flexDirection: 'column', gap: '8px' },
+  resetBtn: { background: '#fff3e0', color: '#e65100', border: '1px solid #ffe0b2', borderRadius: '6px', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  resetOk: { background: '#e8f5e9', border: '1px solid #c8e6c9', color: '#2e7d32', borderRadius: '6px', padding: '8px 12px', fontSize: '12px' },
+  resetErr: { background: '#fff0f0', border: '1px solid #ffcdd2', color: '#c62828', borderRadius: '6px', padding: '8px 12px', fontSize: '12px' },
   footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.4)', fontSize: '11px' },
 }
