@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { fetchExclusions, makeIsExcluded } from '@/lib/requiredCourses'
 
 export async function GET(request, { params }) {
   const supabaseAdmin = createClient(
@@ -16,7 +17,7 @@ export async function GET(request, { params }) {
 
   const { data: lmsUser } = await supabaseAdmin
     .from('lms_users')
-    .select('id, company_id')
+    .select('id, company_id, exempt_from_required')
     .eq('auth_user_id', user.id)
     .eq('active', true)
     .single()
@@ -25,13 +26,25 @@ export async function GET(request, { params }) {
 
   const { courseId } = await params
 
-  // Verify user has access to this course
-  const { data: requiredAccess } = await supabaseAdmin
-    .from('lms_required_courses')
-    .select('id')
-    .eq('company_id', lmsUser.company_id)
-    .eq('course_id', courseId)
-    .maybeSingle()
+  // Verify user has access to this course.
+  //
+  // The company-required path does not apply to a learner who is exempt from
+  // required courses, or who has this specific course excluded. An individual
+  // assignment or an existing completion still grants access either way.
+  const { data: requiredRow } = lmsUser.exempt_from_required
+    ? { data: null }
+    : await supabaseAdmin
+        .from('lms_required_courses')
+        .select('id')
+        .eq('company_id', lmsUser.company_id)
+        .eq('course_id', courseId)
+        .maybeSingle()
+
+  let requiredAccess = !!requiredRow
+  if (requiredAccess) {
+    const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, [lmsUser.id]))
+    if (isExcluded(lmsUser.id, courseId)) requiredAccess = false
+  }
 
   const { data: individualAccess } = await supabaseAdmin
     .from('lms_individual_assignments')
@@ -40,7 +53,14 @@ export async function GET(request, { params }) {
     .eq('course_id', courseId)
     .maybeSingle()
 
-  if (!requiredAccess && !individualAccess) {
+  const { data: completionAccess } = await supabaseAdmin
+    .from('lms_completions')
+    .select('course_id')
+    .eq('user_id', lmsUser.id)
+    .eq('course_id', courseId)
+    .maybeSingle()
+
+  if (!requiredAccess && !individualAccess && !completionAccess) {
     return NextResponse.json({ error: 'Access denied' }, { status: 403 })
   }
 

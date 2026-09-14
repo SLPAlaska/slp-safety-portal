@@ -24,6 +24,10 @@ export default function UserTrainingPage() {
   const [granting, setGranting] = useState(false)
   const [grantResult, setGrantResult] = useState(null)
 
+  const [savingExempt, setSavingExempt] = useState(false)
+  const [exemptError, setExemptError] = useState('')
+  const [exclusionBusy, setExclusionBusy] = useState(null)
+
   const load = useCallback(async () => {
     setLoading(true); setError('')
     const res = await fetch(`/api/lms/admin/user-training?user_id=${userId}`)
@@ -39,7 +43,13 @@ export default function UserTrainingPage() {
     const reqSet = new Set(data.required_course_ids)
     const assnSet = new Set(data.assigned_course_ids)
     const compMap = Object.fromEntries(data.completions.map(c => [c.course_id, c]))
-    return data.courses.map(course => {
+    return data.courses.filter(course => {
+      // A course reaches the main list via an effective source (required after
+      // exemptions/exclusions, or individually assigned) or via a completion,
+      // which always stays visible. Purely-exempted courses drop to the
+      // "Exempted" section below.
+      return reqSet.has(course.id) || assnSet.has(course.id) || !!compMap[course.id]
+    }).map(course => {
       const comp = compMap[course.id]
       const { status, expiresAt, daysUntilExpiry } = getCourseStatus(comp?.completed_at, course.refresher_frequency_months)
       return {
@@ -58,6 +68,51 @@ export default function UserTrainingPage() {
       return a.course.title.localeCompare(b.course.title)
     })
   }, [data])
+
+  function getToken() {
+    try {
+      const raw = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+      if (raw) return JSON.parse(localStorage.getItem(raw))?.access_token
+    } catch {}
+    return null
+  }
+
+  async function handleExemptChange(checked) {
+    setSavingExempt(true); setExemptError('')
+    const token = getToken()
+    const res = await fetch('/api/lms/admin/user-training', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ user_id: userId, exempt_from_required: checked }),
+    })
+    setSavingExempt(false)
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      setExemptError(j.error || 'Could not update exemption.')
+      return
+    }
+    load() // refetch so required courses appear/disappear immediately
+  }
+
+  // Per-course exemption: writes/removes an lms_required_exclusions row, then
+  // refetches so the course and its Not Done / Overdue contribution move
+  // immediately.
+  async function handleExclusion(courseId, exclude) {
+    setExclusionBusy(courseId); setExemptError('')
+    const token = getToken()
+    const res = await fetch('/api/lms/admin/user-training', {
+      method: exclude ? 'POST' : 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ user_id: userId, course_id: courseId }),
+    })
+    setExclusionBusy(null)
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      setExemptError(j.error || (exclude ? 'Could not exempt course.' : 'Could not un-exempt course.'))
+      return
+    }
+    load()
+  }
 
   async function handleGrant() {
     if (!grantCourseIds.length) return
@@ -80,6 +135,12 @@ export default function UserTrainingPage() {
       load()
     }
   }
+
+  const exemptedCourses = data
+    ? data.courses
+        .filter(c => (data.excluded_course_ids || []).includes(c.id))
+        .sort((a, b) => a.title.localeCompare(b.title))
+    : []
 
   if (loading) return <div style={S.page}><p>Loading…</p></div>
   if (error)   return <div style={S.page}><p style={{ color: '#dc2626' }}>{error}</p></div>
@@ -109,6 +170,17 @@ export default function UserTrainingPage() {
             {u.email || u.username} · Role: {u.role || 'learner'}
             {u.hire_date && ` · Hired ${new Date(u.hire_date).toLocaleDateString()}`}
           </p>
+          <label style={S.exemptToggle}>
+            <input
+              type="checkbox"
+              checked={!!u.exempt_from_required}
+              disabled={savingExempt}
+              onChange={e => handleExemptChange(e.target.checked)}
+            />
+            Exempt from company-required courses
+            {savingExempt && <span style={{ color: '#6b7280', fontWeight: 400 }}>Saving…</span>}
+          </label>
+          {exemptError && <p style={{ color: '#dc2626', fontSize: 13, margin: '4px 0 0 0' }}>{exemptError}</p>}
         </div>
         <button style={S.btnPrimary} onClick={() => setGrantOpen(o => !o)}>
           {grantOpen ? 'Cancel' : '+ Grant Credit'}
@@ -168,6 +240,7 @@ export default function UserTrainingPage() {
             <th style={S.th}>Completed</th>
             <th style={S.th}>Expires</th>
             <th style={S.th}>Certificate</th>
+            <th style={S.th}></th>
           </tr>
         </thead>
         <tbody>
@@ -215,16 +288,56 @@ export default function UserTrainingPage() {
                       </a>
                     : <span style={{ color: '#9ca3af' }}>—</span>}
                 </td>
+                <td style={S.td}>
+                  {r.sources.includes('Required') && (
+                    <button
+                      style={S.btnExempt}
+                      disabled={exclusionBusy === r.course.id}
+                      onClick={() => handleExclusion(r.course.id, true)}
+                      title="Exempt this employee from this required course"
+                    >
+                      {exclusionBusy === r.course.id ? '…' : 'Exempt'}
+                    </button>
+                  )}
+                </td>
               </tr>
             )
           })}
           {rows.length === 0 && (
-            <tr><td colSpan={7} style={{ ...S.td, textAlign: 'center', padding: 32, color: '#6b7280' }}>
+            <tr><td colSpan={8} style={{ ...S.td, textAlign: 'center', padding: 32, color: '#6b7280' }}>
               No courses assigned or required for this user yet.
             </td></tr>
           )}
         </tbody>
       </table>
+
+      {exemptedCourses.length > 0 && (
+        <div style={S.exemptedPanel}>
+          <h3 style={{ margin: '0 0 4px 0', fontSize: 15 }}>Exempted Courses</h3>
+          <p style={{ margin: '0 0 12px 0', fontSize: 12, color: '#6b7280' }}>
+            Company-required courses this employee is individually exempt from. They
+            do not count toward Not Done, Overdue, or compliance percentages.
+          </p>
+          {exemptedCourses.map(c => (
+            <div key={c.id} style={S.exemptedRow}>
+              <div>
+                <div style={{ fontWeight: 600 }}>{c.title}</div>
+                {c.regulatory_basis && (
+                  <div style={{ fontSize: 11, color: '#6b7280' }}>{c.regulatory_basis}</div>
+                )}
+              </div>
+              <button
+                style={S.btnExempt}
+                disabled={exclusionBusy === c.id}
+                onClick={() => handleExclusion(c.id, false)}
+                title="Make this course required for this employee again"
+              >
+                {exclusionBusy === c.id ? '…' : 'Un-exempt'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -245,6 +358,10 @@ const S = {
   backLink: { color: '#dc2626', textDecoration: 'none', fontSize: 14 },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
   rollupBar: { display: 'flex', gap: 12, marginBottom: 20 },
+  exemptToggle: { display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 8, fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer', userSelect: 'none' },
+  btnExempt: { padding: '4px 10px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' },
+  exemptedPanel: { marginTop: 24, padding: 16, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8 },
+  exemptedRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: '1px solid #e5e7eb' },
   grantPanel: { background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 20 },
   label: { display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginTop: 12, marginBottom: 4 },
   input: { width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' },

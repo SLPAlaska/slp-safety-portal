@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib'
+import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 
 function hexToRgb(hex) {
   const r = parseInt(hex.slice(1,3),16)/255
@@ -122,10 +123,13 @@ export async function POST(request) {
     .from('lms_slides').select('course_id').in('course_id', courseIds)
 
   // Build matrix data
+  const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, employeeIds))
+  const requiredIds = (required || []).map(r => r.course_id)
+
   const matrix = employees.map(emp => {
     const empCourseIds = [
       ...new Set([
-        ...(emp.exempt_from_required ? [] : (required || []).map(r => r.course_id)),
+        ...effectiveRequiredIds(requiredIds, emp, isExcluded),
         ...(individual || []).filter(i => i.user_id === emp.id).map(i => i.course_id),
       ])
     ].filter(id => courseIds.includes(id))

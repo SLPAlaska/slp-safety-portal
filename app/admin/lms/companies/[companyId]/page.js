@@ -64,14 +64,17 @@ export default function CompanyMatrixPage() {
   const userCourseMap = useMemo(() => {
     const m = {}
     if (!data) return m
-    const reqSet = new Set(data.required_course_ids)
+    const byUser = data.required_course_ids_by_user || {}
     const assnByUser = {}
     for (const a of data.assignments) {
       if (!assnByUser[a.user_id]) assnByUser[a.user_id] = new Set()
       assnByUser[a.user_id].add(a.course_id)
     }
     for (const u of data.users) {
-      m[u.id] = new Set([...reqSet, ...(assnByUser[u.id] || new Set())])
+      // Required list is per-user: exemptions and per-course exclusions are
+      // already subtracted server-side.
+      const reqForUser = byUser[u.id] || data.required_course_ids
+      m[u.id] = new Set([...reqForUser, ...(assnByUser[u.id] || new Set())])
     }
     return m
   }, [data])

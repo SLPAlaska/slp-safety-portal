@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 
 async function getAdminUser(supabaseAdmin, token) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
@@ -53,8 +54,11 @@ export async function GET(request) {
   const { data: allCourses } = await supabaseAdmin
     .from('lms_courses').select('id, title').eq('active', true).order('title')
 
+  const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, employeeIds))
+  const requiredIds = (required || []).map(r => r.course_id)
+
   const enriched = (employees || []).map(emp => {
-    const empRequired = emp.exempt_from_required ? [] : (required || []).map(r => r.course_id)
+    const empRequired = effectiveRequiredIds(requiredIds, emp, isExcluded)
     const empIndividual = (individual || []).filter(i => i.user_id === emp.id)
     const allCourseIds = [...new Set([...empRequired, ...empIndividual.map(i => i.course_id)])]
 
@@ -69,7 +73,9 @@ export async function GET(request) {
         status: completion ? 'Complete' : courseProgress.length > 0 ? 'In Progress' : 'Not Started',
         completed_at: completion?.completed_at || null,
         certificate_id: completion?.certificate_id || null,
-        is_required: !!requiredCourse,
+        // Required *for this employee* — a course they only hold via an
+        // individual assignment is not, even if the company requires it.
+        is_required: empRequired.includes(courseId),
       }
     })
     return { ...emp, courses: courseStatus }

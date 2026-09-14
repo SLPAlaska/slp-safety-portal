@@ -3,7 +3,9 @@
 // Powers the on-screen Training Matrix tab.
 // - Includes EVERY active employee in the company (not just ones with progress)
 // - Computes a true completion % per employee and company-wide
-// - Honors per-learner required-course exclusions (lms_required_exclusions)
+// - Honors both required-course opt-outs: per-learner exclusions
+//   (lms_required_exclusions) and the all-courses exemption
+//   (lms_users.exempt_from_required). See app/lib/requiredCourses.js.
 // - Returns per-employee, per-course training TIME (seconds) from lms_session_time
 // - Returns filter lists (work locations, job titles) for the slicers
 //
@@ -11,6 +13,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 
 async function getAdminUser(supabaseAdmin, token) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
@@ -41,7 +44,7 @@ export async function GET(request) {
   // ── Employees (ALL active, excluding the admin themselves) ──
   const { data: employees } = await supabaseAdmin
     .from('lms_users')
-    .select('id, full_name, email, job_title, work_location, department, active')
+    .select('id, full_name, email, job_title, work_location, department, active, exempt_from_required')
     .eq('company_id', companyId)
     .eq('active', true)
     .neq('role', 'company_admin')
@@ -65,19 +68,7 @@ export async function GET(request) {
     : { data: [] }
 
   // ── Per-learner exclusions (course de-selected for one employee) ──
-  let exclusions = []
-  {
-    const { data, error } = employeeIds.length
-      ? await supabaseAdmin
-          .from('lms_required_exclusions')
-          .select('user_id, course_id')
-          .in('user_id', employeeIds)
-      : { data: [], error: null }
-    // If the table doesn't exist yet, degrade gracefully (no exclusions)
-    exclusions = error ? [] : (data || [])
-  }
-  const isExcluded = (userId, courseId) =>
-    exclusions.some(x => x.user_id === userId && x.course_id === courseId)
+  const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, employeeIds))
 
   // ── Course map (required first, then individual) ──
   const courseMap = {}
@@ -145,8 +136,9 @@ export async function GET(request) {
   const requiredIds = (required || []).map(r => r.course_id)
 
   const matrixEmployees = empList.map(emp => {
-    // courses that apply to THIS employee = required (minus exclusions) + their individual assignments
-    const empRequired = requiredIds.filter(cid => !isExcluded(emp.id, cid))
+    // courses that apply to THIS employee = required (minus exemption and
+    // exclusions) + their individual assignments
+    const empRequired = effectiveRequiredIds(requiredIds, emp, isExcluded)
     const empIndividual = (individual || []).filter(i => i.user_id === emp.id).map(i => i.course_id)
     const empCourseIds = new Set([...empRequired, ...empIndividual])
 
@@ -162,7 +154,10 @@ export async function GET(request) {
         return { course_id: courseId, status: 'N/A', excluded, seconds, date: null, pct: 0 }
       }
 
-      const applicableRequired = courseMap[courseId].is_required // already filtered exclusions above
+      // Required *for this employee*: a company-required course that reaches an
+      // exempt or excluded employee via an individual assignment counts as
+      // assigned, not required, so it stays out of the compliance denominator.
+      const applicableRequired = empRequired.includes(courseId)
       if (applicableRequired) requiredApplicable++
 
       const completion = (completions || []).find(c => c.user_id === emp.id && c.course_id === courseId)

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 
 export async function GET(request) {
   const supabaseAdmin = createClient(
@@ -26,13 +27,18 @@ export async function GET(request) {
   if (userError || !lmsUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
   if (lmsUser.must_change_pw) return NextResponse.json({ error: 'Password change required' }, { status: 403 })
 
-  // Get required courses for their company (skipped for exempt users — they only get individual assignments)
-  const { data: required } = lmsUser.exempt_from_required
-    ? { data: [] }
-    : await supabaseAdmin
-        .from('lms_required_courses')
-        .select('course_id')
-        .eq('company_id', lmsUser.company_id)
+  // Company-required courses, minus this learner's opt-outs: exempt learners get
+  // none at all, everyone else has their per-course exclusions subtracted.
+  let requiredIds = []
+  if (!lmsUser.exempt_from_required) {
+    const { data: required } = await supabaseAdmin
+      .from('lms_required_courses')
+      .select('course_id')
+      .eq('company_id', lmsUser.company_id)
+
+    const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, [lmsUser.id]))
+    requiredIds = effectiveRequiredIds((required || []).map(r => r.course_id), lmsUser, isExcluded)
+  }
 
   // Get individual assignments
   const { data: individual } = await supabaseAdmin
@@ -43,7 +49,7 @@ export async function GET(request) {
   // Dedupe course IDs
   const allCourseIds = [
     ...new Set([
-      ...(required || []).map(r => r.course_id),
+      ...requiredIds,
       ...(individual || []).map(i => i.course_id),
     ])
   ]

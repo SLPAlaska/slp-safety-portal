@@ -9,6 +9,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 
 export async function GET(request) {
   const supabaseAdmin = createClient(
@@ -29,7 +30,7 @@ export async function GET(request) {
 
   const { data: users, error: usersErr } = await supabaseAdmin
     .from('lms_users')
-    .select('id, full_name, email, username, job_title, department, work_location, client_project, supervisor, hire_date, role, active')
+    .select('id, full_name, email, username, job_title, department, work_location, client_project, supervisor, hire_date, role, active, exempt_from_required')
     .eq('company_id', companyId)
     .eq('active', true)
     .order('full_name')
@@ -43,6 +44,14 @@ export async function GET(request) {
     .eq('company_id', companyId)
   if (reqErr) return NextResponse.json({ error: reqErr.message }, { status: 500 })
   const requiredCourseIds = new Set(required.map(r => r.course_id))
+
+  // Required courses apply per employee: exempt users get none, and everyone
+  // else has their per-course exclusions subtracted.
+  const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, userIds))
+  const requiredIds = [...requiredCourseIds]
+  const requiredCourseIdsByUser = Object.fromEntries(
+    users.map(u => [u.id, effectiveRequiredIds(requiredIds, u, isExcluded)])
+  )
 
   const { data: assignments, error: assnErr } = userIds.length
     ? await supabaseAdmin
@@ -76,6 +85,7 @@ export async function GET(request) {
     users,
     courses: courses.filter(c => c.active !== false),
     required_course_ids: [...requiredCourseIds],
+    required_course_ids_by_user: requiredCourseIdsByUser,
     assignments,
     completions,
   })
