@@ -43,6 +43,7 @@ function EditModal({ employee, onSave, onClose, onResetPassword }) {
     employee_id: employee.employee_id || '',
     supervisor: employee.supervisor || '',
     hire_date: employee.hire_date || '',
+    exempt_from_required: !!employee.exempt_from_required,
   })
   const [resetting, setResetting] = useState(false)
   const [resetResult, setResetResult] = useState(null)
@@ -76,6 +77,16 @@ function EditModal({ employee, onSave, onClose, onResetPassword }) {
         <div style={S.field}>
           <label style={S.label}>Hire Date</label>
           <input type="date" style={S.input} value={form.hire_date} onChange={e => setForm(f => ({ ...f, hire_date: e.target.value }))} />
+        </div>
+        <div style={S.field}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: '#444', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={!!form.exempt_from_required}
+              onChange={e => setForm(f => ({ ...f, exempt_from_required: e.target.checked }))}
+            />
+            Exempt from company-required courses
+          </label>
         </div>
 
         <div style={S.resetSection}>

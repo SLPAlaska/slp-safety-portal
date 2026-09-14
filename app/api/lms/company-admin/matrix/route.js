@@ -55,7 +55,7 @@ export async function POST(request) {
   // Fetch all employees in company
   let empQuery = supabaseAdmin
     .from('lms_users')
-    .select('id, full_name, job_title, work_location, client_project, department, employee_id, hire_date')
+    .select('id, full_name, job_title, work_location, client_project, department, employee_id, hire_date, exempt_from_required')
     .eq('company_id', adminUser.company_id)
     .eq('active', true)
     .neq('role', 'company_admin')
@@ -125,7 +125,7 @@ export async function POST(request) {
   const matrix = employees.map(emp => {
     const empCourseIds = [
       ...new Set([
-        ...(required || []).map(r => r.course_id),
+        ...(emp.exempt_from_required ? [] : (required || []).map(r => r.course_id)),
         ...(individual || []).filter(i => i.user_id === emp.id).map(i => i.course_id),
       ])
     ].filter(id => courseIds.includes(id))

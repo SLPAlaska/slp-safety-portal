@@ -23,7 +23,7 @@ export async function GET(request) {
 
   const { data: employees } = await supabaseAdmin
     .from('lms_users')
-    .select('id, full_name, email, job_title, role, active, must_change_pw, work_location, client_project, department, employee_id, supervisor, hire_date')
+    .select('id, full_name, email, job_title, role, active, must_change_pw, work_location, client_project, department, employee_id, supervisor, hire_date, exempt_from_required')
     .eq('company_id', adminUser.company_id)
     .neq('id', adminUser.id)
     .order('full_name')
@@ -54,7 +54,7 @@ export async function GET(request) {
     .from('lms_courses').select('id, title').eq('active', true).order('title')
 
   const enriched = (employees || []).map(emp => {
-    const empRequired = (required || []).map(r => r.course_id)
+    const empRequired = emp.exempt_from_required ? [] : (required || []).map(r => r.course_id)
     const empIndividual = (individual || []).filter(i => i.user_id === emp.id)
     const allCourseIds = [...new Set([...empRequired, ...empIndividual.map(i => i.course_id)])]
 
@@ -90,7 +90,7 @@ export async function PATCH(request) {
     const {
       user_id, full_name, email, username,
       work_location, client_project, department, employee_id,
-      supervisor, hire_date, job_title,
+      supervisor, hire_date, job_title, exempt_from_required,
     } = await request.json()
     if (!user_id) return NextResponse.json({ error: 'Missing user_id.' }, { status: 400 })
 
@@ -126,6 +126,7 @@ export async function PATCH(request) {
     if (supervisor !== undefined)     patch.supervisor     = supervisor?.trim() || null
     if (hire_date !== undefined)      patch.hire_date      = hire_date || null
     if (job_title !== undefined)      patch.job_title      = job_title?.trim() || null
+    if (exempt_from_required !== undefined) patch.exempt_from_required = !!exempt_from_required
 
     const { error } = await supabaseAdmin.from('lms_users').update(patch).eq('id', user_id)
 

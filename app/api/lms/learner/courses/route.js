@@ -18,7 +18,7 @@ export async function GET(request) {
   // Get lms_user row
   const { data: lmsUser, error: userError } = await supabaseAdmin
     .from('lms_users')
-    .select('id, company_id, full_name, must_change_pw')
+    .select('id, company_id, full_name, must_change_pw, exempt_from_required')
     .eq('auth_user_id', user.id)
     .eq('active', true)
     .single()
@@ -26,11 +26,13 @@ export async function GET(request) {
   if (userError || !lmsUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
   if (lmsUser.must_change_pw) return NextResponse.json({ error: 'Password change required' }, { status: 403 })
 
-  // Get required courses for their company
-  const { data: required } = await supabaseAdmin
-    .from('lms_required_courses')
-    .select('course_id')
-    .eq('company_id', lmsUser.company_id)
+  // Get required courses for their company (skipped for exempt users — they only get individual assignments)
+  const { data: required } = lmsUser.exempt_from_required
+    ? { data: [] }
+    : await supabaseAdmin
+        .from('lms_required_courses')
+        .select('course_id')
+        .eq('company_id', lmsUser.company_id)
 
   // Get individual assignments
   const { data: individual } = await supabaseAdmin

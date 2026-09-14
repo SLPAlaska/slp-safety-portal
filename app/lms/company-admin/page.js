@@ -155,6 +155,7 @@ function EmployeesTab({ token, companyId }) {
       employee_id: user.employee_id || '',
       supervisor: user.supervisor || '',
       hire_date: user.hire_date || '',
+      exempt_from_required: !!user.exempt_from_required,
     })
     setEditError('')
   }
@@ -317,6 +318,14 @@ function EmployeesTab({ token, companyId }) {
           <Field label="Employee ID"><input style={S.input} value={editForm.employee_id} onChange={e => setEditForm(f => ({ ...f, employee_id: e.target.value }))} /></Field>
           <Field label="Supervisor"><input style={S.input} value={editForm.supervisor} onChange={e => setEditForm(f => ({ ...f, supervisor: e.target.value }))} /></Field>
           <Field label="Hire Date"><input style={S.input} type="date" value={editForm.hire_date} onChange={e => setEditForm(f => ({ ...f, hire_date: e.target.value }))} /></Field>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: '#444', cursor: 'pointer', userSelect: 'none', marginBottom: '14px' }}>
+            <input
+              type="checkbox"
+              checked={!!editForm.exempt_from_required}
+              onChange={e => setEditForm(f => ({ ...f, exempt_from_required: e.target.checked }))}
+            />
+            Exempt from company-required courses
+          </label>
           {editError && <div style={S.error}>{editError}</div>}
           <button style={S.btnPrimary} onClick={handleSaveEdit} disabled={savingEdit || !editForm.full_name || !editForm.username}>
             {savingEdit ? 'Saving…' : 'Save Changes'}
