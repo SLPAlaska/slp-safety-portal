@@ -310,7 +310,11 @@ serve(async (req) => {
         .select("id, full_name, email, company_id, exempt_from_required, lms_companies(name)")
         .eq("active", true)
         .not("email", "is", null)
+        // id is a tiebreaker, not decoration: limit/offset slicing runs across
+        // separate invocations, so duplicate full_names must not be allowed to
+        // re-order between them or a slice boundary could double-send or skip.
         .order("full_name")
+        .order("id")
     );
 
     const allEmployees = (employees || []).filter((e: any) => (e.email || "").trim());
