@@ -11,14 +11,19 @@
 //       minus lms_required_exclusions          (per-course opt-out)
 //       plus  lms_individual_assignments       (always apply)
 //
-// ...then emails anyone with something actionable. Three sections:
+// ...then emails anyone with something actionable. Four sections:
 //
 //   1. New Training Assigned — required rows / individual assignments created
-//      in the last 7 days. Listed first and de-duplicated OUT of the other two
+//      in the last 7 days. Listed first and de-duplicated OUT of the other
 //      sections, so a course assigned two days ago reads as "new" rather than
 //      scolding the employee for not having done it yet.
-//   2. Overdue — refresher expired, or never completed at all.
-//   3. Due Soon — expires within DUE_SOON_DAYS (90).
+//   2. Overdue — a refresher genuinely lapsed. NOT used for training that was
+//      simply never started; calling that "overdue" misdescribes it to the
+//      recipient and the subject line would be wrong.
+//   3. Not Yet Started — assigned, no completion on record.
+//   4. Due Soon — expires within DUE_SOON_DAYS (90).
+//
+// The subject line describes whatever the email actually contains.
 //
 // Employees with all three sections empty are skipped entirely.
 //
@@ -49,6 +54,38 @@ const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
 const SEND_DELAY_MS = 600;   // ~1.6/sec, under Resend's rate limit
 const NEW_WINDOW_DAYS = 7;
+const PAGE = 1000;           // PostgREST caps a single response at 1000 rows
+
+// ============================================================================
+// PAGINATED READS
+//
+// PostgREST returns at most 1000 rows per request and enforces that server
+// side — .range() past it does NOT return more. lms_completions alone holds
+// thousands of rows, so an unpaginated .in(user_ids) read silently drops most
+// of them and every dropped completion reads as "never completed". Every bulk
+// read below must page. User id lists are also chunked so the request URL
+// cannot grow past its length limit on a large roster.
+// ============================================================================
+async function pageAll(build: () => any): Promise<any[]> {
+  const out: any[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build().range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    out.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return out;
+}
+
+async function fetchByUsers(table: string, select: string, userIds: string[]): Promise<any[]> {
+  const out: any[] = [];
+  const CHUNK = 100;
+  for (let i = 0; i < userIds.length; i += CHUNK) {
+    const chunk = userIds.slice(i, i + CHUNK);
+    out.push(...await pageAll(() => supabase.from(table).select(select).in("user_id", chunk)));
+  }
+  return out;
+}
 
 // ============================================================================
 // COURSE STATUS — port of app/lib/courseStatus.js
@@ -107,6 +144,7 @@ const COLORS = {
   slpBlue: "#1e3a5f",
   gold: "#fbbf24",
   overdue: { bg: "#fee2e2", fg: "#991b1b", border: "#fca5a5" },
+  notStarted: { bg: "#f3f4f6", fg: "#374151", border: "#d1d5db" },
   dueSoon: { bg: "#fef9c3", fg: "#854d0e", border: "#fde047" },
   newWork: { bg: "#e3f2fd", fg: "#0d47a1", border: "#90caf9" },
 };
@@ -159,6 +197,7 @@ function generateEmailHTML(
   employeeName: string,
   companyName: string,
   newItems: Item[],
+  notStartedItems: Item[],
   overdueItems: Item[],
   dueSoonItems: Item[],
 ): string {
@@ -188,8 +227,13 @@ function generateEmailHTML(
           )}
           ${section(
             "Overdue",
-            "Past due or not yet completed — please complete these first",
+            "Your certification has expired — please renew these first",
             overdueItems, COLORS.overdue,
+          )}
+          ${section(
+            "Not Yet Started",
+            "Assigned to you and not yet completed",
+            notStartedItems, COLORS.notStarted,
           )}
           ${section(
             "Due Soon",
@@ -260,13 +304,14 @@ serve(async (req) => {
 
     // ── Employees: every active user with an email. company_admin is NOT
     // excluded — supervisors hold that role and take training too.
-    const { data: employees, error: empErr } = await supabase
-      .from("lms_users")
-      .select("id, full_name, email, company_id, exempt_from_required, lms_companies(name)")
-      .eq("active", true)
-      .not("email", "is", null)
-      .order("full_name");
-    if (empErr) throw empErr;
+    const employees = await pageAll(() =>
+      supabase
+        .from("lms_users")
+        .select("id, full_name, email, company_id, exempt_from_required, lms_companies(name)")
+        .eq("active", true)
+        .not("email", "is", null)
+        .order("full_name")
+    );
 
     const allEmployees = (employees || []).filter((e: any) => (e.email || "").trim());
     const slice = limit === null ? allEmployees.slice(offset) : allEmployees.slice(offset, offset + limit);
@@ -281,35 +326,31 @@ serve(async (req) => {
 
     // ── Required courses (all companies in this slice)
     const companyIds = [...new Set(slice.map((e: any) => e.company_id).filter(Boolean))];
-    const { data: required } = companyIds.length
-      ? await supabase
-          .from("lms_required_courses")
-          .select("company_id, course_id, assigned_at")
-          .in("company_id", companyIds)
-      : { data: [] as any[] };
+    const required = companyIds.length
+      ? await pageAll(() =>
+          supabase
+            .from("lms_required_courses")
+            .select("company_id, course_id, assigned_at")
+            .in("company_id", companyIds)
+        )
+      : [];
 
     // ── Per-course exclusions. Degrade to none if the table is absent.
     let exclusions: any[] = [];
-    {
-      const { data, error } = await supabase
-        .from("lms_required_exclusions")
-        .select("user_id, course_id")
-        .in("user_id", employeeIds);
-      exclusions = error ? [] : (data || []);
-    }
+    try {
+      exclusions = await fetchByUsers("lms_required_exclusions", "user_id, course_id", employeeIds);
+    } catch { exclusions = []; }
     const excludedKeys = new Set(exclusions.map((x) => `${x.user_id}|${x.course_id}`));
 
     // ── Individual assignments
-    const { data: individual } = await supabase
-      .from("lms_individual_assignments")
-      .select("user_id, course_id, due_date, assigned_at")
-      .in("user_id", employeeIds);
+    const individual = await fetchByUsers(
+      "lms_individual_assignments", "user_id, course_id, due_date, assigned_at", employeeIds,
+    );
 
     // ── Completions (most recent per user+course wins)
-    const { data: completions } = await supabase
-      .from("lms_completions")
-      .select("user_id, course_id, completed_at")
-      .in("user_id", employeeIds);
+    const completions = await fetchByUsers(
+      "lms_completions", "user_id, course_id, completed_at", employeeIds,
+    );
 
     const latestCompletion = new Map<string, string>();
     for (const c of completions || []) {
@@ -325,12 +366,14 @@ serve(async (req) => {
         ...(individual || []).map((i: any) => i.course_id),
       ]),
     ];
-    const { data: courses } = courseIds.length
-      ? await supabase
-          .from("lms_courses")
-          .select("id, title, refresher_frequency_months, active")
-          .in("id", courseIds)
-      : { data: [] as any[] };
+    const courses = courseIds.length
+      ? await pageAll(() =>
+          supabase
+            .from("lms_courses")
+            .select("id, title, refresher_frequency_months, active")
+            .in("id", courseIds)
+        )
+      : [];
     const courseById = new Map((courses || []).map((c: any) => [c.id, c]));
 
     // Index required rows by company, and assignments by user
@@ -380,7 +423,8 @@ serve(async (req) => {
         ];
 
         const newItems: Item[] = [];
-        const overdueItems: Item[] = [];
+        const notStartedItems: Item[] = [];   // assigned, never completed
+        const overdueItems: Item[] = [];      // refresher genuinely lapsed
         const dueSoonItems: Item[] = [];
 
         for (const courseId of effectiveIds) {
@@ -413,7 +457,7 @@ serve(async (req) => {
               note: `Expired ${fmtDate(expiresAt)} (${Math.abs(daysUntilExpiry ?? 0)} days ago)`,
             });
           } else if (status === "never") {
-            overdueItems.push({
+            notStartedItems.push({
               title: course.title,
               refresher: course.refresher_frequency_months,
               note: "Not yet completed",
@@ -427,7 +471,8 @@ serve(async (req) => {
           }
         }
 
-        const actionable = newItems.length + overdueItems.length + dueSoonItems.length;
+        const actionable =
+          newItems.length + notStartedItems.length + overdueItems.length + dueSoonItems.length;
         if (actionable === 0) {
           results.push({ employee: emp.full_name, status: "skipped", reason: "nothing actionable" });
           continue;
@@ -435,18 +480,38 @@ serve(async (req) => {
 
         const companyName = (emp as any).lms_companies?.name || "Your Company";
         const html = generateEmailHTML(
-          emp.full_name || "there", companyName, newItems, overdueItems, dueSoonItems,
+          emp.full_name || "there", companyName, newItems, notStartedItems, overdueItems, dueSoonItems,
         );
-        const subject = overdueItems.length > 0
-          ? `Action needed: ${overdueItems.length} overdue training course${overdueItems.length === 1 ? "" : "s"}`
-          : newItems.length > 0
-            ? "New training assigned to you"
-            : `Training due soon: ${dueSoonItems.length} course${dueSoonItems.length === 1 ? "" : "s"}`;
+
+        // The subject describes what is actually in the email. "Overdue" is
+        // reserved for genuinely lapsed refreshers — never for training that
+        // was simply never started.
+        const plural = (n: number) => (n === 1 ? "" : "s");
+        let subject: string;
+        if (overdueItems.length > 0) {
+          const rest = actionable - overdueItems.length;
+          subject = `Action needed: ${overdueItems.length} overdue training course${plural(overdueItems.length)}`
+            + (rest > 0 ? ` and ${rest} more to complete` : "");
+        } else if (notStartedItems.length > 0) {
+          const total = notStartedItems.length + newItems.length;
+          subject = `You have ${total} training course${plural(total)} to complete`;
+        } else if (newItems.length > 0) {
+          subject = `New training assigned to you: ${newItems.length} course${plural(newItems.length)}`;
+        } else {
+          subject = `Training due soon: ${dueSoonItems.length} course${plural(dueSoonItems.length)}`;
+        }
 
         if (dryRun) {
           results.push({
             employee: emp.full_name, email: emp.email, status: "dry_run",
-            subject, new: newItems.length, overdue: overdueItems.length, due_soon: dueSoonItems.length,
+            subject,
+            new: newItems.length, not_started: notStartedItems.length,
+            overdue: overdueItems.length, due_soon: dueSoonItems.length,
+            // Full titles so a dry run can be reviewed before any send.
+            new_items: newItems.map((i) => `${i.title} — ${i.note}`),
+            not_started_items: notStartedItems.map((i) => `${i.title} — ${i.note}`),
+            overdue_items: overdueItems.map((i) => `${i.title} — ${i.note}`),
+            due_soon_items: dueSoonItems.map((i) => `${i.title} — ${i.note}`),
           });
           continue;
         }

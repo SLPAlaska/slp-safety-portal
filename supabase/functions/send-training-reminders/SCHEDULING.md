@@ -100,6 +100,13 @@ body := '{"limit": 100, "offset": 100}'::jsonb  -- job 2, +5 min
 ## Notes
 
 - Employees with nothing actionable are skipped — no "all clear" email.
+- All bulk reads are paginated. PostgREST caps a response at 1000 rows and
+  enforces it server-side, so an unpaginated read of `lms_completions` (3,700+
+  rows) silently drops most of them and every dropped completion reads as
+  "never completed". See `pageAll` / `fetchByUsers` in `index.ts`.
+- "Overdue" means a refresher genuinely lapsed. Training that was assigned but
+  never started is its own "Not Yet Started" section, and the subject line
+  reflects whichever sections are actually present.
 - `company_admin` users are included; supervisors hold that role and take
   training too.
 - The status rules in `index.ts` are a hand port of `app/lib/courseStatus.js`.
