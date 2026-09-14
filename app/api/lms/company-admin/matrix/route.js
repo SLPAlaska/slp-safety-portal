@@ -59,7 +59,7 @@ export async function POST(request) {
     .select('id, full_name, job_title, work_location, client_project, department, employee_id, hire_date, exempt_from_required')
     .eq('company_id', adminUser.company_id)
     .eq('active', true)
-    .neq('role', 'company_admin')
+    // company_admin included — supervisors hold that role and take training too
     .order('full_name')
 
   const { data: allEmployees } = await empQuery

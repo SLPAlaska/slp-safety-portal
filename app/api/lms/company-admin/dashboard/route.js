@@ -41,13 +41,14 @@ export async function GET(request) {
 
   const companyId = adminUser.company_id
 
-  // ── Employees (ALL active, excluding the admin themselves) ──
+  // ── Employees (ALL active in the company) ──
+  // company_admin is included: supervisors hold that role and take training
+  // like anyone else, so they belong in the matrix and the compliance counts.
   const { data: employees } = await supabaseAdmin
     .from('lms_users')
     .select('id, full_name, email, job_title, work_location, department, active, exempt_from_required')
     .eq('company_id', companyId)
     .eq('active', true)
-    .neq('role', 'company_admin')
     .order('full_name')
 
   const empList = employees || []
