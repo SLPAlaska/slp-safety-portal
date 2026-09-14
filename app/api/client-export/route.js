@@ -3,11 +3,19 @@ import { createClient } from '@supabase/supabase-js';
 // Server-side only. Uses the service-role key, which bypasses RLS.
 // The service-role key is NEVER exposed to the browser - it lives only in this
 // server route via the SUPABASE_SERVICE_ROLE_KEY environment variable.
-const supabaseAdmin = createClient(
-  'https://iypezirwdlqpptjpeeyf.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+// Created lazily so the service-role key is only required at request time, not
+// at module load (which would break `next build`'s page-data collection).
+let _supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      'https://iypezirwdlqpptjpeeyf.supabase.co',
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+  }
+  return _supabaseAdmin;
+}
 
 const COMPANY_CREDENTIALS = {
   'MAGTEC2026': { company: 'MagTec Alaska', searchTerms: ['MagTec', 'Mag Tec', 'MagTec Alaska'], password: 'PSA2026$$SLP' },
@@ -135,6 +143,7 @@ const ALLOWED_TABLES = new Set([
 // Query one table for a company + date range, unioning one query per search term
 // (avoids PostgREST .or() comma-join fragility) and deduping by id.
 async function queryTable(table, searchTerms, start, end) {
+  const supabaseAdmin = getSupabaseAdmin();
   const companyCol = Object.prototype.hasOwnProperty.call(COMPANY_COLUMN_MAP, table)
     ? COMPANY_COLUMN_MAP[table] : 'company';
 

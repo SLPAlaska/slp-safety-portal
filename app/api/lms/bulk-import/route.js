@@ -2,12 +2,21 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// Created lazily so the service-role key is only required at request time, not
+// at module load (which would break `next build`'s page-data collection).
+let _supabaseAdmin = null;
+function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    _supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return _supabaseAdmin;
+}
 
 async function loadAllAuthUsers() {
+  const supabaseAdmin = getSupabaseAdmin();
   const allUsers = [];
   let page = 1;
   const perPage = 1000;
@@ -22,6 +31,7 @@ async function loadAllAuthUsers() {
 }
 
 export async function POST(req) {
+  const supabaseAdmin = getSupabaseAdmin();
   try {
     const { company_id, users } = await req.json();
 
