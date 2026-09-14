@@ -178,6 +178,7 @@ function UsersTab() {
       department: user.department || '',
       employee_id: user.employee_id || '',
       hire_date: user.hire_date || '',
+      exempt_from_required: !!user.exempt_from_required,
     })
     setError('')
   }
@@ -342,6 +343,14 @@ function UsersTab() {
           <Field label="Department"><input style={S.input} value={editForm.department} onChange={e=>setEditForm(f=>({...f,department:e.target.value}))} /></Field>
           <Field label="Employee ID"><input style={S.input} value={editForm.employee_id} onChange={e=>setEditForm(f=>({...f,employee_id:e.target.value}))} /></Field>
           <Field label="Hire Date"><input style={S.input} type="date" value={editForm.hire_date} onChange={e=>setEditForm(f=>({...f,hire_date:e.target.value}))} /></Field>
+          <label style={{ display:'flex', alignItems:'center', gap:'7px', fontSize:'13px', color:'#444', cursor:'pointer', userSelect:'none', marginBottom:'14px' }}>
+            <input
+              type="checkbox"
+              checked={!!editForm.exempt_from_required}
+              onChange={e=>setEditForm(f=>({...f,exempt_from_required:e.target.checked}))}
+            />
+            Exempt from company-required courses
+          </label>
           {error&&<div style={S.error}>{error}</div>}
           <button style={S.btnPrimary} onClick={handleEdit} disabled={saving||!editForm.full_name||!editForm.username||!editForm.company_id}>{saving?'Saving…':'Save Changes'}</button>
         </Modal>

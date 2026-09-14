@@ -23,7 +23,7 @@ export async function PATCH(req) {
     const {
       id, full_name, email, username, job_title,
       company_id, role, work_location, department,
-      employee_id, hire_date
+      employee_id, hire_date, exempt_from_required
     } = await req.json()
 
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
@@ -61,6 +61,9 @@ export async function PATCH(req) {
         department: department || null,
         employee_id: employee_id || null,
         hire_date: hire_date || null,
+        // Only written when provided, so callers that omit it don't clobber an
+        // exemption set elsewhere (e.g. from the company-admin employees route).
+        ...(exempt_from_required !== undefined && { exempt_from_required: !!exempt_from_required }),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
