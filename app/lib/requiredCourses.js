@@ -13,17 +13,16 @@
 // Individual assignments (lms_individual_assignments) are NOT affected by
 // either opt-out — they always apply.
 
+import { pageAllIn } from '@/lib/supabasePage'
+
 /**
  * Loads per-learner required-course exclusions for the given user ids.
  * Degrades to [] if the table doesn't exist yet.
  */
 export async function fetchExclusions(supabaseAdmin, userIds) {
-  const ids = (userIds || []).filter(Boolean)
-  if (ids.length === 0) return []
-  const { data, error } = await supabaseAdmin
-    .from('lms_required_exclusions')
-    .select('user_id, course_id')
-    .in('user_id', ids)
+  const { data, error } = await pageAllIn(
+    supabaseAdmin, 'lms_required_exclusions', 'user_id, course_id', 'user_id', userIds,
+  )
   return error ? [] : (data || [])
 }
 

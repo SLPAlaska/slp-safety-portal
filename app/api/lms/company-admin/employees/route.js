@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
+import { pageAllIn } from '@/lib/supabasePage'
 
 async function getAdminUser(supabaseAdmin, token) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
@@ -36,20 +37,20 @@ export async function GET(request) {
 
   const employeeIds = (employees || []).map(e => e.id)
 
-  const { data: individual } = employeeIds.length > 0
-    ? await supabaseAdmin.from('lms_individual_assignments')
-        .select('user_id, course_id, lms_courses(id, title)').in('user_id', employeeIds)
-    : { data: [] }
+  const { data: individual } = await pageAllIn(
+    supabaseAdmin, 'lms_individual_assignments',
+    'user_id, course_id, lms_courses(id, title)', 'user_id', employeeIds,
+  )
 
-  const { data: completions } = employeeIds.length > 0
-    ? await supabaseAdmin.from('lms_completions')
-        .select('user_id, course_id, completed_at, certificate_id').in('user_id', employeeIds)
-    : { data: [] }
+  const { data: completions } = await pageAllIn(
+    supabaseAdmin, 'lms_completions',
+    'user_id, course_id, completed_at, certificate_id', 'user_id', employeeIds,
+  )
 
-  const { data: progress } = employeeIds.length > 0
-    ? await supabaseAdmin.from('lms_progress')
-        .select('user_id, course_id, slide_id').in('user_id', employeeIds)
-    : { data: [] }
+  const { data: progress } = await pageAllIn(
+    supabaseAdmin, 'lms_progress',
+    'user_id, course_id, slide_id', 'user_id', employeeIds,
+  )
 
   const { data: allCourses } = await supabaseAdmin
     .from('lms_courses').select('id, title').eq('active', true).order('title')

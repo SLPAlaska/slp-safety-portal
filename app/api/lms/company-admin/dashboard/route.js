@@ -14,6 +14,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
+import { pageAllIn } from '@/lib/supabasePage'
 
 async function getAdminUser(supabaseAdmin, token) {
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
@@ -61,12 +62,10 @@ export async function GET(request) {
     .eq('company_id', companyId)
 
   // ── Individual assignments ──
-  const { data: individual } = employeeIds.length
-    ? await supabaseAdmin
-        .from('lms_individual_assignments')
-        .select('user_id, course_id, lms_courses(id, title)')
-        .in('user_id', employeeIds)
-    : { data: [] }
+  const { data: individual } = await pageAllIn(
+    supabaseAdmin, 'lms_individual_assignments',
+    'user_id, course_id, lms_courses(id, title)', 'user_id', employeeIds,
+  )
 
   // ── Per-learner exclusions (course de-selected for one employee) ──
   const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, employeeIds))
@@ -95,37 +94,31 @@ export async function GET(request) {
   }))
 
   // ── Completions ──
-  const { data: completions } = employeeIds.length
-    ? await supabaseAdmin
-        .from('lms_completions')
-        .select('user_id, course_id, completed_at, certificate_id')
-        .in('user_id', employeeIds)
-    : { data: [] }
+  const { data: completions } = await pageAllIn(
+    supabaseAdmin, 'lms_completions',
+    'user_id, course_id, completed_at, certificate_id', 'user_id', employeeIds,
+  )
 
   // ── Progress (for In-Progress % ) ──
-  const { data: progress } = employeeIds.length
-    ? await supabaseAdmin
-        .from('lms_progress')
-        .select('user_id, course_id, slide_id, completed')
-        .in('user_id', employeeIds)
-    : { data: [] }
+  const { data: progress } = await pageAllIn(
+    supabaseAdmin, 'lms_progress',
+    'user_id, course_id, slide_id, completed', 'user_id', employeeIds,
+  )
 
   // ── Slide counts per course ──
-  const { data: slideRows } = courseIds.length
-    ? await supabaseAdmin.from('lms_slides').select('course_id').in('course_id', courseIds)
-    : { data: [] }
+  const { data: slideRows } = await pageAllIn(
+    supabaseAdmin, 'lms_slides', 'course_id', 'course_id', courseIds,
+  )
   const slideCount = {}
   ;(slideRows || []).forEach(s => { slideCount[s.course_id] = (slideCount[s.course_id] || 0) + 1 })
 
   // ── Training time per (user, course) from lms_session_time ──
   const timeByUserCourse = {}   // key: `${user_id}|${course_id}` -> seconds
   {
-    const { data: sessions } = employeeIds.length
-      ? await supabaseAdmin
-          .from('lms_session_time')
-          .select('user_id, course_id, duration_seconds')
-          .in('user_id', employeeIds)
-      : { data: [] }
+    const { data: sessions } = await pageAllIn(
+      supabaseAdmin, 'lms_session_time',
+      'user_id, course_id, duration_seconds', 'user_id', employeeIds,
+    )
     ;(sessions || []).forEach(s => {
       if (!s.duration_seconds) return
       const k = `${s.user_id}|${s.course_id}`

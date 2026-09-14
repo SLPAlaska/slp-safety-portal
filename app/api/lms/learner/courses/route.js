@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
+import { pageAllIn } from '@/lib/supabasePage'
 
 export async function GET(request) {
   const supabaseAdmin = createClient(
@@ -84,10 +85,10 @@ export async function GET(request) {
     .order('score', { ascending: false })
 
   // Fetch slide counts per course
-  const { data: slideCounts } = await supabaseAdmin
-    .from('lms_slides')
-    .select('course_id')
-    .in('course_id', allCourseIds)
+  // A learner with many courses can pull more than 1000 slide rows here.
+  const { data: slideCounts } = await pageAllIn(
+    supabaseAdmin, 'lms_slides', 'course_id', 'course_id', allCourseIds,
+  )
 
   // Build enriched course list
   const enriched = (courses || []).map(course => {

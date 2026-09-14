@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
+import { pageAllIn } from '@/lib/supabasePage'
 
 function hexToRgb(hex) {
   const r = parseInt(hex.slice(1,3),16)/255
@@ -80,10 +81,10 @@ export async function POST(request) {
     .eq('company_id', adminUser.company_id)
 
   // Fetch individual assignments
-  const { data: individual } = employeeIds.length > 0
-    ? await supabaseAdmin.from('lms_individual_assignments')
-        .select('user_id, course_id, lms_courses(id, title, regulation_ref)').in('user_id', employeeIds)
-    : { data: [] }
+  const { data: individual } = await pageAllIn(
+    supabaseAdmin, 'lms_individual_assignments',
+    'user_id, course_id, lms_courses(id, title, regulation_ref)', 'user_id', employeeIds,
+  )
 
   // Build course map
   const courseMap = {}
@@ -107,20 +108,21 @@ export async function POST(request) {
   })
 
   // Fetch completions
-  const { data: completions } = employeeIds.length > 0
-    ? await supabaseAdmin.from('lms_completions')
-        .select('user_id, course_id, completed_at, certificate_id').in('user_id', employeeIds)
-    : { data: [] }
+  const { data: completions } = await pageAllIn(
+    supabaseAdmin, 'lms_completions',
+    'user_id, course_id, completed_at, certificate_id', 'user_id', employeeIds,
+  )
 
   // Fetch progress
-  const { data: progress } = employeeIds.length > 0
-    ? await supabaseAdmin.from('lms_progress')
-        .select('user_id, course_id, slide_id, completed').in('user_id', employeeIds)
-    : { data: [] }
+  const { data: progress } = await pageAllIn(
+    supabaseAdmin, 'lms_progress',
+    'user_id, course_id, slide_id, completed', 'user_id', employeeIds,
+  )
 
   // Fetch slide counts
-  const { data: slideCounts } = await supabaseAdmin
-    .from('lms_slides').select('course_id').in('course_id', courseIds)
+  const { data: slideCounts } = await pageAllIn(
+    supabaseAdmin, 'lms_slides', 'course_id', 'course_id', courseIds,
+  )
 
   // Build matrix data
   const isExcluded = makeIsExcluded(await fetchExclusions(supabaseAdmin, employeeIds))

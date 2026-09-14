@@ -10,6 +10,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
+import { pageAll, pageAllIn } from '@/lib/supabasePage'
 
 export async function GET(request) {
   const supabaseAdmin = createClient(
@@ -28,12 +29,12 @@ export async function GET(request) {
     .single()
   if (compErr || !company) return NextResponse.json({ error: 'Company not found' }, { status: 404 })
 
-  const { data: users, error: usersErr } = await supabaseAdmin
+  const { data: users, error: usersErr } = await pageAll(() => supabaseAdmin
     .from('lms_users')
     .select('id, full_name, email, username, job_title, department, work_location, client_project, supervisor, hire_date, role, active, exempt_from_required')
     .eq('company_id', companyId)
     .eq('active', true)
-    .order('full_name')
+    .order('full_name'))
   if (usersErr) return NextResponse.json({ error: usersErr.message }, { status: 500 })
 
   const userIds = users.map(u => u.id)
@@ -53,20 +54,16 @@ export async function GET(request) {
     users.map(u => [u.id, effectiveRequiredIds(requiredIds, u, isExcluded)])
   )
 
-  const { data: assignments, error: assnErr } = userIds.length
-    ? await supabaseAdmin
-        .from('lms_individual_assignments')
-        .select('user_id, course_id, due_date')
-        .in('user_id', userIds)
-    : { data: [], error: null }
+  const { data: assignments, error: assnErr } = await pageAllIn(
+    supabaseAdmin, 'lms_individual_assignments',
+    'user_id, course_id, due_date', 'user_id', userIds,
+  )
   if (assnErr) return NextResponse.json({ error: assnErr.message }, { status: 500 })
 
-  const { data: completions, error: compsErr } = userIds.length
-    ? await supabaseAdmin
-        .from('lms_completions')
-        .select('user_id, course_id, completed_at, certificate_id, granted_by_admin_id')
-        .in('user_id', userIds)
-    : { data: [], error: null }
+  const { data: completions, error: compsErr } = await pageAllIn(
+    supabaseAdmin, 'lms_completions',
+    'user_id, course_id, completed_at, certificate_id, granted_by_admin_id', 'user_id', userIds,
+  )
   if (compsErr) return NextResponse.json({ error: compsErr.message }, { status: 500 })
 
   const assignedCourseIds = new Set(assignments.map(a => a.course_id))
