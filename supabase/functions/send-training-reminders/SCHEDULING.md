@@ -35,7 +35,39 @@ Send every email to one inbox instead of to employees:
   -d '{"test_email": "brian@slpalaska.com", "limit": 5}'
 ```
 
-## 3. Schedule weekly (pg_cron + pg_net)
+## 3. Schedule weekly — ALREADY DONE
+
+Scheduled on 2026-09-14 as cron job **`send-training-reminders-weekly`**
+(jobid 5), `0 16 * * 1`, active. The service-role key lives in Supabase Vault
+under `training_reminders_key` and is read back only inside the job body, so it
+never appears in `cron.job`.
+
+Set up by two migrations rather than pasted SQL:
+
+- `20260914120000_training_reminder_cron.sql` defines
+  `setup_training_reminder_cron(p_key text)` — stores/rotates the Vault secret
+  and (re)schedules the job. The key is **not** in the migration; it is passed
+  once over HTTPS by calling the function as `service_role`, because migration
+  SQL is stored in the remote migration-history table and committed to git.
+- `20260914121000_training_reminder_cron_status.sql` defines
+  `training_reminder_cron_status()` — read-only health check.
+
+Check status at any time (service-role key required):
+
+```bash
+curl -sS -X POST "https://<PROJECT_REF>.supabase.co/rest/v1/rpc/training_reminder_cron_status" \
+  -H "apikey: <SERVICE_ROLE_KEY>" -H "Authorization: Bearer <SERVICE_ROLE_KEY>" \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+It reports the job row, whether the Vault secret decrypts (never the key
+itself), and the last run's status — a broken secret otherwise fails silently:
+the job posts a null Authorization header, sends nothing, and surfaces nothing.
+
+To rotate the key, or to re-schedule after changing the cadence, call
+`setup_training_reminder_cron` again with the current key.
+
+### Reference: the equivalent raw SQL
 
 Run once in the SQL editor. Requires the `pg_cron` and `pg_net` extensions,
 which Supabase provides.
