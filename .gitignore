@@ -32,3 +32,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 supabase/.temp/ 
+
+# Client SOP source documents — reference material for building game decks.
+# Controlled documents belonging to the client; the repo carries the decks
+# derived from them, never the documents themselves.
+Brians Revisions/
+Kenai-SOPs/
+*.docx
