@@ -1,0 +1,707 @@
+[
+  {
+    "id": "offload",
+    "title": "ACB OFFLOAD",
+    "sub": "DS 1B G&I FACILITY",
+    "meta": "SOP v5.0 · Rev. 11/18/2025 · Approved D. Redick · Drill site to demob",
+    "par": 300,
+    "phases": [
+      {
+        "name": "ROLL OUT",
+        "steps": [
+          {
+            "t": "Get the North Slope Manifest from the mud engineer — review it, sign it, full asset numbers",
+            "w": "You left the rig with no manifest. DS 1B turns you around at the gate and the whole run is windshield time."
+          },
+          {
+            "t": "Call DS 1B WIF — give them your departure and ETA",
+            "w": "Nobody at DS 1B knows you're coming. You'll sit on the pad while they figure out what to do with you."
+          },
+          {
+            "t": "Talk the travel plan with your Lead — check weather and phase conditions with security",
+            "w": "Phase 3 closes the road while you're halfway there. Now you're parked in a whiteout with a loaded box."
+          },
+          {
+            "t": "Pull onto the DS 1B pad — call the G&I operator and get approval before proceeding",
+            "w": "You rolled onto their pad uninvited. That phone call to MagTec isn't going to be about your driving skills."
+          },
+          {
+            "t": "Stage at the staging area — tractor brakes set, duck ponds under the truck",
+            "w": "No ponds under the truck. One drip on the pad and you're filling out a spill report instead of driving."
+          },
+          {
+            "t": "Check in with DS 1B personnel — hand over the completed manifest",
+            "w": "They can't take custody of what they can't verify. No manifest in hand, no offload."
+          },
+          {
+            "t": "Walk down the HVAC and offload area — then complete and sign the fluid transfer permit",
+            "w": "No permit, no transfer. Open a valve before the paperwork and it's a stop-work, not a shortcut."
+          }
+        ]
+      },
+      {
+        "name": "BACK IN & LOCK DOWN",
+        "steps": [
+          {
+            "t": "Back in with the DS 1B spotter — driver-side rear chassis wheel to the MI Swaco chock",
+            "w": "You backed in blind. The spotter exists because the guy who didn't use one put a trailer through the containment."
+          },
+          {
+            "t": "Set it up: brakes on, front wheel chocked, ponds down, PTO engaged, idle at 1,200",
+            "w": "Truck's not secured. It creeps six inches with hoses hooked and you're buying camlocks and explaining a spill."
+          },
+          {
+            "t": "Connect the grounding and bonding strap to the tractor",
+            "w": "No bond, no ground. One static pop around vapors and you're the incident everyone trains on next year."
+          },
+          {
+            "t": "Crack the 4\" suction valve slow to bleed the vacuum — three points of contact on the deck",
+            "w": "That box is under vacuum. Yank a fitting first and it lets you know — hard, and right at face height."
+          },
+          {
+            "t": "Clear the exclusion zones — both sides of the trailer and behind it",
+            "w": "There's a man standing where the box rolls. Everything stops now, or something much worse stops it later."
+          },
+          {
+            "t": "Raise the rails 4\"–6\" at a time — roll the box back on tension, then drop the rails",
+            "w": "You jacked the rails full height in one shot. The box takes off, the cable snaps taut, and control is gone."
+          },
+          {
+            "t": "Set both metal safety locks — one each side, working from the ground",
+            "w": "No locks in. The box shifts mid-offload, shears the fittings, and you're wearing what was inside."
+          }
+        ]
+      },
+      {
+        "name": "HOOK UP & DUMP",
+        "steps": [
+          {
+            "t": "Connect the 4\" manifold hose to the ACB suction — pond under the fitting, gaskets checked, Velcro on",
+            "w": "Bad gasket, no pond. It weeps mud the whole offload and you find out when the operator does."
+          },
+          {
+            "t": "Connect the DS 1B 6\" pump hose to the discharge — pond first, gaskets checked, Velcro on",
+            "w": "Free liquid under that cap. Pull it with no pond down and the pad gets a sample."
+          },
+          {
+            "t": "Line up the manifold — Valve A open, Valve B open, Valve C closed",
+            "w": "Wrong lineup. You just sent flow somewhere it was never supposed to go, and the scrubber knows it."
+          },
+          {
+            "t": "Walk down every hose — camlocks tight, Velcro wrapped, ponds under all connections",
+            "w": "The connection you didn't check is the one that lets go under flow. It always is."
+          },
+          {
+            "t": "Start the HVAC — spotter has eyes on you, then tilt the rails 1 to 2 feet",
+            "w": "You tilted a loaded box with no spotter and no suction running. Nobody watching, nothing catching."
+          },
+          {
+            "t": "On the operator's call — open the 6\" discharge and stand where he puts you",
+            "w": "He didn't call it. You opened his facility's line on your own clock — that's his job you just did wrong."
+          },
+          {
+            "t": "Box empty, on the call — close the 6\", shut Valve B, open Valve C for suction",
+            "w": "Skip the suction lineup and the residual sits in the line, frozen solid by the time someone finds it."
+          },
+          {
+            "t": "Clear the line on the call — open the 6\", then close it when he calls it",
+            "w": "That clear-out runs on his direction, both ways. Guessing at it leaves mud in his line with your name on it."
+          }
+        ]
+      },
+      {
+        "name": "DEMOB",
+        "steps": [
+          {
+            "t": "Shut down the HVAC by procedure — no E-stop — open Valve B, check the scrubber tank",
+            "w": "You hit the E-stop like an off switch. Now it's a reset, a breaker check, and a story you tell the mechanic."
+          },
+          {
+            "t": "Break it down in order — 6\" off, 4\" off and stowed, plugs in, ground strap back in its spot",
+            "w": "Hoses off before shutdown and lineup? Whatever's still in them goes on your boots and the pad."
+          },
+          {
+            "t": "Pull the safety locks — stow them on the tractor deck behind the cab",
+            "w": "Winch against set locks and something gives. It won't be the locks."
+          },
+          {
+            "t": "Winch the box up until it seats in the locking hooks — then eyes on the pins, engaged behind the rollers",
+            "w": "Pins not verified. That box rides forty miles of haul road held on by hope."
+          },
+          {
+            "t": "360 walkaround — hoses clear, people clear, then grab your ponds and stow them in the HVAC",
+            "w": "Roll out without the 360 and the 6\" hose you're still hooked to comes along for the ride."
+          },
+          {
+            "t": "PTO off, brakes off — head back to the rig",
+            "w": "Driving with the PTO engaged. The pump runs dry all the way home and dies quiet, halfway through the next job."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "loadrig",
+    "title": "ACB LOADING AT RIG",
+    "sub": "HVAC UNIT & ACB SYSTEM",
+    "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · Walkdown to shutdown",
+    "par": 280,
+    "phases": [
+      {
+        "name": "WALK IT DOWN",
+        "steps": [
+          {
+            "t": "Walk down every hose on the ACB, cuttings box, and HVAC — camlocks gasketed and locked, Velcro or pins on, ponds under every fitting",
+            "w": "The fitting you didn't walk lets go under vacuum. Now you're chasing mud instead of loading it."
+          },
+          {
+            "t": "Mechanical room check — shore power cable plugged at the door, toggle set to match: shore power or Gen",
+            "w": "Toggle's on Gen with shore power plugged. Best case nothing runs. Worst case you cook something expensive."
+          },
+          {
+            "t": "Front panel: verify the level gauge sweeps Empty to Full — if it won't rotate, stop and get the Foreman",
+            "w": "Gauge is stuck and you loaded anyway. First warning you get that the box is full is the scrubber eating mud."
+          },
+          {
+            "t": "Set the valves: 4\" suction OPEN and strapped, 6\" discharge CLOSED and capped, 4\" fill CLOSED and locked",
+            "w": "One valve in the wrong position and the flow path goes somewhere you didn't plan. The mud doesn't care which valve it was."
+          },
+          {
+            "t": "Check the dump door seal and torque the roof hatch wing nuts — vacuum holds on the ACB",
+            "w": "Bad seal, loose hatch. The box can't pull vacuum and every fitting weeps all shift."
+          }
+        ]
+      },
+      {
+        "name": "FIRE UP THE HVAC",
+        "steps": [
+          {
+            "t": "Open the scrubber drain valve — verify it's empty, then close and tighten it",
+            "w": "Fluid was already sitting in the scrubber and you started anyway. Now it's in the blower."
+          },
+          {
+            "t": "Verify the blue relief valve is OPEN — wheel all the way left, vac switch open",
+            "w": "You started against a closed relief. That system builds pressure with nowhere to send it — that's how gaskets and eardrums go."
+          },
+          {
+            "t": "Check blower oil in the sight glasses — between 1/8 and 1/2 full — and E-stop pulled out",
+            "w": "Dry blower, engaged E-stop, or both. Either way you just tried to start a machine that was telling you no."
+          },
+          {
+            "t": "Master power ON, then hit START below the LED display",
+            "w": "You're flipping switches out of order on a panel that has an order. That's how you stand there wondering why nothing runs."
+          },
+          {
+            "t": "Vacuum toggle ON — hear it wind up — then close the relief valve, wheel to the right",
+            "w": "Relief closed before the vacuum's even running. You choked the system in the crib."
+          }
+        ]
+      },
+      {
+        "name": "FILL THE BOX",
+        "steps": [
+          {
+            "t": "With suction pulling: check the rear door and hatch wing nuts sealed — snug, not gorilla-tight — hydraulic locks down",
+            "w": "Over-torqued wing nuts crush the door seal. Now the box won't hold vacuum, and that seal costs more than your patience."
+          },
+          {
+            "t": "Open the fill valve at the rear of the ACB — a hiss at the hose connection means recheck the gasket",
+            "w": "That hiss was the gasket telling you. Loading through a bad seal sprays mist all shift."
+          },
+          {
+            "t": "Drop the stinger into the cuttings box once there's enough mud and cuttings to load",
+            "w": "Stinger down in an empty box just pulls air and burns the run. Wait for the mud."
+          },
+          {
+            "t": "Watch the level gauge as it loads — the float can bury in cuttings, so verify it still moves free",
+            "w": "The float buried and you trusted it. The box overfilled quiet, and the scrubber took the rest."
+          },
+          {
+            "t": "At full level: pull the stinger and clear the suction line to the box",
+            "w": "You shut down with a charged line. Everything in it is now everywhere it shouldn't be."
+          },
+          {
+            "t": "Shut the fill valve FIRST to build suction in the box — then shut the suction line",
+            "w": "Backwards. Close suction first and there's no vacuum holding the box — the fill line drains where it stands."
+          }
+        ]
+      },
+      {
+        "name": "SHUT IT DOWN",
+        "steps": [
+          {
+            "t": "Confirm lines are clear and the ACB suction valve is closed",
+            "w": "Shut the machine down with product in the lines. It'll be frozen in there by morning."
+          },
+          {
+            "t": "Vacuum toggle OFF to relieve — if it won't open the relief, open the blue valve by hand",
+            "w": "Vacuum never relieved. Whatever you do next happens to a system still under suction."
+          },
+          {
+            "t": "VERIFY the relief is open — then and only then hit the red OFF for the motor",
+            "w": "You killed the motor under vacuum. The SOP prints that warning in bold because this exact move wrecks the unit."
+          },
+          {
+            "t": "Open the scrubber drain into the pan — no moisture at all means check the drain isn't plugged",
+            "w": "Nothing drained and you called it clean. A plugged drain reads exactly the same as an empty scrubber — until it doesn't."
+          },
+          {
+            "t": "Unhook suction and fill lines, check the gaskets, cap both ends of the ACB",
+            "w": "Open fittings on a loaded box headed for the road. Every bump is a chance to share the contents."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "chassis",
+    "title": "LOADING ON CHASSIS",
+    "sub": "ACB ON THE TRAILER",
+    "meta": "SOP v3.0 · Rev. 11/18/2025 · Approved D. Redick · Spot-in to haul-out",
+    "par": 280,
+    "phases": [
+      {
+        "name": "SPOT THE TRUCK",
+        "steps": [
+          {
+            "t": "Park in the staging area, set the brakes — then eyes on the loading area: obstructions, people, chock placement, lighting",
+            "w": "You backed into an area you never looked at. Whatever was in it is now part of the job."
+          },
+          {
+            "t": "Notify everyone in the area and set the exclusion zone",
+            "w": "Someone wandered in mid-move because nobody told them a move was happening. That's on the operator, not the walker."
+          },
+          {
+            "t": "Talk it through with your spotter — intentions and hand signals, before the truck moves",
+            "w": "You and the spotter are running two different playbooks. His 'stop' looked like your 'keep coming.'"
+          },
+          {
+            "t": "Back in on the spotter's signals — lose sight of him, you stop. Tires to the chocks or his stop call",
+            "w": "You kept rolling after you lost him in the mirror. The rule is simple: no spotter in sight, no wheels turning."
+          },
+          {
+            "t": "Lock it down: brakes set, ponds down, driver-side front wheel chocked, PTO on, idle 1,200",
+            "w": "Truck's live and loose. Everything you hook to it from here inherits that problem."
+          }
+        ]
+      },
+      {
+        "name": "RIG THE BOX",
+        "steps": [
+          {
+            "t": "Connect the grounding and bonding strap to the tractor chassis",
+            "w": "No bond. Static and product vapors settle their differences without you — once."
+          },
+          {
+            "t": "Pull the plug and open the 4\" suction butterfly SLOW — three points of contact on the deck",
+            "w": "Fast-cracked a valve on a box under vacuum, one hand on the truck. Pick which mistake bites first."
+          },
+          {
+            "t": "Clear the exclusion zones — passenger side, driver side, behind the trailer",
+            "w": "A man in the roll path when the box moves. There is no version of that story that ends fine."
+          },
+          {
+            "t": "Raise the rails 4–6 inches at a time on the spotter's eyes — keep cable tension, lower once the box is positioned",
+            "w": "Full lift, slack cable, no spotter. The box picked its own landing spot."
+          },
+          {
+            "t": "Install both metal safety locks, left and right — then PTO off",
+            "w": "No locks and the hydraulics are still live. The box is held up by fluid pressure and optimism."
+          },
+          {
+            "t": "Connect the 4\" product line at the rear — containment under the valve before the cap comes off, three points of contact on the landing",
+            "w": "Cap off, no containment, one hand for the ladder. The free liquid in that cap area found the ground and you nearly did too."
+          },
+          {
+            "t": "Walk the connections — gaskets, Velcro, ponds — then open the 4\" ball valve and fill per SOP",
+            "w": "Valve open on unchecked connections. The weakest fitting just volunteered."
+          }
+        ]
+      },
+      {
+        "name": "HAUL IT OUT",
+        "steps": [
+          {
+            "t": "Box full: clear the product line, shut the rear 4\" ball valve",
+            "w": "Rolled with a charged line. It emptied itself across the pad on your way out."
+          },
+          {
+            "t": "Close the 4\" suction butterfly — no stem extension means a ladder and three points of contact",
+            "w": "Free-climbed the box to reach a valve. The fall protection rules weren't written for someone else."
+          },
+          {
+            "t": "Shut down the HVAC per its SOP — E-stop is for emergencies only",
+            "w": "E-stop as a convenience button. Now there's a reset procedure, a breaker check, and a conversation."
+          },
+          {
+            "t": "Disconnect the hoses — caps and plugs in, hose ends in containment, camlock ears secured on the ACB",
+            "w": "Open hose ends on the trailer deck. Forty miles of washboard road will find what's left in them."
+          },
+          {
+            "t": "PTO back on — parking brake still set, wheels still chocked — pull the safety locks and stow them behind the cab",
+            "w": "Locks pulled with the truck unsecured. You removed the backup while the primary was already gambling."
+          },
+          {
+            "t": "Engage the cable lever system — winch the box up until it seats in the locking hooks",
+            "w": "Box riding loose on the rails. First hard brake, it comes forward to meet you."
+          },
+          {
+            "t": "Eyes on the locking pins — engaged behind the ACB rollers. Pins restrain the energy",
+            "w": "Nobody verified the pins. That's a loaded box held on by assumption at highway speed."
+          },
+          {
+            "t": "360 walkaround — people and obstacles clear — then pick up every duck pond and stow them",
+            "w": "Left the ponds on the pad and something under the truck in your blind spot. The 360 exists because mirrors lie."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "grease",
+    "title": "CHASSIS GREASING",
+    "sub": "DRAGON CHASSIS PM",
+    "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · #1 arctic synthetic, front to rear",
+    "par": 200,
+    "phases": [
+      {
+        "name": "SET UP",
+        "steps": [
+          {
+            "t": "Set the parking brakes — truck AND trailer",
+            "w": "One brake set out of two. The half you skipped is the half that rolls while you're under it."
+          },
+          {
+            "t": "Chock the truck and trailer tires",
+            "w": "No chocks. You're about to put your hands in pinch points on equipment that's free to move."
+          },
+          {
+            "t": "Gather the kit — #1 arctic-grade synthetic, grease gun, rags — and get your PPE on",
+            "w": "Wrong grease for the Slope. Summer grease at forty below sets up like taffy and lubricates nothing."
+          },
+          {
+            "t": "Raise the chassis trailer and set the safety stops",
+            "w": "Working under raised rails with no stops. Hydraulics hold until the moment they don't — that's the whole reason stops exist."
+          }
+        ]
+      },
+      {
+        "name": "GREASE IT — FRONT TO REAR",
+        "steps": [
+          {
+            "t": "Front cable sheaves and front cable ram pins — grease till you see flow and extrusion, wipe the excess",
+            "w": "Out of order and you'll lose track of what's done. Dry sheaves under load eat cables — front to rear, every time."
+          },
+          {
+            "t": "Sheave block — grease until lubricant appears, wipe it down",
+            "w": "Skipped the sheave block. It runs dry under the cable load until the day it seizes mid-lift."
+          },
+          {
+            "t": "Side rollers — rotate each roller WHILE greasing until it shows at the opposite side",
+            "w": "Greased a parked roller. The fresh grease sat on one spot and the bearing surface stayed dry — rotation is the whole trick."
+          },
+          {
+            "t": "Lifting ram pins, upper and lower — grease until backflow shows",
+            "w": "No backflow means it never filled. Half-greased ram pins wear oval, and oval pins drop boxes."
+          },
+          {
+            "t": "Landing gear points — 4 pumps per fitting",
+            "w": "Dry landing gear. It'll crank fine right up until it won't, on the coldest day, with a loaded box on it."
+          },
+          {
+            "t": "Middle cable ram pins and center cable roller — grease with flow visible, rotate the roller",
+            "w": "The middle points are the ones everyone skips because they're awkward to reach. That's exactly why they fail first."
+          },
+          {
+            "t": "Cable ram sheaves and rear pivot point — 5 to 6 shots each",
+            "w": "Rear pivot ran dry. Every lift works that joint, and a seized pivot turns a routine lift into a bent chassis."
+          },
+          {
+            "t": "Tail roll while turning it, DOT bumper points 5–7 shots, S-cams one per wheel, slack adjusters 5–6 shots on both fittings",
+            "w": "Skipped the brake hardware. Dry S-cams and slack adjusters mean brakes that drag or don't — you find out on the ice."
+          }
+        ]
+      },
+      {
+        "name": "KNOW YOUR INTERVALS",
+        "steps": [
+          {
+            "t": "Continuous ops: full chassis grease every week",
+            "w": "Stretched the interval. Arctic loads on dry pins do a week of wear in a day."
+          },
+          {
+            "t": "Inspect rollers, washers, cotter pins, and sheaves on the daily/weekly walkarounds",
+            "w": "The cotter pin you didn't look at backed out. The washer left, the roller followed."
+          },
+          {
+            "t": "Rotate the side rollers every 3 months",
+            "w": "Rollers wearing one groove in one spot for a year. Rotation is free — replacement isn't."
+          },
+          {
+            "t": "Caliper the brass bushings — replace the roller at 2.356\" ID. Grooved side in, flat side out, washer, then a 5\"×3/8\" cotter pin bent tight",
+            "w": "Roller went back together backwards. Grooved side out means it chews the washer and walks off the pin."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tankfarm",
+    "title": "TANK FARM OPS",
+    "sub": "FLUID TRANSFER",
+    "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · Walk-down to reporting",
+    "par": 240,
+    "phases": [
+      {
+        "name": "WALK THE FARM",
+        "steps": [
+          {
+            "t": "Inspect the tank farm — spill signs inside and outside containment, containment integrity, snow and water buildup eating capacity",
+            "w": "Containment half-full of snowmelt. The capacity you're counting on in a spill isn't there."
+          },
+          {
+            "t": "Check heaters, light plants, lighting, and that nothing is blocking vac truck access to the onload/offload areas",
+            "w": "Vac truck can't reach the connection point. Now there's improvising, and improvising around fluid transfer is how spills start."
+          },
+          {
+            "t": "Walk the hoses and fittings — damage, caps and plugs installed, safety ties over the camlocks, tank ventilation clear",
+            "w": "Uncapped fitting, no safety tie. One bump and the camlock walks open with fluid behind it."
+          },
+          {
+            "t": "Verify the safety gear — spill kit stocked, fall protection inspected and certified, ground straps in place",
+            "w": "The spill kit was empty when the spill happened. Checking it after is just inventory for the report."
+          },
+          {
+            "t": "Documentation in order — SDS for the fluids on hand, fluid transfer sheets complete",
+            "w": "Nobody can say what's in the tank. Medics and responders need the SDS before the incident, not during."
+          },
+          {
+            "t": "Team briefing — procedures, hazards, PPE, and everyone can trace the flow paths, tank volumes, and valve placement",
+            "w": "A hand on the transfer who can't trace the flow path. He'll open the valve he's standing next to, not the one that's right."
+          }
+        ]
+      },
+      {
+        "name": "RUN THE TRANSFER",
+        "steps": [
+          {
+            "t": "Confirm the correct fluid is being transferred",
+            "w": "Wrong fluid in the wrong tank. That's not a transfer anymore, it's contamination with paperwork."
+          },
+          {
+            "t": "Make sure the bleeder valve is in line",
+            "w": "No bleeder in the line. Trapped pressure has to go somewhere, and it picks the moment you break a connection."
+          },
+          {
+            "t": "Use vacuum to verify the lines are clear before flow",
+            "w": "Pushed product into a line that still had product. The slug came out the far end where nobody expected it."
+          },
+          {
+            "t": "Establish solid comms with the offloader or onloader — vac truck, rig, whoever's on the other end",
+            "w": "Two ends of one hose, no comms. One end opened, the other wasn't ready — the hose decided the rest."
+          },
+          {
+            "t": "Trace and confirm the flow path to or from the tanks",
+            "w": "Flow went where the valves sent it, not where you meant it. Tanks don't take corrections."
+          },
+          {
+            "t": "Open every valve needed for the transfer — then start it",
+            "w": "Started the pump against a closed valve. Pressure built until something opened on its own terms."
+          },
+          {
+            "t": "Monitor tank levels the whole transfer — overfill is a spill you watched happen",
+            "w": "Walked away from a running transfer. The tank topped out with nobody watching the gauge."
+          },
+          {
+            "t": "Transfer done — vacuum every line clear",
+            "w": "Product left standing in the lines, frozen by morning. Next crew inherits a plugged system and your name."
+          },
+          {
+            "t": "Report to the Mud Engineer — fluids transferred and tank volumes. A spill goes up the chain NOW: MagTec Manager, Mud Engineer, ConocoPhillips Security, SLP HSE",
+            "w": "Unreported volumes, and if there was a drip, an unreported spill. On this pad that's not an oops — that's a career decision."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "moneypit",
+    "title": "MONEY PIT OFFLOAD",
+    "sub": "PAN C — BACKUP LOCATION",
+    "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · Plan C only, Conoco authorization required",
+    "par": 220,
+    "phases": [
+      {
+        "name": "GET CLEARED",
+        "steps": [
+          {
+            "t": "Get approval from the ConocoPhillips infrastructure rep BEFORE proceeding to the Money Pit",
+            "w": "Money Pit is Plan C on Conoco's ground. Rolling in without their say-so turns a backup plan into an access violation."
+          },
+          {
+            "t": "Use the ramp signed \"ACB's Only\" and pull up to the staging area",
+            "w": "Wrong ramp. Those signs sort traffic that doesn't mix — and the pit doesn't forgive improvisation."
+          },
+          {
+            "t": "Disconnect the gate cable and secure it",
+            "w": "You worked around a barricade instead of opening it. The cable's there to control the ramp — leave it flapping and it controls nothing."
+          },
+          {
+            "t": "Walk up and retract the bird netting — push pole to get it clear of the ACB lift path",
+            "w": "Netting still in the lift path. The box comes up, hooks the net, and now you're doing rigging repairs over a pit."
+          },
+          {
+            "t": "Line up and back to the ramp stop — spotter if one's available",
+            "w": "Backed up a ramp over a pit by feel. The ramp stop is the last thing between your drive axle and the edge."
+          },
+          {
+            "t": "Wheel chocks under the tires",
+            "w": "No chocks, nose-up on a ramp, about to shake a loaded box. The truck gets a vote on where it sits."
+          }
+        ]
+      },
+      {
+        "name": "DUMP IT",
+        "steps": [
+          {
+            "t": "PTO on — idle the tractor up",
+            "w": "No PTO, no hydraulics. Everything after this step is you pulling levers connected to nothing."
+          },
+          {
+            "t": "Lift the ACB and shake it back to offload position",
+            "w": "Box never repositioned. Dump it from travel position and the load goes where gravity likes, not where the pit is."
+          },
+          {
+            "t": "Lay it down, insert the safety latch, pull the rear 6\" cap",
+            "w": "Cap off with no latch in. If the box shifts while you're behind it, you're in the worst spot on the Slope."
+          },
+          {
+            "t": "Pick up to offload angle and open the back valve",
+            "w": "Valve open at the wrong angle. The flow's got its own opinion about trajectory now."
+          },
+          {
+            "t": "Product out: lay it down, open the wing nuts and dogs, open the back hatch",
+            "w": "Wrestling the hatch hardware with the box still at angle. Every one of those dogs is a pinch point over your head."
+          },
+          {
+            "t": "Safety latch on the rear door",
+            "w": "Unsecured door on a box you're about to tilt again. That door swings with real weight behind it."
+          },
+          {
+            "t": "Lift back to dumping angle until every cutting is out",
+            "w": "Called it done half-full. The leftover freezes into ballast and rides back to the rig with you."
+          }
+        ]
+      },
+      {
+        "name": "BUTTON IT UP",
+        "steps": [
+          {
+            "t": "Lay the chassis down",
+            "w": "Working the back of a raised box. Everything from here happens on the ground or it doesn't happen safe."
+          },
+          {
+            "t": "Clean the rear seal and knock the cuttings off the back of the ACB and chassis",
+            "w": "Dirty seal, door closed on it. It leaks the whole ride home and the haul road gets a stripe."
+          },
+          {
+            "t": "Remove the latch and secure the back door",
+            "w": "Latch left in or door left loose — either way that box isn't road-ready and won't announce it until it matters."
+          },
+          {
+            "t": "Return the ACB to travel position",
+            "w": "Rolled out with the box at angle. First good bump resets your center of gravity for you."
+          },
+          {
+            "t": "Pull off the ramp and put the bird netting back",
+            "w": "Netting left open over the pit. The reason it exists shows up on wings about ten minutes after you leave."
+          },
+          {
+            "t": "Cable barricade back across the entrance",
+            "w": "Ramp left open behind you. The next truck in wasn't authorized, wasn't briefed, and now that's partly on you."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pisten",
+    "title": "PISTEN BULLY",
+    "sub": "A SHIFT IN THE SEAT",
+    "meta": "SOP Rev. 2 · Approved D. Redick · Authorization to emergency response",
+    "par": 220,
+    "phases": [
+      {
+        "name": "EARN THE SEAT",
+        "steps": [
+          {
+            "t": "PB600 tutorial complete, check ride passed, formal sign-off from the Lead Operator — before any independent operation",
+            "w": "Nobody signed you off. An unauthorized operator in a machine this size isn't initiative, it's the first line of the incident report."
+          },
+          {
+            "t": "Gear up: safety glasses, hi-vis outer, steel toes, hearing protection as required, real cold-weather gear",
+            "w": "Underdressed for the machine or the weather. The Slope doesn't grade on effort."
+          },
+          {
+            "t": "Daily safety meeting done — and a JSA before any fabrication work",
+            "w": "Skipped the morning meeting. The hazard everyone else heard about this morning is the one you're about to find."
+          }
+        ]
+      },
+      {
+        "name": "ROLL OUT",
+        "steps": [
+          {
+            "t": "Walkaround before initial movement — leaks, damage, mechanical issues. Deficiencies get fixed BEFORE you roll",
+            "w": "The leak you didn't walk past this morning is the trail of hydraulic fluid you're following back tonight."
+          },
+          {
+            "t": "Three points of contact climbing in",
+            "w": "Jumped up like it's a pickup. Iced steps on a machine this tall turn a shortcut into a shoulder surgery."
+          },
+          {
+            "t": "Seat belt on — all times, no exceptions",
+            "w": "No belt in a machine that can pitch sideways in terrain you can't always read. The cab only protects what stays inside it."
+          },
+          {
+            "t": "Daily comms out: weather, trail conditions, wildlife, disabled vehicles, hazards",
+            "w": "Nobody knows your conditions or your route. When you go quiet out there, quiet is all they have to search with."
+          },
+          {
+            "t": "Avoid backing — if you must, use a spotter. Shop entry and exit take a full walkaround plus a spotter",
+            "w": "Backed blind. A Pisten Bully doesn't feel what it rolls over, and neither will you until you get out."
+          },
+          {
+            "t": "After every stop: walk it around again before moving",
+            "w": "Something changed while you were parked — a leak started, a track picked something up. The machine won't mention it."
+          }
+        ]
+      },
+      {
+        "name": "PARK IT & WHEN IT GOES WRONG",
+        "steps": [
+          {
+            "t": "Before you exit: blade DOWN, emergency brake SET, three points out — and mind the wind direction",
+            "w": "Blade up, no brake, and you're standing next to it. A parked machine that can still move isn't parked."
+          },
+          {
+            "t": "Spill: stop the source if it's safe to reach — then absorbents down",
+            "w": "Watched it run while thinking about it. Every second of flow is more tundra in the report."
+          },
+          {
+            "t": "Contaminated snow into approved bags — double-bagged, labeled, location documented",
+            "w": "Loose contaminated snow, no label, no location. Now it's not a cleanup, it's an unreported release."
+          },
+          {
+            "t": "Notify your supervisor and the SLP Alaska HSE Rep",
+            "w": "Handled it quietly. An unreported spill on the Slope isn't discretion — it's the version of the story where you chose the consequences."
+          },
+          {
+            "t": "Injury: evaluate on scene with the onboard kit — escalate to medevac via Starlink, sat phone, InReach SOS, or PLB",
+            "w": "Hesitated on the escalation call. Out there, the gap between 'probably fine' and medevac is measured in daylight and body heat."
+          }
+        ]
+      }
+    ]
+  }
+]

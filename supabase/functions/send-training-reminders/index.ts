@@ -27,10 +27,23 @@
 //
 // Employees with all three sections empty are skipped entirely.
 //
+// MagTec employees also get a "THIS WEEK'S RUN" section at the bottom: a
+// one-tap link to the Run the Job SOP game, carrying a signed token that
+// identifies them without a password. Other companies' emails are byte-for-byte
+// what they were before. See GAME LINKS below.
+//
 // Required Edge Function secrets:
 //   - RESEND_API_KEY               (shared with send-weekly-reports)
 //   - SUPABASE_URL                 (auto-provided)
 //   - SUPABASE_SERVICE_ROLE_KEY    (auto-provided)
+//   - GAME_LINK_SECRET             (signs the game magic links; MUST be the
+//                                   same value as the Vercel env var of the
+//                                   same name, or every link fails to verify.
+//                                   Absent = the game section is simply left
+//                                   out, and the rest of the email is normal.)
+//
+// Optional Edge Function secret:
+//   - PORTAL_URL                   (defaults to https://portal.slpalaska.com)
 //
 // Optional request body (POST JSON) for manual runs:
 //   { "dry_run": true }            compute + return, send nothing
@@ -49,12 +62,78 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const GAME_LINK_SECRET = Deno.env.get("GAME_LINK_SECRET");
+const PORTAL_URL = (Deno.env.get("PORTAL_URL") || "https://portal.slpalaska.com")
+  .replace(/\/+$/, "");
 
 const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
 const SEND_DELAY_MS = 600;   // ~1.6/sec, under Resend's rate limit
 const NEW_WINDOW_DAYS = 7;
 const PAGE = 1000;           // PostgREST caps a single response at 1000 rows
+
+// ============================================================================
+// GAME LINKS
+//
+// Run the Job is live for MagTec Alaska only — the decks are built from their
+// controlled SOPs — so only MagTec employees get the extra section. Everyone
+// else's email is untouched.
+//
+// The link carries an HS256 JWT: the same algorithm and wire format Supabase
+// issues, signed with GAME_LINK_SECRET instead of the project's JWT secret.
+// It proves "this is employee X" and nothing else. It is NOT a Supabase
+// session and cannot be traded for one, so a forwarded link exposes a game
+// score, not somebody's training record.
+//
+// Kept in step with app/lib/game-auth.js by hand: Edge Functions bundle from
+// this directory only and cannot import from app/lib. If the payload shape or
+// TTL changes on one side, change it on the other.
+// ============================================================================
+const MAGTEC_COMPANY_ID = "c1fd7a04-99e6-401a-8cf8-f88f8d7cea35";
+const GAME_TOKEN_TTL_DAYS = 14;   // covers the gap to next week's email, plus slack
+
+function b64url(bytes: Uint8Array): string {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function signGameToken(userId: string): Promise<string> {
+  const enc = new TextEncoder();
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(enc.encode(JSON.stringify({ alg: "HS256", typ: "JWT" })));
+  const payload = b64url(enc.encode(JSON.stringify({
+    sub: userId,
+    scope: "game",
+    iat: now,
+    exp: now + GAME_TOKEN_TTL_DAYS * 24 * 60 * 60,
+  })));
+  const data = `${header}.${payload}`;
+
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(GAME_LINK_SECRET!),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(data)));
+  return `${data}.${b64url(sig)}`;
+}
+
+/**
+ * The player's personal one-tap link, or null when the game does not apply to
+ * them — wrong company, or the signing secret is not configured. Null means the
+ * section is left out entirely; it never means a broken link goes out.
+ */
+async function gameLinkFor(employee: any): Promise<string | null> {
+  if (!GAME_LINK_SECRET) return null;
+  if (employee.company_id !== MAGTEC_COMPANY_ID) return null;
+  try {
+    return `${PORTAL_URL}/game?t=${await signGameToken(employee.id)}`;
+  } catch (err) {
+    // A failure to sign must not cost this employee their training reminder.
+    console.error("game link signing failed:", (err as Error).message);
+    return null;
+  }
+}
 
 // ============================================================================
 // PAGINATED READS
@@ -193,6 +272,48 @@ function section(heading: string, blurb: string, items: Item[], c: { bg: string;
   </div>`;
 }
 
+/**
+ * "THIS WEEK'S RUN" — the MagTec-only game block, appended below the training
+ * sections. Table-and-inline-styles only: Outlook ignores flex and drops
+ * background-image, so the orange button is a real table cell with a real
+ * background color, and it stays a legible link even if that color is stripped.
+ */
+function gameSection(gameUrl: string): string {
+  return `
+  <div style="margin:26px 0 0 0;border-top:1px solid #e5e7eb;padding-top:22px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+           style="background:#1a1d21;border-radius:8px;">
+      <tr><td style="padding:18px 20px;">
+        <div style="color:#ff6a00;font-size:13px;font-weight:700;letter-spacing:1.5px;">
+          THIS WEEK'S RUN
+        </div>
+        <div style="color:#f2f4f6;font-size:19px;font-weight:700;margin:6px 0 8px 0;">
+          Run the Job
+        </div>
+        <div style="color:#9aa4ad;font-size:13px;line-height:1.5;margin-bottom:16px;">
+          Jobs off your own SOPs &mdash; ACB offload, tank farm, greasing, the Money Pit.
+          Put the steps in the order you&rsquo;d actually run them. Right calls pay, wrong calls
+          tell you what they cost. Fastest clean runs top the crew standings.
+        </div>
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr><td style="background:#ff6a00;border-radius:4px;">
+            <a href="${gameUrl}"
+               style="display:inline-block;padding:13px 26px;color:#14161a;font-size:16px;
+                      font-weight:700;text-decoration:none;letter-spacing:.5px;">
+              START YOUR RUN &rarr;
+            </a>
+          </td></tr>
+        </table>
+        <div style="color:#5c656e;font-size:11px;line-height:1.5;margin-top:14px;">
+          This link signs you in as you &mdash; don&rsquo;t forward it. It expires in
+          ${GAME_TOKEN_TTL_DAYS} days; next week&rsquo;s email carries a fresh one.<br/>
+          Training aid only. The controlled SOPs govern the work.
+        </div>
+      </td></tr>
+    </table>
+  </div>`;
+}
+
 function generateEmailHTML(
   employeeName: string,
   companyName: string,
@@ -200,6 +321,7 @@ function generateEmailHTML(
   notStartedItems: Item[],
   overdueItems: Item[],
   dueSoonItems: Item[],
+  gameUrl: string | null,
 ): string {
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
@@ -245,6 +367,8 @@ function generateEmailHTML(
             Log in to the training portal to complete these courses. If you believe a
             course does not apply to you, contact your supervisor.
           </p>
+
+          ${gameUrl ? gameSection(gameUrl) : ""}
         </td></tr>
 
         <tr><td style="background:${COLORS.slpBlue};padding:14px 24px;">
@@ -483,8 +607,13 @@ serve(async (req) => {
         }
 
         const companyName = (emp as any).lms_companies?.name || "Your Company";
+
+        // MagTec only. Every other company's email is exactly what it was.
+        const gameUrl = await gameLinkFor(emp);
+
         const html = generateEmailHTML(
           emp.full_name || "there", companyName, newItems, notStartedItems, overdueItems, dueSoonItems,
+          gameUrl,
         );
 
         // The subject describes what is actually in the email. "Overdue" is
@@ -509,6 +638,9 @@ serve(async (req) => {
           results.push({
             employee: emp.full_name, email: emp.email, status: "dry_run",
             subject,
+            // Boolean, never the URL: the token in it signs somebody in, and a
+            // dry-run response gets pasted into chats and tickets.
+            game_link: !!gameUrl,
             new: newItems.length, not_started: notStartedItems.length,
             overdue: overdueItems.length, due_soon: dueSoonItems.length,
             // Full titles so a dry run can be reviewed before any send.
@@ -527,6 +659,7 @@ serve(async (req) => {
         results.push({
           employee: emp.full_name, email: testEmail || emp.email, status: "sent", id: sent.id,
           new: newItems.length, overdue: overdueItems.length, due_soon: dueSoonItems.length,
+          game_link: !!gameUrl,
         });
         console.log(`✓ Reminder sent to ${emp.full_name} (${actionable} items)`);
       } catch (err: any) {
