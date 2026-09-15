@@ -41,6 +41,11 @@
 //   - RESEND_API_KEY               (shared with send-weekly-reports)
 //   - SUPABASE_URL                 (auto-provided)
 //   - SUPABASE_SERVICE_ROLE_KEY    (auto-provided)
+//   - TRAINING_REMINDER_SECRET     (shared secret; every caller must send it as
+//                                   the x-training-reminder-secret header. The
+//                                   cron jobs read it from Vault. Without it
+//                                   set, this function refuses every request —
+//                                   it fails closed, never open.)
 //   - GAME_LINK_SECRET             (signs the game magic links; MUST be the
 //                                   same value as the Vercel env var of the
 //                                   same name, or every link fails to verify.
@@ -55,6 +60,11 @@
 //   { "test_email": "a@b.com" }    route every email to one address
 //   { "limit": 50, "offset": 0 }   process a slice (see WALL CLOCK below)
 //
+// WHO MAY CALL THIS: anyone presenting the x-training-reminder-secret header.
+// The Supabase anon key is NOT sufficient and must never be — it ships in the
+// browser bundle, so gating on it alone would let any visitor who opened the
+// portal trigger a mass send to every employee in every client company.
+//
 // WALL CLOCK: Edge Functions have a bounded execution time and Resend is rate
 // limited, so this paces sends with SEND_DELAY_MS. A few hundred employees can
 // exceed the limit in one invocation — use limit/offset to chunk, or schedule
@@ -67,6 +77,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const TRAINING_REMINDER_SECRET = Deno.env.get("TRAINING_REMINDER_SECRET");
 const GAME_LINK_SECRET = Deno.env.get("GAME_LINK_SECRET");
 const PORTAL_URL = (Deno.env.get("PORTAL_URL") || "https://portal.slpalaska.com")
   .replace(/\/+$/, "");
@@ -527,8 +538,38 @@ async function sendEmail(to: string[], subject: string, html: string) {
 // ============================================================================
 // SERVE
 // ============================================================================
+/**
+ * Constant-time string compare, so a caller cannot learn the secret one
+ * character at a time from how long the comparison takes. Same shared-secret
+ * pattern as send-incident-alert; this is the pattern done carefully.
+ */
+function secretMatches(provided: string | null): boolean {
+  if (!TRAINING_REMINDER_SECRET || !provided) return false;
+  const a = new TextEncoder().encode(TRAINING_REMINDER_SECRET);
+  const b = new TextEncoder().encode(provided);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 serve(async (req) => {
   try {
+    // Shared-secret check, BEFORE anything is read or computed.
+    //
+    // A valid Supabase JWT is not enough on its own: the anon key is public by
+    // design and a request carrying it alone used to be able to mail every
+    // employee of every client company on this project. This endpoint sends
+    // mail on its own authority, so it needs a credential that is not in a
+    // browser bundle.
+    if (!secretMatches(req.headers.get("x-training-reminder-secret"))) {
+      console.warn("rejected unauthenticated call to send-training-reminders");
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     let opts: any = {};
     try { opts = await req.json(); } catch { /* no body — scheduled run */ }
 

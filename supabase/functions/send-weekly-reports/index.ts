@@ -20,6 +20,16 @@
 //   - SUPABASE_SERVICE_ROLE_KEY    (auto-provided)
 //   - DASHBOARD_API_URL            NEW — e.g. https://portal.slpalaska.com/api/dashboard-metrics
 //   - DASHBOARD_API_SECRET         NEW — same value as Vercel's DASHBOARD_API_SECRET env var
+//   - WEEKLY_REPORTS_SECRET       NEW — shared secret; every caller must send it
+//                                  as the x-weekly-reports-secret header. The
+//                                  weekly-safety-reports cron job reads it from
+//                                  Vault. Unset = this function refuses every
+//                                  request. It fails closed, never open.
+//
+// WHO MAY CALL THIS: anyone presenting the x-weekly-reports-secret header. The
+// Supabase anon key is NOT sufficient and must never be — it ships in the
+// browser bundle, and this function mails every client company's weekly report
+// to every recipient on its list with no dry-run mode to soften a mistake.
 // ============================================================================
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -27,6 +37,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const WEEKLY_REPORTS_SECRET = Deno.env.get("WEEKLY_REPORTS_SECRET");
 const DASHBOARD_API_URL = Deno.env.get("DASHBOARD_API_URL");
 const DASHBOARD_API_SECRET = Deno.env.get("DASHBOARD_API_SECRET");
 
@@ -535,8 +546,31 @@ async function sendEmail(to: string[], subject: string, html: string) {
 // ============================================================================
 // SERVE — for each company, fetch metrics from the portal API, format, send.
 // ============================================================================
+/**
+ * Constant-time compare, so the secret cannot be recovered a character at a
+ * time from response timing.
+ */
+function secretMatches(provided: string | null): boolean {
+  if (!WEEKLY_REPORTS_SECRET || !provided) return false;
+  const a = new TextEncoder().encode(WEEKLY_REPORTS_SECRET);
+  const b = new TextEncoder().encode(provided);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 serve(async (req) => {
   try {
+    // Shared-secret check, before any data is read or any mail is composed.
+    if (!secretMatches(req.headers.get("x-weekly-reports-secret"))) {
+      console.warn("rejected unauthenticated call to send-weekly-reports");
+      return new Response(JSON.stringify({ error: "unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const dateRange = getLastWeekRange();
 
     // Recipients grouped by company
@@ -584,7 +618,7 @@ serve(async (req) => {
         const raw = await fetchCompanyMetrics(companyName, dateRange.year);
 
         // 2. Adapt to the shape the HTML template expects
-        const adapted = adaptForEmail(raw);
+        const adapted = adaptForEmail(raw?.data ?? raw);
 
         // 3. Generate + send
         const html = generateEmailHTML(companyName, adapted, dateRange, companyToken);
