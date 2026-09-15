@@ -201,6 +201,53 @@
   transition: transform .5s cubic-bezier(.3, 0, .6, 1), opacity .5s;
 }
 
+/* ── Quick Hits — the ASH pull */
+#rtj-root .qhdeck { border-left-color: var(--hazard) !important; }
+#rtj-root .qhdeck .dt { color: var(--hazard); }
+#rtj-root .deck.featured { border-left-color: var(--hazard); box-shadow: inset 0 0 0 1px rgba(255,196,0,.35); }
+#rtj-root .deck.featured .dm { color: var(--safety); }
+#rtj-root .qbar { height: 10px; background: #14161a; border: 1px solid var(--edge); margin-bottom: 14px; overflow: hidden; }
+#rtj-root .qbar .qfill { height: 100%; background: var(--hazard); width: 100%; transition: width .1s linear; }
+#rtj-root .qq { font-size: 22px; font-weight: 700; line-height: 1.3; margin-bottom: 16px; min-height: 84px; }
+#rtj-root .qwhy {
+  margin-top: 14px; padding: 10px 12px; font-size: 16.5px; line-height: 1.35;
+  border: 1px solid var(--edge); background: var(--steel); color: var(--dim);
+}
+#rtj-root .qwhy.right { border-color: #2c5d3a; background: #15231a; color: #9fe0af; }
+#rtj-root .qwhy.wrong { border-color: var(--danger); background: #2b1517; color: #ffb3b6; }
+#rtj-root .card.qright { border-left-color: var(--good); background: #1d2d22; }
+#rtj-root .card.qwrong { border-left-color: var(--danger); background: #33262a; }
+#rtj-root .card.qdim { opacity: .35; pointer-events: none; }
+
+/* ── run notes and the crew board's second line */
+#rtj-root .runnote {
+  border: 1px solid var(--edge); border-left: 4px solid var(--edge); background: var(--steel);
+  color: var(--dim); font-size: 15px; line-height: 1.4; padding: 9px 12px; margin-bottom: 10px;
+}
+#rtj-root .runnote.win { border-left-color: var(--hazard); color: var(--hazard); background: #241f12; font-weight: 700; }
+#rtj-root .runnote.warn { border-left-color: var(--danger); color: #ffb3b6; background: #2b1517; }
+#rtj-root .board h3 + .note { margin-top: 0; }
+#rtj-root .board .bsub {
+  font-size: 13px; color: #5c656e; padding: 0 0 7px 0; margin-top: -3px;
+  font-variant-numeric: tabular-nums;
+}
+#rtj-root .board .bsub.you { color: var(--dim); }
+
+/* ── crew picker */
+#rtj-root .crewpick { flex: 1; display: flex; flex-direction: column; padding: 18px 14px 26px; }
+#rtj-root .crewpick h2 {
+  font-family: 'Big Shoulders Display'; font-weight: 800; font-size: 38px; line-height: .95; margin: 10px 0 8px;
+}
+#rtj-root .crewpick h2 span { color: var(--safety); }
+#rtj-root .crewpick p { color: var(--dim); font-size: 16px; line-height: 1.45; margin-bottom: 16px; }
+#rtj-root .crewbtn {
+  width: 100%; text-align: left; background: var(--steel); border: 1px solid var(--edge);
+  border-left: 6px solid var(--safety); padding: 15px; margin-bottom: 10px; cursor: pointer;
+  color: var(--arctic); font-family: 'Big Shoulders Display'; font-weight: 800; font-size: 23px;
+}
+#rtj-root .crewbtn:active { transform: scale(.99); }
+#rtj-root .crewbtn[disabled] { opacity: .5; cursor: default; }
+
 /* gate screens — signed out, wrong company, loading */
 #rtj-root .gate { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 26px 18px 40px; }
 #rtj-root .gate h2 {

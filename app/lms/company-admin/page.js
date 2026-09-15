@@ -11,6 +11,12 @@ const supabase = createClient(
 
 const TABS = ['Employees', 'Assign Courses', 'Training Matrix', 'Reports']
 
+// Run the Job is live for MagTec Alaska only, so the Crews tab only exists for
+// them. Duplicated from app/lib/game-auth.js rather than imported: that module
+// pulls in node:crypto and the service-role client, neither of which belongs in
+// a client bundle.
+const MAGTEC_COMPANY_ID = 'c1fd7a04-99e6-401a-8cf8-f88f8d7cea35'
+
 // Default temporary password for new employees and password resets.
 // Learners are flagged must_change_pw, so they set their own on first login.
 const DEFAULT_TEMP_PASSWORD = '1234567!'
@@ -705,6 +711,208 @@ function ReportsTab({ token }) {
   )
 }
 
+// ─── CREWS (MagTec only) ─────────────────────────────────────
+//
+// Crew rosters for Run the Job. The roster is the denominator of the weekly
+// crew score — a crew is graded on everyone on its list, not just whoever
+// played — so moving one person changes two crews' standings. That is why
+// assignment is an admin job, and why an admin's placement locks out the
+// player's own crew picker.
+function CrewsTab({ token }) {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [names, setNames] = useState({})
+
+  const load = useCallback(async () => {
+    if (!token) return
+    const res = await fetch('/api/game/admin/crews', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (!res.ok) { setError('Could not load crews.'); return }
+    const d = await res.json()
+    setData(d)
+    setNames(Object.fromEntries(d.crews.map(c => [c.id, c.name])))
+  }, [token])
+
+  useEffect(() => { load() }, [load])
+
+  async function act(payload, failMsg) {
+    setBusy(true); setError('')
+    try {
+      const res = await fetch('/api/game/admin/crews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(d.error === 'duplicate_name'
+          ? 'A crew with that name already exists.'
+          : (failMsg || 'That did not take. Try again.'))
+      } else {
+        await load()
+      }
+    } catch {
+      setError('No connection to the server.')
+    }
+    setBusy(false)
+  }
+
+  if (!data) return <div style={S.empty}>Loading crews…</div>
+
+  const unassigned = data.employees.filter(e => !e.crew_id)
+
+  return (
+    <div>
+      <div style={S.tabHeader}>
+        <h2 style={S.tabTitle}>Crews</h2>
+        <a href="/game/reports" style={{ ...S.btnSmall, textDecoration: 'none' }}>Game reports →</a>
+      </div>
+
+      <div style={S.infoBox}>
+        Weekly crew standings divide a crew&apos;s total by <b>every</b> rostered member, so
+        someone who never plays counts as a zero for their crew. Keep the rosters honest and the
+        board means something. Your assignment overrides whatever a player picked for themselves.
+      </div>
+
+      {error && <div style={{ ...S.error, marginTop: '12px' }}>{error}</div>}
+
+      <div style={{ display: 'flex', gap: '8px', margin: '18px 0', maxWidth: '480px' }}>
+        <input
+          style={S.input}
+          placeholder="New crew name (e.g. Drilling Support A)"
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+        />
+        <button
+          style={S.btnPrimary}
+          disabled={busy || !newName.trim()}
+          onClick={() => { act({ action: 'create_crew', name: newName.trim() }); setNewName('') }}
+        >Add crew</button>
+      </div>
+
+      {data.crews.length === 0 && (
+        <div style={S.empty}>No crews yet. Add one above, then assign people to it.</div>
+      )}
+
+      {data.crews.map(crew => (
+        <div key={crew.id} style={{ border: '1px solid #e5e5e5', borderRadius: '10px', padding: '18px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              style={{ ...S.input, maxWidth: '260px' }}
+              value={names[crew.id] ?? crew.name}
+              onChange={e => setNames({ ...names, [crew.id]: e.target.value })}
+            />
+            <button
+              style={S.btnSmall}
+              disabled={busy || !(names[crew.id] || '').trim() || names[crew.id] === crew.name}
+              onClick={() => act({ action: 'rename_crew', crew_id: crew.id, name: names[crew.id].trim() })}
+            >Save name</button>
+            <span style={{ ...S.badgeBlue, marginLeft: 'auto' }}>
+              {crew.members.length} member{crew.members.length === 1 ? '' : 's'}
+            </span>
+            <button
+              style={S.btnSmallRed}
+              disabled={busy}
+              onClick={() => {
+                if (confirm(`Delete ${crew.name}? Members become unassigned; their run history is kept.`)) {
+                  act({ action: 'delete_crew', crew_id: crew.id })
+                }
+              }}
+            >Delete</button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', margin: '14px 0 10px', flexWrap: 'wrap' }}>
+            <span style={S.label}>Lead</span>
+            <select
+              style={{ ...S.select, maxWidth: '240px' }}
+              value={crew.lead_user_id || ''}
+              disabled={busy}
+              onChange={e => act({ action: 'set_lead', crew_id: crew.id, user_id: e.target.value || null })}
+            >
+              <option value="">— none —</option>
+              {crew.members.map(m => (
+                <option key={m.user_id} value={m.user_id}>{m.full_name}</option>
+              ))}
+            </select>
+            {crew.members.length === 0 && (
+              <span style={{ fontSize: '12px', color: '#888' }}>Add members before naming a lead.</span>
+            )}
+          </div>
+
+          {crew.members.length > 0 && (
+            <table style={S.table}>
+              <tbody>
+                {crew.members.map(m => (
+                  <tr key={m.user_id} style={S.tr}>
+                    <td style={S.td}>
+                      {m.full_name}
+                      {crew.lead_user_id === m.user_id && <span style={{ ...S.badgeOrange, marginLeft: '8px' }}>LEAD</span>}
+                      {!m.assigned_by_admin && <span style={{ ...S.badgeGray, marginLeft: '8px' }}>self-picked</span>}
+                    </td>
+                    <td style={{ ...S.td, textAlign: 'right' }}>
+                      <select
+                        style={{ ...S.select, maxWidth: '190px', display: 'inline-block' }}
+                        value={crew.id}
+                        disabled={busy}
+                        onChange={e => act({ action: 'assign_member', crew_id: e.target.value, user_id: m.user_id })}
+                      >
+                        {data.crews.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <button
+                        style={{ ...S.btnSmallRed, marginLeft: '8px' }}
+                        disabled={busy}
+                        onClick={() => act({ action: 'remove_member', user_id: m.user_id })}
+                      >Remove</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ))}
+
+      <div style={{ marginTop: '22px' }}>
+        <h3 style={{ ...S.tabTitle, fontSize: '15px', marginBottom: '8px' }}>
+          Not on a crew ({unassigned.length})
+        </h3>
+        {unassigned.length === 0 ? (
+          <div style={S.empty}>Everyone is on a crew.</div>
+        ) : data.crews.length === 0 ? (
+          <div style={S.empty}>Add a crew first.</div>
+        ) : (
+          <table style={S.table}>
+            <tbody>
+              {unassigned.map(e => (
+                <tr key={e.id} style={S.tr}>
+                  <td style={S.td}>
+                    {e.full_name}
+                    {e.job_title && <div style={{ fontSize: '12px', color: '#888' }}>{e.job_title}</div>}
+                  </td>
+                  <td style={{ ...S.td, textAlign: 'right' }}>
+                    <select
+                      style={{ ...S.select, maxWidth: '220px', display: 'inline-block' }}
+                      defaultValue=""
+                      disabled={busy}
+                      onChange={ev => ev.target.value && act({ action: 'assign_member', crew_id: ev.target.value, user_id: e.id })}
+                    >
+                      <option value="">Assign to crew…</option>
+                      {data.crews.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── MAIN PAGE ───────────────────────────────────────────────
 export default function CompanyAdminDashboard() {
   const router = useRouter()
@@ -736,6 +944,9 @@ export default function CompanyAdminDashboard() {
     </div>
   )
 
+  // Crews only exist where the game does.
+  const tabs = companyId === MAGTEC_COMPANY_ID ? [...TABS, 'Crews'] : TABS
+
   return (
     <div style={S.page}>
       <div style={S.pageHeader}>
@@ -749,7 +960,7 @@ export default function CompanyAdminDashboard() {
         </div>
       </div>
       <div style={S.tabBar}>
-        {TABS.map(tab => (
+        {tabs.map(tab => (
           <button key={tab} style={{ ...S.tabBtn, ...(activeTab === tab ? S.tabBtnActive : {}) }} onClick={() => setActiveTab(tab)}>{tab}</button>
         ))}
       </div>
@@ -758,6 +969,7 @@ export default function CompanyAdminDashboard() {
         {activeTab === 'Assign Courses' && <AssignCoursesTab token={token} companyId={companyId} />}
         {activeTab === 'Training Matrix' && <TrainingMatrixTab token={token} />}
         {activeTab === 'Reports' && <ReportsTab token={token} />}
+        {activeTab === 'Crews' && <CrewsTab token={token} />}
       </div>
     </div>
   )

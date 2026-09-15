@@ -27,10 +27,11 @@
 //
 // Employees with all three sections empty are skipped entirely.
 //
-// MagTec employees also get a "THIS WEEK'S RUN" section at the bottom: a
-// one-tap link to the Run the Job SOP game, carrying a signed token that
-// identifies them without a password. Other companies' emails are byte-for-byte
-// what they were before. See GAME LINKS below.
+// MagTec employees also get a "THIS WEEK'S RUN" section at the bottom: the
+// name of the featured deck for the week, a one-tap link to run it, and a
+// second link straight into the Safety Pull (the ASH question game). Both
+// carry a signed token that identifies them without a password. Other
+// companies' emails are byte-for-byte what they were before. See GAME LINKS.
 //
 // Required Edge Function secrets:
 //   - RESEND_API_KEY               (shared with send-weekly-reports)
@@ -119,18 +120,98 @@ async function signGameToken(userId: string): Promise<string> {
 }
 
 /**
- * The player's personal one-tap link, or null when the game does not apply to
+ * The player's personal one-tap links, or null when the game does not apply to
  * them — wrong company, or the signing secret is not configured. Null means the
  * section is left out entirely; it never means a broken link goes out.
+ *
+ * One token, two destinations: the featured run, and the Safety Pull.
  */
-async function gameLinkFor(employee: any): Promise<string | null> {
+async function gameLinksFor(employee: any): Promise<{ run: string; pull: string } | null> {
   if (!GAME_LINK_SECRET) return null;
   if (employee.company_id !== MAGTEC_COMPANY_ID) return null;
   try {
-    return `${PORTAL_URL}/game?t=${await signGameToken(employee.id)}`;
+    const t = await signGameToken(employee.id);
+    return {
+      run: `${PORTAL_URL}/game?t=${t}`,
+      pull: `${PORTAL_URL}/game?t=${t}&pull=1`,
+    };
   } catch (err) {
     // A failure to sign must not cost this employee their training reminder.
     console.error("game link signing failed:", (err as Error).message);
+    return null;
+  }
+}
+
+// ============================================================================
+// FEATURED DECK OF THE WEEK
+//
+// Which deck the crew board ranks this week, and therefore which one the email
+// should name. The rule is deterministic — week index modulo the deck roster —
+// and is the same rule app/lib/game/week.js applies, so the email and the game
+// always agree without either one waiting on the other.
+//
+// Week boundaries are ALASKA Mondays: a run played 9pm Sunday on the Slope
+// belongs to the week that just ended, not to the one UTC has already started.
+//
+// The roster lives in lms_game_config.deck_rotation, published there by the
+// portal from decks.json, because an Edge Function bundles from this directory
+// only and cannot import the deck file. If the roster has never been published
+// (nobody has opened the game yet), there is no deck name to print, and the
+// section simply does not name one rather than guessing.
+// ============================================================================
+const AK_TZ = "America/Anchorage";
+const DOW: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+
+function weekStart(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: AK_TZ, year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
+  }).formatToParts(date);
+  const p = Object.fromEntries(parts.map((x) => [x.type, x.value])) as Record<string, string>;
+  const anchor = Date.UTC(+p.year, +p.month - 1, +p.day) - DOW[p.weekday] * 86400000;
+  return new Date(anchor).toISOString().slice(0, 10);
+}
+
+function weekIndex(ws: string): number {
+  const ms = Date.parse(`${ws}T00:00:00Z`) - Date.parse("1970-01-05T00:00:00Z");
+  return Math.round(ms / 604800000);
+}
+
+/** This week's featured deck title, or null if the roster is not published yet. */
+async function featuredDeckTitle(): Promise<string | null> {
+  try {
+    const ws = weekStart();
+    const { data } = await supabase
+      .from("lms_game_config")
+      .select("key, value")
+      .in("key", ["featured_deck_id", "featured_deck_title", "featured_week", "deck_rotation"]);
+    const cfg = Object.fromEntries((data || []).map((r: any) => [r.key, r.value]));
+
+    const roster: { id: string; title: string }[] = cfg.deck_rotation
+      ? JSON.parse(cfg.deck_rotation)
+      : [];
+    if (!Array.isArray(roster) || roster.length === 0) return null;
+
+    // A pick already stamped with this week wins — that is how an admin pins a
+    // deck, and how the portal's own resolution is respected.
+    if (cfg.featured_week === ws) {
+      const pinned = roster.find((d) => d.id === cfg.featured_deck_id);
+      if (pinned) return pinned.title;
+    }
+
+    const n = roster.length;
+    const chosen = roster[((weekIndex(ws) % n) + n) % n];
+
+    // Record it, so the game and the email tell the same story even if this
+    // send is the first thing to look this week. Best effort only.
+    await supabase.from("lms_game_config").upsert([
+      { key: "featured_deck_id", value: chosen.id, updated_at: new Date().toISOString() },
+      { key: "featured_deck_title", value: chosen.title, updated_at: new Date().toISOString() },
+      { key: "featured_week", value: ws, updated_at: new Date().toISOString() },
+    ], { onConflict: "key" });
+
+    return chosen.title;
+  } catch (err) {
+    console.error("featured deck lookup failed:", (err as Error).message);
     return null;
   }
 }
@@ -278,7 +359,7 @@ function section(heading: string, blurb: string, items: Item[], c: { bg: string;
  * background-image, so the orange button is a real table cell with a real
  * background color, and it stays a legible link even if that color is stripped.
  */
-function gameSection(gameUrl: string): string {
+function gameSection(links: { run: string; pull: string }, deckTitle: string | null): string {
   return `
   <div style="margin:26px 0 0 0;border-top:1px solid #e5e7eb;padding-top:22px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
@@ -288,25 +369,41 @@ function gameSection(gameUrl: string): string {
           THIS WEEK'S RUN
         </div>
         <div style="color:#f2f4f6;font-size:19px;font-weight:700;margin:6px 0 8px 0;">
-          Run the Job
+          ${deckTitle ? esc(deckTitle) : "Run the Job"}
         </div>
         <div style="color:#9aa4ad;font-size:13px;line-height:1.5;margin-bottom:16px;">
-          Jobs off your own SOPs &mdash; ACB offload, tank farm, greasing, the Money Pit.
-          Put the steps in the order you&rsquo;d actually run them. Right calls pay, wrong calls
-          tell you what they cost. Fastest clean runs top the crew standings.
+          ${deckTitle
+            ? `This week the crew board is scored on <b style="color:#f2f4f6;">${esc(deckTitle)}</b>. `
+            : ""}Put the steps in the order you&rsquo;d actually run them. Right calls pay, wrong
+          calls tell you what they cost. A clean run earns a drawing entry, and every rostered
+          member counts toward your crew&rsquo;s score &mdash; including the ones who sit it out.
         </div>
         <table role="presentation" cellpadding="0" cellspacing="0">
           <tr><td style="background:#ff6a00;border-radius:4px;">
-            <a href="${gameUrl}"
+            <a href="${links.run}"
                style="display:inline-block;padding:13px 26px;color:#14161a;font-size:16px;
                       font-weight:700;text-decoration:none;letter-spacing:.5px;">
               START YOUR RUN &rarr;
             </a>
           </td></tr>
         </table>
-        <div style="color:#5c656e;font-size:11px;line-height:1.5;margin-top:14px;">
-          This link signs you in as you &mdash; don&rsquo;t forward it. It expires in
-          ${GAME_TOKEN_TTL_DAYS} days; next week&rsquo;s email carries a fresh one.<br/>
+        <div style="color:#9aa4ad;font-size:13px;line-height:1.5;margin:18px 0 10px 0;">
+          <b style="color:#ffc400;">SAFETY PULL</b> &mdash; five rapid questions straight out of
+          the 2026 Alaska Safety Handbook, fifteen seconds each. First pull of the week is the
+          one that counts; a perfect pull is another drawing entry.
+        </div>
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr><td style="border:1px solid #ffc400;border-radius:4px;">
+            <a href="${links.pull}"
+               style="display:inline-block;padding:11px 22px;color:#ffc400;font-size:15px;
+                      font-weight:700;text-decoration:none;letter-spacing:.5px;">
+              TAKE THE SAFETY PULL &rarr;
+            </a>
+          </td></tr>
+        </table>
+        <div style="color:#5c656e;font-size:11px;line-height:1.5;margin-top:16px;">
+          These links sign you in as you &mdash; don&rsquo;t forward them. They expire in
+          ${GAME_TOKEN_TTL_DAYS} days; next week&rsquo;s email carries fresh ones.<br/>
           Training aid only. The controlled SOPs govern the work.
         </div>
       </td></tr>
@@ -321,7 +418,8 @@ function generateEmailHTML(
   notStartedItems: Item[],
   overdueItems: Item[],
   dueSoonItems: Item[],
-  gameUrl: string | null,
+  gameLinks: { run: string; pull: string } | null,
+  featuredDeck: string | null,
 ): string {
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
@@ -368,7 +466,7 @@ function generateEmailHTML(
             course does not apply to you, contact your supervisor.
           </p>
 
-          ${gameUrl ? gameSection(gameUrl) : ""}
+          ${gameLinks ? gameSection(gameLinks, featuredDeck) : ""}
         </td></tr>
 
         <tr><td style="background:${COLORS.slpBlue};padding:14px 24px;">
@@ -425,6 +523,10 @@ serve(async (req) => {
 
     const now = new Date();
     const newSince = new Date(now.getTime() - NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    // Once per invocation, not once per employee: every MagTec recipient is
+    // told about the same deck.
+    const featuredDeck = GAME_LINK_SECRET ? await featuredDeckTitle() : null;
 
     // ── Employees: every active user with an email. company_admin is NOT
     // excluded — supervisors hold that role and take training too.
@@ -609,11 +711,11 @@ serve(async (req) => {
         const companyName = (emp as any).lms_companies?.name || "Your Company";
 
         // MagTec only. Every other company's email is exactly what it was.
-        const gameUrl = await gameLinkFor(emp);
+        const gameLinks = await gameLinksFor(emp);
 
         const html = generateEmailHTML(
           emp.full_name || "there", companyName, newItems, notStartedItems, overdueItems, dueSoonItems,
-          gameUrl,
+          gameLinks, featuredDeck,
         );
 
         // The subject describes what is actually in the email. "Overdue" is
@@ -640,7 +742,7 @@ serve(async (req) => {
             subject,
             // Boolean, never the URL: the token in it signs somebody in, and a
             // dry-run response gets pasted into chats and tickets.
-            game_link: !!gameUrl,
+            game_link: !!gameLinks,
             new: newItems.length, not_started: notStartedItems.length,
             overdue: overdueItems.length, due_soon: dueSoonItems.length,
             // Full titles so a dry run can be reviewed before any send.
@@ -659,7 +761,7 @@ serve(async (req) => {
         results.push({
           employee: emp.full_name, email: testEmail || emp.email, status: "sent", id: sent.id,
           new: newItems.length, overdue: overdueItems.length, due_soon: dueSoonItems.length,
-          game_link: !!gameUrl,
+          game_link: !!gameLinks,
         });
         console.log(`✓ Reminder sent to ${emp.full_name} (${actionable} items)`);
       } catch (err: any) {
@@ -672,6 +774,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         dryRun,
+        featuredDeck,
         employeesTotal: allEmployees.length,
         employeesConsidered: slice.length,
         truncated: offset + slice.length < allEmployees.length,

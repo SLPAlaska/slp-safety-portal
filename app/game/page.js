@@ -7,8 +7,13 @@
 //     the phone, no password, which is the entire point on a rig floor
 //   * an already logged-in LMS session, for anyone who is on the portal anyway
 //
-// Both are checked server side by /api/game/session. This page never decides
-// for itself who may play; it asks, and renders one of three answers.
+// ?pull=1 opens straight into the Quick Hits pull; the email's SAFETY PULL
+// button uses it.
+//
+// Both credentials are checked server side by /api/game/session. This page
+// never decides for itself who may play; it asks, and renders one of the
+// answers: the game, the crew picker, a sign-in prompt, or the
+// not-yet-for-your-company notice.
 //
 // The shell below is the prototype's markup. Once it is on the screen the
 // engine takes over and React stops re-rendering it — see app/lib/game/engine.js
@@ -18,6 +23,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { createGame } from '@/lib/game/engine'
 import DECKS from '@/lib/game/decks.json'
+import QUICKHITS from '@/lib/game/quickhits.json'
 import './game.css'
 
 const supabase = createClient(
@@ -38,12 +44,23 @@ export default function GamePage() {
   const [status, setStatus] = useState('loading')
   const [player, setPlayer] = useState(null)
   const [company, setCompany] = useState(null)
+  const [featured, setFeatured] = useState(null)
+  const [crews, setCrews] = useState([])
+  const [crew, setCrew] = useState(null)
+  const [picking, setPicking] = useState(false)
+  const [joinError, setJoinError] = useState('')
 
   // The credentials every later request re-presents. Held in a ref, not state:
   // changing them must never re-render the shell out from under the engine.
   const creds = useRef({ t: null, bearer: null })
+  const autoStart = useRef(null)
   const rootRef = useRef(null)
   const gameRef = useRef(null)
+
+  const authHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(creds.current.bearer ? { Authorization: `Bearer ${creds.current.bearer}` } : {}),
+  })
 
   // ── authenticate
   useEffect(() => {
@@ -58,6 +75,7 @@ export default function GamePage() {
       const t = params.get('t') || sessionRead()
       const arrivedWithLink = !!t
       creds.current.t = t
+      if (params.get('pull')) autoStart.current = 'pull'
 
       // Both credentials are collected and both are sent. The server prefers a
       // valid link token, and falls through to the portal session when the
@@ -72,10 +90,7 @@ export default function GamePage() {
       try {
         res = await fetch('/api/game/session', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(creds.current.bearer ? { Authorization: `Bearer ${creds.current.bearer}` } : {}),
-          },
+          headers: authHeaders(),
           body: JSON.stringify({ t }),
         })
       } catch {
@@ -88,6 +103,10 @@ export default function GamePage() {
 
       if (res.ok) {
         setPlayer(data.player)
+        setFeatured(data.featured || null)
+        setCrews(data.crews || [])
+        setCrew(data.crew || null)
+        setPicking(!!data.needs_crew)
         setStatus('ready')
         // Drop the token out of the address bar now that it has been used.
         // It stays live for the rest of the visit, but it no longer rides along
@@ -111,40 +130,70 @@ export default function GamePage() {
 
   // ── start the engine once the shell is on the screen
   useEffect(() => {
-    if (status !== 'ready' || !rootRef.current || gameRef.current) return
-
-    const auth = () => ({
-      'Content-Type': 'application/json',
-      ...(creds.current.bearer ? { Authorization: `Bearer ${creds.current.bearer}` } : {}),
-    })
+    if (status !== 'ready' || picking || !rootRef.current || gameRef.current) return
 
     gameRef.current = createGame({
       root: rootRef.current,
       decks: DECKS,
+      quickhits: QUICKHITS,
+      featuredDeckId: featured?.id || null,
+      autoStart: autoStart.current,
       async onRunComplete(run) {
         const res = await fetch('/api/game/run', {
           method: 'POST',
-          headers: auth(),
+          headers: authHeaders(),
           body: JSON.stringify({ ...run, t: creds.current.t }),
         })
-        return res.ok
+        return res.ok ? res.json() : null
+      },
+      async onPullComplete(pull) {
+        const res = await fetch('/api/game/quickhits', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ ...pull, t: creds.current.t }),
+        })
+        return res.ok ? res.json() : null
       },
       async loadStandings(deckId) {
         const res = await fetch('/api/game/standings', {
           method: 'POST',
-          headers: auth(),
+          headers: authHeaders(),
           body: JSON.stringify({ deck_id: deckId, t: creds.current.t }),
         })
         if (!res.ok) throw new Error('standings unavailable')
         return res.json()
       },
     })
+    // Only ever auto-open the pull once per visit.
+    autoStart.current = null
 
     return () => {
       gameRef.current?.destroy()
       gameRef.current = null
     }
-  }, [status])
+  }, [status, picking, featured])
+
+  async function joinCrew(crewId) {
+    setJoinError('')
+    try {
+      const res = await fetch('/api/game/crew', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ crew_id: crewId, t: creds.current.t }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setJoinError(data.error === 'admin_assigned'
+          ? 'Your supervisor set your crew. Ask them to move you.'
+          : 'That did not take. Try again in a moment.')
+        return
+      }
+      setCrew({ id: data.crew.id, name: data.crew.name, assigned_by_admin: false })
+      setPicking(false)
+    } catch {
+      setJoinError('No connection. Try again when you have a bar or two.')
+    }
+  }
 
   if (status !== 'ready') {
     return (
@@ -154,6 +203,38 @@ export default function GamePage() {
             <div className="brand">RUN THE JOB<small>MAGTEC · DRILLING SUPPORT</small></div>
           </header>
           <Gate status={status} company={company} />
+        </div>
+      </div>
+    )
+  }
+
+  if (picking) {
+    return (
+      <div id="rtj-root">
+        <div id="rtj-app">
+          <header>
+            <div className="brand">RUN THE JOB<small>MAGTEC · DRILLING SUPPORT</small></div>
+          </header>
+          <div className="crewpick">
+            <h2>WHO DO YOU <span>RUN WITH?</span></h2>
+            <p>
+              Crew standings are scored on everybody, not just whoever plays — so the board
+              needs to know which crew your runs belong to. Pick yours once and you are done.
+            </p>
+            {joinError && <p style={{ color: '#ffb3b6' }}>{joinError}</p>}
+            {crews.map((c) => (
+              <button key={c.id} className="crewbtn" onClick={() => joinCrew(c.id)}>
+                {c.name}
+              </button>
+            ))}
+            <button className="ghostbtn" onClick={() => { setPicking(false); setJoinError('') }}>
+              {crew ? 'NEVER MIND' : 'NOT SURE YET — LET ME PLAY'}
+            </button>
+            <p className="proto" style={{ marginTop: '18px' }}>
+              Wrong crew on the list, or yours missing? Your company admin sets these up, and
+              their assignment overrides this pick.
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -174,15 +255,21 @@ export default function GamePage() {
         <section className="screen active" id="home">
           <h1>PICK YOUR <span>RUN</span></h1>
           <p className="sub">
-            {DECKS.length} jobs. You know the work — prove the order. Fastest clean runs take
-            the pot.
+            {DECKS.length} jobs and the handbook pull. You know the work — prove the order.
+            Fastest clean runs take the pot.
           </p>
           <div id="decklist"></div>
           <p className="proto">
-            Signed in as <b>{player?.name}</b> · {player?.company}. Every finished run posts to
-            the crew standings.<br />
+            Signed in as <b>{player?.name}</b> · {player?.company}
+            {crew?.name ? <> · crew <b>{crew.name}</b></> : null}.
+            {' '}Every finished run posts to the crew standings.<br />
             Training aid only. The controlled SOPs govern the work.
           </p>
+          {crews.length > 0 && (
+            <button className="ghostbtn" onClick={() => setPicking(true)}>
+              {crew?.name ? 'CHANGE CREW' : 'PICK YOUR CREW'}
+            </button>
+          )}
         </section>
 
         <section className="screen" id="brief">
@@ -194,7 +281,8 @@ export default function GamePage() {
           <p className="rules">
             Tap the steps in the order you&apos;d run them. Right call pays <b>+25</b>, streaks
             multiply it. Wrong call costs <b>−25</b> and shows you why it bites. Clean run pays
-            <b> +500</b>. Beat the clock — every second under par is money.
+            <b> +500</b> and earns a drawing entry. Beat the clock — every second under par is
+            money.
           </p>
           <button className="bigbtn" id="startBtn">START THE RUN</button>
           <button className="ghostbtn" id="backBtn">BACK TO THE BOARD</button>
@@ -211,6 +299,18 @@ export default function GamePage() {
           <div className="hand" id="hand"></div>
         </section>
 
+        <section className="screen" id="qh">
+          <div className="phasebar">
+            <div className="phasename">QUICK HITS</div>
+            <div className="phasecount" id="qCount"></div>
+          </div>
+          <div className="qbar"><div className="qfill" id="qFill"></div></div>
+          <div className="qq" id="qQ"></div>
+          <div className="hand" id="qOpts"></div>
+          <div id="qWhy"></div>
+          <div id="qEnd"></div>
+        </section>
+
         <section className="screen" id="end">
           <div className="stamp" id="stamp">RUN COMPLETE<small id="stampSub"></small></div>
           <div className="stats">
@@ -220,6 +320,7 @@ export default function GamePage() {
             <div className="row"><span>Bonuses</span><span className="v" id="fBonus">—</span></div>
             <div className="row"><span>Payout</span><span className="v pay" id="fPay">—</span></div>
           </div>
+          <div id="runNote"></div>
           <div className="board" id="board"></div>
           <button className="bigbtn" id="againBtn">RUN IT AGAIN</button>
           <button className="ghostbtn" id="homeBtn">BACK TO THE BOARD</button>

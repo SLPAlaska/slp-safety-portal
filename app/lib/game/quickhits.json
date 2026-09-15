@@ -1,0 +1,1146 @@
+[
+  {
+    "q": "Under the ASH Lifesaving Rules, who keeps people out of the line of fire?",
+    "o": [
+      "The equipment operator",
+      "The spotter",
+      "You — for yourself AND others",
+      "The permit issuer"
+    ],
+    "a": 2,
+    "why": "The rule reads both ways: keep yourself and others out of the line of fire. Seeing a man standing in it makes it your problem. (ASH — Lifesaving Rules)"
+  },
+  {
+    "q": "Per the ASH, before working unescorted on the North Slope you must complete:",
+    "o": [
+      "A site tour with your supervisor",
+      "NSTC Unescorted training and the North Slope Orientation",
+      "Your company's new-hire orientation only",
+      "A physical and drug screen"
+    ],
+    "a": 1,
+    "why": "NSTC Unescorted (or NSTC-approved equivalent) plus the North Slope Orientation, before arrival at your assigned location. (ASH — General Safety Rules)"
+  },
+  {
+    "q": "H2S in your breathing zone exceeds 10 ppm. The ASH requires:",
+    "o": [
+      "Ventilate and continue",
+      "Appropriate respiratory protection",
+      "Work in 15-minute rotations",
+      "Downgrade the permit"
+    ],
+    "a": 1,
+    "why": "Above 10 ppm in the breathing zone, appropriate respiratory protection is required — no exposure-time workaround. (ASH — H2S Standard)"
+  },
+  {
+    "q": "Noise in your work area exceeds 100 dBA. Required hearing protection:",
+    "o": [
+      "Earplugs OR muffs",
+      "Earplugs AND muffs — double protection",
+      "Muffs only",
+      "Limit exposure to 2 hours"
+    ],
+    "a": 1,
+    "why": "Over 82 dBA takes single protection; over 100 dBA takes double — plugs and muffs together. (ASH — Industrial Hygiene)"
+  },
+  {
+    "q": "Outside work is scheduled and the wind is blowing past 40 mph. The ASH calls for:",
+    "o": [
+      "Cancel all outside work automatically",
+      "A safety time out / task hazard assessment before proceeding",
+      "Buddy-system only",
+      "Supervisor monitoring by radio"
+    ],
+    "a": 1,
+    "why": "Wind over 40 mph triggers a safety time out and task hazard assessment for any scheduled outside work — the job gets re-looked before it proceeds. (ASH — High Wind Conditions)"
+  },
+  {
+    "q": "At what fall exposure does the ASH require 100% continuous fall protection on construction work?",
+    "o": [
+      "Greater than 4 feet",
+      "Greater than 6 feet",
+      "Greater than 10 feet",
+      "Any elevated surface"
+    ],
+    "a": 1,
+    "why": "Fall potential greater than 6 feet means 100% continuous fall protection — guardrails, nets, or personal restraint/arrest. (ASH — Fall Protection)"
+  },
+  {
+    "q": "Body belts in a personal fall arrest system are:",
+    "o": [
+      "Acceptable under 10 feet",
+      "Acceptable with a second lanyard",
+      "Not acceptable — full body harness required",
+      "Acceptable for ladder work only"
+    ],
+    "a": 2,
+    "why": "Body belts are positioning devices only. Fall ARREST takes a full body harness, locking snap hooks, 5,000-lb rated hardware. (ASH — Fall Protection)"
+  },
+  {
+    "q": "Ground disturbance deeper than what depth requires an Area Civil Work Request (ACWR)?",
+    "o": [
+      "6 inches",
+      "12 inches",
+      "18 inches",
+      "3 feet"
+    ],
+    "a": 1,
+    "why": "Anything past 12 inches needs an ACWR before digging — buried cables and pipelines don't announce themselves. And an ACWR expires in 90 days if work hasn't started. (ASH — Ground Disturbance Standard)"
+  },
+  {
+    "q": "Per the ASH Lifesaving Rules, energy isolation means:",
+    "o": [
+      "Locking out electrical sources only",
+      "Verifying isolation BEFORE work begins",
+      "The operator confirms shutdown verbally",
+      "De-energizing during the work"
+    ],
+    "a": 1,
+    "why": "Verify isolation before work begins — verification, not assumption, is the rule. (ASH — Lifesaving Rules / Energy Isolation Standard)"
+  },
+  {
+    "q": "Walking under a suspended load is:",
+    "o": [
+      "Allowed if the operator sees you",
+      "Allowed for under 10 seconds",
+      "Never allowed",
+      "Allowed with a spotter's wave"
+    ],
+    "a": 2,
+    "why": "Follow safe lifting operations and do not walk under a suspended load — a Lifesaving Rule with no exception clause. (ASH — Lifesaving Rules)"
+  },
+  {
+    "q": "You need to bypass a safety device to finish a task. The ASH says:",
+    "o": [
+      "Do it and log it at shift end",
+      "Obtain authorization BEFORE bypassing or defeating it",
+      "OK if it's back in service by shift change",
+      "Supervisors may bypass at their discretion"
+    ],
+    "a": 1,
+    "why": "Authorization comes before bypassing, inhibiting, or defeating any safety protection device — that's a Lifesaving Rule. (ASH — Defeated Safety Devices Standard)"
+  },
+  {
+    "q": "Entering a confined space requires:",
+    "o": [
+      "A gas test within the last 24 hours",
+      "Authorization before entry",
+      "Two people minimum, no permit needed",
+      "Supervisor notification"
+    ],
+    "a": 1,
+    "why": "Obtain authorization before entering a confined space — the Lifesaving Rule behind the full entry standard and permit. (ASH — Confined Space Entry Standard)"
+  },
+  {
+    "q": "The ASH driving rule, in full:",
+    "o": [
+      "Seat belt on",
+      "Seat belt, no mobile phone, don't exceed speed limits",
+      "Headlights on at all times",
+      "Seat belt and CB radio contact"
+    ],
+    "a": 1,
+    "why": "All three, together: belt on, phone down, speed limits respected. (ASH — Lifesaving Rules / Vehicle Safety)"
+  },
+  {
+    "q": "Your vehicle breaks down on a field road. Reflective triangles go:",
+    "o": [
+      "50 ft front and back",
+      "100 ft in front, 10 ft behind, 100 ft behind",
+      "At the vehicle's corners",
+      "250 ft behind only"
+    ],
+    "a": 1,
+    "why": "100 in front, 10 behind, 100 behind — and hold the triangle between you and traffic while placing it so drivers can see you. Then contact Security. (ASH — Disabled Vehicle)"
+  },
+  {
+    "q": "Passing working heavy equipment on a field road, you slow to:",
+    "o": [
+      "25 mph",
+      "20 mph",
+      "15 mph",
+      "Walking speed"
+    ],
+    "a": 2,
+    "why": "15 mph past working heavy equipment; on public roads, posted limits govern. (ASH — Vehicle Safety)"
+  },
+  {
+    "q": "Driving in the field requires what communication equipment?",
+    "o": [
+      "Cell phone with charger",
+      "Some form of two-way communication, radio-checked before departure",
+      "InReach only",
+      "None on marked roads"
+    ],
+    "a": 1,
+    "why": "Two-way comms are required for field driving, and the radio check happens before you roll, not after you're stuck. (ASH — Vehicle Safety)"
+  },
+  {
+    "q": "High-visibility clothing is worn:",
+    "o": [
+      "Inside your parka in winter",
+      "As the outermost layer on the upper body outdoors",
+      "Only in active traffic areas",
+      "Only by spotters and flaggers"
+    ],
+    "a": 1,
+    "why": "Outermost layer on the upper body while working outdoors — hi-vis under a jacket is hi-vis for nobody. (ASH — PPE)"
+  },
+  {
+    "q": "A crew member is shivering hard, stumbling, slurring, and drowsy. That's:",
+    "o": [
+      "Early frostbite",
+      "Hypothermia — get help now",
+      "Normal cold fatigue",
+      "Dehydration only"
+    ],
+    "a": 1,
+    "why": "Intense shivering, poor coordination, thick speech, drowsiness — hypothermia. It's insidious, and untreated it ends in collapse and death. (ASH — Cold Related Injuries)"
+  },
+  {
+    "q": "Frostbitten skin that's gone numb and dead white gets treated by:",
+    "o": [
+      "Rubbing it to restore circulation",
+      "Warm water immersion on site",
+      "Transport to a medical facility as soon as possible",
+      "Covering it and finishing the shift"
+    ],
+    "a": 2,
+    "why": "Transport as soon as possible to a medical facility — and watch your co-workers' faces, because they can't see their own. (ASH — Cold Related Injuries)"
+  },
+  {
+    "q": "The ASH's best defense against cold injury:",
+    "o": [
+      "Chemical hand warmers",
+      "Prioritize and limit outside work in extremes, plus correct PPE",
+      "Doubled base layers",
+      "Hot drinks every hour"
+    ],
+    "a": 1,
+    "why": "Limit exposure during temperature and wind chill extremes and dress right — gauntlet gloves specifically, to close the wrist gap between jacket and glove. (ASH — Cold Weather Protection)"
+  },
+  {
+    "q": "You find a ladder with a loose rung. The ASH says:",
+    "o": [
+      "Tag it and use the good side",
+      "Report it and remove it from service immediately",
+      "Use it for light duty only",
+      "Note it for the next inspection"
+    ],
+    "a": 1,
+    "why": "Defective ladders come out of service immediately — report to your supervisor. Never use a defective ladder. (ASH — Ladder Safety)"
+  },
+  {
+    "q": "A fixed ladder installed after November 2018 extending more than 24 feet must have:",
+    "o": [
+      "A cage or well",
+      "A personal fall arrest system or ladder safety system",
+      "Rest platforms every 20 feet",
+      "Non-slip rungs"
+    ],
+    "a": 1,
+    "why": "Post-2018 installs over 24 feet: fall arrest system or ladder safety system — cages alone no longer qualify for new installs. (ASH — Ladder Safety)"
+  },
+  {
+    "q": "Barricading a hazardous area requires:",
+    "o": [
+      "Cones at each corner",
+      "The barricade PLUS a highly visible sign identifying the hazard",
+      "Yellow tape at waist height",
+      "A watch posted"
+    ],
+    "a": 1,
+    "why": "Erect the barricade AND post a visible sign naming the hazard — tape that doesn't say why is tape people duck under. (ASH — Barricade Guidelines)"
+  },
+  {
+    "q": "A ladder must block a doorway to do the job. The ASH requires:",
+    "o": [
+      "A sign on the far side of the door",
+      "Lock or block the adjacent door; if it's an emergency exit, the ladder stays continually attended",
+      "Finish in under 15 minutes",
+      "Nothing if the door opens away"
+    ],
+    "a": 1,
+    "why": "Lock or block adjacent doors, and a ladder blocking an emergency exit is never left alone — leave the area, clear the exit path. (ASH — Ladder Safety)"
+  },
+  {
+    "q": "An emergency vehicle comes up on you on a field road. You:",
+    "o": [
+      "Speed up to clear the area",
+      "Pull over, stop, and yield until it passes",
+      "Hold your line and speed",
+      "Flash your lights to acknowledge"
+    ],
+    "a": 1,
+    "why": "All traffic meeting or being overtaken by an emergency vehicle yields, pulls over, and STOPS until it's past. (ASH — Vehicle Safety)"
+  },
+  {
+    "q": "How many Lifesaving Rules does the ASH define?",
+    "o": [
+      "6",
+      "9",
+      "12",
+      "15"
+    ],
+    "a": 1,
+    "why": "Nine: line of fire, permit to work, confined space, work at heights, lifting, energy isolation, ground disturbance, defeating safety devices, driving. (ASH - Lifesaving Rules)"
+  },
+  {
+    "q": "Which of these is NOT one of the nine Lifesaving Rules?",
+    "o": [
+      "Line of fire",
+      "Housekeeping",
+      "Energy isolation",
+      "Driving"
+    ],
+    "a": 1,
+    "why": "Housekeeping matters, but the nine rules are the fatal-risk barriers. The other three are all on the list. (ASH - Lifesaving Rules)"
+  },
+  {
+    "q": "The Permit To Work lifesaving rule says:",
+    "o": [
+      "Every task needs a permit",
+      "Obtain a valid work permit when required",
+      "Verbal approval from the operator suffices",
+      "Permits are for hot work only"
+    ],
+    "a": 1,
+    "why": "A VALID permit, WHEN required - and the standards define when. Working past an expired permit breaks the same rule. (ASH - Lifesaving Rules)"
+  },
+  {
+    "q": "To replace a valve you have to alter part of the system. Under the ASH fall-protection section, that work is classified as:",
+    "o": [
+      "Maintenance under 1910",
+      "Construction work under 29 CFR 1926",
+      "Routine operations",
+      "Modification - no classification"
+    ],
+    "a": 1,
+    "why": "Alteration to a system to replace a valve is construction work under 1926 - which drives the 100% continuous fall protection requirement above 6 feet. (ASH - Fall Protection)"
+  },
+  {
+    "q": "Riding in a vehicle on a gravel road, eye protection is:",
+    "o": [
+      "Not required inside vehicles",
+      "Required unless Company policy exempts it",
+      "Required only for the driver",
+      "Required only in summer"
+    ],
+    "a": 1,
+    "why": "Gravel-road vehicle travel is on the eye-protection list unless the Company policy says otherwise. (ASH - PPE)"
+  },
+  {
+    "q": "A hand is grinding 15 feet away from you with no welding screen up. Your eye protection:",
+    "o": [
+      "Standard safety glasses",
+      "The same level as the grinder - sealed eyewear and face shield",
+      "None if you face away",
+      "Face shield only"
+    ],
+    "a": 1,
+    "why": "Within 20 feet of grinding, chipping, or blasting, you wear the same protection as the man doing it, unless barriers separate you. (ASH - PPE)"
+  },
+  {
+    "q": "Which hard hat is banned on site?",
+    "o": [
+      "Class E ANSI Z89.1",
+      "Climbing-style safety helmet meeting ANSI",
+      "Metal hard hat",
+      "Full-brim Class E"
+    ],
+    "a": 2,
+    "why": "Metal hard hats are not allowed. Class E to ANSI Z89.1 is the requirement; compliant climbing helmets are permitted. (ASH - PPE)"
+  },
+  {
+    "q": "A worker with a goatee needs a tight-fitting respirator. The ASH says:",
+    "o": [
+      "Fit-test over the goatee",
+      "Facial hair that breaks the seal means no tight-fitting respirator",
+      "Double the cartridge change schedule",
+      "Use a nuisance dust mask instead"
+    ],
+    "a": 1,
+    "why": "Goatees, large moustaches, and long sideburns interfere with the seal - and a respirator that does not seal is not protection. (ASH - PPE)"
+  },
+  {
+    "q": "For workers at flash-fire risk, which fabric is prohibited unless rated for the exposure?",
+    "o": [
+      "Cotton",
+      "Wool",
+      "Polyester",
+      "Leather"
+    ],
+    "a": 2,
+    "why": "Acetate, nylon, polyester, and rayon - alone or in blends - are out unless rated for the conditions. They melt into the burn. (ASH - PPE)"
+  },
+  {
+    "q": "Before reaching for a fall arrest harness, the ASH says first consider:",
+    "o": [
+      "A longer lanyard",
+      "A fixed or mobile work platform with handrails",
+      "Working faster at height",
+      "A second spotter"
+    ],
+    "a": 1,
+    "why": "Where practical, a platform with handrails, mid-rails, and toe boards comes BEFORE a fall arrest system. Not falling beats falling well. (ASH - Fall Protection)"
+  },
+  {
+    "q": "Personal fall arrest systems get a documented inspection:",
+    "o": [
+      "Monthly by the user",
+      "At least annually by a qualified inspector, color coded",
+      "Only after a fall",
+      "Every hitch by the supervisor"
+    ],
+    "a": 1,
+    "why": "Visual check by the user before every use; documented annual inspection by a qualified inspector with color coding. Defective components come out of service. (ASH - Fall Protection)"
+  },
+  {
+    "q": "Before starting work at height, tools and equipment must be:",
+    "o": [
+      "Counted",
+      "Assessed for fall potential with controls in place",
+      "New or near-new",
+      "Under 10 pounds"
+    ],
+    "a": 1,
+    "why": "Assess the fall potential of everything you carry up, and control it - lanyards, positive securing, netting, screens. (ASH - Dropped Objects)"
+  },
+  {
+    "q": "Below overhead work, the ASH requires:",
+    "o": [
+      "A watchman",
+      "An exclusion zone of suitable barriers",
+      "Warning paint",
+      "Nothing if hard hats are worn"
+    ],
+    "a": 1,
+    "why": "An exclusion zone with barriers goes below overhead work - a hard hat is the last defense, not the plan. (ASH - Dropped Objects)"
+  },
+  {
+    "q": "Working over water with drowning danger, a PFD is NOT required when:",
+    "o": [
+      "You can swim",
+      "100% continuous fall protection prevents falling in",
+      "Water is under 6 feet deep",
+      "A boat is standing by"
+    ],
+    "a": 1,
+    "why": "Coast Guard-approved PFD or buoyant vest - unless 100% fall protection makes falling in impossible. (ASH - Working Over or Near Water)"
+  },
+  {
+    "q": "Before working over non-grounded ice:",
+    "o": [
+      "Check ice color",
+      "Conduct an assessment that work can proceed safely",
+      "Wait for 12-inch thickness",
+      "Rope off 50 feet"
+    ],
+    "a": 1,
+    "why": "Non-grounded ice gets an assessment first - it is floating cover, not ground. (ASH - Working Over or Near Water)"
+  },
+  {
+    "q": "Ice on a walkway gets:",
+    "o": [
+      "A warning cone",
+      "Treated with sand or cleared",
+      "Noted for day shift",
+      "Walked carefully"
+    ],
+    "a": 1,
+    "why": "Passageways stay clean, unobstructed, and free of ice or treated to prevent slipping injuries. (ASH - Housekeeping)"
+  },
+  {
+    "q": "Electronic cigarettes on a process facility:",
+    "o": [
+      "Allowed anywhere outdoors",
+      "Designated smoking areas only",
+      "Allowed in vehicles",
+      "Allowed - they are not smoking"
+    ],
+    "a": 1,
+    "why": "E-cigs follow the smoking policy: designated areas only. Production, process, drilling, and construction areas are no-smoking. (ASH - Smoking)"
+  },
+  {
+    "q": "Who may repair, install, or adjust electrical equipment?",
+    "o": [
+      "Any journeyman-level hand",
+      "Qualified AND authorized personnel only",
+      "Anyone under supervisor watch",
+      "Maintenance techs"
+    ],
+    "a": 1,
+    "why": "Qualified and authorized - both words. (ASH - Electrical)"
+  },
+  {
+    "q": "How close may a non-electrician bring a conductive object to unguarded energized overhead lines?",
+    "o": [
+      "10 feet",
+      "No closer than 15 feet",
+      "6 feet with rubber gloves",
+      "Contact is fine if de-energized downstream"
+    ],
+    "a": 1,
+    "why": "Only a qualified electrician may bring a conductive object closer than 15 feet to unguarded, energized overhead or un-insulated feeder lines. (ASH - Electrical)"
+  },
+  {
+    "q": "Work directly on energized circuits rated 480/277 volts or greater requires:",
+    "o": [
+      "One qualified electrician",
+      "Two qualified electrical personnel",
+      "A supervisor present",
+      "An observer with a radio"
+    ],
+    "a": 1,
+    "why": "Two qualified electrical persons for energized work at 480/277V or greater. Diagnostics under 600V may be one qualified person. (ASH - Electrical / Fired Heater Standard)"
+  },
+  {
+    "q": "Using steam to purge a flammable atmosphere from process equipment requires:",
+    "o": [
+      "Operator judgment",
+      "A written specific procedure reviewed by Engineering and a Safety Representative",
+      "A standing generic procedure",
+      "Fire watch only"
+    ],
+    "a": 1,
+    "why": "Each steam cleaning or purging application gets its own written procedure, reviewed by Engineering and Company Safety. (ASH - Steam Hazards)"
+  },
+  {
+    "q": "Straight ladders must have:",
+    "o": [
+      "A tie-off rope",
+      "Safety feet",
+      "Rubber-coated rungs",
+      "A 20-foot maximum"
+    ],
+    "a": 1,
+    "why": "Ensure straight ladders have safety feet - part of the pre-use inspection. (ASH - Ladder Safety)"
+  },
+  {
+    "q": "Reaching from a ladder, the ASH limit is:",
+    "o": [
+      "One arm's length",
+      "Keep your belt buckle between the rails",
+      "18 inches past the rail",
+      "No limit with three points"
+    ],
+    "a": 1,
+    "why": "Belt buckle between the rails. If you cannot, move the ladder. (ASH - Ladder Safety)"
+  },
+  {
+    "q": "Working from a ladder at 6 feet or greater:",
+    "o": [
+      "Requires a spotter",
+      "Use fall protection when feasible",
+      "Requires a fixed ladder",
+      "Is prohibited"
+    ],
+    "a": 1,
+    "why": "At 6 feet or greater from a ladder, fall protection when feasible - the 6-foot line follows you onto the ladder. (ASH - Ladder Safety / Tool Usage)"
+  },
+  {
+    "q": "Before using a pneumatic tool:",
+    "o": [
+      "Oil the coupling",
+      "Inspect couplings, hoses, and connections - every use",
+      "Test-fire it away from people",
+      "Check the compressor logs"
+    ],
+    "a": 1,
+    "why": "Couplings, hoses, and connections get inspected each time - attached and secured. (ASH - Tool Usage)"
+  },
+  {
+    "q": "Before putting the chuck key to an electric drill:",
+    "o": [
+      "Set it to low speed",
+      "Disconnect it from its power source",
+      "Hold the trigger lock",
+      "Ask a second hand to steady it"
+    ],
+    "a": 1,
+    "why": "Disconnect electric and air tools from power for chuck-key work and when not in use; pull battery packs from portables. (ASH - Tool Usage)"
+  },
+  {
+    "q": "A powered hand tool with a trigger lock must release by:",
+    "o": [
+      "A separate on/off switch",
+      "Depressing the trigger itself - spring-loaded release",
+      "A key",
+      "Two-hand reset"
+    ],
+    "a": 1,
+    "why": "The lock releases by depressing the control switch or trigger. A separate positive on/off switch is prohibited. (ASH - Tool Usage)"
+  },
+  {
+    "q": "A shop-made tool can be used when:",
+    "o": [
+      "It passed a function test",
+      "A qualified engineer approved it and no commercial tool exists",
+      "The lead signs off",
+      "It is only used once"
+    ],
+    "a": 1,
+    "why": "Field-fabricated or modified tools take qualified engineer approval, and only when no commercial option serves. (ASH - Tool Usage)"
+  },
+  {
+    "q": "The ASH's position on open-blade knives:",
+    "o": [
+      "Standard issue",
+      "Rarely the most appropriate cutting tool - evaluate each task",
+      "Fine with cut gloves",
+      "Banned outright"
+    ],
+    "a": 1,
+    "why": "Rarely the right selection. Each work group evaluates cutting tasks and provides the safest tool. (ASH - Cutting Tools)"
+  },
+  {
+    "q": "Camlock fittings in steam service:",
+    "o": [
+      "Must be locked and pinned",
+      "Shall NOT be used",
+      "Need Velcro straps",
+      "Require double gaskets"
+    ],
+    "a": 1,
+    "why": "Cam and groove fittings shall not be used for steam service - no configuration makes it acceptable. (ASH - Camlocks)"
+  },
+  {
+    "q": "Before disconnecting a camlock in pressurized service:",
+    "o": [
+      "Crack it slowly and listen",
+      "Verify atmospheric pressure via bleeder valve or vent",
+      "Count to thirty after shutdown",
+      "Stand to the side and pull"
+    ],
+    "a": 1,
+    "why": "A method of verifying atmospheric pressure - bleeder or vent - comes before disconnecting. Locked and secured while in service. (ASH - Camlocks)"
+  },
+  {
+    "q": "Whip checks are typically rated for:",
+    "o": [
+      "Any hose pressure",
+      "Pressures less than 200 psi",
+      "500 psi",
+      "2,000 psi with doubled cables"
+    ],
+    "a": 1,
+    "why": "Typically under 200 psi - above that, whip checks alone are not the restraint answer. Pressurized transfer hoses get positively secured at ALL connection points. (ASH - Hose Restraints)"
+  },
+  {
+    "q": "A scaffold may be used when:",
+    "o": [
+      "It looks complete",
+      "It is tagged Ready For Use for that day",
+      "The builder says go",
+      "It passed last week's inspection"
+    ],
+    "a": 1,
+    "why": "Only a scaffold tagged Ready For Use that day - inspected by a competent person before each shift and after anything that could affect integrity. (ASH - Scaffolds)"
+  },
+  {
+    "q": "Scaffolds are designed by ___ and erected under ___.",
+    "o": [
+      "Anyone / a lead",
+      "A qualified person / a competent person's supervision",
+      "The vendor / the crew",
+      "An engineer / an engineer"
+    ],
+    "a": 1,
+    "why": "Designed by a qualified person, constructed under a competent person's supervision - two different roles by definition. (ASH - Scaffolds)"
+  },
+  {
+    "q": "Sheet metal is stored:",
+    "o": [
+      "Leaned against a wall or column",
+      "On edge in racks or on sleepers",
+      "Flat on the floor",
+      "Strapped upright to columns"
+    ],
+    "a": 1,
+    "why": "Never leaned against walls or columns - on edge, in racks or on sleepers. (ASH - Materials Storage)"
+  },
+  {
+    "q": "Passengers in heavy equipment:",
+    "o": [
+      "One rider allowed in the cab",
+      "Not allowed unless the equipment is designed to carry them",
+      "Allowed under 5 mph",
+      "Allowed with a seat belt"
+    ],
+    "a": 1,
+    "why": "Seat belts always, and riders only in equipment designed for passengers. (ASH - Heavy Equipment)"
+  },
+  {
+    "q": "Before using heavy equipment to make a lift, the operator:",
+    "o": [
+      "Reviews the load chart only",
+      "Makes a complete functional check of the unit",
+      "Warms up the hydraulics 10 minutes",
+      "Radios the tool pusher"
+    ],
+    "a": 1,
+    "why": "Operators assure themselves the unit can operate safely with a complete functional check before any lift or load work. (ASH - Heavy Equipment)"
+  },
+  {
+    "q": "Before any heavy-equipment backing operation, operator and spotter complete:",
+    "o": [
+      "A radio check",
+      "A 360-degree hazard assessment, front to back and top to bottom",
+      "Mirror adjustment",
+      "A path walk by the operator alone"
+    ],
+    "a": 1,
+    "why": "Both of them, together: full 360 assessment of the proposed travel path for obstructions and energies. (ASH - Spotter Guidelines)"
+  },
+  {
+    "q": "A designated spotter must be:",
+    "o": [
+      "The junior hand",
+      "Trained in spotter responsibilities and proficient in hand signals",
+      "Anyone in hi-vis",
+      "A supervisor"
+    ],
+    "a": 1,
+    "why": "Trained and proficient in the designated hand signals, refreshed on competency or procedure change - and highly visible. (ASH - Spotter Responsibilities)"
+  },
+  {
+    "q": "Before the lift, who determines load weight, center of gravity, and attachment points?",
+    "o": [
+      "The crane operator alone",
+      "A competent person",
+      "The rigger of the day",
+      "The manufacturer chart"
+    ],
+    "a": 1,
+    "why": "A competent person determines weight, CG, and best attachment before any lift is made. (ASH - Rigging/Lifting)"
+  },
+  {
+    "q": "The capacity of a lift is set by:",
+    "o": [
+      "The crane's rating",
+      "The weakest link in the load path",
+      "The sling's rating",
+      "The average of components"
+    ],
+    "a": 1,
+    "why": "Never exceed the weakest link - hoist, sling, shackle, turnbuckle, or eyebolt. The chain is the weakest part, not the strongest. (ASH - Rigging/Lifting)"
+  },
+  {
+    "q": "A bridle sling with four legs is rated assuming:",
+    "o": [
+      "All four legs share",
+      "Only TWO legs carry the load",
+      "Three legs carry",
+      "The strongest pair carries"
+    ],
+    "a": 1,
+    "why": "Three or more legs: assume the load rides on two. The others are balance, not capacity. (ASH - Rigging/Lifting)"
+  },
+  {
+    "q": "To shorten a chain sling you may:",
+    "o": [
+      "Tie a knot",
+      "Bolt between links",
+      "Neither - never knot, bolt, or weld-repair slings",
+      "Weld a grab hook"
+    ],
+    "a": 2,
+    "why": "No knots in slings, no bolts between links, no welding repairs - shortening hardware or a different sling, nothing else. (ASH - Rigging/Lifting)"
+  },
+  {
+    "q": "Flattening the sling angle toward horizontal:",
+    "o": [
+      "Reduces sling stress",
+      "Increases sling stress",
+      "Changes nothing",
+      "Only matters over 45 degrees"
+    ],
+    "a": 1,
+    "why": "Decreasing the angle between sling and horizontal INCREASES the stress in the legs - flat slings work hardest. (ASH - Rigging/Lifting)"
+  },
+  {
+    "q": "A lift exclusion zone must be:",
+    "o": [
+      "Announced on the radio",
+      "Clearly marked and actively monitored by a competent person",
+      "Taped and left",
+      "Verbal between crews"
+    ],
+    "a": 1,
+    "why": "Marked, established before the lift, and actively monitored so nobody drifts in. (ASH - Rigging/Lifting)"
+  },
+  {
+    "q": "Before moving a gas cylinder:",
+    "o": [
+      "Bleed the regulator",
+      "Close the valve; use a cart or get help",
+      "Lay it down for rolling",
+      "Loosen the cap"
+    ],
+    "a": 1,
+    "why": "Valves closed before moving. Regulators come off and caps go on unless it rides a special hand truck secured. (ASH - Cylinder Handling)"
+  },
+  {
+    "q": "Fuel gas cylinders are used:",
+    "o": [
+      "At any angle under 45 degrees",
+      "Upright and secured",
+      "Horizontal on a rack",
+      "However the job requires"
+    ],
+    "a": 1,
+    "why": "Upright, secured against movement - always. (ASH - Cylinder Use)"
+  },
+  {
+    "q": "Oxygen cylinders are stored how far from fuel gas cylinders?",
+    "o": [
+      "10 feet",
+      "20 feet, or behind a 5-foot wall with a 30-minute fire rating",
+      "50 feet",
+      "Same cage is fine if both are capped"
+    ],
+    "a": 1,
+    "why": "20 feet of separation, or a 5-foot barrier wall rated 30 minutes. Oxygen turns any fire into a fast one. (ASH - Cylinder Storage)"
+  },
+  {
+    "q": "Which cylinder may enter a confined space?",
+    "o": [
+      "A small acetylene bottle",
+      "Breathing air",
+      "Nitrogen for purging tools",
+      "Any cylinder under 20 pounds"
+    ],
+    "a": 1,
+    "why": "Compressed gas cylinders stay out of confined spaces - except breathing air, fire extinguishers, and small aerosol cans like dye penetrant. (ASH - Cylinders / Confined Space)"
+  },
+  {
+    "q": "Every oxy-acetylene torch rig requires:",
+    "o": [
+      "A pressure log",
+      "Flashback arrestors at each regulator and check valves at each torch connection",
+      "Doubled hoses",
+      "Weekly hydrotest"
+    ],
+    "a": 1,
+    "why": "Flashback arrestor on each regulator, check valve on each torch/hose connection - and nobody tampers with cylinder safety devices. (ASH - Cylinder Use)"
+  },
+  {
+    "q": "Your air tool is dead and there's a nitrogen bottle right there. You:",
+    "o": [
+      "Regulate it down and run the tool",
+      "Never use nitrogen in place of compressed air",
+      "Use it for under a minute",
+      "Use it outdoors only"
+    ],
+    "a": 1,
+    "why": "Never substitute nitrogen for compressed air. It works the tool fine and displaces the oxygen around your face. (ASH - Cylinders)"
+  },
+  {
+    "q": "Before ordering a chemical new to the site:",
+    "o": [
+      "Order a small quantity first",
+      "Review the SDS and contact the Industrial Hygiene Department",
+      "Check the vendor's rating",
+      "Ask the warehouse"
+    ],
+    "a": 1,
+    "why": "SDS and New Chemical Review first, IH contacted before ordering. (ASH - Hazardous Materials)"
+  },
+  {
+    "q": "Non-metal secondary containers for flammable liquids are:",
+    "o": [
+      "Fine if labeled",
+      "Prohibited - except Nalgene up to 1 gallon for samples",
+      "Allowed under 5 gallons",
+      "Allowed in heated shops"
+    ],
+    "a": 1,
+    "why": "Prohibited, with the narrow sampling exception - Nalgene to 1 gallon for samples and shakeouts. And every secondary container gets a HazCom label. (ASH - Flammable Liquids)"
+  },
+  {
+    "q": "Before starting work with hazardous materials, you locate:",
+    "o": [
+      "The SDS binder only",
+      "Safety showers, eyewash stations, and safety equipment",
+      "The nearest exit only",
+      "Your supervisor"
+    ],
+    "a": 1,
+    "why": "Know where the showers, eyewash, and safety equipment are BEFORE you need them - and keep a means of egress the whole time. (ASH - Hazardous Materials)"
+  },
+  {
+    "q": "Approaching rig-move activity on a field road, slow to:",
+    "o": [
+      "15 mph",
+      "10 mph",
+      "5 mph",
+      "Posted speed"
+    ],
+    "a": 2,
+    "why": "5 mph approaching rig moves, no passing unless escort personnel direct it, and expect workers on the road. (ASH - Vehicle Safety)"
+  },
+  {
+    "q": "Riding a snow machine or four-wheeler requires:",
+    "o": [
+      "Hi-vis only",
+      "A helmet",
+      "Goggles only",
+      "Nothing beyond arctic gear"
+    ],
+    "a": 1,
+    "why": "A helmet must be worn when traveling by four-wheeler or snow machine. (ASH - Transportation)"
+  },
+  {
+    "q": "Phase I foul weather means:",
+    "o": [
+      "Travel stops",
+      "Extreme-caution travel, equipment checked, arctic gear required",
+      "Convoy only",
+      "Security escort required"
+    ],
+    "a": 1,
+    "why": "Phase I - Caution: field travel permitted with extreme caution, radios and lights verified working, arctic gear required. (ASH - Foul Weather)"
+  },
+  {
+    "q": "Phase II foul weather requires:",
+    "o": [
+      "No travel",
+      "Convoys of two or more vehicles with radio communication",
+      "Heavy equipment only",
+      "Daylight travel only"
+    ],
+    "a": 1,
+    "why": "Phase II - Restricted: convoy only, two-plus vehicles, radio comms between them. (ASH - Foul Weather)"
+  },
+  {
+    "q": "Phase III foul weather permits:",
+    "o": [
+      "Convoys of light vehicles",
+      "Critical or emergency travel by heavy equipment convoy only",
+      "Essential pickups with chains",
+      "Nothing at all, ever"
+    ],
+    "a": 1,
+    "why": "Phase III - Closed: heavy equipment convoy only, and only critical or emergency travel. (ASH - Foul Weather)"
+  },
+  {
+    "q": "When foul weather is declared, supervisors must:",
+    "o": [
+      "Post the phase on the board",
+      "Limit unnecessary vehicle traffic and notify their employees",
+      "Cancel all permits",
+      "Call security hourly"
+    ],
+    "a": 1,
+    "why": "Limit all unnecessary traffic and notify everyone who reports to them that foul weather conditions exist. (ASH - Foul Weather)"
+  },
+  {
+    "q": "During helicopter operations, who is in complete charge?",
+    "o": [
+      "The site supervisor",
+      "The pilot",
+      "Security",
+      "The senior passenger"
+    ],
+    "a": 1,
+    "why": "The pilot is in complete charge of aircraft and passengers at all times, and gives the emergency briefing before flight. (ASH - Helicopter Travel)"
+  },
+  {
+    "q": "You approach the rotor blade arc:",
+    "o": [
+      "Crouched, from the front",
+      "Only after the pilot signals it is safe",
+      "When the blades slow",
+      "Never while engines run"
+    ],
+    "a": 1,
+    "why": "Not until the pilot signals. And the helipad stays clear until the aircraft has landed - it is not a staging area. (ASH - Helicopter Travel)"
+  },
+  {
+    "q": "The ASH driving rules on fatigue:",
+    "o": [
+      "Two drivers after 12 hours",
+      "Do not drive while fatigued or impaired",
+      "Coffee and cracked windows",
+      "Pull over every 2 hours"
+    ],
+    "a": 1,
+    "why": "Do not drive while fatigued or impaired - full stop. Fatigue management is its own program for a reason. (ASH - Vehicle Safety / Fatigue)"
+  },
+  {
+    "q": "The Issuing Authority on a permit is accountable for:",
+    "o": [
+      "The contractor's training",
+      "Ensuring the area and equipment are safe prior to starting work",
+      "The quality of the work",
+      "Weather calls"
+    ],
+    "a": 1,
+    "why": "Responsible for the area where work is permitted, accountable that area and equipment are safe before work starts. (ASH - Permits)"
+  },
+  {
+    "q": "An Authorized Gas Tester is someone:",
+    "o": [
+      "Carrying a personal monitor",
+      "Authorized to use gas detection equipment for atmospheric testing",
+      "From the safety department",
+      "Trained on H2S only"
+    ],
+    "a": 1,
+    "why": "Authorized to use gas detection equipment for atmospheric testing purposes - a defined permit role, not just a monitor wearer. (ASH - Permits)"
+  },
+  {
+    "q": "You cannot meet a safety standard on a job. The ASH route is:",
+    "o": [
+      "Supervisor verbal OK",
+      "The variance process - jobs should be structured to comply, variances are the exception",
+      "Note it on the JSA",
+      "Industry practice governs"
+    ],
+    "a": 1,
+    "why": "Structure the job to comply; a variance to a safety standard is a formal, documented exception - not a conversation. (ASH - Safe Work Expectations / Variance)"
+  },
+  {
+    "q": "For a Defeated Safety Device, continuous operation is defined as:",
+    "o": [
+      "Any 8-hour shift",
+      "Any 12-hour period from the time the system became inoperable",
+      "24 hours",
+      "Until the next turnaround"
+    ],
+    "a": 1,
+    "why": "Any 12-hour period from when the system became inoperable - and jumpers impacting safety devices go on the DSD Log. (ASH - Defeated Safety Devices)"
+  },
+  {
+    "q": "Your ground-disturbance work scope changes beyond the original ACWR description:",
+    "o": [
+      "Amend it in the margin",
+      "The process may have to start over",
+      "Proceed - the locate is done",
+      "Verbal OK from the surveyor"
+    ],
+    "a": 1,
+    "why": "Scope changes outside the original project description can send the ACWR process back to the start. Dig what was cleared, nothing else. (ASH - Ground Disturbance)"
+  },
+  {
+    "q": "Flame-resistant fired-heater ducting begins to degrade at:",
+    "o": [
+      "150 F",
+      "250 F",
+      "400 F",
+      "600 F"
+    ],
+    "a": 1,
+    "why": "Common flame-resistant flex duct degrades from 250 F - and duct contaminated with oil or flammables does not get used at all. (ASH - Fired Heater Standard)"
+  },
+  {
+    "q": "A Tioga heater at 0 F ambient puts out roughly:",
+    "o": [
+      "100 F",
+      "200 F",
+      "300 F",
+      "Ambient plus 50"
+    ],
+    "a": 1,
+    "why": "About 200 F outlet at 0 F ambient - and outlet climbs with ambient, so heating operations above 0 F get watched closely. (ASH - Fired Heater Standard)"
+  },
+  {
+    "q": "Siting a mobile fired heater, wind is reviewed so that:",
+    "o": [
+      "Exhaust blows toward the pad",
+      "Potential hydrocarbon sources are downwind of the ignition source",
+      "The heater faces the wind",
+      "Ducting runs crosswind"
+    ],
+    "a": 1,
+    "why": "Layout and prevailing wind get reviewed so hydrocarbon sources sit downwind of the ignition source - the wind carries vapors away from the flame, not to it. (ASH - Fired Heater Standard)"
+  },
+  {
+    "q": "Mobile fired heater operations require what under the equipment?",
+    "o": [
+      "Gravel pad only",
+      "Drip pans and/or surface liners per the spill prevention plan",
+      "Snow berm",
+      "Nothing on grounded ice"
+    ],
+    "a": 1,
+    "why": "Drip pans or liners per the Company spill prevention plan - a heater is an engine and a fuel system parked on your containment record. (ASH - Fired Heater Standard)"
+  },
+  {
+    "q": "In an H2S designated area, personnel must:",
+    "o": [
+      "Work in pairs",
+      "Use personal H2S monitors",
+      "Carry escape packs only",
+      "Check in hourly"
+    ],
+    "a": 1,
+    "why": "Personal monitors in H2S designated areas - and the Unit Operator notes H2S potential on the permits. (ASH - H2S Standard)"
+  },
+  {
+    "q": "A Process Safety Fundamental cannot be followed on your task. You:",
+    "o": [
+      "Skip it and note why",
+      "Stop and discuss with your team and supervisor for a safe alternative",
+      "Follow it partially",
+      "Swap tasks with someone"
+    ],
+    "a": 1,
+    "why": "When a PSF cannot be followed: stop, have the discussion, and determine an alternative course to complete the work safely. (ASH - Process Safety Fundamentals)"
+  },
+  {
+    "q": "Complete the ASH's opening rule: 'No job is so important that...'",
+    "o": [
+      "...it cannot wait for day shift",
+      "...you cannot take time to do it safely",
+      "...it justifies a variance",
+      "...two people cannot do it"
+    ],
+    "a": 1,
+    "why": "No job is so important that you cannot take time to do it safely - the first line of the General Safety Rules. (ASH - General Safety Rules)"
+  },
+  {
+    "q": "Heavy equipment is operated in accordance with:",
+    "o": [
+      "Site custom",
+      "The manufacturer's operating instructions",
+      "The lead's direction",
+      "The most experienced operator's method"
+    ],
+    "a": 1,
+    "why": "Always per the manufacturer's operating instructions - the machine's book outranks habit. (ASH - Heavy Equipment)"
+  },
+  {
+    "q": "Before manually lifting a load, the ASH says first:",
+    "o": [
+      "Stretch and lift with your legs",
+      "Consider engineering or mechanical lifting methods, and determine the load's weight",
+      "Get a second hand",
+      "Split the load"
+    ],
+    "a": 1,
+    "why": "Mechanical methods are the preferred control before manual handling - and make an effort to know the weight before you commit your back to it. (ASH - Material Lifting)"
+  },
+  {
+    "q": "A spotter loses sight of hazards developing in the equipment's path. Their job is to:",
+    "o": [
+      "Reposition after the pass",
+      "Communicate observed hazards to the operator",
+      "Log it after the move",
+      "Wave the machine through faster"
+    ],
+    "a": 1,
+    "why": "Spotters communicate observed hazards to the operator - visibility and communication are the entire function. (ASH - Spotter Responsibilities)"
+  },
+  {
+    "q": "Noise sign reads 82 dBA. You wear:",
+    "o": [
+      "Nothing under 85 dBA",
+      "Hearing protection - plugs or muffs",
+      "Double protection",
+      "Plugs only if inside"
+    ],
+    "a": 1,
+    "why": "Over 82 dBA: hearing protection. Over 100 dBA: double - plugs AND muffs. The signs mark both thresholds. (ASH - Industrial Hygiene)"
+  }
+]
