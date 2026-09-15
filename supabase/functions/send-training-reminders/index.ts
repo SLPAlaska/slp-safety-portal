@@ -25,7 +25,11 @@
 //
 // The subject line describes whatever the email actually contains.
 //
-// Employees with all three sections empty are skipped entirely.
+// Employees with all four sections empty are skipped entirely — EXCEPT MagTec
+// employees, who still get the email carrying only the game sections. Being
+// fully current should not be what disqualifies somebody from the one part of
+// this email that is meant to be enjoyable; the crew board needs them, and
+// their crew's score counts them whether they play or not.
 //
 // MagTec employees also get a "THIS WEEK'S RUN" section at the bottom: the
 // name of the featured deck for the week, a one-tap link to run it, and a
@@ -421,6 +425,12 @@ function generateEmailHTML(
   gameLinks: { run: string; pull: string } | null,
   featuredDeck: string | null,
 ): string {
+  // A MagTec employee with nothing outstanding gets this email for the game
+  // alone. Every training-shaped sentence is suppressed rather than left to
+  // render around four empty sections and read as a bug.
+  const hasTraining =
+    newItems.length + notStartedItems.length + overdueItems.length + dueSoonItems.length > 0;
+
   return `<!doctype html>
 <html><body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
@@ -429,7 +439,9 @@ function generateEmailHTML(
              style="width:600px;max-width:100%;background:#ffffff;border-radius:10px;overflow:hidden;">
 
         <tr><td style="background:${COLORS.slpBlue};padding:20px 24px;">
-          <div style="color:#ffffff;font-size:18px;font-weight:700;">Your Training Summary</div>
+          <div style="color:#ffffff;font-size:18px;font-weight:700;">
+            ${hasTraining ? "Your Training Summary" : "You're All Caught Up"}
+          </div>
           <div style="color:${COLORS.gold};font-size:13px;margin-top:4px;">
             ${esc(companyName)} &middot; SLP Alaska, LLC
           </div>
@@ -437,7 +449,10 @@ function generateEmailHTML(
 
         <tr><td style="padding:24px;">
           <p style="margin:0 0 18px 0;font-size:14px;color:#374151;">
-            Hi ${esc(employeeName)}, here is where your safety training stands this week.
+            ${hasTraining
+              ? `Hi ${esc(employeeName)}, here is where your safety training stands this week.`
+              : `Hi ${esc(employeeName)}, you are current on every course assigned to you \u2014 `
+                + `nothing to complete this week. Here is the run instead.`}
           </p>
 
           ${section(
@@ -461,10 +476,11 @@ function generateEmailHTML(
             dueSoonItems, COLORS.dueSoon,
           )}
 
+          ${hasTraining ? `
           <p style="margin:18px 0 0 0;font-size:13px;color:#6b7280;">
             Log in to the training portal to complete these courses. If you believe a
             course does not apply to you, contact your supervisor.
-          </p>
+          </p>` : ""}
 
           ${gameLinks ? gameSection(gameLinks, featuredDeck) : ""}
         </td></tr>
@@ -703,15 +719,21 @@ serve(async (req) => {
 
         const actionable =
           newItems.length + notStartedItems.length + overdueItems.length + dueSoonItems.length;
-        if (actionable === 0) {
+
+        // MagTec only. Every other company's email is exactly what it was.
+        const gameLinks = await gameLinksFor(emp);
+
+        // Nothing to say and no game to offer: say nothing. A MagTec employee
+        // who is fully current still gets the game-only email — they are the
+        // people most worth keeping in the habit, and their crew is scored on
+        // them either way.
+        if (actionable === 0 && !gameLinks) {
           results.push({ employee: emp.full_name, status: "skipped", reason: "nothing actionable" });
           continue;
         }
 
+        const gameOnly = actionable === 0;
         const companyName = (emp as any).lms_companies?.name || "Your Company";
-
-        // MagTec only. Every other company's email is exactly what it was.
-        const gameLinks = await gameLinksFor(emp);
 
         const html = generateEmailHTML(
           emp.full_name || "there", companyName, newItems, notStartedItems, overdueItems, dueSoonItems,
@@ -723,7 +745,13 @@ serve(async (req) => {
         // was simply never started.
         const plural = (n: number) => (n === 1 ? "" : "s");
         let subject: string;
-        if (overdueItems.length > 0) {
+        if (gameOnly) {
+          // No training to name, so name the game. Saying "you're all caught
+          // up" first is the honest headline for someone who is.
+          subject = featuredDeck
+            ? `You're all caught up — this week's run: ${featuredDeck}`
+            : `You're all caught up — this week's run is waiting`;
+        } else if (overdueItems.length > 0) {
           const rest = actionable - overdueItems.length;
           subject = `Action needed: ${overdueItems.length} overdue training course${plural(overdueItems.length)}`
             + (rest > 0 ? ` and ${rest} more to complete` : "");
@@ -740,6 +768,7 @@ serve(async (req) => {
           results.push({
             employee: emp.full_name, email: emp.email, status: "dry_run",
             subject,
+            game_only: gameOnly,
             // Boolean, never the URL: the token in it signs somebody in, and a
             // dry-run response gets pasted into chats and tickets.
             game_link: !!gameLinks,
@@ -761,9 +790,11 @@ serve(async (req) => {
         results.push({
           employee: emp.full_name, email: testEmail || emp.email, status: "sent", id: sent.id,
           new: newItems.length, overdue: overdueItems.length, due_soon: dueSoonItems.length,
-          game_link: !!gameLinks,
+          game_link: !!gameLinks, game_only: gameOnly,
         });
-        console.log(`✓ Reminder sent to ${emp.full_name} (${actionable} items)`);
+        console.log(gameOnly
+          ? `✓ Game-only email sent to ${emp.full_name} (no training outstanding)`
+          : `✓ Reminder sent to ${emp.full_name} (${actionable} items)`);
       } catch (err: any) {
         results.push({ employee: emp.full_name, status: "error", error: err.message });
         console.error(`✗ Error sending to ${emp.full_name}:`, err.message);
