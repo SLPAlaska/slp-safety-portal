@@ -16,6 +16,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { gameAdminClient } from '@/lib/game-auth'
 import { resolveGameAdmin } from '@/lib/game-admin'
+import { BOARDS, safeBoard } from '@/lib/game/featured'
 
 /** Confirm every id names a user at the admin's company. */
 async function ownUsers(supabase, companyId, ids) {
@@ -34,7 +35,7 @@ async function ownCrew(supabase, companyId, crewId) {
   if (!crewId) return null
   const { data } = await supabase
     .from('lms_game_crews')
-    .select('id, name, company_id, lead_user_id')
+    .select('id, name, company_id, lead_user_id, board')
     .eq('id', crewId)
     .maybeSingle()
   return data && data.company_id === companyId ? data : null
@@ -48,7 +49,7 @@ export async function GET(request) {
   const [{ data: crews }, { data: employees }] = await Promise.all([
     supabase
       .from('lms_game_crews')
-      .select('id, name, lead_user_id')
+      .select('id, name, lead_user_id, board')
       .eq('company_id', admin.companyId)
       .order('name'),
     supabase
@@ -72,9 +73,11 @@ export async function GET(request) {
 
   return NextResponse.json({
     level: admin.level,
+    boards: BOARDS,
     crews: (crews || []).map((c) => ({
       id: c.id,
       name: c.name,
+      board: safeBoard(c.board),
       lead_user_id: c.lead_user_id,
       lead_name: c.lead_user_id ? (nameOf.get(c.lead_user_id) || null) : null,
       members: (members || [])
@@ -111,10 +114,12 @@ export async function POST(request) {
   if (action === 'create_crew') {
     const name = String(body.name || '').trim()
     if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
+    // Board decides which deck rotation and which crew board this crew is
+    // ranked on. Unspecified means drilling, which is every crew today.
     const { data, error } = await supabase
       .from('lms_game_crews')
-      .insert({ company_id: admin.companyId, name })
-      .select('id, name')
+      .insert({ company_id: admin.companyId, name, board: safeBoard(body.board) })
+      .select('id, name, board')
       .single()
     if (error) {
       // The unique index on (company_id, lower(name)) is what stops two crews
@@ -154,6 +159,18 @@ export async function POST(request) {
     }
     const { error } = await supabase
       .from('lms_game_crews').update({ lead_user_id: leadId }).eq('id', crew.id)
+    if (error) return NextResponse.json({ error: 'update_failed' }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  }
+
+  if (action === 'set_board') {
+    const crew = await ownCrew(supabase, admin.companyId, body.crew_id)
+    if (!crew) return NextResponse.json({ error: 'unknown_crew' }, { status: 404 })
+    if (!BOARDS.includes(body.board)) {
+      return NextResponse.json({ error: 'unknown_board' }, { status: 400 })
+    }
+    const { error } = await supabase
+      .from('lms_game_crews').update({ board: body.board }).eq('id', crew.id)
     if (error) return NextResponse.json({ error: 'update_failed' }, { status: 500 })
     return NextResponse.json({ ok: true })
   }

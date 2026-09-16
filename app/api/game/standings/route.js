@@ -30,7 +30,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { resolveGamePlayer, gameAdminClient, MAGTEC_COMPANY_ID } from '@/lib/game-auth'
 import { pageAll } from '@/lib/supabasePage'
-import { resolveFeaturedDeck } from '@/lib/game/featured'
+import { resolveFeaturedDeck, DEFAULT_BOARD, safeBoard } from '@/lib/game/featured'
 import { scoreCrews } from '@/lib/game/crewScore'
 import { weekLabel } from '@/lib/game/week'
 import DECKS from '@/lib/game/decks.json'
@@ -89,7 +89,19 @@ export async function POST(request) {
   if (!deck) return NextResponse.json({ error: 'unknown_deck' }, { status: 400 })
 
   const supabase = gameAdminClient()
-  const featured = await resolveFeaturedDeck(supabase, DECKS)
+
+  // The crew board is scoped to the player's OWN board. A shop hand is ranked
+  // against shop crews on a Kenai deck; a drilling hand against drilling crews
+  // on a drilling deck. The board follows the crew, and a player with no crew
+  // is on the drilling board.
+  const { data: myCrew } = await supabase
+    .from('lms_game_crew_members')
+    .select('crew_id, lms_game_crews (id, name, board)')
+    .eq('user_id', auth.user.id)
+    .maybeSingle()
+
+  const board = safeBoard(myCrew?.lms_game_crews?.board || DEFAULT_BOARD)
+  const featured = await resolveFeaturedDeck(supabase, DECKS, board)
 
   // The player's own entries in this week's hat. Shown on the board so the
   // drawing is visible rather than something they are told about later.
@@ -129,8 +141,9 @@ export async function POST(request) {
     const [crewsRes, membersRes, weekRunsRes] = await Promise.all([
       supabase
         .from('lms_game_crews')
-        .select('id, name, lead_user_id')
+        .select('id, name, lead_user_id, board')
         .eq('company_id', MAGTEC_COMPANY_ID)
+        .eq('board', board)
         .order('name'),
       pageAll(() =>
         supabase
@@ -156,6 +169,7 @@ export async function POST(request) {
     })
 
     crew = {
+      board,
       week_start: featured.week_start,
       week_label: weekLabel(featured.week_start),
       featured_deck_id: featured.id,

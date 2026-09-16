@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { resolveGamePlayer, gameAdminClient, MAGTEC_COMPANY_ID } from '@/lib/game-auth'
-import { resolveFeaturedDeck } from '@/lib/game/featured'
+import { resolveAllBoards, DEFAULT_BOARD, safeBoard } from '@/lib/game/featured'
 import DECKS from '@/lib/game/decks.json'
 
 export async function POST(request) {
@@ -29,23 +29,30 @@ export async function POST(request) {
 
   const supabase = gameAdminClient()
 
-  // The featured deck resolve also re-syncs the deck roster into
-  // lms_game_config, which is how the Monday email learns about a deck that
-  // was added since the last send.
-  const featured = await resolveFeaturedDeck(supabase, DECKS)
+  // Resolving every board re-syncs each board's roster into lms_game_config,
+  // which is how the Monday email learns about a deck added since the last
+  // send. Both boards are published on any visit, so a board nobody opened
+  // this week is not left advertising last week's roster.
+  const boards = await resolveAllBoards(supabase, DECKS)
 
   const [{ data: crews }, { data: membership }] = await Promise.all([
     supabase
       .from('lms_game_crews')
-      .select('id, name, lead_user_id')
+      .select('id, name, lead_user_id, board')
       .eq('company_id', MAGTEC_COMPANY_ID)
       .order('name'),
     supabase
       .from('lms_game_crew_members')
-      .select('crew_id, assigned_by_admin, lms_game_crews (id, name)')
+      .select('crew_id, assigned_by_admin, lms_game_crews (id, name, board)')
       .eq('user_id', auth.user.id)
       .maybeSingle(),
   ])
+
+  // The board follows the crew. A player with no crew defaults to drilling —
+  // today every crew is a drilling crew and no Kenai crews exist yet, so this
+  // is the right default until shop rosters arrive.
+  const board = safeBoard(membership?.lms_game_crews?.board || DEFAULT_BOARD)
+  const featured = boards[board]
 
   const crewList = crews || []
 
@@ -55,12 +62,14 @@ export async function POST(request) {
       company: auth.user.lms_companies?.name || 'MagTec Alaska',
     },
     source: auth.source,
+    board,
     featured,
-    crews: crewList.map((c) => ({ id: c.id, name: c.name })),
+    crews: crewList.map((c) => ({ id: c.id, name: c.name, board: safeBoard(c.board) })),
     crew: membership
       ? {
           id: membership.crew_id,
           name: membership.lms_game_crews?.name || null,
+          board: safeBoard(membership.lms_game_crews?.board),
           assigned_by_admin: membership.assigned_by_admin,
         }
       : null,

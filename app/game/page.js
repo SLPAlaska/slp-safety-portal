@@ -45,6 +45,7 @@ export default function GamePage() {
   const [player, setPlayer] = useState(null)
   const [company, setCompany] = useState(null)
   const [featured, setFeatured] = useState(null)
+  const [board, setBoard] = useState('drilling')
   const [crews, setCrews] = useState([])
   const [crew, setCrew] = useState(null)
   const [picking, setPicking] = useState(false)
@@ -104,6 +105,7 @@ export default function GamePage() {
       if (res.ok) {
         setPlayer(data.player)
         setFeatured(data.featured || null)
+        setBoard(data.board || 'drilling')
         setCrews(data.crews || [])
         setCrew(data.crew || null)
         setPicking(!!data.needs_crew)
@@ -137,6 +139,7 @@ export default function GamePage() {
       decks: DECKS,
       quickhits: QUICKHITS,
       featuredDeckId: featured?.id || null,
+      defaultBoard: board,
       autoStart: autoStart.current,
       async onRunComplete(run) {
         const res = await fetch('/api/game/run', {
@@ -171,7 +174,7 @@ export default function GamePage() {
       gameRef.current?.destroy()
       gameRef.current = null
     }
-  }, [status, picking, featured])
+  }, [status, picking, featured, board])
 
   async function joinCrew(crewId) {
     setJoinError('')

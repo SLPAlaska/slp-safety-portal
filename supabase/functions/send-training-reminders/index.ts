@@ -32,7 +32,8 @@
 // their crew's score counts them whether they play or not.
 //
 // MagTec employees also get a "THIS WEEK'S RUN" section at the bottom: the
-// name of the featured deck for the week, a one-tap link to run it, and a
+// name of the featured deck for THEIR board (drilling support or the Kenai
+// fab shop, whichever their crew is on), a one-tap link to run it, and a
 // second link straight into the Safety Pull (the ASH question game). Both
 // carry a signed token that identifies them without a password. Other
 // companies' emails are byte-for-byte what they were before. See GAME LINKS.
@@ -191,44 +192,82 @@ function weekIndex(ws: string): number {
   return Math.round(ms / 604800000);
 }
 
-/** This week's featured deck title, or null if the roster is not published yet. */
-async function featuredDeckTitle(): Promise<string | null> {
-  try {
-    const ws = weekStart();
-    const { data } = await supabase
-      .from("lms_game_config")
-      .select("key, value")
-      .in("key", ["featured_deck_id", "featured_deck_title", "featured_week", "deck_rotation"]);
-    const cfg = Object.fromEntries((data || []).map((r: any) => [r.key, r.value]));
+/**
+ * This week's featured deck title for EACH board, or null where that board's
+ * roster is not published yet.
+ *
+ * Two boards rotate independently: drilling support over the drilling decks,
+ * the Kenai fab shop over the fab shop decks. A single rotation over all 24
+ * would have named a fab shop deck to drilling crews most weeks. An employee
+ * is told about the board their CREW is on; crewless employees get drilling.
+ */
+async function featuredDeckTitles(): Promise<Record<string, string | null>> {
+  const out: Record<string, string | null> = { drilling: null, kenai: null };
+  const ws = weekStart();
 
-    const roster: { id: string; title: string }[] = cfg.deck_rotation
-      ? JSON.parse(cfg.deck_rotation)
-      : [];
-    if (!Array.isArray(roster) || roster.length === 0) return null;
+  for (const board of ["drilling", "kenai"]) {
+    try {
+      const k = {
+        id: `featured_deck_id_${board}`,
+        title: `featured_deck_title_${board}`,
+        week: `featured_week_${board}`,
+        rotation: `deck_rotation_${board}`,
+      };
+      const { data } = await supabase
+        .from("lms_game_config")
+        .select("key, value")
+        .in("key", Object.values(k));
+      const cfg = Object.fromEntries((data || []).map((r: any) => [r.key, r.value]));
 
-    // A pick already stamped with this week wins — that is how an admin pins a
-    // deck, and how the portal's own resolution is respected.
-    if (cfg.featured_week === ws) {
-      const pinned = roster.find((d) => d.id === cfg.featured_deck_id);
-      if (pinned) return pinned.title;
+      const roster: { id: string; title: string }[] = cfg[k.rotation]
+        ? JSON.parse(cfg[k.rotation])
+        : [];
+      if (!Array.isArray(roster) || roster.length === 0) continue;
+
+      // A pick already stamped with this week wins - that is how an admin pins
+      // a deck, and how the portal's own resolution is respected.
+      if (cfg[k.week] === ws) {
+        const pinned = roster.find((d) => d.id === cfg[k.id]);
+        if (pinned) { out[board] = pinned.title; continue; }
+      }
+
+      const n = roster.length;
+      const chosen = roster[((weekIndex(ws) % n) + n) % n];
+
+      await supabase.from("lms_game_config").upsert([
+        { key: k.id, value: chosen.id, updated_at: new Date().toISOString() },
+        { key: k.title, value: chosen.title, updated_at: new Date().toISOString() },
+        { key: k.week, value: ws, updated_at: new Date().toISOString() },
+      ], { onConflict: "key" });
+
+      out[board] = chosen.title;
+    } catch (err) {
+      console.error(`featured deck lookup failed for ${board}:`, (err as Error).message);
     }
-
-    const n = roster.length;
-    const chosen = roster[((weekIndex(ws) % n) + n) % n];
-
-    // Record it, so the game and the email tell the same story even if this
-    // send is the first thing to look this week. Best effort only.
-    await supabase.from("lms_game_config").upsert([
-      { key: "featured_deck_id", value: chosen.id, updated_at: new Date().toISOString() },
-      { key: "featured_deck_title", value: chosen.title, updated_at: new Date().toISOString() },
-      { key: "featured_week", value: ws, updated_at: new Date().toISOString() },
-    ], { onConflict: "key" });
-
-    return chosen.title;
-  } catch (err) {
-    console.error("featured deck lookup failed:", (err as Error).message);
-    return null;
   }
+  return out;
+}
+
+/**
+ * user_id -> board, taken from the crew they are on. The board lives on the
+ * crew and members inherit it; anyone with no crew is on the drilling board.
+ */
+async function boardsByUser(): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  try {
+    const rows = await pageAll(() =>
+      supabase
+        .from("lms_game_crew_members")
+        .select("user_id, lms_game_crews!inner (board)")
+    );
+    for (const r of rows || []) {
+      const b = (r as any).lms_game_crews?.board;
+      if (b === "drilling" || b === "kenai") out.set((r as any).user_id, b);
+    }
+  } catch (err) {
+    console.error("crew board lookup failed:", (err as Error).message);
+  }
+  return out;
 }
 
 // ============================================================================
@@ -581,9 +620,12 @@ serve(async (req) => {
     const now = new Date();
     const newSince = new Date(now.getTime() - NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-    // Once per invocation, not once per employee: every MagTec recipient is
-    // told about the same deck.
-    const featuredDeck = GAME_LINK_SECRET ? await featuredDeckTitle() : null;
+    // Once per invocation, not once per employee. Each recipient is told about
+    // the deck featured on THEIR board, which follows their crew.
+    const featuredByBoard = GAME_LINK_SECRET
+      ? await featuredDeckTitles()
+      : { drilling: null, kenai: null };
+    const crewBoard = GAME_LINK_SECRET ? await boardsByUser() : new Map<string, string>();
 
     // ── Employees: every active user with an email. company_admin is NOT
     // excluded — supervisors hold that role and take training too.
@@ -763,6 +805,8 @@ serve(async (req) => {
 
         // MagTec only. Every other company's email is exactly what it was.
         const gameLinks = await gameLinksFor(emp);
+        const empBoard = crewBoard.get(emp.id) || "drilling";
+        const featuredDeck = featuredByBoard[empBoard] ?? null;
 
         // Nothing to say and no game to offer: say nothing. A MagTec employee
         // who is fully current still gets the game-only email — they are the
@@ -846,7 +890,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         dryRun,
-        featuredDeck,
+        featuredByBoard,
         employeesTotal: allEmployees.length,
         employeesConsidered: slice.length,
         truncated: offset + slice.length < allEmployees.length,
