@@ -231,11 +231,11 @@ export default function GamePage() {
               </button>
             ))}
             <button className="ghostbtn" onClick={() => { setPicking(false); setJoinError('') }}>
-              {crew ? 'NEVER MIND' : 'NOT SURE YET — LET ME PLAY'}
+              {crew ? 'NEVER MIND' : "MY CREW ISN'T LISTED — LET ME PLAY"}
             </button>
             <p className="proto" style={{ marginTop: '18px' }}>
-              Wrong crew on the list, or yours missing? Your company admin sets these up, and
-              their assignment overrides this pick.
+              Fab shop and other crews are being added — play now and your admin will assign
+              you when your crew is set up.
             </p>
           </div>
         </div>
