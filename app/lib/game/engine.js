@@ -37,6 +37,9 @@ export function createGame({
   decks,
   quickhits,
   featuredDeckId = null,
+  // Which board opens first. Today every crew is a drilling crew, so drilling
+  // is the default; once crews carry a board this comes from the player's crew.
+  defaultBoard = 'drilling',
   onRunComplete,
   onPullComplete,
   loadStandings,
@@ -125,10 +128,41 @@ export function createGame({
   }
 
   // ── home
+  //
+  // Decks are grouped into boards — drilling support and the Kenai fab shop —
+  // and only one board's decks are listed at a time. Shop hands and drilling
+  // crews run different SOPs entirely, and a single 24-deck list on a phone
+  // buries whichever half you are not there for.
+  const BOARD_LABELS = { drilling: 'DRILLING SUPPORT', kenai: 'KENAI FAB SHOP' }
+  const boardOf = (d) => d.board || 'drilling'
+  const boards = [...new Set(decks.map(boardOf))]
+  let activeBoard = boards.includes(defaultBoard) ? defaultBoard : boards[0]
+
   function buildHome() {
     const dl = $('decklist')
     dl.innerHTML = ''
-    decks.forEach((d) => {
+
+    if (boards.length > 1) {
+      const bar = document.createElement('div')
+      bar.className = 'boardbar'
+      boards.forEach((bd) => {
+        const t = document.createElement('button')
+        t.className = 'boardtab' + (bd === activeBoard ? ' on' : '')
+        const n = decks.filter((d) => boardOf(d) === bd).length
+        t.innerHTML = '<span class="bl"></span><span class="bc"></span>'
+        t.querySelector('.bl').textContent = BOARD_LABELS[bd] || bd.toUpperCase()
+        t.querySelector('.bc').textContent = n + ' RUNS'
+        t.addEventListener('click', () => {
+          if (bd === activeBoard) return
+          activeBoard = bd
+          buildHome()
+        })
+        bar.appendChild(t)
+      })
+      dl.appendChild(bar)
+    }
+
+    decks.filter((d) => boardOf(d) === activeBoard).forEach((d) => {
       const n = d.phases.reduce((a, p) => a + p.steps.length, 0)
       const featured = d.id === featuredDeckId
       const b = document.createElement('button')

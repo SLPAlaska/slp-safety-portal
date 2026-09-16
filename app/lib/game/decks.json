@@ -5,6 +5,7 @@
     "sub": "DS 1B G&I FACILITY",
     "meta": "SOP v5.0 · Rev. 11/18/2025 · Approved D. Redick · Drill site to demob",
     "par": 300,
+    "board": "drilling",
     "phases": [
       {
         "name": "ROLL OUT",
@@ -146,6 +147,7 @@
     "sub": "HVAC UNIT & ACB SYSTEM",
     "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · Walkdown to shutdown",
     "par": 280,
+    "board": "drilling",
     "phases": [
       {
         "name": "WALK IT DOWN",
@@ -259,6 +261,7 @@
     "sub": "ACB ON THE TRAILER",
     "meta": "SOP v3.0 · Rev. 11/18/2025 · Approved D. Redick · Spot-in to haul-out",
     "par": 280,
+    "board": "drilling",
     "phases": [
       {
         "name": "SPOT THE TRUCK",
@@ -363,6 +366,7 @@
     "sub": "DRAGON CHASSIS PM",
     "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · #1 arctic synthetic, front to rear",
     "par": 200,
+    "board": "drilling",
     "phases": [
       {
         "name": "SET UP",
@@ -451,6 +455,7 @@
     "sub": "FLUID TRANSFER",
     "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · Walk-down to reporting",
     "par": 240,
+    "board": "drilling",
     "phases": [
       {
         "name": "WALK THE FARM",
@@ -530,6 +535,7 @@
     "sub": "PAN C — BACKUP LOCATION",
     "meta": "SOP v2.0 · Rev. 11/18/2025 · Approved D. Redick · Plan C only, Conoco authorization required",
     "par": 220,
+    "board": "drilling",
     "phases": [
       {
         "name": "GET CLEARED",
@@ -630,6 +636,7 @@
     "sub": "A SHIFT IN THE SEAT",
     "meta": "SOP Rev. 2 · Approved D. Redick · Authorization to emergency response",
     "par": 220,
+    "board": "drilling",
     "phases": [
       {
         "name": "EARN THE SEAT",
@@ -699,6 +706,902 @@
           {
             "t": "Injury: evaluate on scene with the onboard kit — escalate to medevac via Starlink, sat phone, InReach SOS, or PLB",
             "w": "Hesitated on the escalation call. Out there, the gap between 'probably fine' and medevac is measured in daylight and body heat."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cutting-grinding-hot-work-safety",
+    "title": "CUTTING, GRINDING & HOT WORK",
+    "sub": "MAGTEC ALASKA - KENAI, AK",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 100,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE THE SPARKS",
+        "steps": [
+          {
+            "t": "Verify the hot work permit before a torch, saw or wheel comes out",
+            "w": "No permit means nobody checked the area. You light off in a spot no one cleared, and the fire, injury and equipment damage this SOP exists to stop all land at once."
+          },
+          {
+            "t": "Pull every combustible out of the work area before you start",
+            "w": "Slag travels. It finds the one thing you left behind and lights it while your back is turned. That is the fire this whole document exists to prevent."
+          },
+          {
+            "t": "Establish the fire watch and have them on station before the first cut",
+            "w": "Your eyes are on the cut and your face shield is down. A spark sets in behind you and you will not see it - the fire watch is the only person who will."
+          },
+          {
+            "t": "Barricade the area so nobody walks into the work",
+            "w": "A hand cuts through your spark stream with nothing on and wears the slag. That is the injury the barricade was there to stop."
+          },
+          {
+            "t": "Dress out - face shield, safety glasses, gloves, FR clothing, hearing protection, respirator if the job calls for it",
+            "w": "Sparks and slag land on you, not just the floor. Every item on that list is required because this work burns people - dress short and you take the injury this SOP is written to prevent."
+          }
+        ]
+      },
+      {
+        "name": "RUN IT AND COOL IT",
+        "steps": [
+          {
+            "t": "Run the torch, saw or grinder only within the manufacturer's limits for that equipment",
+            "w": "Those limits are the line this SOP draws around the tool. Work a machine past what the manufacturer rated it for and you are outside every control on this page - that is how the equipment damage and the injury happen."
+          },
+          {
+            "t": "Contain your sparks and slag with fire blankets, shields and whatever else the job needs",
+            "w": "Loose slag does not stay where you are looking. It rolls under equipment and into corners and starts the fire behind you."
+          },
+          {
+            "t": "Keep the fire watch on station the full 30 minutes after the last cut",
+            "w": "Hot metal holds heat long after you rack the torch. Cut the watch short and the fire starts after everyone has walked away, with nobody there to catch it."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "decal-label-lettering-installation",
+    "title": "DECALS AND LETTERING",
+    "sub": "FABRICATED EQUIPMENT - MAGTEC ALASKA, KENAI",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 80,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE IT STICKS",
+        "steps": [
+          {
+            "t": "Don't take the job until you're trained on surface prep and application technique",
+            "w": "Untrained, you're guessing at both. You guess at prep and you guess at technique, and what you get is the bubbling and peeling this SOP exists to prevent. Training in those two things is the price of doing this work at all."
+          },
+          {
+            "t": "Safety glasses on, gloves on, proper footwear - before you start",
+            "w": "This SOP has one emergency and it's exposure or injury. When that happens the job stops and supervision gets the call. Glasses, gloves and the right footwear are what this document puts between you and that call."
+          },
+          {
+            "t": "Pull the drawings, check the label spec, and look over the surface you're sticking to",
+            "w": "Three things to verify and skipping any one costs you. Skip the surface and you lay a decal on something that won't hold it - it bubbles, it lifts. Skip the print and the label you stuck down clean may be the wrong label."
+          }
+        ]
+      },
+      {
+        "name": "PUT IT ON",
+        "steps": [
+          {
+            "t": "Clean the surface before the decal ever touches it",
+            "w": "Dirt under the adhesive. That's your bubbles and that's your peeling - the exact failure this procedure names and the reason cleaning comes first."
+          },
+          {
+            "t": "Line it up accurate to the placement on the print - don't eyeball it",
+            "w": "Off-position and the adhesive has already grabbed. Correct placement is the installer's responsibility in this SOP - yours - and it gets checked again before that piece is released."
+          },
+          {
+            "t": "Lay it down with the approved method - no trapped air, no lifted edges",
+            "w": "Wrong technique traps air under the decal. The SOP calls out bubbles and peeling by name, and the approved method is the only thing it gives you to keep them off your work."
+          },
+          {
+            "t": "Inspect placement and adhesion before that piece gets released",
+            "w": "Release is the last checkpoint in this procedure. A label that's off-position or already lifting and clears you here isn't caught by anything else in this document - the inspection before release is the whole safety net."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "equipment-tagging-asset-marking-traceability",
+    "title": "EQUIPMENT TAGGING",
+    "sub": "ASSET MARKING AND TRACEABILITY - KENAI FAB SHOP",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 80,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE YOU TAG",
+        "steps": [
+          {
+            "t": "Be trained on asset identification and recordkeeping before you pick up a tag",
+            "w": "Untrained hand guessing at the format marks the wrong thing the wrong way, and it stays wrong until somebody downstream trips over it and has to stop the job."
+          },
+          {
+            "t": "Wear safety glasses and gloves as required for the marking job",
+            "w": "This SOP calls for glasses and gloves and does not spell out what for. That is not your call to make at the bench - put them on, and if you do not know what this job puts in front of your eyes and hands, ask your supervisor before you start marking."
+          },
+          {
+            "t": "Verify the asset numbers, tag formats, and documentation requirements before anything goes on the equipment",
+            "w": "Skip the check and you mark an asset with a number that belongs to something else. Work stops dead the day it's found."
+          }
+        ]
+      },
+      {
+        "name": "MARK IT AND LOG IT",
+        "steps": [
+          {
+            "t": "Apply the tags and markings to specification - no field improvising on format",
+            "w": "Mark it off-spec and it isn't the ID the asset system expects. The trail on that piece of iron breaks right there."
+          },
+          {
+            "t": "Enter the information into the asset system accurately, right off the tag",
+            "w": "A digit off in the system and the record points at the wrong piece of iron for the rest of its life."
+          },
+          {
+            "t": "Keep the records current so the asset can be traced through its whole life",
+            "w": "Records go cold and nobody can prove where that asset has been or what's been done to it."
+          },
+          {
+            "t": "Find identification that doesn't match - stop the work and tell your supervisor",
+            "w": "Push on past a bad ID and the wrong asset goes back into service under somebody else's number."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fab-shop-cleaning-tool-room-organization",
+    "title": "SHOP HOUSEKEEPING",
+    "sub": "KENAI FAB SHOP AND TOOL ROOM",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 100,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "GEAR UP",
+        "steps": [
+          {
+            "t": "Get trained on housekeeping expectations and waste handling before you work an area",
+            "w": "Untrained hands guess at the waste stream and walk past the scrap. You inherit a shop full of the debris nobody knew was theirs to move."
+          },
+          {
+            "t": "Safety glasses, gloves and proper footwear on before you touch a broom or a scrap bin",
+            "w": "Bare eyes and street shoes in a shop full of offcuts. The debris you are picking up finds your eyes, your palms and the top of your foot."
+          }
+        ]
+      },
+      {
+        "name": "CLEAN AND STOW",
+        "steps": [
+          {
+            "t": "Clear debris, spills and scrap out of your assigned area every day - do not let it build up",
+            "w": "Spills and scrap sit where they fell. Somebody's boot finds the slick spot or the offcut and they go down onto shop floor and steel."
+          },
+          {
+            "t": "Keep walkways and exits clear - nothing stacked or staged in them",
+            "w": "Clear is the whole point of an exit. Stage material in one and the fast way out of the shop is a route nobody can use the one time it matters."
+          },
+          {
+            "t": "Take every tool back to the tool room when you are done with it",
+            "w": "A tool that never comes back is a tool that gets damaged or goes missing - and until it does, it is one more thing on the floor of an area you are supposed to be keeping clear."
+          },
+          {
+            "t": "Put each tool back in its designated location, not just inside the tool room door",
+            "w": "Tools dumped in the wrong spot get damaged or go missing, and the next hand runs the job with whatever is left."
+          },
+          {
+            "t": "Put waste materials in the stream the site requires",
+            "w": "Waste that does not go out the way the site requires does not go out at all. It piles back up in the area you are supposed to clear every day, and the floor you cleaned this morning is a debris field again."
+          },
+          {
+            "t": "Stop work on an unsafe condition and tell supervision - do not work around it",
+            "w": "Nobody stops, nobody gets told, and the condition stays exactly where it is until it catches the next hand who walks through."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lifting-rigging-material-handling",
+    "title": "LIFTING AND RIGGING",
+    "sub": "MAGTEC ALASKA - KENAI",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE THE LIFT",
+        "steps": [
+          {
+            "t": "Keep untrained hands off the rigging - trained personnel run the lift",
+            "w": "Somebody guessing at the rigging is how a load ends up on the deck instead of the rack, and the man under it never picked the gear."
+          },
+          {
+            "t": "Hard hat, gloves, safety glasses, steel toes, and hi-vis before you touch anything",
+            "w": "No hi-vis and you are not seen standing in the path of travel. No hard hat and the first thing that comes off that load lands where your skull is."
+          },
+          {
+            "t": "Work out the load weight, center of gravity, rigging method, and path of travel",
+            "w": "Guess the weight and you are over the rating before it clears the floor. Guess the center of gravity and it shifts out of the rigging on the way up. Guess the path and you route it over somebody."
+          },
+          {
+            "t": "Take the lift plan to the supervisor and get it approved before you rig",
+            "w": "Approval is the only check on your numbers. Skip it and the weight, the center of gravity and the path of travel are one man's arithmetic - and you find out which one was wrong after the load is already off the ground."
+          },
+          {
+            "t": "Inspect the rigging before you use it",
+            "w": "Damaged rigging gives you no warning. It holds right up until the load is overhead, then lets go all at once."
+          }
+        ]
+      },
+      {
+        "name": "MAKE THE LIFT",
+        "steps": [
+          {
+            "t": "Settle the signals before the pick - standard hand signals, or radios where required",
+            "w": "The operator only knows what you tell him. Use something that is not a standard signal and your stop reads as keep coming - the load keeps traveling down the path you are standing in."
+          },
+          {
+            "t": "Run tag lines on the load and keep communication clear the whole move",
+            "w": "A tag line is how you steer a load without a hand on it. Skip it and you are guiding by hand - so you are inside the load instead of clear of it when it goes."
+          },
+          {
+            "t": "Stay inside rated capacity - the load, the rigging, all of it",
+            "w": "Over the rating is over the rating. The rigging fails at the worst moment, load overhead, and it comes down on the path of travel somebody is walking."
+          },
+          {
+            "t": "Drop, near miss, or injury - stop the work and call supervision",
+            "w": "Work through it and the same rigging sets up the same drop an hour later, with nobody warned and nobody watching for it."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "load-securement-highway-transport",
+    "title": "LOAD SECUREMENT",
+    "sub": "HIGHWAY TRANSPORT - SEMI TRAILERS",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 80,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE IT ROLLS",
+        "steps": [
+          {
+            "t": "Don't touch a binder until you're trained on securement regs and methods",
+            "w": "Untrained, you're guessing - which chain, which binder, how many. This SOP makes training the gate, because the load that teaches you is the one that shifts on you while you're rolling."
+          },
+          {
+            "t": "Gloves, safety glasses and hi-vis on before you get on the deck",
+            "w": "Bare hands on chain and binders. Nothing over your eyes when gear under tension lets go. Nothing on you that makes you easy to pick out while you're working the trailer. The SOP names all three - wear all three."
+          },
+          {
+            "t": "Walk the pre-transport inspection - weight distribution, securement devices, trailer condition",
+            "w": "Nobody looked. A bad weight split and a worn securement device go out together, and the road finds them both while you're in transit with no way to fix it."
+          },
+          {
+            "t": "Secure the load with rated chains, binders and straps - rated gear only",
+            "w": "Unrated rope or whatever tie-down was in the box holds right up until it doesn't. Then you've got a shifting load and failed gear at once - the exact emergency this SOP tells you to stop the truck for."
+          },
+          {
+            "t": "Driver and loader both confirm the load is secured per regulations before it moves",
+            "w": "It moves on nobody's say-so. The SOP puts it on both of you, driver and loader, and it puts it before transport - because that's the last point where fixing it costs you nothing but time."
+          }
+        ]
+      },
+      {
+        "name": "ON THE ROAD",
+        "steps": [
+          {
+            "t": "Recheck securement during transport - not just before you pulled out",
+            "w": "Securement you set tight doesn't stay the way you left it. The SOP requires a recheck once you're underway, because a load that has started to move gives you warning before it gives you an emergency."
+          },
+          {
+            "t": "Load shifting or gear failing - stop the transport and call supervision",
+            "w": "Keep driving on a shifting load or failing gear and it gets worse with every mile you add to it, and nobody up the chain knows you're out there with it. Stop first, then notify - that's the order the SOP gives."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mechanical-assembly-acbs-hvac-pump-filter-skids",
+    "title": "MECHANICAL ASSEMBLY",
+    "sub": "ACBS, HVAC UNITS AND PUMP & FILTER SKIDS",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE YOU BUILD",
+        "steps": [
+          {
+            "t": "Don't touch the job unless you're trained on mechanical assembly, torqueing, and the hazards of that specific unit",
+            "w": "Untrained hand on an unfamiliar skid finds the pinch points the hard way - with a finger in one."
+          },
+          {
+            "t": "Safety glasses, gloves and steel-toe boots on, plus whatever else the task calls for",
+            "w": "A component gets away from you and lands on a boot that isn't rated to take it. That's a crushed foot from exactly the dropped component this SOP makes you stop work for."
+          },
+          {
+            "t": "Go through the drawings, BOMs, torque specs, lifting plan and pinch points before a tool comes out of the box",
+            "w": "Skip the review and you're guessing at torque, guessing at the lift, and meeting a pinch point nobody warned you about."
+          }
+        ]
+      },
+      {
+        "name": "BUILD IT AND SIGN IT OFF",
+        "steps": [
+          {
+            "t": "Clear and organize the work area, and pull mechanical aids for anything you'd otherwise muscle",
+            "w": "Muscle a pump or an HVAC component into place instead of reaching for the aid and your back takes the strain the aids are there to keep off it."
+          },
+          {
+            "t": "Assemble to the drawings with calibrated tools, holding alignment and clearances as you go",
+            "w": "An out-of-cal tool lies to you. Alignment and clearances read right when they aren't, and you've built the equipment failure straight into the unit."
+          },
+          {
+            "t": "Control the pinch points every time you bring two parts together for fit-up",
+            "w": "Hands where the gap closes. Two parts coming together at fit-up is the pinch injury this SOP tells you to stop work for - and by then it's already happened."
+          },
+          {
+            "t": "Run every fastener to the torque spec and write down the critical values",
+            "w": "Leave a fastener short of spec and you've built in the failure - that's the fastener security QC is looking for and the equipment failure that stops the job. Nothing written down and nobody can prove the joint was ever right."
+          },
+          {
+            "t": "Inspect the assembly for alignment, fastener security and completeness before it's released",
+            "w": "Release it short a fastener and the first person to find out is the one standing next to it when it comes apart."
+          },
+          {
+            "t": "Stop the job and get supervision if a component drops, somebody gets pinched, or equipment fails",
+            "w": "Work through it and the dropped part, the crushed hand or the failing unit gets a second crack at somebody."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mobile-sandblasting-operations-sop",
+    "title": "MOBILE SANDBLASTING",
+    "sub": "MAGTEC ALASKA MOBILE BLAST CREWS",
+    "meta": "SOP v1.1 - Rev 1 1/9/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE YOU BLAST",
+        "steps": [
+          {
+            "t": "Get the JSA completed and reviewed before anything gets pressured up",
+            "w": "No JSA and nobody has reviewed what's out there. You find the overhead, the buried utility or the people working near you the hard way - after the nozzle is live."
+          },
+          {
+            "t": "Walk the work area - overhead hazards, underground utilities, who else is working near you, what's environmentally sensitive, anything confined or restricted",
+            "w": "Skip the walk and the area bites you mid-job: something overhead you never looked up at, a utility under your feet, people closer than you thought, or a confined or restricted space nobody flagged."
+          },
+          {
+            "t": "Set your barricades, hang the signage, and mark the exclusion zone",
+            "w": "No barricade, no zone, no warning. Nothing stops an unauthorized hand from walking in behind you and into the stream before either of you knows he's there."
+          },
+          {
+            "t": "Inspect the whole rig before you run it - blast pot, hoses, fittings, deadman, compressor, moisture separator - damage, leaks, does it work - and anything defective comes out of service",
+            "w": "A split hose, a loose fitting or a deadman that won't release is the equipment failure this SOP makes you stop the job for, except you find it with the pot loaded and your hand on the nozzle. Leave it in the pile instead of pulling it and the next hand inherits it."
+          },
+          {
+            "t": "Suit up before you touch the nozzle - blast hood on Grade D supplied air, glasses under the hood, hearing protection, gloves, blast suit, steel-toes",
+            "w": "Bare in a blast cloud is the silica exposure this SOP trains you on, straight into your lungs, and abrasive into unprotected eyes. Hood with no supplied air is worse - you're just breathing the dust in a closed box."
+          }
+        ]
+      },
+      {
+        "name": "BLAST IT AND CLEAN UP",
+        "steps": [
+          {
+            "t": "Don't pull the deadman until the barricades are up and every hand is clear of the exclusion zone",
+            "w": "Hot nozzle with people still inside the line. That's the injury the whole zone exists to prevent, and the man who takes it never saw the stream coming."
+          },
+          {
+            "t": "Stay in constant communication with your support man the whole time you're blasting",
+            "w": "Hood down, air roaring, nobody watching you. You go into respiratory distress inside that helmet - one of the emergencies this SOP names - and nobody knows until somebody wanders over."
+          },
+          {
+            "t": "Off the trigger the second you lose visibility, the gear malfunctions, or conditions turn unsafe",
+            "w": "Blasting blind means you can't see who walked into the zone. Riding out a malfunction under full pressure is the equipment failure this SOP tells you to stop for - hold the deadman through it and it turns into an injury or an uncontrolled release of abrasive."
+          },
+          {
+            "t": "Contain the spent abrasive, blasted coating and debris to the extent practicable - that's part of the job, not cleanup somebody else does",
+            "w": "Loose spent abrasive and stripped coating blow into whatever's environmentally sensitive around you. That's an uncontrolled release of abrasive, and this SOP makes you stop the job when it happens."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "paint-prep-coating",
+    "title": "PAINT, PREP AND COATING",
+    "sub": "MAGTEC SHOP AND FIELD",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "PREP THE JOB",
+        "steps": [
+          {
+            "t": "Get trained on the coating system, SDS review, ventilation, fire prevention and PPE before you touch the job",
+            "w": "You're handling a product nobody walked you through. The first hazard that comes out of that can is one you have no answer for."
+          },
+          {
+            "t": "Safety glasses, coating gloves and steel-toe boots on - respirator and FR clothing when the job calls for it",
+            "w": "Coating on bare skin and vapor straight into your lungs. The respirator sitting on the bench was the one thing between you and that exposure."
+          },
+          {
+            "t": "Walk the job first - specs, surface condition, ambient conditions, ventilation, ignition sources and barricading",
+            "w": "An ignition source nobody looked for, vapor with nowhere to go, and no barricade keeping foot traffic out of the spray."
+          },
+          {
+            "t": "Prep the surface to the specified cleanliness before any coating goes on",
+            "w": "Coating laid over a dirty surface never bonds. It lets go of the surface later and the job gets done a second time."
+          }
+        ]
+      },
+      {
+        "name": "LAY IT DOWN",
+        "steps": [
+          {
+            "t": "Mix and apply exactly the way the manufacturer data sheet says - no shortcuts off the sheet",
+            "w": "Mixed off the data sheet, it never cures. You're standing in the same vapor stripping a coat that should have gone on once."
+          },
+          {
+            "t": "Keep ventilation running and the fire watch posted where it's required",
+            "w": "Vapor stacks up in a dead-air corner with nobody watching for a spark. That's exactly the fire the watch was standing there to catch."
+          },
+          {
+            "t": "Check film thickness and cure as you go",
+            "w": "Thin spots and a coat handled before it's cured. It gets ruined, and the job comes straight back to you."
+          },
+          {
+            "t": "Shut the job down for a spill, fire or exposure - notify supervision and start the response",
+            "w": "A spill spreads or a hand gets dosed and the spray keeps running because nobody called it. Supervision hears about it once it's already big."
+          },
+          {
+            "t": "Contain the overspray and handle the waste to project requirements before you walk away",
+            "w": "Overspray drifts onto everything downwind and the waste ends up wherever it lands. That's the environmental hit the whole job gets measured on."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pressure-piping-high-pressure-welding",
+    "title": "PRESSURE PIPE WELDING",
+    "sub": "HIGH-PRESSURE SYSTEMS - MAGTEC ALASKA, KENAI",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE THE ARC",
+        "steps": [
+          {
+            "t": "Don't strike an arc unless you're a qualified welder and your WPQR is current",
+            "w": "A lapsed ticket and nobody looked. An unqualified bead is the only thing holding high pressure, and it lets go as a leak or a fire with a hand standing right at the joint."
+          },
+          {
+            "t": "Verify drawings, materials, WPS, joint prep, fit-up, preheat and the exclusion zone before you start",
+            "w": "Wrong material, cold steel, sloppy fit-up, and the joint still looks finished when you're done with it. It fails in service instead - and the exclusion zone you never set is why somebody is standing there when it does."
+          },
+          {
+            "t": "Hood down, FR clothing, gloves and eye protection on, respiratory protection if the job calls for it",
+            "w": "Nothing between you and the arc. Your eyes take the flash, your own clothes are what burns when a fire starts, and you breathe whatever comes off that metal all shift."
+          }
+        ]
+      },
+      {
+        "name": "BURN IT AND PROVE IT",
+        "steps": [
+          {
+            "t": "Run the weld strictly to the WPS parameters - no drifting off the sheet",
+            "w": "Off the WPS is off code, and code compliance and integrity are the whole reason this procedure exists. You've put a joint in a high-pressure line that no inspector can accept, and it opens up once there's full pressure behind it."
+          },
+          {
+            "t": "Control heat input, interpass temperature and cleanliness pass to pass",
+            "w": "Heat runs away, interpass climbs, contamination goes into the joint. That's the weld that leaks first, and it leaks with the system at full pressure."
+          },
+          {
+            "t": "Stop work the moment the job deviates from the approved WPS",
+            "w": "You watched it drift and kept burning. Every pass after that deviation is weld nobody approved sitting in a high-pressure line, and there's no record telling the next man to go look for it."
+          },
+          {
+            "t": "Stop work and notify supervision the second you get a leak, a fire or an injury",
+            "w": "You keep the arc going while it's leaking or burning. Supervision never hears about it, nothing gets stopped, and the leak or fire this procedure told you to stop for is left to grow with men still on the joint."
+          },
+          {
+            "t": "Document the welds and sign off the hold points as you go",
+            "w": "No weld record, no signed hold points. There's nothing showing that joint was ever made to the WPS and nothing for the inspector to accept - so it can't be accepted, and it can't proceed."
+          },
+          {
+            "t": "Get the visual and NDE done as specified - nothing proceeds until it's accepted",
+            "w": "Pressure goes into a system nobody accepted. The flaw the NDE would have caught is sitting behind full pressure now, and it finds you as a leak."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rigging-lifting-material-handling-fab-shop",
+    "title": "RIGGING AND LIFTING",
+    "sub": "MAGTEC KENAI FAB SHOP",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE THE LIFT",
+        "steps": [
+          {
+            "t": "Don't touch the rigging unless you're trained and authorized for it",
+            "w": "An untrained hand makes up the pick and nobody in the bay knows it's wrong. You find out when the load comes off the slings."
+          },
+          {
+            "t": "Hard hat, gloves, safety glasses, steel-toe boots, and hi-vis as required - on before you step in",
+            "w": "Skip the hard hat and the steel toes and a dropped load finds the parts of you that had nothing over them. Skip the hi-vis and nobody clears you out of the path that load is about to travel."
+          },
+          {
+            "t": "Plan the pick - load weight, center of gravity, rigging configuration, and the travel path",
+            "w": "Guess the weight and the center of gravity and the load rolls out of the slings on the first pick, over ground nobody walked first."
+          },
+          {
+            "t": "Inspect the rigging before it goes on the load - every time",
+            "w": "Rigging you never looked at parts under load. Everything it was holding drops, and it drops onto whatever is under it."
+          },
+          {
+            "t": "Any damaged sling or hardware comes out of service right then - tag it and pull it",
+            "w": "Leave damaged gear in the rack and the next crew grabs it. Same damage, new dropped load, and you handed it to them."
+          }
+        ]
+      },
+      {
+        "name": "MAKE THE PICK",
+        "steps": [
+          {
+            "t": "Stay inside the rated capacity of every piece of gear in the pick",
+            "w": "Load it past its rating and the rigging is the thing that fails. That's a dropped load, and everything under it is in the way."
+          },
+          {
+            "t": "Run tag lines on the load - control it from the line, not with your hands",
+            "w": "No tag line, no control. The load gets away from you and the only thing left to steady it with is your hand."
+          },
+          {
+            "t": "Keep communication clear with everyone on the lift, start to finish",
+            "w": "Crossed signals and the load moves before the crew is clear. That's the near miss - assuming it stays a near miss."
+          },
+          {
+            "t": "Stop the job for a dropped load, a near miss, or an injury - and call supervision",
+            "w": "Crew keeps lifting after a drop and whatever caused it is still in the rigging for the next pick. Supervision hears about it when somebody's hurt."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "shop-tooling-machine-cnc-operation",
+    "title": "SHOP TOOLING, MACHINES AND CNC",
+    "sub": "MAGTEC ALASKA LLC - KENAI, AK",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE YOU CUT",
+        "steps": [
+          {
+            "t": "Be trained on this exact machine before you put hands on it",
+            "w": "Nobody ever walked you through this one and you learn what it does at full speed, with your hands already inside it."
+          },
+          {
+            "t": "Safety glasses, hearing protection, gloves as appropriate, steel-toe boots - on before you start",
+            "w": "No glasses and the first thing off the tool finds your eye. No plugs and the shop takes your hearing a shift at a time. No boots and the tooling you fumble lands on your foot."
+          },
+          {
+            "t": "Verify every guard is in place and the emergency stops actually work",
+            "w": "Guard off or a dead e-stop and there's nothing between you and the cutter - and nothing to kill it with when it goes wrong."
+          },
+          {
+            "t": "Check the tooling condition and lock the workpiece down hard",
+            "w": "Chewed-up tool or a loose part - the workpiece breaks free and leaves the machine faster than you can step back."
+          }
+        ]
+      },
+      {
+        "name": "RUN IT AND LOCK IT OUT",
+        "steps": [
+          {
+            "t": "Run the machine inside the manufacturer's limits - whatever this machine is rated for",
+            "w": "Push it past what it was rated for and the tool or the machine lets go mid-cut, at full spindle speed, pointed at you."
+          },
+          {
+            "t": "Leave the guards where they are - no bypassing to get a better look",
+            "w": "Reach past a guard you pulled and the moving tooling can't tell your hand from the work."
+          },
+          {
+            "t": "Stay aware the whole time it's running - the machine and everybody near it",
+            "w": "Tune out and you miss the cut going wrong, or the guy who walked into the chip line behind you, until it's already an injury."
+          },
+          {
+            "t": "Machine acts up or somebody gets hurt - stop it and notify supervision",
+            "w": "Keep feeding a machine that's malfunctioning and the small problem becomes the injury, with nobody upstream told to stop the job."
+          },
+          {
+            "t": "Apply lockout/tagout before any maintenance or servicing",
+            "w": "No lock, no tag. Someone hits start while your hands are in it and the machine does exactly what it was built to do."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "structural-welding-frames-rails-skids",
+    "title": "STRUCTURAL WELDING",
+    "sub": "FRAMES, RAILS AND SKIDS - MAGTEC ALASKA, KENAI AK",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 100,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE THE ARC",
+        "steps": [
+          {
+            "t": "Check the welder is qualified with a current WPQR before any structural bead goes down",
+            "w": "Paper's expired and nobody looked. Now an unqualified hand is laying structural bead, and nothing about that joint is proven. The frame goes out and nobody can honestly say it will hold."
+          },
+          {
+            "t": "Hood, FR clothing, gloves, eye protection - and respiratory protection if the job calls for it",
+            "w": "Bare skin and no hood. The arc burns your eyes, the sparks find your arms, and the fume goes straight down your throat all shift."
+          },
+          {
+            "t": "Work the pre-job: drawings, materials, joint prep, fit-up, preheat and distortion controls",
+            "w": "Wrong material, sloppy fit-up, no distortion control. You burn a day of rod into a frame that pulls out of square and no longer matches the drawing - and it gets cut back out."
+          }
+        ]
+      },
+      {
+        "name": "BURN AND PROVE IT",
+        "steps": [
+          {
+            "t": "Weld it to the approved WPS - no shortcuts off procedure",
+            "w": "Off procedure, that joint's strength is whatever you happened to give it, not what the approved procedure called for. Nobody can stand behind it."
+          },
+          {
+            "t": "Hold your heat input and interpass temperature where the procedure puts them",
+            "w": "Miss the procedure's numbers and you are not welding to the WPS anymore. The steel pulls, the rail comes out of square, and the joint is no longer the one the drawing specified."
+          },
+          {
+            "t": "Keep the joint clean - cleanliness is part of the procedure, not housekeeping",
+            "w": "Weld into a dirty joint and its integrity is unproven, which is the one thing this procedure exists to protect. It comes back as a repair you have to document, or a piece inspection will not release."
+          },
+          {
+            "t": "Document the welds and any repairs as you go",
+            "w": "No record, no proof of what went into that joint or what got repaired. Inspection has nothing to check against, and the piece does not get released."
+          },
+          {
+            "t": "Visual inspection and NDE as specified before the piece is released",
+            "w": "Released unchecked, the defect leaves with the frame. Inspection before release is the last place anybody is looking - past that point the piece is carrying load on trust instead of proof."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "welding-procedure-compliance-wps-wpqr",
+    "title": "WPS COMPLIANCE",
+    "sub": "MAGTEC ALASKA - KENAI",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 70,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "GET THE PAPER RIGHT",
+        "steps": [
+          {
+            "t": "Have the current controlled WPS and WPQR at the weld station before you strike an arc",
+            "w": "That copy taped to the wall is last year's. Every pass you lay comes off an uncontrolled procedure, and it's a non-compliance the day somebody pulls the file."
+          },
+          {
+            "t": "Check your own qualification is current for the WPS you're about to run",
+            "w": "Ticket's lapsed and none of that is qualified work. Only a current-qualified hand is allowed to weld to that WPS, so every pass you laid is outside the procedure and the file behind the joint can't say otherwise."
+          },
+          {
+            "t": "Verify the WPS matches the job - material, joint configuration and position - before you weld",
+            "w": "Right WPS, wrong joint or wrong position. The whole run is outside procedure, and it's a stop-work the moment anybody catches it - after you've already filled the bevel."
+          }
+        ]
+      },
+      {
+        "name": "BURN IT BY THE BOOK",
+        "steps": [
+          {
+            "t": "Weld inside the WPS parameters - every pass, no drifting off the sheet",
+            "w": "Drift off what that sheet calls for and you're not running that WPS any more. You're running something nobody qualified, on a joint going out the door as if they had."
+          },
+          {
+            "t": "Get engineering approval in hand before you change any WPS parameter",
+            "w": "Change it on your own hook and there's no approval standing behind that weld - just you, filling in for engineering."
+          },
+          {
+            "t": "Stop work and notify supervision the moment the documentation is invalid or conditions go unsafe",
+            "w": "Burn through it and the bad paper or the unsafe condition is still there for the next hand - only now it's welded shut and nobody upstream ever heard about it."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "welding-table-setup-pre-weld-preparation",
+    "title": "WELDING TABLE SETUP",
+    "sub": "MAGTEC KENAI FAB SHOP",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 100,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "SET THE TABLE",
+        "steps": [
+          {
+            "t": "Hood, FR's, gloves, eye pro and steel toes on before you touch the table",
+            "w": "Arc lights and you're a layer short. This SOP names all five - hood, FR's, gloves, eye pro, boots - as required before the work starts. Skip one and the burn lands on the exact piece of you that wasn't covered."
+          },
+          {
+            "t": "Verify the table is level and every fixture is locked down",
+            "w": "Out of level, fixture loose. That's the instability this SOP tells you to stop work for - the part walks mid-pass and the joint comes back out with a grinder."
+          },
+          {
+            "t": "Check the table ground is adequate before anything gets clamped",
+            "w": "No solid ground, no return path. The current picks its own way off that table, and the burn or the fire it starts is the emergency this SOP stops work for."
+          },
+          {
+            "t": "Don't start until a supervisor has verified the setup and the materials",
+            "w": "This SOP puts setup and materials on the supervisor, not on you alone. Skip that check and a bad setup or the wrong stock rides all the way to weld-out before anybody catches it."
+          }
+        ]
+      },
+      {
+        "name": "BEFORE THE ARC",
+        "steps": [
+          {
+            "t": "Clean the joints and verify fit-up",
+            "w": "Dirty joint, sloppy gap. This SOP exists for accurate fabrication - you just bought the opposite, and it gets cut back out."
+          },
+          {
+            "t": "Confirm the materials and the WPS before you strike an arc",
+            "w": "Wrong material, wrong procedure. Every inch you run is off-spec and the piece comes apart on the table to do it again."
+          },
+          {
+            "t": "Position components securely, keep the work area clear, and set yourself up to reach the joint without contorting",
+            "w": "Loose part on a crowded table. It shifts while you're hooded up and blind - that's the instability this SOP stops work for, and you never see it coming."
+          },
+          {
+            "t": "Clear debris and slag out of the work area",
+            "w": "Cut-offs and slag underfoot. This SOP calls those trip hazards for a reason - you step back hooded, catch a foot, and go down hard next to the table you were just welding on."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "working-off-ladders-rolling-scaffolding",
+    "title": "LADDERS AND ROLLING SCAFFOLD",
+    "sub": "MAGTEC ALASKA - KENAI",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 100,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE YOU CLIMB",
+        "steps": [
+          {
+            "t": "Get trained on ladders and scaffold before you set foot on either one",
+            "w": "Untrained hand on a scaffold finds out what it does wrong while standing on it - and there is nothing under you but the drop."
+          },
+          {
+            "t": "Safety glasses on, proper footwear, fall protection if the job calls for it",
+            "w": "Wrong boots on a rung and nothing clipped off. Your foot goes and there is nothing between you and the ground."
+          },
+          {
+            "t": "Walk the ladder or scaffold and look it over for defects before you use it",
+            "w": "A cracked rail or a chewed-up rung does not warn you. It lets go with your full weight on it and you ride it down."
+          },
+          {
+            "t": "Lock the scaffold wheels before anybody steps on the deck",
+            "w": "Wheels free. You lean into the work, the scaffold rolls out from under you, and you go down with it."
+          }
+        ]
+      },
+      {
+        "name": "UP AND WORKING",
+        "steps": [
+          {
+            "t": "Guardrails in place, and stay off the top rungs unless the ladder is built for it",
+            "w": "No rail and your boots on the top rung - one stumble and there is nothing to grab and nothing to stop the fall."
+          },
+          {
+            "t": "Maintain three points of contact - two hands and a foot, or two feet and a hand",
+            "w": "Down to two points and the rung slips. Nothing is left holding you to the ladder."
+          },
+          {
+            "t": "Do not overreach - however close the work looks, it is not close enough",
+            "w": "Reach past the rails and your weight goes with you. The ladder walks out sideways and you are off it before you know you are falling."
+          },
+          {
+            "t": "Anything goes unstable or somebody gets hurt - stop the work and tell supervision",
+            "w": "You ride out the wobble instead of calling it, and the first thing supervision hears about it is the injury."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "zoom-boom-telescopic-forklift-operation",
+    "title": "ZOOM BOOM",
+    "sub": "KENAI FAB SHOP AND YARD",
+    "meta": "SOP v1.1 - Rev 1 03/2026 - Approved D. Redick - Condensed from a summary-level SOP; chronology inferred from workflow",
+    "par": 110,
+    "board": "kenai",
+    "phases": [
+      {
+        "name": "BEFORE THE LIFT",
+        "steps": [
+          {
+            "t": "Make sure the hand in the seat is trained and authorized on the telehandler - nobody else runs it",
+            "w": "Nobody untrained finds out what this machine does wrong at a convenient moment. They find it out with a load up and a crew standing around them."
+          },
+          {
+            "t": "Hard hat, hi-vis, safety glasses, gloves and steel-toe boots on before you climb in",
+            "w": "No hi-vis and you're just another shape in the yard to the next machine through. No steel toes and a dropped fork finds your foot."
+          },
+          {
+            "t": "Walk the pre-use inspection - tires, forks and attachments, hydraulics, alarms, brakes, and the load charts",
+            "w": "Skip it and you find the soft tire, the weeping hydraulic or the dead alarm the hard way: load up, machine moving, nothing stopping it."
+          },
+          {
+            "t": "Read the ground before you set up - bearing capacity and slope. Unstable surface, you don't run",
+            "w": "Soft ground doesn't hold. One side settles under the tire, the machine leans past the point it comes back from, and it goes over with you in it."
+          },
+          {
+            "t": "Set your exclusion zone and put a spotter on it to keep pedestrians out",
+            "w": "No zone, no spotter, and somebody cuts under the load on their way to the next bay. Nothing that heavy stops in time."
+          }
+        ]
+      },
+      {
+        "name": "RUN IT AND PARK IT",
+        "steps": [
+          {
+            "t": "Stay inside rated capacity and work off the load chart",
+            "w": "Past the chart the back end goes light. The boom keeps reaching, the machine pivots forward over the front tires, and the load comes down on whoever is in front of it."
+          },
+          {
+            "t": "Keep your footing stable, travel with the load low, and put a spotter on any blind side",
+            "w": "Load carried high rides top-heavy over every rut in the yard. Blind side with nobody watching and the forks find a man before you do."
+          },
+          {
+            "t": "Shut it down and call supervision the second you get a malfunction, a tip-over feel, or an injury",
+            "w": "Nurse a bad machine along and the next thing to let go, lets go with a load in the air and somebody under it."
+          },
+          {
+            "t": "Park it out: forks down on the deck, parking brake set, keys out before you walk away",
+            "w": "Forks left up is a raised steel edge in a yard full of people walking. Keys left in is somebody with no business in that seat driving it off."
           }
         ]
       }

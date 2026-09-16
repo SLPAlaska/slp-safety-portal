@@ -201,6 +201,20 @@
   transition: transform .5s cubic-bezier(.3, 0, .6, 1), opacity .5s;
 }
 
+/* ── board tabs (drilling vs Kenai fab shop) */
+#rtj-root .boardbar { display: flex; gap: 6px; margin-bottom: 12px; }
+#rtj-root .boardtab {
+  flex: 1; background: var(--steel); border: 1px solid var(--edge); border-bottom: 3px solid var(--edge);
+  color: var(--dim); cursor: pointer; padding: 9px 8px 7px; font-family: inherit; text-align: left;
+}
+#rtj-root .boardtab.on { color: var(--arctic); border-bottom-color: var(--safety); background: var(--steel-lt); }
+#rtj-root .boardtab .bl {
+  display: block; font-family: 'Big Shoulders Display'; font-weight: 800;
+  font-size: 17px; line-height: 1; letter-spacing: .5px;
+}
+#rtj-root .boardtab.on .bl { color: var(--safety); }
+#rtj-root .boardtab .bc { display: block; font-size: 12px; font-weight: 700; margin-top: 3px; letter-spacing: 1px; }
+
 /* ── Quick Hits — the ASH pull */
 #rtj-root .qhdeck { border-left-color: var(--hazard) !important; }
 #rtj-root .qhdeck .dt { color: var(--hazard); }
