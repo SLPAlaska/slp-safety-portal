@@ -39,3 +39,9 @@ supabase/.temp/
 Brians Revisions/
 Kenai-SOPs/
 *.docx
+
+# deno
+# Written by `npx deno check` when type-checking an Edge Function. The functions
+# pin their imports by URL and are bundled by Supabase, so nothing builds from
+# this lockfile — it is a local artifact of the type-check, not a dependency set.
+deno.lock

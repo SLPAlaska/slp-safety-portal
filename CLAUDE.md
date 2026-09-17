@@ -68,6 +68,34 @@ A run played 9pm Sunday on the Slope belongs to the week that just ended.
   always use it before a real run. `send-weekly-reports` has no dry-run mode, so
   any successful call to it mails real clients.
 
+**Calling a function by hand needs TWO headers.** The Supabase gateway rejects a
+request with `UNAUTHORIZED_NO_AUTH_HEADER` before the handler ever runs unless it
+carries an `Authorization: Bearer` JWT, so the anon key satisfies the *platform*
+and the shared secret satisfies the *function*. Neither one alone works, which is
+exactly the intent: the anon key ships in the browser bundle and must never be
+enough to mail every employee of every client company.
+
+```bash
+# Dry run over the whole roster. Sends nothing; writes the response to a file
+# because it carries employee names and addresses.
+# tr -d '\r\n' is not decoration: .env.local has CRLF line endings on Windows and
+# a stray \r in a header value gets the request rejected.
+ANON=$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | sed 's/^[^=]*=//' | tr -d '\r\n')
+SECRET=$(grep '^TRAINING_REMINDER_SECRET=' <secret-env-file> | sed 's/^[^=]*=//' | tr -d '\r\n')
+curl -s -X POST https://iypezirwdlqpptjpeeyf.supabase.co/functions/v1/send-training-reminders \
+  -H "Authorization: Bearer $ANON" \
+  -H "x-training-reminder-secret: $SECRET" \
+  -H 'Content-Type: application/json' \
+  -d '{"dry_run":true}' -o dryrun.json -w 'http %{http_code}\n'
+unset ANON SECRET
+```
+
+The shared secrets are **not readable back** from Supabase: `secrets set` is
+write-only and `secrets list` returns a SHA-256 digest of each value, with no
+decrypt flag. Get the value from Vault or from the scratchpad handoff file, and
+confirm it is still the live one by hashing it and comparing against the digest
+`secrets list` reports — that verifies it without printing it.
+
 ## Deploying
 
 ```bash
