@@ -22,6 +22,13 @@
 // Participation is reported alongside rank, never folded into it beyond the
 // zero rule above.
 //
+// The crew half is behind crew_standings_enabled (default false, see
+// app/lib/game/flags.js). While it is off this route returns crew: null and
+// does not run the crew queries at all — the board is withheld at the source
+// rather than hidden in the client, so a crew's score is not sitting in a
+// response for anyone who opens the network tab before launch. Individual bests
+// and drawing entries are unaffected.
+//
 // MagTec is enforced by the inner join on lms_users.company_id, not by
 // filtering after the fact, so another company's run can never reach the
 // response even if one somehow lands in the table.
@@ -32,6 +39,7 @@ import { resolveGamePlayer, gameAdminClient, MAGTEC_COMPANY_ID } from '@/lib/gam
 import { pageAll } from '@/lib/supabasePage'
 import { resolveFeaturedDeck, DEFAULT_BOARD, safeBoard } from '@/lib/game/featured'
 import { scoreCrews } from '@/lib/game/crewScore'
+import { readFlag, CREW_STANDINGS_ENABLED } from '@/lib/game/flags'
 import { weekLabel } from '@/lib/game/week'
 import DECKS from '@/lib/game/decks.json'
 
@@ -136,8 +144,13 @@ export async function POST(request) {
   }
 
   // ── crew: this week, featured deck
+  //
+  // Off until crew_standings_enabled is flipped. Read here rather than once at
+  // module load so the switch is live the moment it is thrown.
+  const crewStandingsEnabled = await readFlag(supabase, CREW_STANDINGS_ENABLED)
+
   let crew = null
-  if (featured.id) {
+  if (crewStandingsEnabled && featured.id) {
     const [crewsRes, membersRes, weekRunsRes] = await Promise.all([
       supabase
         .from('lms_game_crews')
@@ -183,6 +196,9 @@ export async function POST(request) {
 
   return NextResponse.json({
     individual,
+    // Absent because the board is not launched yet, rather than absent because
+    // no crew has run: the client says different things about the two.
+    crew_standings_enabled: crewStandingsEnabled,
     crew,
     drawing: {
       week_start: featured.week_start,

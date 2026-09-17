@@ -31,7 +31,12 @@
 // this email that is meant to be enjoyable; the crew board needs them, and
 // their crew's score counts them whether they play or not.
 //
-// MagTec employees also get a "THIS WEEK'S RUN" section at the bottom: the
+// ...all of which is behind the game_email_enabled switch (see GAME SWITCH).
+// While it is off, this function is exactly the pre-game reminder: four training
+// sections, and a caught-up employee of any company is skipped.
+//
+// MagTec employees also get a "THIS WEEK'S RUN" section at the bottom (once
+// game_email_enabled is true): the
 // name of the featured deck for THEIR board (drilling support or the Kenai
 // fab shop, whichever their crew is on), a one-tap link to run it, and a
 // second link straight into the Safety Pull (the ASH question game). Both
@@ -109,6 +114,53 @@ const PAGE = 1000;           // PostgREST caps a single response at 1000 rows
 const MAGTEC_COMPANY_ID = "c1fd7a04-99e6-401a-8cf8-f88f8d7cea35";
 const GAME_TOKEN_TTL_DAYS = 14;   // covers the gap to next week's email, plus slack
 
+// ============================================================================
+// GAME SWITCH
+//
+// lms_game_config.game_email_enabled gates every game-shaped thing in this
+// email. Default and fallback are BOTH false, so:
+//
+//   * a config table that will not answer cannot add a section to a mass send
+//   * deploying this function does not launch anything — flipping the row does
+//
+// While it is false:
+//   * no THIS WEEK'S RUN block, no SAFETY PULL block, and no signed game link
+//     is minted at all (nothing to leak into a forwarded email before launch)
+//   * a caught-up MagTec employee is skipped again, exactly like every other
+//     company's caught-up employees were before the game existed. Sending them
+//     a "You're All Caught Up" email with nothing in it would be worse than
+//     sending nothing.
+//   * the training sections are untouched. This switch is not a kill switch for
+//     the reminder; it only controls the game.
+//
+// Read once per invocation, not once per employee: a few hundred recipients
+// should not be a few hundred config reads, and the answer cannot meaningfully
+// change mid-run.
+//
+// Mirrored by hand from app/lib/game/flags.js — Edge Functions bundle from this
+// directory only and cannot import from app/lib. Keep the truthy set and the
+// fail-closed default the same on both sides.
+// ============================================================================
+const TRUTHY = new Set(["true", "t", "1", "yes", "on"]);
+
+async function gameEmailEnabled(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("lms_game_config")
+      .select("value")
+      .eq("key", "game_email_enabled")
+      .maybeSingle();
+    if (error) {
+      console.error("game_email_enabled read failed:", error.message);
+      return false;
+    }
+    return TRUTHY.has(String(data?.value ?? "").trim().toLowerCase());
+  } catch (err) {
+    console.error("game_email_enabled read failed:", (err as Error).message);
+    return false;
+  }
+}
+
 function b64url(bytes: Uint8Array): string {
   let s = "";
   for (const b of bytes) s += String.fromCharCode(b);
@@ -137,12 +189,17 @@ async function signGameToken(userId: string): Promise<string> {
 
 /**
  * The player's personal one-tap links, or null when the game does not apply to
- * them — wrong company, or the signing secret is not configured. Null means the
- * section is left out entirely; it never means a broken link goes out.
+ * them — game not launched yet, wrong company, or the signing secret is not
+ * configured. Null means the section is left out entirely; it never means a
+ * broken link goes out.
  *
  * One token, two destinations: the featured run, and the Safety Pull.
  */
-async function gameLinksFor(employee: any): Promise<{ run: string; pull: string } | null> {
+async function gameLinksFor(
+  employee: any,
+  enabled: boolean,
+): Promise<{ run: string; pull: string } | null> {
+  if (!enabled) return null;
   if (!GAME_LINK_SECRET) return null;
   if (employee.company_id !== MAGTEC_COMPANY_ID) return null;
   try {
@@ -620,12 +677,22 @@ serve(async (req) => {
     const now = new Date();
     const newSince = new Date(now.getTime() - NEW_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+    // The launch switch. False until somebody flips the config row, and false
+    // again if the read fails — see GAME SWITCH.
+    const gameEnabled = await gameEmailEnabled();
+
     // Once per invocation, not once per employee. Each recipient is told about
     // the deck featured on THEIR board, which follows their crew.
-    const featuredByBoard = GAME_LINK_SECRET
+    //
+    // Skipped entirely while the game is off. featuredDeckTitles() also STAMPS
+    // this week's pick into lms_game_config, and a reminder run is not the place
+    // to advance a rotation nobody is being shown yet — the portal republishes
+    // both boards on any visit anyway.
+    const gameLookups = gameEnabled && !!GAME_LINK_SECRET;
+    const featuredByBoard = gameLookups
       ? await featuredDeckTitles()
       : { drilling: null, kenai: null };
-    const crewBoard = GAME_LINK_SECRET ? await boardsByUser() : new Map<string, string>();
+    const crewBoard = gameLookups ? await boardsByUser() : new Map<string, string>();
 
     // ── Employees: every active user with an email. company_admin is NOT
     // excluded — supervisors hold that role and take training too.
@@ -803,8 +870,9 @@ serve(async (req) => {
         const actionable =
           newItems.length + notStartedItems.length + overdueItems.length + dueSoonItems.length;
 
-        // MagTec only. Every other company's email is exactly what it was.
-        const gameLinks = await gameLinksFor(emp);
+        // MagTec only, and only once the game is launched. Every other company's
+        // email is exactly what it was.
+        const gameLinks = await gameLinksFor(emp, gameEnabled);
         const empBoard = crewBoard.get(emp.id) || "drilling";
         const featuredDeck = featuredByBoard[empBoard] ?? null;
 
@@ -812,6 +880,9 @@ serve(async (req) => {
         // who is fully current still gets the game-only email — they are the
         // people most worth keeping in the habit, and their crew is scored on
         // them either way.
+        //
+        // While game_email_enabled is false there are no game links for anyone,
+        // so this collapses back to the original rule: caught up means no email.
         if (actionable === 0 && !gameLinks) {
           results.push({ employee: emp.full_name, status: "skipped", reason: "nothing actionable" });
           continue;
@@ -890,6 +961,10 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         dryRun,
+        // Which mode the run was in. A dry run that produced no game sections
+        // should say whether that was the switch or a missing GAME_LINK_SECRET.
+        gameEmailEnabled: gameEnabled,
+        gameLinkSecretPresent: !!GAME_LINK_SECRET,
         featuredByBoard,
         employeesTotal: allEmployees.length,
         employeesConsidered: slice.length,

@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { resolveGamePlayer, gameAdminClient, MAGTEC_COMPANY_ID } from '@/lib/game-auth'
 import { resolveAllBoards, DEFAULT_BOARD, safeBoard } from '@/lib/game/featured'
+import { readFlag, CREW_STANDINGS_ENABLED } from '@/lib/game/flags'
 import DECKS from '@/lib/game/decks.json'
 
 export async function POST(request) {
@@ -34,6 +35,11 @@ export async function POST(request) {
   // send. Both boards are published on any visit, so a board nobody opened
   // this week is not left advertising last week's roster.
   const boards = await resolveAllBoards(supabase, DECKS)
+
+  // Whether the crew-vs-crew board is launched. The page needs the answer to
+  // describe the game truthfully on the home screen and in the crew picker —
+  // the board itself is withheld by /api/game/standings, not by the client.
+  const crewStandingsEnabled = await readFlag(supabase, CREW_STANDINGS_ENABLED)
 
   const [{ data: crews }, { data: membership }] = await Promise.all([
     supabase
@@ -64,6 +70,7 @@ export async function POST(request) {
     source: auth.source,
     board,
     featured,
+    crew_standings_enabled: crewStandingsEnabled,
     crews: crewList.map((c) => ({ id: c.id, name: c.name, board: safeBoard(c.board) })),
     crew: membership
       ? {
@@ -75,6 +82,11 @@ export async function POST(request) {
       : null,
     // Ask for a crew only when there is something to pick. A company with no
     // crews yet should not be shown an empty list and a dead end.
+    //
+    // Still asked while crew_standings_enabled is off. The roster is what gives
+    // the board real history the day it is switched on — waiting until launch to
+    // collect it would put an empty board in front of the crews on the one
+    // morning it needs to look alive.
     needs_crew: !membership && crewList.length > 0,
   })
 }

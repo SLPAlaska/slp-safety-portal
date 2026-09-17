@@ -46,6 +46,10 @@ export default function GamePage() {
   const [company, setCompany] = useState(null)
   const [featured, setFeatured] = useState(null)
   const [board, setBoard] = useState('drilling')
+  // Whether the crew-vs-crew board is launched yet. The board itself is
+  // withheld server side; this only decides what the page PROMISES, so that
+  // nothing here tells a player their run posts to a board they cannot see.
+  const [crewStandings, setCrewStandings] = useState(false)
   const [crews, setCrews] = useState([])
   const [crew, setCrew] = useState(null)
   const [picking, setPicking] = useState(false)
@@ -106,6 +110,7 @@ export default function GamePage() {
         setPlayer(data.player)
         setFeatured(data.featured || null)
         setBoard(data.board || 'drilling')
+        setCrewStandings(!!data.crew_standings_enabled)
         setCrews(data.crews || [])
         setCrew(data.crew || null)
         setPicking(!!data.needs_crew)
@@ -221,8 +226,12 @@ export default function GamePage() {
           <div className="crewpick">
             <h2>WHO DO YOU <span>RUN WITH?</span></h2>
             <p>
-              Crew standings are scored on everybody, not just whoever plays — so the board
-              needs to know which crew your runs belong to. Pick yours once and you are done.
+              {crewStandings
+                ? 'Crew standings are scored on everybody, not just whoever plays — so the board '
+                  + 'needs to know which crew your runs belong to. Pick yours once and you are done.'
+                : 'Crew standings are scored on everybody, not just whoever plays — so when the '
+                  + 'board opens it needs to know which crew your runs belong to. Pick yours once '
+                  + 'and you are done.'}
             </p>
             {joinError && <p style={{ color: '#ffb3b6' }}>{joinError}</p>}
             {crews.map((c) => (
@@ -265,7 +274,9 @@ export default function GamePage() {
           <p className="proto">
             Signed in as <b>{player?.name}</b> · {player?.company}
             {crew?.name ? <> · crew <b>{crew.name}</b></> : null}.
-            {' '}Every finished run posts to the crew standings.<br />
+            {' '}{crewStandings
+              ? 'Every finished run posts to the crew standings.'
+              : 'Every finished run is recorded and counts once the crew board opens.'}<br />
             Training aid only. The controlled SOPs govern the work.
           </p>
           {crews.length > 0 && (
