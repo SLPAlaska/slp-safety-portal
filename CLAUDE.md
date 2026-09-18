@@ -38,18 +38,32 @@ can query it. The setup functions are `security definer` and granted to
 Open security items. Each is a decision waiting on a person, not a bug to fix
 blind — read the note before changing the surrounding code.
 
-- **Investigation workbench access is domain-gated, not role-gated.**
-  `/investigation-workbench/[id]` authenticates with a real Supabase session
-  (`signInWithPassword`, added 2026-09-18) and then authorises on an
-  `@slpalaska.com` email suffix. A suffix is not a role: real LMS learners hold
-  `@slpalaska.com` addresses too, so any learner with a portal account can sign
-  in and read incident and investigation records. This is exactly the trap
-  `app/lib/superAdmins.js` exists to warn about, one layer down.
-  `/api/spellcheck` inherits it — it verifies that the caller is *a* signed-in
-  portal user, not that they are an investigator.
-  Fix needs an explicit investigator allowlist or a role check on `lms_users`,
-  applied in both the page gate and the route. Decide who counts as an
-  investigator first. Recorded 2026-09-18.
+*(none open)*
+
+#### Closed
+
+- **Investigation workbench access was domain-gated, not role-gated.**
+  Opened and closed 2026-09-18. The workbench authorised on an `@slpalaska.com`
+  email suffix, and `/api/spellcheck` only checked that the caller was *a*
+  signed-in portal user. Real LMS learners hold `@slpalaska.com` addresses, so
+  any learner with a portal account could have signed into the workbench and
+  read incident and investigation records — the same trap
+  `app/lib/superAdmins.js` warns about, one layer down.
+
+  Closed by replacing the suffix test with a role test in both places. The rule
+  and the password policy live in `app/lib/investigatorAuth.js`, imported by the
+  workbench page and the route so the two cannot drift. The workbench signs out
+  anyone without the role; `/api/spellcheck` returns a structured 403
+  (`code: 'forbidden'`).
+
+  **The role is stored in `app_metadata`, and must stay there.** `user_metadata`
+  is writable by the signed-in user — `supabase.auth.updateUser({ data: ... })`
+  — so a role kept there is self-granted privilege, and reading it server-side
+  does not help, because the value the server reads is the value the client
+  wrote. Only the service role can write `app_metadata`. `must_change_password`
+  is deliberately in `user_metadata`: the user has to clear it themselves after
+  choosing a password, and clearing it early grants no access. The harness has a
+  case asserting a role found only in `user_metadata` is refused — keep it.
 
 ## Conventions worth knowing
 

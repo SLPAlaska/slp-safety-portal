@@ -3,6 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import {
+  isInvestigator,
+  mustChangePassword,
+  validateNewPassword,
+  MIN_PASSWORD_LENGTH,
+  NOT_AUTHORIZED_MESSAGE,
+} from '@/lib/investigatorAuth';
 
 // =====================================================================
 // AnthroSafe Investigation Workbench v2
@@ -76,6 +83,9 @@ export default function InvestigationWorkbench() {
   const [userEmail, setUserEmail] = useState('');
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwError, setPwError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -96,20 +106,30 @@ export default function InvestigationWorkbench() {
   const [lastSavedAt, setLastSavedAt] = useState(null);
 
   // -------- Auth --------
-  // A real Supabase session, not a remembered email. This page's API routes
-  // verify the session token server-side, so an email sitting in localStorage
-  // is not something they can trust — and it never was: the old gate let anyone
-  // who typed any @slpalaska.com address straight in.
-  function applySession(session) {
-    const email = session?.user?.email?.toLowerCase() || '';
-    if (session && email.endsWith('@slpalaska.com')) {
-      setUserEmail(email);
-      setAuthed(true);
-      return true;
+  // A real Supabase session, not a remembered email, and a role rather than an
+  // email suffix. The role is read from app_metadata, which only the service
+  // role can write — see app/lib/investigatorAuth.js for why user_metadata
+  // would be self-granted privilege. Every API route this page calls re-checks
+  // the same role server-side; nothing here is the security boundary.
+  async function adoptSession(session) {
+    if (!session) {
+      setAuthed(false);
+      setUserEmail('');
+      setNeedsPasswordChange(false);
+      return false;
     }
-    setUserEmail('');
-    setAuthed(false);
-    return false;
+    if (!isInvestigator(session.user)) {
+      await supabase.auth.signOut();
+      setAuthed(false);
+      setUserEmail('');
+      setNeedsPasswordChange(false);
+      setLoginError(NOT_AUTHORIZED_MESSAGE);
+      return false;
+    }
+    setUserEmail(session.user?.email?.toLowerCase() || '');
+    setNeedsPasswordChange(mustChangePassword(session.user));
+    setAuthed(true);
+    return true;
   }
 
   useEffect(() => {
@@ -117,14 +137,14 @@ export default function InvestigationWorkbench() {
     // Retire the old passwordless marker so it cannot be mistaken for access.
     if (typeof window !== 'undefined') localStorage.removeItem('slp_inv_email');
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!active) return;
-      if (!applySession(session)) setLoading(false);
+      if (!(await adoptSession(session))) setLoading(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!active) return;
-      if (!applySession(session)) setLoading(false);
+      if (!(await adoptSession(session))) setLoading(false);
     });
 
     return () => { active = false; sub?.subscription?.unsubscribe(); };
@@ -136,11 +156,6 @@ export default function InvestigationWorkbench() {
     const email = e.target.email.value.trim().toLowerCase();
     const password = e.target.password.value;
 
-    if (!email.endsWith('@slpalaska.com')) {
-      setLoginError('Access is restricted to @slpalaska.com accounts.');
-      return;
-    }
-
     setLoginBusy(true);
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setLoginBusy(false);
@@ -149,11 +164,33 @@ export default function InvestigationWorkbench() {
       setLoginError(signInError.message || 'Sign in failed.');
       return;
     }
-    // Check the address the server confirmed, not the one that was typed.
-    if (!applySession(data?.session)) {
-      await supabase.auth.signOut();
-      setLoginError('Access is restricted to @slpalaska.com accounts.');
+    // adoptSession signs out and explains if this account is not an investigator.
+    await adoptSession(data?.session);
+  }
+
+  // Forced on first sign-in: the account was provisioned with a shared
+  // temporary password, so the workbench does not load until it is replaced.
+  async function handlePasswordChange(e) {
+    e.preventDefault();
+    setPwError('');
+    const password = e.target.password.value;
+    const confirmation = e.target.confirmation.value;
+
+    const check = validateNewPassword(password, confirmation);
+    if (!check.ok) { setPwError(check.error); return; }
+
+    setPwBusy(true);
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+      data: { must_change_password: false },
+    });
+    setPwBusy(false);
+
+    if (updateError) {
+      setPwError(updateError.message || 'Could not set the new password.');
+      return;
     }
+    setNeedsPasswordChange(false);
   }
 
   async function handleSignOut() {
@@ -263,6 +300,8 @@ export default function InvestigationWorkbench() {
   // Render
   // ==========================================================
   if (!authed) return <LoginGate onSubmit={handleLogin} busy={loginBusy} error={loginError} />;
+  // Nothing below this line renders until the temporary password is replaced.
+  if (needsPasswordChange) return <PasswordChangeGate onSubmit={handlePasswordChange} busy={pwBusy} error={pwError} />;
   if (loading) return <FullScreenMessage text="Loading investigation..." />;
   if (error)   return <FullScreenMessage text={error} tone="danger" />;
   if (!incident) return <FullScreenMessage text="Investigation not found." tone="danger" />;
@@ -1822,12 +1861,41 @@ function FullScreenMessage({ text, tone }) {
   );
 }
 
+function PasswordChangeGate({ onSubmit, busy, error }) {
+  return (
+    <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <form onSubmit={onSubmit} style={{ background: C.card, padding: 28, borderRadius: 12, border: `1px solid ${C.borderL}`, width: 380 }}>
+        <h2 style={{ margin: '0 0 6px 0', color: C.navy }}>Choose a password</h2>
+        <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>
+          This account is still on its temporary password. Pick a new one — at least {MIN_PASSWORD_LENGTH} characters — before opening the workbench.
+        </div>
+        <Label>New password</Label>
+        <input name="password" type="password" required autoComplete="new-password" style={inputStyle} />
+        <Label>Confirm new password</Label>
+        <input name="confirmation" type="password" required autoComplete="new-password" style={inputStyle} />
+        {error && (
+          <div style={{
+            marginTop: 12, padding: '8px 10px', borderRadius: 6,
+            background: '#fef2f2', border: '1px solid #fecaca',
+            fontSize: 12, color: '#7f1d1d',
+          }}>
+            {error}
+          </div>
+        )}
+        <button type="submit" disabled={busy} style={{ ...btnPrimaryDark, marginTop: 14, width: '100%', opacity: busy ? 0.6 : 1 }}>
+          {busy ? 'Saving…' : 'Set Password & Continue'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function LoginGate({ onSubmit, busy, error }) {
   return (
     <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <form onSubmit={onSubmit} style={{ background: C.card, padding: 28, borderRadius: 12, border: `1px solid ${C.borderL}`, width: 360 }}>
         <h2 style={{ margin: '0 0 6px 0', color: C.navy }}>Investigation Workbench</h2>
-        <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>Restricted to @slpalaska.com accounts.</div>
+        <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>Authorized investigators only.</div>
         <Label>Email</Label>
         <input name="email" type="email" required autoComplete="username" style={inputStyle} placeholder="you@slpalaska.com" />
         <Label>Password</Label>

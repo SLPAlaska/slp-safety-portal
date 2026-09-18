@@ -14,6 +14,7 @@
 // =====================================================================
 
 import { createClient } from '@supabase/supabase-js';
+import { isInvestigator } from '@/lib/investigatorAuth';
 
 export const maxDuration = 60;
 
@@ -404,6 +405,17 @@ export async function POST(request) {
         code: 'unauthorized',
         status: 401,
         message: 'Your session has expired. Sign in again to run the spelling review.',
+      });
+    }
+
+    // Authorisation, not just authentication. The role is read off the user
+    // Supabase just verified for us — specifically its app_metadata, which only
+    // the service role can write. Nothing the caller sent is consulted.
+    if (!isInvestigator(authData.user)) {
+      return fail({
+        code: 'forbidden',
+        status: 403,
+        message: 'This account is not authorized for investigations.',
       });
     }
 
