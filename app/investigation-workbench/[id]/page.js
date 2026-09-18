@@ -833,6 +833,9 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
   const [gateBusy, setGateBusy] = useState(false);
   const [gateIssues, setGateIssues] = useState(null); // null = modal closed
+  // Set when the review ran but could not cover everything. The spell-check is
+  // an aid, not a gate on safety work, so this warns and never blocks approval.
+  const [gateWarning, setGateWarning] = useState(null);
 
   function collectReportText() {
     const items = [];
@@ -879,34 +882,64 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
       onIncidentChange({ status: next });
       return;
     }
-    // Spell-check gate: Approved is not allowed until the text is reviewed.
+    // The spelling review runs before Approved, but it FAILS OPEN: if the
+    // service errors or times out, the reviewer is warned and the approval
+    // still goes through. A copy-editing aid must never be the thing standing
+    // between a finished investigation and its approval.
     setGateBusy(true);
+    setGateWarning(null);
+
+    const items = collectReportText();
+    if (items.length === 0) { setGateBusy(false); return approveDirect(); }
+
+    let payload = null;
+    let failure = null;
     try {
-      const items = collectReportText();
-      if (items.length === 0) { setGateBusy(false); return approveDirect(); }
       const res = await fetch('/api/spellcheck', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: items.map(({ key, text }) => ({ key, text })) }),
       });
-      if (!res.ok) throw new Error('Spell check service returned ' + res.status);
-      const { results } = await res.json();
-      const byKey = Object.fromEntries((results || []).map(r => [r.key, r]));
-      const issues = items
-        .map(it => ({ ...it, corrected: byKey[it.key]?.corrected ?? it.text }))
-        .filter(it => it.corrected.trim() !== it.text.trim());
-      setGateBusy(false);
-      if (issues.length === 0) {
-        alert('Spell check passed — no issues found. Approving.');
-        return approveDirect();
+      payload = await res.json().catch(() => null);
+      if (!res.ok || !payload || !Array.isArray(payload.results)) {
+        failure = payload?.error?.message || `The spelling review service returned ${res.status}.`;
       }
-      setGateIssues(issues);
     } catch (err) {
-      setGateBusy(false);
-      if (confirm('Spell check could not run (' + err.message + ').\n\nApprove WITHOUT the spelling review?')) {
-        return approveDirect();
-      }
+      failure = err?.message || 'The spelling review service could not be reached.';
     }
+
+    setGateBusy(false);
+
+    if (failure) {
+      alert(
+        'Spelling & grammar review could not run:\n\n' + failure +
+        '\n\nApproving anyway — please proofread the report manually.'
+      );
+      return approveDirect();
+    }
+
+    const byKey = Object.fromEntries(payload.results.map(r => [r.key, r]));
+    // Only a field the model actually returned can be called clean or corrected.
+    const issues = items
+      .map(it => ({ ...it, corrected: byKey[it.key]?.corrected ?? it.text }))
+      .filter(it => byKey[it.key] && it.corrected.trim() !== it.text.trim());
+
+    const skipped = Array.isArray(payload.unchecked) ? payload.unchecked.length : 0;
+    const warning = skipped > 0
+      ? `${skipped} of ${items.length} field${items.length === 1 ? '' : 's'} could not be reviewed`
+        + (payload.warnings?.length ? ` (${payload.warnings.join('; ')})` : '')
+        + '. Please proofread those by hand.'
+      : null;
+
+    if (issues.length === 0) {
+      alert(warning
+        ? 'Spelling review finished with gaps:\n\n' + warning + '\n\nApproving.'
+        : 'Spell check passed — no issues found. Approving.');
+      return approveDirect();
+    }
+
+    setGateWarning(warning);
+    setGateIssues(issues);
   }
 
   async function applyAndApprove() {
@@ -968,10 +1001,11 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
       {gateIssues && (
         <SpellGateModal
           issues={gateIssues}
+          warning={gateWarning}
           busy={gateBusy}
           onApply={applyAndApprove}
-          onOverride={() => { setGateIssues(null); approveDirect(); }}
-          onCancel={() => setGateIssues(null)}
+          onOverride={() => { setGateIssues(null); setGateWarning(null); approveDirect(); }}
+          onCancel={() => { setGateIssues(null); setGateWarning(null); }}
         />
       )}
     </div>
@@ -981,7 +1015,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
 // =====================================================================
 // Spell-check gate modal (module level - never define inside render)
 // =====================================================================
-function SpellGateModal({ issues, busy, onApply, onOverride, onCancel }) {
+function SpellGateModal({ issues, warning, busy, onApply, onOverride, onCancel }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
@@ -996,6 +1030,15 @@ function SpellGateModal({ issues, busy, onApply, onOverride, onCancel }) {
             This report cannot be Approved until the issues below are corrected or explicitly overridden.
           </div>
         </div>
+        {warning && (
+          <div style={{
+            margin: '12px 20px 0', padding: '8px 10px', borderRadius: 6,
+            background: '#fffbeb', border: '1px solid #fde68a',
+            fontSize: 12, color: '#78350f',
+          }}>
+            <strong>Partial review.</strong> {warning}
+          </div>
+        )}
         <div style={{ padding: '12px 20px', overflowY: 'auto', flex: 1 }}>
           {issues.map(it => (
             <div key={it.key} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #f3f4f6' }}>
