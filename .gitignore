@@ -45,3 +45,8 @@ Kenai-SOPs/
 # pin their imports by URL and are bundled by Supabase, so nothing builds from
 # this lockfile — it is a local artifact of the type-check, not a dependency set.
 deno.lock
+
+# Build/audit artifacts. app-audit.zip carried a copy of the client export
+# credentials into a public repository; no zipped snapshot of the app belongs
+# in git.
+*.zip
