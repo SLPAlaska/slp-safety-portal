@@ -1,0 +1,56 @@
+# What must never be uploaded to a Vercel build.
+#
+# `vercel --prod` from a workstation uploads the WORKING TREE, not HEAD, so
+# untracked files ride along unless they are listed here. On 2026-09-18 a
+# working-tree deploy would have carried two MagTec employee census CSVs into
+# the build; they were moved aside by hand that time. This file makes it
+# automatic, because "someone remembers to move the file" is not a control.
+#
+# Vercel reads this file INSTEAD of .gitignore when it is present, so it has to
+# list the build-irrelevant heavy directories too, not just the extras.
+
+# ── Dependencies and build output ───────────────────────────────────────────
+node_modules
+.next
+out
+build
+coverage
+.vercel
+.git
+
+# ── Secrets ─────────────────────────────────────────────────────────────────
+.env
+.env.*
+*.pem
+
+# ── Client and employee data ────────────────────────────────────────────────
+# Nothing in the app is built from a spreadsheet: no CSV or workbook is tracked
+# in this repo, so excluding the whole class costs the build nothing and stops
+# a census export or a roster reconciliation from being uploaded.
+*.csv
+*.tsv
+*.xlsx
+*.xls
+
+# ── Client documents ────────────────────────────────────────────────────────
+# Controlled documents belonging to the client. The repo carries the decks
+# derived from them, never the documents themselves.
+*.docx
+*.pptx
+Brians Revisions/
+Kenai-SOPs/
+
+# ── Local artifacts that are not part of the app ────────────────────────────
+# One-off migration and patch scripts kept beside the project, plus zipped
+# snapshots. app-audit.zip is why *.zip is here: a zipped copy of the app
+# carried the client export credentials into a public repository.
+*.zip
+*.py
+run-the-job.html
+deno.lock
+supabase/.temp/
+tha_results.txt
+
+# ── Supabase Edge Functions ─────────────────────────────────────────────────
+# Deployed with `supabase functions deploy`, never built by Next.js.
+supabase/functions/
