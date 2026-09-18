@@ -17,19 +17,77 @@ function getSupabaseAdmin() {
   return _supabaseAdmin;
 }
 
-const COMPANY_CREDENTIALS = {
-  'MAGTEC2026': { company: 'MagTec Alaska', searchTerms: ['MagTec', 'Mag Tec', 'MagTec Alaska'], password: 'PSA2026$$SLP' },
-  'POLLARD2026': { company: 'Pollard Wireline', searchTerms: ['Pollard', 'Pollard Wireline'], password: 'PSA2026$$SLP' },
-  'AKELINE2026': { company: 'AKE-Line', searchTerms: ['AKE-Line', 'AKE Line', 'AKELINE'], password: 'PSA2026$$SLP' },
-  'GBR2026': { company: 'GBR Equipment', searchTerms: ['GBR', 'GBR Equipment'], password: 'PSA2026$$SLP' },
-  'CHOSEN2026': { company: 'Chosen Construction', searchTerms: ['Chosen', 'Chosen Construction'], password: 'PSA2026$$SLP' },
-  'YELLOWJACKET2026': { company: 'Yellowjacket', searchTerms: ['Yellowjacket', 'Yellow Jacket'], password: 'PSA2026$$SLP' },
-  'PENINSULA2026': { company: 'Peninsula Paving', searchTerms: ['Peninsula', 'Peninsula Paving'], password: 'PSA2026$$SLP' },
-  'CINGSA2026': { company: 'CINGSA', searchTerms: ['CINGSA'], password: 'PSA2026$$SLP' },
-  'NARWHAL2026': { company: 'Narwhal Exploration', searchTerms: ['Narwhal', 'Narwhal Exploration'], password: 'PSA2026$$SLP' },
-  'HARVEST2026': { company: 'Harvest Midstream', searchTerms: ['Harvest Midstream', 'Harvest'], password: 'PSA2026$$SLP' },
-  'APACHE2026': { company: 'Apache Corp.', searchTerms: ['Apache Corp.', 'Apache Corp', 'Apache', 'Apache Corporation'], password: 'PSA2026$$SLP' },
+// ── Tenant catalogue (NOT secret) ────────────────────────────────────
+//
+// Display name and the name fragments each tenant's rows are matched on.
+// Deliberately NOT in an environment variable: changing what a tenant can see
+// is a decision that belongs in code review, not in a dashboard text box.
+const TENANTS = {
+  magtec:       { company: 'MagTec Alaska',       searchTerms: ['MagTec', 'Mag Tec', 'MagTec Alaska'] },
+  pollard:      { company: 'Pollard Wireline',    searchTerms: ['Pollard', 'Pollard Wireline'] },
+  akeline:      { company: 'AKE-Line',            searchTerms: ['AKE-Line', 'AKE Line', 'AKELINE'] },
+  gbr:          { company: 'GBR Equipment',       searchTerms: ['GBR', 'GBR Equipment'] },
+  chosen:       { company: 'Chosen Construction', searchTerms: ['Chosen', 'Chosen Construction'] },
+  yellowjacket: { company: 'Yellowjacket',        searchTerms: ['Yellowjacket', 'Yellow Jacket'] },
+  peninsula:    { company: 'Peninsula Paving',    searchTerms: ['Peninsula', 'Peninsula Paving'] },
+  cingsa:       { company: 'CINGSA',              searchTerms: ['CINGSA'] },
+  narwhal:      { company: 'Narwhal Exploration', searchTerms: ['Narwhal', 'Narwhal Exploration'] },
+  harvest:      { company: 'Harvest Midstream',   searchTerms: ['Harvest Midstream', 'Harvest'] },
+  apache:       { company: 'Apache Corp.',        searchTerms: ['Apache Corp.', 'Apache Corp', 'Apache', 'Apache Corporation'] },
 };
+
+// ── Client credentials (SECRET) ─────────────────────────────────────
+//
+// The access codes and their secrets live in CLIENT_EXPORT_CREDENTIALS, never
+// in this file. Until 2026-09-18 all 11 were hardcoded here, which put live
+// client credentials into git history -- the same class of problem as the
+// RESEND_API_KEY fix, and the same remedy.
+//
+// Shape: a JSON array, so one tenant can hold two credentials at once while a
+// rotation is in flight.
+//
+//   [{"code":"EXAMPLE2026","tenant":"example","secret":"...","shared":true}]
+//
+//   code    what the client types into the export page
+//   tenant  key into TENANTS above -- decides whose rows come back
+//   secret  the password for that code
+//   shared  true ONLY for a secret knowingly used by more than one tenant.
+//           The pre-2026-09-18 password is one such: all 11 clients hold the
+//           same string, so it cannot identify who is calling.
+//
+// Read at request time rather than module load, so `next build`'s page-data
+// collection does not need the value.
+function loadCredentials() {
+  const raw = process.env.CLIENT_EXPORT_CREDENTIALS;
+  if (!raw) return { entries: null, error: 'CLIENT_EXPORT_CREDENTIALS is not set.' };
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    return { entries: null, error: 'CLIENT_EXPORT_CREDENTIALS is not valid JSON.' };
+  }
+  if (!Array.isArray(parsed)) {
+    return { entries: null, error: 'CLIENT_EXPORT_CREDENTIALS must be a JSON array.' };
+  }
+
+  const entries = [];
+  for (const row of parsed) {
+    if (!row || typeof row !== 'object') continue;
+    const code = typeof row.code === 'string' ? row.code.trim().toUpperCase() : '';
+    const tenant = typeof row.tenant === 'string' ? row.tenant.trim() : '';
+    const secret = typeof row.secret === 'string' ? row.secret : '';
+    // An entry naming a tenant this build does not know about is dropped
+    // rather than guessed at: a typo must not silently widen who can call.
+    if (!code || !secret || !TENANTS[tenant]) continue;
+    entries.push({ code, tenant, secret, shared: row.shared === true });
+  }
+
+  if (entries.length === 0) {
+    return { entries: null, error: 'CLIENT_EXPORT_CREDENTIALS holds no usable entries.' };
+  }
+  return { entries, error: null };
+}
 
 // Tables that use a non-default company column name
 const COMPANY_COLUMN_MAP = {
@@ -192,14 +250,26 @@ export async function POST(request) {
       return Response.json({ error: 'Server not configured (missing service role key).' }, { status: 500 });
     }
 
+    const { entries, error: credError } = loadCredentials();
+    if (!entries) {
+      // Fail closed: no credential config means nobody gets an export, rather
+      // than everybody.
+      console.error('client-export credential config unusable:', credError);
+      return Response.json({ error: 'Server not configured (client credentials).' }, { status: 500 });
+    }
+
     const body = await request.json();
     const { code, password, tables, start, end } = body || {};
 
-    // --- Auth: verify the credential code + password server-side ---
-    const cred = code ? COMPANY_CREDENTIALS[String(code).toUpperCase()] : null;
-    if (!cred || cred.password !== password) {
+    // --- Auth: verify the credential code + secret server-side ---
+    const presentedCode = typeof code === 'string' ? code.trim().toUpperCase() : '';
+    const entry = presentedCode
+      ? entries.find(e => e.code === presentedCode && e.secret === password)
+      : null;
+    if (!entry) {
       return Response.json({ error: 'Invalid credentials.' }, { status: 401 });
     }
+    const cred = TENANTS[entry.tenant];
 
     if (!Array.isArray(tables) || tables.length === 0) {
       return Response.json({ error: 'No tables requested.' }, { status: 400 });
