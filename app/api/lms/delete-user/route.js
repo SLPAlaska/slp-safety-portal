@@ -1,15 +1,26 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdmin, assertSameCompany, companyIdOfUser } from '@/lib/requireAdmin'
 
+// Super admin, or a company admin acting on someone in their OWN company.
+// The target's company is read from the database, never from the request body:
+// trusting the body would let a caller send their own company_id alongside
+// another company's user_id.
 export async function POST(request) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
+  const auth = await requireAdmin(request, supabaseAdmin, { allowCompanyAdmin: true })
+  if (!auth.ok) return auth.response
+
   try {
     const { user_id } = await request.json()
     if (!user_id)
       return NextResponse.json({ error: 'Missing user_id.' }, { status: 400 })
+
+    const denied = assertSameCompany(auth, await companyIdOfUser(supabaseAdmin, user_id))
+    if (denied) return denied
 
     // Look up the row server-side so we don't depend on the client sending
     // auth_user_id (which may be missing/null and was silently 400-ing before).

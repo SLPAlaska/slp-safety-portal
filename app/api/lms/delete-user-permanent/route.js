@@ -1,12 +1,20 @@
 // app/api/lms/delete-user-permanent/route.js
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/requireAdmin'
 
+// Super-admin only. This erases a learner's completions, certificates,
+// assignments, sessions, lms_users row and Auth account - the whole training
+// record, which IS the compliance artifact. Until 2026-09-18 it ran for any
+// anonymous caller who knew the URL.
 export async function DELETE(req) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
+
+  const auth = await requireAdmin(req, supabaseAdmin)
+  if (!auth.ok) return auth.response
 
   try {
     const { user_id } = await req.json()

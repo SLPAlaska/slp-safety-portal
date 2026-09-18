@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
 import { getCourseStatus, formatFrequency, STATUS_COLORS } from '@/lib/courseStatus'
+import { authFetch } from '@/lib/authFetch'
 
 
 export default function UserTrainingPage() {
@@ -119,7 +120,7 @@ export default function UserTrainingPage() {
     setGranting(true); setGrantResult(null)
     const out = []
     for (const course_id of grantCourseIds) {
-      const res = await fetch('/api/lms/grant-credit', {
+      const res = await authFetch('/api/lms/grant-credit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, course_id, completed_at: grantDate, grant_note: grantNote || null }),

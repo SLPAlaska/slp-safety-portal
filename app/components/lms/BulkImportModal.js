@@ -1,6 +1,7 @@
 'use client';
 // components/lms/BulkImportModal.js
 import { useState, useRef } from 'react';
+import { authFetch } from '@/lib/authFetch'
 
 const EXPECTED_HEADERS = [
   'employee_number','first_name','last_name','username',
@@ -62,7 +63,7 @@ export default function BulkImportModal({ company, onClose, onComplete }) {
     setImporting(true);
     setStep('importing');
     try {
-      const res = await fetch('/api/lms/bulk-import', {
+      const res = await authFetch('/api/lms/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ company_id: company.id, users: rows }),

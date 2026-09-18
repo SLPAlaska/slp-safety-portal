@@ -1,12 +1,26 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { pageAll } from '@/lib/supabasePage'
+import { requireAdmin } from '@/lib/requireAdmin'
 
-export async function GET() {
+// Super-admin only, both methods.
+//
+// GET returns every learner in every company - 379 rows across 14 tenants at
+// the time this check was added, to anyone who asked.
+//
+// PATCH is the more serious of the two: it writes `role` and `company_id`, so
+// an unauthenticated caller could read their own id from GET and then promote
+// themselves to company_admin of any tenant. That made every role check
+// elsewhere in the platform, including app/api/lms/company-admin/*, only as
+// strong as this one route.
+export async function GET(request) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
+
+  const auth = await requireAdmin(request, supabaseAdmin)
+  if (!auth.ok) return auth.response
   // Whole-table read across every company — pages so it keeps working past
   // 1000 users.
   const { data, error } = await pageAll(() => supabaseAdmin
@@ -22,6 +36,10 @@ export async function PATCH(req) {
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
+
+  const auth = await requireAdmin(req, supabaseAdmin)
+  if (!auth.ok) return auth.response
+
   try {
     const {
       id, full_name, email, username, job_title,

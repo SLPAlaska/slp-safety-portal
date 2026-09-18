@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import BulkImportModal from '@/components/lms/BulkImportModal'
 import { isSuperAdmin } from '@/lib/superAdmins'
+import { authFetch } from '@/lib/authFetch'
 
 const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -135,7 +136,7 @@ function UsersTab() {
   const [editForm, setEditForm] = useState({})
 
   const load = useCallback(async () => {
-    const [ur,cr] = await Promise.all([fetch('/api/lms/users'),fetch('/api/lms/companies')])
+    const [ur,cr] = await Promise.all([authFetch('/api/lms/users'),fetch('/api/lms/companies')])
     const [ud,cd] = await Promise.all([ur.json(),cr.json()])
     setUsers(ud.users||[])
     setCompanies((cd.companies||[]).filter(c=>c.active))
@@ -155,7 +156,7 @@ function UsersTab() {
 
   async function handleCreate() {
     setError(''); setSaving(true)
-    const res = await fetch('/api/lms/create-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
+    const res = await authFetch('/api/lms/create-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
@@ -185,7 +186,7 @@ function UsersTab() {
 
   async function handleEdit() {
     setError(''); setSaving(true)
-    const res = await fetch('/api/lms/users', {
+    const res = await authFetch('/api/lms/users', {
       method: 'PATCH',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(editForm)
@@ -204,7 +205,7 @@ function UsersTab() {
 
   async function handleDeactivate(user) {
     if (!confirm(`Deactivate ${user.full_name}?`)) return
-    await fetch('/api/lms/delete-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id}) })
+    await authFetch('/api/lms/delete-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id}) })
     load()
   }
 
@@ -221,7 +222,7 @@ function UsersTab() {
 
   async function handleDeleteUser(user) {
     if (!confirm(`PERMANENTLY DELETE "${user.full_name}"?\n\nThis will remove the user, all training records, certificates, and completions. This CANNOT be undone.`)) return
-    const res = await fetch('/api/lms/delete-user-permanent', {
+    const res = await authFetch('/api/lms/delete-user-permanent', {
       method: 'DELETE',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ user_id: user.id })
@@ -467,7 +468,7 @@ function CoursesTab() {
 
   async function handleDeleteCourse(course) {
     if (!confirm(`DELETE "${course.title}"?\n\nThis will permanently delete the course, all slides, audio files, quiz questions, and completion records. This CANNOT be undone.`)) return
-    const res = await fetch('/api/lms/delete-course', {
+    const res = await authFetch('/api/lms/delete-course', {
       method: 'DELETE',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ course_id: course.id })
@@ -1150,7 +1151,7 @@ function IndividualAssignmentsTab() {
   const load = useCallback(async () => {
     const [ar, ur, cor, comr] = await Promise.all([
       fetch('/api/lms/individual-assignments'),
-      fetch('/api/lms/users'),
+      authFetch('/api/lms/users'),
       fetch('/api/lms/courses'),
       fetch('/api/lms/companies'),
     ])
@@ -1496,7 +1497,7 @@ function GrantCreditTab() {
 
   const load = useCallback(async () => {
     const [ur, cor, comr] = await Promise.all([
-      fetch('/api/lms/users'),
+      authFetch('/api/lms/users'),
       fetch('/api/lms/courses'),
       fetch('/api/lms/companies'),
     ])
@@ -1520,26 +1521,15 @@ function GrantCreditTab() {
 
   async function handleGrant() {
     setError(''); setResults([]); setSaving(true)
-    // Get auth token — same pattern as other admin actions
-    const { data: { session } } = await (await import('@supabase/ssr')).createBrowserClient
-      ? { data: { session: null } }
-      : { data: { session: null } }
-    // Fallback: the admin page already has auth in cookies; the route accepts Bearer header,
-    // so we pull from window.localStorage (Supabase default) as a last resort.
-    let token = null
-    try {
-      const raw = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
-      if (raw) token = JSON.parse(localStorage.getItem(raw))?.access_token
-    } catch {}
-
+    // The Bearer token is attached by authFetch. What stood here was a dead
+    // token lookup: an `await import(...) ? {...} : {...}` that always yielded
+    // a null session, plus a localStorage fallback whose header authFetch now
+    // supplies from the live session.
     const out = []
     for (const course_id of courseIds) {
-      const res = await fetch('/api/lms/grant-credit', {
+      const res = await authFetch('/api/lms/grant-credit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userId,
           course_id,
@@ -1687,7 +1677,7 @@ function RevokeCreditTab() {
 
   const load = useCallback(async () => {
     const [ur, cor, comr] = await Promise.all([
-      fetch('/api/lms/users'),
+      authFetch('/api/lms/users'),
       fetch('/api/lms/courses'),
       fetch('/api/lms/companies'),
     ])

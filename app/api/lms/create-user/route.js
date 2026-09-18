@@ -1,11 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdmin, assertSameCompany, companyIdOfUser } from '@/lib/requireAdmin'
 
+// Super admin, or a company admin creating an account in their OWN company.
+//
+// A company admin is additionally held to role 'learner'. Without that, the
+// scope check alone would still let one mint a second company_admin - or an
+// investigator - inside their tenant, which is privilege escalation even
+// though it never crosses a company boundary.
 export async function POST(request) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
+  const auth = await requireAdmin(request, supabaseAdmin, { allowCompanyAdmin: true })
+  if (!auth.ok) return auth.response
+
   try {
     const {
       email, password, full_name, username, job_title, company_id, role,
@@ -14,6 +24,13 @@ export async function POST(request) {
 
     if (!email || !password || !full_name || !username || !company_id)
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 })
+
+    const denied = assertSameCompany(auth, company_id)
+    if (denied) return denied
+    if (!auth.isSuper && role && role !== 'learner') {
+      return NextResponse.json(
+        { error: 'Company admins may only create learner accounts.' }, { status: 403 })
+    }
 
     const cleanEmail = email.trim().toLowerCase()
 

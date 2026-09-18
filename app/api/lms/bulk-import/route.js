@@ -1,6 +1,7 @@
 // app/api/lms/bulk-import/route.js
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/requireAdmin';
 
 // Created lazily so the service-role key is only required at request time, not
 // at module load (which would break `next build`'s page-data collection).
@@ -30,8 +31,15 @@ async function loadAllAuthUsers() {
   return allUsers;
 }
 
+// Super-admin only. Mounted solely by app/admin/lms/page.js, which is itself
+// gated to super admins, so this closes the route to everyone the UI already
+// excluded. Creates accounts in bulk for any company_id it is handed.
 export async function POST(req) {
   const supabaseAdmin = getSupabaseAdmin();
+
+  const auth = await requireAdmin(req, supabaseAdmin);
+  if (!auth.ok) return auth.response;
+
   try {
     const { company_id, users } = await req.json();
 

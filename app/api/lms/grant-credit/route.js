@@ -4,13 +4,16 @@
 // Creates lms_certificates + upserts lms_completions.
 //
 // Payload: { user_id, course_id, completed_at, grant_note? }
-// Auth:    None at this layer — matches existing /api/lms/* pattern.
+// Auth:    Platform super admin only, verified server-side.
 //
-// NOTE: granted_by_admin_id is set to null until admin auth is wired up
-//       at the /admin/lms route level (Session C TODO).
+// Granting credit fabricates a training record: it writes a certificate and a
+// completion for a course the learner never sat. That is exactly the record an
+// auditor relies on, so the grant is now attributed - granted_by_admin_id
+// carries the id of the admin who made it, which the old TODO left null.
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 function generateCertNumber() {
   const year = new Date().getFullYear()
@@ -25,6 +28,9 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
+
+  const auth = await requireAdmin(request, supabaseAdmin)
+  if (!auth.ok) return auth.response
 
   let body
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
@@ -93,7 +99,7 @@ export async function POST(request) {
       .update({
         certificate_id: certNumber,
         completed_at: completedAtIso,
-        granted_by_admin_id: null, // TODO: wire up admin auth
+        granted_by_admin_id: auth.user.id,
         grant_note: grant_note || null,
       })
       .eq('id', existing.id)
@@ -107,7 +113,7 @@ export async function POST(request) {
         quiz_attempt_id: null,
         certificate_id: certNumber,
         completed_at: completedAtIso,
-        granted_by_admin_id: null, // TODO: wire up admin auth
+        granted_by_admin_id: auth.user.id,
         grant_note: grant_note || null,
       })
     if (insErr) return NextResponse.json({ error: 'Failed to create completion: ' + insErr.message }, { status: 500 })

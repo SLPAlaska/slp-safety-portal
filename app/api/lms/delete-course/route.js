@@ -1,12 +1,18 @@
 // app/api/lms/delete-course/route.js
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/requireAdmin'
 
+// Super-admin only. Courses are platform-wide, not per-tenant: deleting one
+// removes it, its slides and its storage objects for every company at once.
 export async function DELETE(req) {
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
+
+  const auth = await requireAdmin(req, supabaseAdmin)
+  if (!auth.ok) return auth.response
 
   try {
     const { course_id } = await req.json()

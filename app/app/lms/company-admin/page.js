@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import { authFetch } from '@/lib/authFetch'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -56,7 +57,7 @@ function EmployeesTab({ token, companyId }) {
 
   async function handleCreate() {
     setError(''); setSaving(true)
-    const res = await fetch('/api/lms/create-user', {
+    const res = await authFetch('/api/lms/create-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, company_id: companyId, role: 'learner' })
@@ -71,7 +72,7 @@ function EmployeesTab({ token, companyId }) {
 
   async function handleDeactivate(user) {
     if (!confirm(`Deactivate ${user.full_name}? They will lose access immediately.`)) return
-    await fetch('/api/lms/delete-user', {
+    await authFetch('/api/lms/delete-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id, auth_user_id: user.auth_user_id })
