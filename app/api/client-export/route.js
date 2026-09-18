@@ -347,7 +347,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { code, password, tables, start, end } = body || {};
+    const { code, password, tables, start, end, verify } = body || {};
 
     // --- Auth: the SECRET decides whose data comes back, not the code ---
     const presentedCode = typeof code === 'string' ? code.trim().toUpperCase() : '';
@@ -356,6 +356,13 @@ export async function POST(request) {
       return Response.json({ error: resolved.error.message }, { status: resolved.error.status });
     }
     const cred = TENANTS[resolved.tenant];
+
+    // Credential check only, for the export page's sign-in step. Returns who
+    // the caller is and nothing else, so the page never needs a copy of the
+    // credentials to check them against.
+    if (verify === true) {
+      return Response.json({ company: cred.company });
+    }
 
     if (!Array.isArray(tables) || tables.length === 0) {
       return Response.json({ error: 'No tables requested.' }, { status: 400 });

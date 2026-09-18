@@ -1,19 +1,17 @@
 'use client';
 import { useState } from 'react';
 
-const COMPANY_CREDENTIALS = {
-  'MAGTEC2026': { company: 'MagTec Alaska', searchTerms: ['MagTec', 'Mag Tec', 'MagTec Alaska'], password: 'PSA2026$$SLP' },
-  'POLLARD2026': { company: 'Pollard Wireline', searchTerms: ['Pollard', 'Pollard Wireline'], password: 'PSA2026$$SLP' },
-  'AKELINE2026': { company: 'AKE-Line', searchTerms: ['AKE-Line', 'AKE Line', 'AKELINE'], password: 'PSA2026$$SLP' },
-  'GBR2026': { company: 'GBR Equipment', searchTerms: ['GBR', 'GBR Equipment'], password: 'PSA2026$$SLP' },
-  'CHOSEN2026': { company: 'Chosen Construction', searchTerms: ['Chosen', 'Chosen Construction'], password: 'PSA2026$$SLP' },
-  'YELLOWJACKET2026': { company: 'Yellowjacket', searchTerms: ['Yellowjacket', 'Yellow Jacket'], password: 'PSA2026$$SLP' },
-  'PENINSULA2026': { company: 'Peninsula Paving', searchTerms: ['Peninsula', 'Peninsula Paving'], password: 'PSA2026$$SLP' },
-  'CINGSA2026': { company: 'CINGSA', searchTerms: ['CINGSA'], password: 'PSA2026$$SLP' },
-  'NARWHAL2026': { company: 'Narwhal Exploration', searchTerms: ['Narwhal', 'Narwhal Exploration'], password: 'PSA2026$$SLP' },
-  'HARVEST2026': { company: 'Harvest Midstream', searchTerms: ['Harvest Midstream', 'Harvest'], password: 'PSA2026$$SLP' },
-  'APACHE2026': { company: 'Apache Corp.', searchTerms: ['Apache Corp.', 'Apache Corp', 'Apache', 'Apache Corporation'], password: 'PSA2026$$SLP' },
-};
+// No credential table lives here on purpose.
+//
+// This is a 'use client' component, so anything in it is served to every
+// visitor in the JavaScript bundle. Until 2026-09-18 all 11 client codes and
+// their shared password sat right here, which published them to anyone who
+// opened the page -- no repository access required.
+//
+// Sign-in now asks the server (POST /api/client-export with verify:true),
+// which is where the credentials were always actually checked. The old
+// client-side comparison never added security; it only duplicated the secret
+// into the browser.
 
 // Categories mirror portal homepage exactly (excluding PSA tools, ASH Book, Client Export)
 const FORM_CATEGORIES = {
@@ -189,7 +187,7 @@ export default function ClientExport() {
   const [companyCode, setCompanyCode] = useState('');
   const [password, setPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [searchTerms, setSearchTerms] = useState([]);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState('');
 
   const [selectedForms, setSelectedForms] = useState({});
@@ -202,15 +200,36 @@ export default function ClientExport() {
   const [exportResults, setExportResults] = useState(null);
   const [openCategories, setOpenCategories] = useState({});
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    const cred = COMPANY_CREDENTIALS[companyCode.toUpperCase()];
-    if (!cred) { setError('Invalid company code'); return; }
-    if (cred.password !== password) { setError('Invalid password'); return; }
-    setCompanyName(cred.company);
-    setSearchTerms(cred.searchTerms);
-    setIsLoggedIn(true);
+    setVerifying(true);
+    try {
+      const resp = await fetch('/api/client-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: companyCode.trim(),
+          password: password,
+          verify: true
+        })
+      });
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        // One message for a bad code and a bad password alike: telling them
+        // apart would confirm which company codes exist.
+        setError(resp.status === 401 || resp.status === 403
+          ? 'Invalid company code or password'
+          : (payload.error || ('Sign-in failed (HTTP ' + resp.status + ')')));
+        return;
+      }
+      setCompanyName(payload.company || '');
+      setIsLoggedIn(true);
+    } catch (err) {
+      setError('Could not reach the server. Check your connection and try again.');
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const handleLogout = () => {
@@ -218,7 +237,6 @@ export default function ClientExport() {
     setCompanyCode('');
     setPassword('');
     setCompanyName('');
-    setSearchTerms([]);
     setSelectedForms({});
     setExportResults(null);
     setExportStatus('');
@@ -621,10 +639,10 @@ export default function ClientExport() {
           <div style={s.loginCard}>
             <h3 style={{ textAlign: 'center', marginBottom: '20px', color: '#1e3a5f', fontSize: '16px' }}>Client Login</h3>
             <form onSubmit={handleLogin}>
-              <input style={s.input} type="text" placeholder="Company Code (e.g. MAGTEC2026)" value={companyCode} onChange={(e) => setCompanyCode(e.target.value)} />
+              <input style={s.input} type="text" placeholder="Company Code" value={companyCode} onChange={(e) => setCompanyCode(e.target.value)} />
               <input style={s.input} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
               {error && <div style={s.error}>{error}</div>}
-              <button type="submit" style={s.btnPrimary}>Sign In</button>
+              <button type="submit" style={s.btnPrimary} disabled={verifying}>{verifying ? 'Signing in…' : 'Sign In'}</button>
             </form>
             <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '11px', color: '#9ca3af' }}>Contact SLP Alaska for access credentials</p>
           </div>
