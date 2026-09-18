@@ -18,20 +18,19 @@ export default function ELineSafetyAuditForm() {
   const [formData, setFormData] = useState({
     auditor_name: '', audit_date: new Date().toLocaleDateString('en-CA'), job_number: '', company: '', location: '', well_name: '', client_rep: '', unit_id: '', crew_size: '',
     jsa_reviewed: '', work_permit: '', hot_work_permit: '', confined_space_permit: '', emergency_plan: '', client_requirements: '', pre_job_meeting: '',
-    crew_training: '', well_control_cert: '', h2s_training: '', first_aid_cpr: '', ppe_appropriate: '', frc_worn: '',
-    unit_pre_trip: '', drum_cable: '', measuring_device: '', depth_counter: '', weak_point: '', cable_head: '', tools_inspected: '',
-    lubricator_condition: '', lubricator_pressure: '', grease_injection: '', stuffing_box: '', flow_tubes: '', bop_installed: '', bop_tested: '', bop_pressure: '',
-    low_pressure_test: '', low_test_pressure: '', high_pressure_test: '', high_test_pressure: '', test_documented: '',
-    sheave_condition: '', sheave_aligned: '', weight_indicator: '', gin_pole: '', guy_wires: '', floor_anchors: '',
-    unit_grounded: '', bonding_verified: '', electrical_connections: '', cable_insulation: '', control_panel: '',
-    well_status: '', wellhead_condition: '', pressure_readings: '', flow_line: '', kill_line: '',
-    access_egress: '', work_area_barricaded: '', wind_conditions: '', weather_conditions: '', lighting_adequate: '', housekeeping: '',
-    radio_check: '', emergency_contacts: '', muster_point: '', client_communication: '',
-    overall_result: '', job_approved: '', critical_issues: '', issue_description: '', corrective_actions: '', comments: ''
+    first_aid_cpr: '', ppe_appropriate: '',
+    unit_pre_trip: '', tools_inspected: '',
+    lubricator_condition: '', annual_lubricator_inspection: '', bop_installed: '', bop_tested: '',
+    low_test_pressure: '', high_test_pressure: '', test_documented: '',
+    sheave_aligned: '', weight_indicator: '',
+    unit_grounded: '', bonding_verified: '', electrical_connections: '',
+    well_status: '', wellhead_condition: '',
+    access_egress: '', work_area_barricaded: '', wind_weather_conditions: '', lighting_equipment: '', housekeeping: '',
+    radio_check: '', emergency_contacts: '', muster_point_location: '',
+    overall_result: '', comments: ''
   })
 
   const photoRef = useRef();
-  const [showIssues, setShowIssues] = useState(false)
   const [resultDisplay, setResultDisplay] = useState({ text: 'Select audit result above', className: 'result-pending' })
   const [status, setStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -39,7 +38,6 @@ export default function ELineSafetyAuditForm() {
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    if (name === 'critical_issues') setShowIssues(value === 'Yes')
     if (name === 'overall_result') {
       if (value.includes('Pass - All')) setResultDisplay({ text: '✅ AUDIT PASSED - Job Safe to Proceed', className: 'result-pass' })
       else if (value.includes('Pass - Minor')) setResultDisplay({ text: '⚠️ PASSED WITH NOTES - Address minor issues', className: 'result-warning' })
@@ -153,9 +151,8 @@ export default function ELineSafetyAuditForm() {
               <div><label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Location *</label><select name="location" value={formData.location} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }}><option value="">-- Select Location --</option>{LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}</select></div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '18px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '18px' }}>
               <div><label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Well Name/ID *</label><input type="text" name="well_name" value={formData.well_name} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} /></div>
-              <div><label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Client Representative</label><input type="text" name="client_rep" value={formData.client_rep} onChange={handleChange} style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} /></div>
               <div><label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>E-Line Unit ID *</label><input type="text" name="unit_id" value={formData.unit_id} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} /></div>
             </div>
 
@@ -174,53 +171,35 @@ export default function ELineSafetyAuditForm() {
 
             <div style={{ background: '#059669', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>👷 Personnel & Training</div>
             <ChecklistTable items={[
-              { name: 'crew_training', label: 'Crew training certifications current' },
-              { name: 'well_control_cert', label: 'Well control certification current' },
-              { name: 'h2s_training', label: 'H2S training current' },
               { name: 'first_aid_cpr', label: 'First Aid/CPR training current' },
-              { name: 'ppe_appropriate', label: 'PPE appropriate for task' },
-              { name: 'frc_worn', label: 'FRC/Nomex worn by all personnel' }
+              { name: 'ppe_appropriate', label: 'PPE appropriate for task' }
             ]} valueKey="yn" />
 
             <div style={{ background: '#7c3aed', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🚛 E-Line Unit & Equipment</div>
             <ChecklistTable items={[
               { name: 'unit_pre_trip', label: 'Unit pre-trip inspection complete' },
-              { name: 'drum_cable', label: 'Drum and cable condition' },
-              { name: 'measuring_device', label: 'Measuring device calibrated' },
-              { name: 'depth_counter', label: 'Depth counter zeroed' },
-              { name: 'weak_point', label: 'Weak point installed and verified' },
-              { name: 'cable_head', label: 'Cable head inspected' },
               { name: 'tools_inspected', label: 'Tools inspected and ready' }
             ]} valueKey="ok" />
 
             <div style={{ background: '#dc2626', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🔧 Pressure Control Equipment</div>
             <ChecklistTable items={[
               { name: 'lubricator_condition', label: 'Lubricator condition' },
-              { name: 'lubricator_pressure', label: 'Lubricator pressure rating adequate' },
-              { name: 'grease_injection', label: 'Grease injection head condition' },
-              { name: 'stuffing_box', label: 'Stuffing box condition' },
-              { name: 'flow_tubes', label: 'Flow tubes inspected' },
-              { name: 'bop_installed', label: 'BOP installed correctly' },
-              { name: 'bop_tested', label: 'BOP function tested' },
-              { name: 'bop_pressure', label: 'BOP pressure rating adequate' }
+              { name: 'annual_lubricator_inspection', label: 'Annual Lubricator Inspection complete and Color Coded Correctly' },
+              { name: 'bop_installed', label: 'WLV installed correctly' },
+              { name: 'bop_tested', label: 'WLV function tested' }
             ]} valueKey="ok" />
 
             <div style={{ background: '#0891b2', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📊 Pressure Testing</div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '10px', background: '#f3f4f6', borderRadius: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-              <label style={{ margin: 0, minWidth: '150px', fontWeight: 500 }}>Low Pressure Test: *</label>
-              <div style={{ display: 'flex', gap: '15px', flex: 1, flexWrap: 'wrap' }}>
-                {['Pass', 'Fail', 'N/A'].map(v => <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 15px', border: '2px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', background: '#fff' }}><input type="radio" name="low_pressure_test" value={v} checked={formData.low_pressure_test === v} onChange={handleChange} required /><span>{v}</span></label>)}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '18px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Low Pressure Test PSI</label>
+                <input type="number" name="low_test_pressure" value={formData.low_test_pressure} onChange={handleChange} min="0" step="1" inputMode="numeric" placeholder="PSI" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
               </div>
-              <input type="number" name="low_test_pressure" value={formData.low_test_pressure} onChange={handleChange} placeholder="PSI" style={{ width: '120px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', boxSizing: 'border-box' }} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '10px', background: '#f3f4f6', borderRadius: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-              <label style={{ margin: 0, minWidth: '150px', fontWeight: 500 }}>High Pressure Test: *</label>
-              <div style={{ display: 'flex', gap: '15px', flex: 1, flexWrap: 'wrap' }}>
-                {['Pass', 'Fail', 'N/A'].map(v => <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 15px', border: '2px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', background: '#fff' }}><input type="radio" name="high_pressure_test" value={v} checked={formData.high_pressure_test === v} onChange={handleChange} required /><span>{v}</span></label>)}
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>High Pressure Test PSI</label>
+                <input type="number" name="high_test_pressure" value={formData.high_test_pressure} onChange={handleChange} min="0" step="1" inputMode="numeric" placeholder="PSI" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
               </div>
-              <input type="number" name="high_test_pressure" value={formData.high_test_pressure} onChange={handleChange} placeholder="PSI" style={{ width: '120px', padding: '10px', border: '2px solid #d1d5db', borderRadius: '8px', boxSizing: 'border-box' }} />
             </div>
 
             <div style={{ marginBottom: '25px' }}>
@@ -232,101 +211,76 @@ export default function ELineSafetyAuditForm() {
 
             <div style={{ background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🔗 Rigging & Sheaves</div>
             <ChecklistTable items={[
-              { name: 'sheave_condition', label: 'Sheave wheel condition' },
               { name: 'sheave_aligned', label: 'Sheave properly aligned' },
-              { name: 'weight_indicator', label: 'Weight indicator working' },
-              { name: 'gin_pole', label: 'Gin pole/mast secured' },
-              { name: 'guy_wires', label: 'Guy wires properly tensioned' },
-              { name: 'floor_anchors', label: 'Floor anchors secure' }
+              { name: 'weight_indicator', label: 'Weight indicator working' }
             ]} valueKey="ok" />
 
             <div style={{ background: '#f59e0b', color: '#000', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>⚡ Electrical Safety</div>
             <ChecklistTable items={[
               { name: 'unit_grounded', label: 'Unit properly grounded' },
               { name: 'bonding_verified', label: 'Bonding verified' },
-              { name: 'electrical_connections', label: 'Electrical connections secure' },
-              { name: 'cable_insulation', label: 'Cable insulation intact' },
-              { name: 'control_panel', label: 'Control panel condition' }
+              { name: 'electrical_connections', label: 'Electrical connections secure' }
             ]} valueKey="ok" />
 
             <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🛢️ Well Site Safety</div>
             <ChecklistTable items={[
               { name: 'well_status', label: 'Well status verified with client' },
-              { name: 'wellhead_condition', label: 'Wellhead condition acceptable' },
-              { name: 'pressure_readings', label: 'Pressure readings noted' },
-              { name: 'flow_line', label: 'Flow line secured' },
-              { name: 'kill_line', label: 'Kill line available' }
+              { name: 'wellhead_condition', label: 'Wellhead condition acceptable' }
             ]} valueKey="ok" />
 
             <div style={{ background: '#059669', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🌍 Site Conditions</div>
             <ChecklistTable items={[
               { name: 'access_egress', label: 'Access/egress routes clear' },
               { name: 'work_area_barricaded', label: 'Work area barricaded' },
-              { name: 'wind_conditions', label: 'Wind conditions acceptable' },
-              { name: 'weather_conditions', label: 'Weather conditions acceptable' },
-              { name: 'lighting_adequate', label: 'Lighting adequate' },
               { name: 'housekeeping', label: 'Housekeeping acceptable' }
             ]} valueKey="ok" />
+
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Wind and Weather Conditions</label>
+              <textarea name="wind_weather_conditions" value={formData.wind_weather_conditions} onChange={handleChange} placeholder="Wind speed and direction, temperature, visibility, precipitation, and any limits they place on the job..." style={{ width: '100%', minHeight: '90px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
+            </div>
+
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>List lighting equipment on location</label>
+              <input type="text" name="lighting_equipment" value={formData.lighting_equipment} onChange={handleChange} placeholder="e.g. 2 light plants, unit-mounted floods, headlamps" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
+            </div>
 
             <div style={{ background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📻 Communications</div>
             <ChecklistTable items={[
               { name: 'radio_check', label: 'Radio check complete' },
-              { name: 'emergency_contacts', label: 'Emergency contacts posted' },
-              { name: 'muster_point', label: 'Muster point identified' },
-              { name: 'client_communication', label: 'Client communication established' }
+              { name: 'emergency_contacts', label: 'Emergency contacts posted' }
             ]} valueKey="yn" />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '25px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Muster Point Location</label>
+                <input type="text" name="muster_point_location" value={formData.muster_point_location} onChange={handleChange} placeholder="Where the crew musters" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Client Rep Name</label>
+                <input type="text" name="client_rep" value={formData.client_rep} onChange={handleChange} placeholder="Client representative on location" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} />
+              </div>
+            </div>
 
             <div style={{ background: '#dc2626', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>✅ Audit Result</div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '18px' }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Overall Audit Result *</label>
-                <select name="overall_result" value={formData.overall_result} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }}>
-                  <option value="">-- Select --</option>
-                  <option value="Pass - All Items OK">✅ Pass - All Items OK</option>
-                  <option value="Pass - Minor Issues">⚠️ Pass - Minor Issues Noted</option>
-                  <option value="Fail - Critical Issues">❌ Fail - Critical Issues Found</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Job Approved to Proceed? *</label>
-                <select name="job_approved" value={formData.job_approved} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }}>
-                  <option value="">-- Select --</option>
-                  <option value="Yes">Yes - Approved</option>
-                  <option value="No">No - Not Approved</option>
-                  <option value="Conditional">Conditional - With Corrective Actions</option>
-                </select>
-              </div>
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Overall Audit Result *</label>
+              <select name="overall_result" value={formData.overall_result} onChange={handleChange} required style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }}>
+                <option value="">-- Select --</option>
+                <option value="Pass - All Items OK">✅ Pass - All Items OK</option>
+                <option value="Pass - Minor Issues">⚠️ Pass - Minor Issues Noted</option>
+                <option value="Fail - Critical Issues">❌ Fail - Critical Issues Found</option>
+              </select>
             </div>
 
             <div style={{ padding: '20px', borderRadius: '10px', textAlign: 'center', margin: '20px 0', fontWeight: 600, fontSize: '18px', background: resultDisplay.className === 'result-pass' ? '#d1fae5' : resultDisplay.className === 'result-warning' ? '#fef3c7' : resultDisplay.className === 'result-fail' ? '#fee2e2' : '#f3f4f6', border: resultDisplay.className === 'result-pass' ? '2px solid #059669' : resultDisplay.className === 'result-warning' ? '2px solid #f59e0b' : resultDisplay.className === 'result-fail' ? '2px solid #dc2626' : '2px solid #d1d5db', color: resultDisplay.className === 'result-pass' ? '#065f46' : resultDisplay.className === 'result-warning' ? '#92400e' : resultDisplay.className === 'result-fail' ? '#991b1b' : '#6b7280' }}>
               {resultDisplay.text}
             </div>
 
-            <div style={{ marginBottom: '18px' }}>
-              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 500 }}>Critical Issues Found? *</label>
-              <div style={{ display: 'flex', gap: '15px' }}>
-                {['Yes', 'No'].map(v => <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 15px', border: '2px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}><input type="radio" name="critical_issues" value={v} checked={formData.critical_issues === v} onChange={handleChange} required /><span>{v}</span></label>)}
-              </div>
-            </div>
-
-            {showIssues && (
-              <div style={{ background: '#fef2f2', border: '2px solid #dc2626', borderRadius: '8px', padding: '20px', marginTop: '15px' }}>
-                <h3 style={{ color: '#dc2626', marginBottom: '15px' }}>⚠️ CRITICAL ISSUES - ACTION REQUIRED</h3>
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500 }}>Issue Description *</label>
-                  <textarea name="issue_description" value={formData.issue_description} onChange={handleChange} required={showIssues} placeholder="Describe all critical issues found..." style={{ width: '100%', minHeight: '80px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500 }}>Corrective Actions Required *</label>
-                  <textarea name="corrective_actions" value={formData.corrective_actions} onChange={handleChange} required={showIssues} placeholder="Describe corrective actions taken or required..." style={{ width: '100%', minHeight: '80px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
-                </div>
-              </div>
-            )}
-
             <div style={{ marginBottom: '25px' }}>
               <label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Additional Comments</label>
-              <textarea name="comments" value={formData.comments} onChange={handleChange} placeholder="Any additional observations or notes..." style={{ width: '100%', minHeight: '80px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
+              <textarea name="comments" value={formData.comments} onChange={handleChange} placeholder="Any critical issues found, corrective actions taken or required, and any other observations..." style={{ width: '100%', minHeight: '220px', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
 
             {/* Photo Documentation */}
