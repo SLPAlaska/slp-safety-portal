@@ -33,6 +33,24 @@ nothing sensitive is stored in `cron.job`, which is readable by any role that
 can query it. The setup functions are `security definer` and granted to
 `service_role` only.
 
+### Known gaps
+
+Open security items. Each is a decision waiting on a person, not a bug to fix
+blind — read the note before changing the surrounding code.
+
+- **Investigation workbench access is domain-gated, not role-gated.**
+  `/investigation-workbench/[id]` authenticates with a real Supabase session
+  (`signInWithPassword`, added 2026-09-18) and then authorises on an
+  `@slpalaska.com` email suffix. A suffix is not a role: real LMS learners hold
+  `@slpalaska.com` addresses too, so any learner with a portal account can sign
+  in and read incident and investigation records. This is exactly the trap
+  `app/lib/superAdmins.js` exists to warn about, one layer down.
+  `/api/spellcheck` inherits it — it verifies that the caller is *a* signed-in
+  portal user, not that they are an investigator.
+  Fix needs an explicit investigator allowlist or a role check on `lms_users`,
+  applied in both the page gate and the route. Decide who counts as an
+  investigator first. Recorded 2026-09-18.
+
 ## Conventions worth knowing
 
 **Paginate every bulk Supabase read.** PostgREST caps a response at 1000 rows

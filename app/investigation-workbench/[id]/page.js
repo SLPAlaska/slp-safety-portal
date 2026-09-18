@@ -74,6 +74,8 @@ export default function InvestigationWorkbench() {
 
   const [authed, setAuthed] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -94,26 +96,70 @@ export default function InvestigationWorkbench() {
   const [lastSavedAt, setLastSavedAt] = useState(null);
 
   // -------- Auth --------
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('slp_inv_email') : '';
-    if (saved && saved.endsWith('@slpalaska.com')) {
-      setUserEmail(saved);
+  // A real Supabase session, not a remembered email. This page's API routes
+  // verify the session token server-side, so an email sitting in localStorage
+  // is not something they can trust — and it never was: the old gate let anyone
+  // who typed any @slpalaska.com address straight in.
+  function applySession(session) {
+    const email = session?.user?.email?.toLowerCase() || '';
+    if (session && email.endsWith('@slpalaska.com')) {
+      setUserEmail(email);
       setAuthed(true);
-    } else {
-      setLoading(false);
+      return true;
     }
+    setUserEmail('');
+    setAuthed(false);
+    return false;
+  }
+
+  useEffect(() => {
+    let active = true;
+    // Retire the old passwordless marker so it cannot be mistaken for access.
+    if (typeof window !== 'undefined') localStorage.removeItem('slp_inv_email');
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      if (!applySession(session)) setLoading(false);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      if (!applySession(session)) setLoading(false);
+    });
+
+    return () => { active = false; sub?.subscription?.unsubscribe(); };
   }, []);
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
+    setLoginError('');
     const email = e.target.email.value.trim().toLowerCase();
+    const password = e.target.password.value;
+
     if (!email.endsWith('@slpalaska.com')) {
-      alert('Access restricted to @slpalaska.com accounts.');
+      setLoginError('Access is restricted to @slpalaska.com accounts.');
       return;
     }
-    localStorage.setItem('slp_inv_email', email);
-    setUserEmail(email);
-    setAuthed(true);
+
+    setLoginBusy(true);
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    setLoginBusy(false);
+
+    if (signInError) {
+      setLoginError(signInError.message || 'Sign in failed.');
+      return;
+    }
+    // Check the address the server confirmed, not the one that was typed.
+    if (!applySession(data?.session)) {
+      await supabase.auth.signOut();
+      setLoginError('Access is restricted to @slpalaska.com accounts.');
+    }
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    setAuthed(false);
+    setUserEmail('');
   }
 
   // -------- Data load --------
@@ -216,7 +262,7 @@ export default function InvestigationWorkbench() {
   // ==========================================================
   // Render
   // ==========================================================
-  if (!authed) return <LoginGate onSubmit={handleLogin} />;
+  if (!authed) return <LoginGate onSubmit={handleLogin} busy={loginBusy} error={loginError} />;
   if (loading) return <FullScreenMessage text="Loading investigation..." />;
   if (error)   return <FullScreenMessage text={error} tone="danger" />;
   if (!incident) return <FullScreenMessage text="Investigation not found." tone="danger" />;
@@ -230,6 +276,8 @@ export default function InvestigationWorkbench() {
         pdfGenerating={pdfGenerating}
         onPDF={handleGeneratePDF}
         onBack={() => router.push('/investigation-dashboard')}
+        userEmail={userEmail}
+        onSignOut={handleSignOut}
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 24, maxWidth: 1400, margin: '0 auto', padding: 24 }}>
@@ -327,7 +375,7 @@ export default function InvestigationWorkbench() {
 // =====================================================================
 // Top bar
 // =====================================================================
-function TopBar({ incident, saving, lastSavedAt, pdfGenerating, onPDF, onBack }) {
+function TopBar({ incident, saving, lastSavedAt, pdfGenerating, onPDF, onBack, userEmail, onSignOut }) {
   return (
     <div style={{ background: `linear-gradient(135deg, ${C.navy}, ${C.steel})`, color: 'white', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -344,6 +392,12 @@ function TopBar({ incident, saving, lastSavedAt, pdfGenerating, onPDF, onBack })
         <button onClick={onPDF} disabled={pdfGenerating} style={{ ...btnPrimary, opacity: pdfGenerating ? 0.6 : 1 }}>
           {pdfGenerating ? 'Generating PDF...' : 'Download PDF'}
         </button>
+        {userEmail && (
+          <span style={{ fontSize: 12, opacity: 0.85, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {userEmail}
+            <button onClick={onSignOut} style={btnGhost}>Sign out</button>
+          </span>
+        )}
       </div>
     </div>
   );
@@ -895,9 +949,17 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
     let payload = null;
     let failure = null;
     try {
+      // The route verifies this token server-side before it will spend the
+      // platform's Anthropic key. If it is missing or stale the route answers
+      // 401, which lands in the fail-open path below — a broken session warns
+      // the reviewer, it does not trap a finished investigation.
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/spellcheck', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
         body: JSON.stringify({ items: items.map(({ key, text }) => ({ key, text })) }),
       });
       payload = await res.json().catch(() => null);
@@ -1760,15 +1822,28 @@ function FullScreenMessage({ text, tone }) {
   );
 }
 
-function LoginGate({ onSubmit }) {
+function LoginGate({ onSubmit, busy, error }) {
   return (
     <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <form onSubmit={onSubmit} style={{ background: C.card, padding: 28, borderRadius: 12, border: `1px solid ${C.borderL}`, width: 360 }}>
         <h2 style={{ margin: '0 0 6px 0', color: C.navy }}>Investigation Workbench</h2>
         <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>Restricted to @slpalaska.com accounts.</div>
         <Label>Email</Label>
-        <input name="email" type="email" required style={inputStyle} placeholder="you@slpalaska.com" />
-        <button type="submit" style={{ ...btnPrimaryDark, marginTop: 14, width: '100%' }}>Continue</button>
+        <input name="email" type="email" required autoComplete="username" style={inputStyle} placeholder="you@slpalaska.com" />
+        <Label>Password</Label>
+        <input name="password" type="password" required autoComplete="current-password" style={inputStyle} />
+        {error && (
+          <div style={{
+            marginTop: 12, padding: '8px 10px', borderRadius: 6,
+            background: '#fef2f2', border: '1px solid #fecaca',
+            fontSize: 12, color: '#7f1d1d',
+          }}>
+            {error}
+          </div>
+        )}
+        <button type="submit" disabled={busy} style={{ ...btnPrimaryDark, marginTop: 14, width: '100%', opacity: busy ? 0.6 : 1 }}>
+          {busy ? 'Signing in…' : 'Sign In'}
+        </button>
       </form>
     </div>
   );

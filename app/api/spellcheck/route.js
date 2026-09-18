@@ -13,6 +13,8 @@
 // Uses ANTHROPIC_API_KEY (server-side env var on the portal Vercel project).
 // =====================================================================
 
+import { createClient } from '@supabase/supabase-js';
+
 export const maxDuration = 60;
 
 // claude-sonnet-4-20250514 was RETIRED on 2026-06-15. Every call to it has come
@@ -55,7 +57,81 @@ STRICT RULES:
 Respond with ONLY a JSON array, no markdown fences, no commentary:
 [{"key": "<same key>", "corrected": "<corrected text>"}]`;
 
-function fail(error, unchecked = [], warnings = []) {
+// Alerts land in the same table SafeSubmit already writes to, so a silent
+// spellcheck failure surfaces wherever those are reviewed. Column shape is
+// copied from app/components/SafeSubmit.js — keep the two in step.
+const ALERT_ADMIN_EMAIL = 'brian@slpalaska.com';
+const ALERT_INSERT_TIMEOUT_MS = 2_000;
+
+// Built lazily: a service-role client at module load breaks `next build`'s
+// page-data collection.
+let _admin = null;
+function adminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  if (!_admin) {
+    _admin = createClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
+  return _admin;
+}
+
+/**
+ * Witness for silent failures.
+ *
+ * A 5xx here means the spelling review did not run, and because the approval
+ * gate fails open nobody downstream is forced to notice. This leaves a row
+ * behind so the failure can be found later instead of only showing up as
+ * reports that quietly stopped being proofread.
+ *
+ * It must never change the outcome of the request: every error is swallowed and
+ * the insert is time-bounded so a slow database cannot eat the response.
+ */
+async function recordFailure(error, context = {}) {
+  try {
+    const supabase = adminClient();
+    if (!supabase) return;
+
+    const details = [
+      `code=${error.code}`,
+      `status=${error.status || 503}`,
+      context.uncheckedCount != null ? `unchecked_fields=${context.uncheckedCount}` : null,
+      context.warnings?.length ? `warnings=${context.warnings.join(' | ')}` : null,
+      `message=${error.message}`,
+    ]
+      .filter(Boolean)
+      .join('; ');
+
+    await Promise.race([
+      supabase.from('system_alerts').insert([
+        {
+          alert_type: 'spellcheck_failure',
+          form_type: 'investigation_spellcheck',
+          target_table: null,
+          error_message: error.message,
+          details,
+          admin_email: ALERT_ADMIN_EMAIL,
+          status: 'new',
+          created_at: new Date().toISOString(),
+        },
+      ]),
+      new Promise(resolve => setTimeout(resolve, ALERT_INSERT_TIMEOUT_MS)),
+    ]);
+  } catch {
+    // Deliberately swallowed. The witness must never break the response.
+  }
+}
+
+async function fail(error, unchecked = [], warnings = []) {
+  const status = error.status || 503;
+
+  // Anything 5xx means the review did not run. Leave a trace before answering.
+  if (status >= 500) {
+    await recordFailure(error, { uncheckedCount: unchecked.length, warnings });
+  }
+
   return Response.json(
     {
       error: { code: error.code, message: error.message },
@@ -64,7 +140,7 @@ function fail(error, unchecked = [], warnings = []) {
       degraded: true,
       warnings: warnings.length ? warnings : [error.message],
     },
-    { status: error.status || 503 }
+    { status }
   );
 }
 
@@ -300,6 +376,37 @@ export async function POST(request) {
   const deadlineAt = Date.now() + OVERALL_BUDGET_MS;
 
   try {
+    // This route spends the platform's Anthropic key, so the caller has to be a
+    // signed-in portal user. Verified server-side with the service-role client,
+    // the same way app/api/lms/learner/* verifies its callers. Fails closed.
+    const authHeader = request.headers.get('authorization') || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    if (!token) {
+      return fail({
+        code: 'unauthorized',
+        status: 401,
+        message: 'Sign in to run the spelling review.',
+      });
+    }
+
+    const supabase = adminClient();
+    if (!supabase) {
+      return fail({
+        code: 'not_configured',
+        status: 503,
+        message: 'Supabase is not configured on this deployment, so the request could not be authenticated.',
+      });
+    }
+
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !authData?.user) {
+      return fail({
+        code: 'unauthorized',
+        status: 401,
+        message: 'Your session has expired. Sign in again to run the spelling review.',
+      });
+    }
+
     let body;
     try {
       body = await request.json();
@@ -371,10 +478,27 @@ export async function POST(request) {
       );
     }
 
+    const degraded = unchecked.length > 0;
+
+    // A degraded 200 is the other silent failure, and the likelier one: the
+    // reviewer gets a warning they can click straight past, and nothing else
+    // records that part of the report went unproofed. Same guards as the 5xx
+    // path — swallowed, time-bounded, never changes the response.
+    if (degraded) {
+      await recordFailure(
+        {
+          code: 'partial',
+          status: 200,
+          message: `${unchecked.length} of ${items.length} fields were not reviewed.`,
+        },
+        { uncheckedCount: unchecked.length, warnings: uniqueWarnings }
+      );
+    }
+
     return Response.json({
       results,
       unchecked,
-      degraded: unchecked.length > 0,
+      degraded,
       warnings: uniqueWarnings,
     });
   } catch (err) {
