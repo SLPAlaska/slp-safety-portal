@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { createHash, timingSafeEqual } from 'crypto';
 
 // Server-side only. Uses the service-role key, which bypasses RLS.
 // The service-role key is NEVER exposed to the browser - it lives only in this
@@ -15,6 +16,93 @@ function getSupabaseAdmin() {
     );
   }
   return _supabaseAdmin;
+}
+
+/**
+ * Constant-time secret comparison.
+ *
+ * Both sides are hashed first so the buffers are always 32 bytes:
+ * timingSafeEqual throws on a length mismatch, and letting it throw would
+ * itself leak the length of the expected secret.
+ */
+function secretMatches(presented, expected) {
+  if (typeof presented !== 'string' || typeof expected !== 'string') return false;
+  const a = createHash('sha256').update(presented).digest();
+  const b = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+/**
+ * Decide whose data this request may read.
+ *
+ * THE RULE: the tenant comes from the SECRET, never from the code string in
+ * the request body. Before 2026-09-18 the code selected the tenant and the
+ * secret was only checked against that same entry, so with one password shared
+ * by all 11 clients, editing MAGTEC2026 to POLLARD2026 read another tenant.
+ *
+ * Returns { tenant, enforced } or { error: { status, message } }.
+ *
+ * `enforced: false` marks the pre-cutover path and is NOT a safe state - see
+ * the shared-secret branch below.
+ */
+function resolveCredential(entries, presentedCode, presentedSecret) {
+  // Compare against every entry with no early exit, so the time taken does not
+  // reveal how far down the list a match sat.
+  const matches = [];
+  for (const e of entries) {
+    if (secretMatches(presentedSecret, e.secret)) matches.push(e);
+  }
+  if (matches.length === 0) {
+    return { error: { status: 401, message: 'Invalid credentials.' } };
+  }
+
+  const tenants = new Set(matches.map(m => m.tenant));
+
+  if (tenants.size === 1) {
+    // The secret belongs to exactly one tenant, so it identifies the caller.
+    // That tenant is the answer regardless of what the body asked for.
+    const tenant = matches[0].tenant;
+    if (presentedCode && !matches.some(m => m.code === presentedCode)) {
+      // Authenticated, but as somebody else. This is the case the whole change
+      // exists for: AKE-Line's secret presented with MagTec's code.
+      console.warn(
+        '[client-export] credential for tenant=%s presented with code=%s - refused.',
+        tenant, presentedCode);
+      return { error: { status: 403, message: 'That credential is not valid for the requested company.' } };
+    }
+    return { tenant, enforced: true };
+  }
+
+  // The secret maps to more than one tenant, so it cannot say who is calling.
+  //
+  // Two tenants sharing a secret by accident is a configuration error and is
+  // refused. The ONE case allowed through is the pre-2026-09-18 password,
+  // which every client holds and which is explicitly marked shared:true in
+  // CLIENT_EXPORT_CREDENTIALS. For it the code string still picks the tenant,
+  // exactly as before - meaning any holder can still read any tenant.
+  //
+  // That hole closes when each client has a distinct secret and the shared
+  // entries are removed from the env var. No code change is needed for the
+  // cutover: drop the shared:true rows and this branch stops being reachable.
+  if (!matches.every(m => m.shared)) {
+    console.error(
+      '[client-export] one secret maps to several tenants (%s) without shared:true - refusing.',
+      [...tenants].join(', '));
+    return { error: { status: 403, message: 'That credential is not valid for the requested company.' } };
+  }
+  if (!presentedCode) {
+    return { error: { status: 401, message: 'Invalid credentials.' } };
+  }
+  const entry = matches.find(m => m.code === presentedCode);
+  if (!entry) {
+    return { error: { status: 401, message: 'Invalid credentials.' } };
+  }
+  console.warn(
+    '[client-export] SHARED credential used for tenant=%s (code=%s). This secret ' +
+    'is held by %d tenants and cannot identify the caller: any holder can read ' +
+    'any of them. Rotate to per-client secrets to close this.',
+    entry.tenant, entry.code, tenants.size);
+  return { tenant: entry.tenant, enforced: false };
 }
 
 // ── Tenant catalogue (NOT secret) ────────────────────────────────────
@@ -261,15 +349,13 @@ export async function POST(request) {
     const body = await request.json();
     const { code, password, tables, start, end } = body || {};
 
-    // --- Auth: verify the credential code + secret server-side ---
+    // --- Auth: the SECRET decides whose data comes back, not the code ---
     const presentedCode = typeof code === 'string' ? code.trim().toUpperCase() : '';
-    const entry = presentedCode
-      ? entries.find(e => e.code === presentedCode && e.secret === password)
-      : null;
-    if (!entry) {
-      return Response.json({ error: 'Invalid credentials.' }, { status: 401 });
+    const resolved = resolveCredential(entries, presentedCode, password);
+    if (resolved.error) {
+      return Response.json({ error: resolved.error.message }, { status: resolved.error.status });
     }
-    const cred = TENANTS[entry.tenant];
+    const cred = TENANTS[resolved.tenant];
 
     if (!Array.isArray(tables) || tables.length === 0) {
       return Response.json({ error: 'No tables requested.' }, { status: 400 });
