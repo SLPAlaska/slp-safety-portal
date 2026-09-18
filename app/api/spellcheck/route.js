@@ -45,9 +45,10 @@ const CONCURRENCY = 3;
 const MAX_ITEMS = 60;
 const MAX_ITEM_CHARS = 6_000;
 
-const SYSTEM_PROMPT = `You are a copy editor for industrial safety investigation reports on the Alaska North Slope. You will receive a JSON array of report fields. For each field, correct ONLY spelling, grammar, and punctuation.
+const SYSTEM_PROMPT = `You are a copy editor for industrial safety investigation reports on the Alaska North Slope. You will receive a JSON array of report fields, each shaped {"key": "...", "original": "..."}. For each field, correct ONLY spelling, grammar, and punctuation in its "original" text.
 
 STRICT RULES:
+- Name the output field "corrected". Do NOT reuse "original" or "text" as the output field name.
 - Never change facts, meaning, times, dates, numbers, names of people, companies, equipment, or locations.
 - Never add or remove information. Never rewrite for style. Fix errors only.
 - Keep line breaks exactly as they appear in the original.
@@ -186,6 +187,27 @@ function classifyUpstream(status, detail) {
   };
 }
 
+/**
+ * Pull one {key, corrected} pair out of whatever the model returned.
+ *
+ * The prompt asks for `corrected`, but models reliably drift toward mirroring
+ * the input field name instead — a live call returned every edit under `text`,
+ * which silently emptied the results and turned a perfectly good review into a
+ * 503. `text` is therefore accepted as well. It is unambiguous: the input field
+ * is named `original`, so a returned `text` cannot be an echo of the input.
+ *
+ * Returns null for anything that is not a usable pair, which the caller counts
+ * as unchecked rather than clean.
+ */
+function readCorrection(r) {
+  if (!r || typeof r.key !== 'string') return null;
+  const corrected =
+    typeof r.corrected === 'string' ? r.corrected :
+    typeof r.text === 'string' ? r.text :
+    null;
+  return corrected === null ? null : { key: r.key, corrected };
+}
+
 function batchItems(items, charBudget) {
   const batches = [];
   let current = [];
@@ -218,7 +240,13 @@ async function reviewBatch(batch, apiKey, deadlineAt) {
     // effort is what saves tokens, not switching thinking off.
     output_config: { effort: 'low' },
     system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: JSON.stringify(batch) }],
+    // Sent as `original`, not `text`. The model tends to mirror the input field
+    // name in its reply; with the input called `original`, a returned `text`
+    // field can only be the edited version and never an echo of the input.
+    messages: [{
+      role: 'user',
+      content: JSON.stringify(batch.map(it => ({ key: it.key, original: it.text }))),
+    }],
   });
 
   let lastError = null;
@@ -341,12 +369,7 @@ async function reviewBatch(batch, apiKey, deadlineAt) {
       continue;
     }
 
-    return {
-      ok: true,
-      results: parsed
-        .filter(r => r && typeof r.key === 'string' && typeof r.corrected === 'string')
-        .map(r => ({ key: r.key, corrected: r.corrected })),
-    };
+    return { ok: true, results: parsed.map(readCorrection).filter(Boolean) };
   }
 
   return {
