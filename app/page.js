@@ -1,7 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@supabase/supabase-js'
+import { isDaAdmin } from '@/lib/daAdmins'
+
+// Shared, lock-free auth client. Portal pages each build their own Supabase
+// client and brawl over the browser auth lock; this one reuses AdminGate's
+// singleton rather than joining the fight.
+const supabaseAuth = (typeof globalThis !== 'undefined' && globalThis.__slpAuthClient)
+  || (globalThis.__slpAuthClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://iypezirwdlqpptjpeeyf.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { auth: { lock: async (_n, _t, fn) => await fn() } }))
 
 const FORM_CATEGORIES = [
   {
@@ -253,6 +264,16 @@ const FORM_CATEGORIES = [
 export default function SafetyPortal() {
   const [searchQuery, setSearchQuery] = useState('')
   const [openFolders, setOpenFolders] = useState({})
+
+  // Whether to SHOW the D&A console link. Hiding it is courtesy, not security:
+  // /api/da re-checks the same list server-side on every call, so someone who
+  // types the URL is refused rather than shown a broken page.
+  const [daAdmin, setDaAdmin] = useState(false)
+  useEffect(() => {
+    supabaseAuth.auth.getSession()
+      .then(({ data: { session } }) => setDaAdmin(isDaAdmin(session?.user?.email)))
+      .catch(() => setDaAdmin(false))
+  }, [])
 
   const totalForms = FORM_CATEGORIES.reduce((sum, category) => sum + category.forms.length, 0)
 
@@ -524,6 +545,15 @@ export default function SafetyPortal() {
       `}</style>
 
       <div className="container">
+        {daAdmin && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+            <Link href="/da-testing" style={{
+              display: 'inline-block', padding: '10px 18px', borderRadius: '8px',
+              background: '#1e3a8a', color: '#fff', textDecoration: 'none',
+              fontSize: '14px', fontWeight: 600,
+            }}>Drug &amp; Alcohol Testing</Link>
+          </div>
+        )}
         <div className="header">
           <img src="/Logo.png" alt="SLP Alaska Logo" className="logo" />
           <h1>SLP Safety Portal</h1>
