@@ -261,6 +261,25 @@ const FORM_CATEGORIES = [
   }
 ]
 
+// Its own tile rather than an entry inside Predictive Safety Analytics.
+//
+// Two reasons. It is a separate service line - SLP Alaska acts as a C/TPA in
+// the FMCSA Clearinghouse, which is not analytics - and it is restricted to
+// three people, so folding it into PSA would make that tile's form count
+// change depending on who is looking, which reads as a bug rather than as a
+// permission.
+const PSA_INDEX = FORM_CATEGORIES.findIndex(c => c.isPSA)
+
+const DA_CATEGORY = {
+  id: 'da-testing',
+  title: 'Drug & Alcohol Testing',
+  icon: '\u2695\uFE0F',
+  isDA: true,
+  forms: [
+    { name: 'D&A Console \u2014 Clearinghouse, Random Testing, MIS', href: '/da-testing', isLocal: true },
+  ],
+}
+
 export default function SafetyPortal() {
   const [searchQuery, setSearchQuery] = useState('')
   const [openFolders, setOpenFolders] = useState({})
@@ -275,9 +294,18 @@ export default function SafetyPortal() {
       .catch(() => setDaAdmin(false))
   }, [])
 
-  const totalForms = FORM_CATEGORIES.reduce((sum, category) => sum + category.forms.length, 0)
+  // In the grid for the three C/TPA administrators, absent for everyone else.
+  // Absence is presentation, not protection: /api/da re-checks the same list
+  // server-side, so someone who knows the URL is refused there rather than
+  // shown a page that half works.
+  const categories = daAdmin
+    ? [...FORM_CATEGORIES.slice(0, PSA_INDEX + 1), DA_CATEGORY,
+       ...FORM_CATEGORIES.slice(PSA_INDEX + 1)]
+    : FORM_CATEGORIES
 
-  const filteredCategories = FORM_CATEGORIES.map(category => {
+  const totalForms = categories.reduce((sum, category) => sum + category.forms.length, 0)
+
+  const filteredCategories = categories.map(category => {
     const matchingForms = category.forms.filter(form => 
       form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       category.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -444,6 +472,14 @@ export default function SafetyPortal() {
           background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%) !important;
         }
         
+        .da-header {
+          background: linear-gradient(135deg, #0f766e 0%, #115e59 100%) !important;
+        }
+
+        .da-header:hover {
+          background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
+        }
+
         .folder-icon {
           font-size: 20px;
           margin-right: 10px;
@@ -545,15 +581,6 @@ export default function SafetyPortal() {
       `}</style>
 
       <div className="container">
-        {daAdmin && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-            <Link href="/da-testing" style={{
-              display: 'inline-block', padding: '10px 18px', borderRadius: '8px',
-              background: '#1e3a8a', color: '#fff', textDecoration: 'none',
-              fontSize: '14px', fontWeight: 600,
-            }}>Drug &amp; Alcohol Testing</Link>
-          </div>
-        )}
         <div className="header">
           <img src="/Logo.png" alt="SLP Alaska Logo" className="logo" />
           <h1>SLP Safety Portal</h1>
@@ -584,7 +611,7 @@ export default function SafetyPortal() {
           {filteredCategories.map(category => (
             <div key={category.id} className={`folder ${openFolders[category.id] ? 'open' : ''}`}>
               <div 
-                className={`folder-header ${category.isTraining ? 'training-header' : ''} ${category.isPSA ? 'psa-header' : ''}`}
+                className={`folder-header ${category.isTraining ? 'training-header' : ''} ${category.isPSA ? 'psa-header' : ''} ${category.isDA ? 'da-header' : ''}`}
                 onClick={() => toggleFolder(category.id)}
               >
                 <div className="folder-title">
