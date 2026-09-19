@@ -23,6 +23,7 @@ const supabaseAuth = (typeof globalThis !== 'undefined' && globalThis.__slpAuthC
 
 const TABS = [
   ['clearinghouse', 'Clearinghouse'],
+  ['bulk', 'Bulk Queries'],
   ['random', 'Random Testing'],
   ['selections', 'Current Selections'],
   ['mis', 'MIS Report'],
@@ -80,6 +81,7 @@ export default function DAConsole() {
         </div>
         {err && tab !== 'clearinghouse' && <div style={S.err}>{err}</div>}
         {tab === 'clearinghouse' && <Clearinghouse me={me} busy={busy} setBusy={setBusy} />}
+        {tab === 'bulk' && <BulkQueries me={me} busy={busy} setBusy={setBusy} />}
         {tab === 'random' && <RandomTesting me={me} busy={busy} setBusy={setBusy} />}
         {tab === 'selections' && <Selections me={me} busy={busy} setBusy={setBusy} />}
         {tab === 'mis' && <MisReport me={me} />}
@@ -231,7 +233,282 @@ function printSheet(clientName, rows) {
   if (w) { w.document.write('<pre>' + lines.replace(/</g, '&lt;') + '</pre>'); w.document.close(); w.print(); }
 }
 
-// ── 2. Random testing ───────────────────────────────────────────────────────
+// ── 2. Bulk queries ────────────────────────────────────────────────
+//
+// There is no Clearinghouse API. FMCSA states that no integration
+// specification exists and that employers and C/TPAs must use the site
+// directly, so this is an export/import loop: build the file here, upload it
+// there, paste the Query History export back.
+function BulkQueries({ me, busy, setBusy }) {
+  const [client, setClient] = useState(me.clients[0]?.id || '');
+  const [data, setData] = useState(null);
+  const [picked, setPicked] = useState({});
+  const [qType, setQType] = useState(1);
+  const [err, setErr] = useState('');
+  const [msg, setMsg] = useState(null);
+  const [paste, setPaste] = useState('');
+  const [ingestBatch, setIngestBatch] = useState('');
+  const [ingestResult, setIngestResult] = useState(null);
+
+  const load = useCallback(async () => {
+    if (!client) return;
+    setErr('');
+    const r = await authFetch(`/api/da?view=bulk_ready&client_id=${client}`);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { setErr(j.error || 'Load failed'); return; }
+    setData(j); setPicked({});
+  }, [client]);
+  useEffect(() => { load(); }, [load]);
+
+  if (!client) return <Card><p style={S.muted}>No clients available.</p></Card>;
+  if (err) return <Card><div style={S.err}>{err}</div></Card>;
+  if (!data) return <Card><p style={S.muted}>Loading…</p></Card>;
+
+  const eligible = data.drivers.filter(d => !d.blocked);
+  const blocked = data.drivers.filter(d => d.blocked);
+  const chosen = Object.keys(picked).filter(k => picked[k]);
+  const bal = data.client?.query_balance;
+
+  return (
+    <>
+      <Card>
+        <div style={S.rowBetween}>
+          <h3 style={S.h3}>Query balance &amp; file</h3>
+          <select style={S.select} value={client} onChange={e => setClient(e.target.value)}>
+            {me.clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div style={S.grid}>
+          <Stat label="Due or overdue" value={data.drivers.length} />
+          <Stat label="Ready for a file" value={eligible.length} tone={eligible.length ? 'good' : 'warn'} />
+          <Stat label="Missing DOB or CDL" value={blocked.length} tone={blocked.length ? 'bad' : 'good'} />
+          <Stat label="Query balance"
+            value={bal == null ? '—' : bal}
+            tone={bal != null && bal < eligible.length ? 'bad' : undefined} />
+        </div>
+        <p style={S.muted}>
+          A C/TPA may not purchase a query plan on an employer&apos;s behalf, so the
+          balance below is what the client told us they hold. It is never
+          decremented automatically and is only as good as its date
+          {data.client?.query_balance_as_of ? ` (as of ${data.client.query_balance_as_of})` : ''}.
+        </p>
+        <div style={S.formRow3}>
+          <input style={S.input} type="number" min="0" placeholder="Balance the client reports"
+            id="balfield" />
+          <button style={S.btn} disabled={busy} onClick={async () => {
+            const v = document.getElementById('balfield').value;
+            if (v === '') return;
+            setBusy(true);
+            await authFetch('/api/da', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'set_query_balance', client_id: client, query_balance: Number(v) }) });
+            setBusy(false); load();
+          }}>Update balance</button>
+        </div>
+      </Card>
+
+      {blocked.length > 0 && <Card>
+        <h3 style={S.h3}>Cannot go in a file yet &middot; {blocked.length}</h3>
+        <p style={S.muted}>
+          The FMCSA bulk template requires LastName, FirstName, DOB, CDL and
+          Country. A driver missing a date of birth or a CDL cannot be included
+          at all — add them on the Clearinghouse tab first.
+        </p>
+        <table style={S.table}>
+          <thead><tr>{['Driver', 'DOB', 'CDL'].map(h => <th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>{blocked.map(d => (
+            <tr key={d.driver_id} style={S.tr}>
+              <td style={S.td}>{d.full_name}</td>
+              <td style={S.td}>{d.dob_on_file ? 'on file' : <b style={S.bad}>missing</b>}</td>
+              <td style={S.td}>{d.cdl_on_file ? 'on file' : <b style={S.bad}>missing</b>}</td>
+            </tr>))}</tbody>
+        </table>
+      </Card>}
+
+      <Card>
+        <div style={S.rowBetween}>
+          <h3 style={S.h3}>Build a bulk file &middot; {chosen.length} selected</h3>
+          <div style={S.btnRow}>
+            <select style={S.select} value={qType} onChange={e => setQType(Number(e.target.value))}>
+              <option value={1}>Type 1 — Limited query</option>
+              <option value={4}>Type 4 — Limited + automatic consent request</option>
+              <option value={2}>Type 2 — Full query</option>
+              <option value={3}>Type 3 — Pre-employment</option>
+            </select>
+            <button style={S.link} onClick={() =>
+              setPicked(Object.fromEntries(eligible.map(d => [d.driver_id, true])))}>select all</button>
+            <button style={S.link} onClick={() => setPicked({})}>clear</button>
+          </div>
+        </div>
+        <p style={S.fine}>
+          Type 1 is the default because it is the minimum that satisfies the annual
+          requirement and behaves predictably. Type 4 is understood to raise a consent
+          request automatically when a limited query finds a record, which would save a
+          step — but FMCSA&apos;s own Bulk Queries File Setup page could not be retrieved
+          to confirm that, so check it against their template ReadMe before using it in
+          anger. Types 2 and 3 need specific consent granted electronically inside the
+          Clearinghouse first; we cannot supply it from here.
+        </p>
+        <table style={S.table}>
+          <thead><tr>{['', 'Driver', 'Status', 'Limited consent'].map(h =>
+            <th key={h} style={S.th}>{h}</th>)}</tr></thead>
+          <tbody>
+            {eligible.map(d => (
+              <tr key={d.driver_id} style={S.tr}>
+                <td style={S.td}>
+                  <input type="checkbox" checked={!!picked[d.driver_id]}
+                    onChange={e => setPicked(p => ({ ...p, [d.driver_id]: e.target.checked }))} />
+                </td>
+                <td style={S.td}>{d.full_name}</td>
+                <td style={S.td}>{d.due_status === 'query_pending'
+                  ? <span style={S.warn}>result not recorded</span>
+                  : d.due_status === 'due_soon'
+                    ? <span style={S.warn}>due in {d.days_until_due}d</span>
+                    : d.due_status === 'never_queried'
+                      ? <span style={S.bad}>never queried</span>
+                      : <span style={S.bad}>{Math.abs(d.days_until_due)}d overdue</span>}</td>
+                <td style={S.td}>{d.limited_consent
+                  ? <span style={S.good}>on file</span>
+                  : <span style={S.warn}>none recorded</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={S.btnRow}>
+          <button style={S.btn} disabled={busy || !chosen.length} onClick={async () => {
+            setBusy(true); setMsg(null);
+            const r = await authFetch('/api/da', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'create_bulk_batch', client_id: client,
+                                     query_type: qType, driver_ids: chosen }),
+            });
+            const j = await r.json().catch(() => ({}));
+            setBusy(false);
+            if (!r.ok) { setErr(j.error || 'Could not build the batch'); return; }
+            setMsg(j); load();
+          }}>{busy ? 'Building…' : `Queue ${chosen.length} for upload`}</button>
+        </div>
+        {msg && <div style={S.ok}>
+          Batch created with {msg.queued} driver(s).
+          {msg.already_queued?.length ? ` ${msg.already_queued.length} were already in an open batch and were skipped.` : ''}
+          {(msg.warnings || []).map((w, i) => <div key={i} style={S.warnBox}>{w}</div>)}
+        </div>}
+      </Card>
+
+      <Card>
+        <h3 style={S.h3}>Batches</h3>
+        {!data.batches.length && <p style={S.muted}>No batches yet.</p>}
+        {data.batches.map(b => (
+          <div key={b.id} style={S.batch}>
+            <div style={S.rowBetween}>
+              <div>
+                <b>{b.filename}</b>
+                <div style={S.fine}>
+                  type {b.query_type} &middot; {b.driver_count} driver(s) &middot; {b.status}
+                  &middot; built {String(b.created_at).slice(0, 10)} by {b.created_by}
+                </div>
+              </div>
+              <div style={S.btnRow}>
+                <button style={S.link} onClick={async () => {
+                  const r = await authFetch(`/api/da?view=bulk_file&batch_id=${b.id}`);
+                  const j = await r.json().catch(() => ({}));
+                  if (!r.ok) { setErr(j.error || 'Could not build the file'); return; }
+                  const blob = new Blob([j.content], { type: 'text/tab-separated-values' });
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob); a.download = j.filename; a.click();
+                  URL.revokeObjectURL(a.href);
+                  if (j.skipped?.length) setErr(`${j.skipped.length} driver(s) left out: missing CDL or DOB.`);
+                }}>download file</button>
+                {b.status === 'generated' && <button style={S.link} disabled={busy} onClick={async () => {
+                  setBusy(true);
+                  await authFetch('/api/da', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'set_batch_status', batch_id: b.id, status: 'submitted' }) });
+                  setBusy(false); load();
+                }}>mark uploaded</button>}
+                <button style={S.link} onClick={() => setIngestBatch(b.id)}>ingest results</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      <Card>
+        <h3 style={S.h3}>Ingest the Query History export</h3>
+        <p style={S.muted}>
+          Paste the exported rows, or a tab / comma separated block with a header
+          row. Matching is by driver name and CDL last four, or by the
+          Clearinghouse query id where the export carries one. Importing the
+          same export twice changes nothing the second time, and a result that
+          disagrees with what is already stored is reported rather than
+          overwritten.
+        </p>
+        <select style={S.select} value={ingestBatch} onChange={e => setIngestBatch(e.target.value)}>
+          <option value="">Match against all pending queries</option>
+          {data.batches.map(b => <option key={b.id} value={b.id}>{b.filename}</option>)}
+        </select>
+        <textarea style={S.textarea} rows={7} value={paste} placeholder={
+          'driver_name\tcdl\tresult\n' +
+          'Jack Morris\t7291986\tDriver Not Prohibited\n' +
+          'Luke Perl\t7062296\tNo Record Found'}
+          onChange={e => setPaste(e.target.value)} />
+        <button style={S.btn} disabled={busy || !paste.trim()} onClick={async () => {
+          const rows = parsePaste(paste);
+          if (!rows.length) { setErr('Could not read any rows from that.'); return; }
+          setBusy(true); setIngestResult(null);
+          const r = await authFetch('/api/da', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'ingest_query_history', rows,
+                                   batch_id: ingestBatch || undefined }),
+          });
+          const j = await r.json().catch(() => ({}));
+          setBusy(false);
+          if (!r.ok) { setErr(j.error || 'Ingest failed'); return; }
+          setIngestResult(j); load();
+        }}>{busy ? 'Importing…' : 'Import results'}</button>
+
+        {ingestResult && <div style={S.ok}>
+          <b>{ingestResult.applied}</b> resolved, <b>{ingestResult.skipped}</b> already recorded,
+          {' '}<b>{ingestResult.conflicts.length}</b> conflict(s),
+          {' '}<b>{ingestResult.unmatched.length}</b> unmatched.
+          {ingestResult.conflicts.length > 0 && <div style={S.warnBox}>
+            Conflicts — stored result differs from the export, left unchanged:
+            <ul>{ingestResult.conflicts.map((c, i) =>
+              <li key={i}>{c.name}: stored {c.stored}, export says {c.incoming}</li>)}</ul>
+          </div>}
+          {ingestResult.unmatched.length > 0 && <div style={S.warnBox}>
+            Unmatched — no pending query found, or the result value was not
+            recognised:
+            <ul>{ingestResult.unmatched.slice(0, 12).map((u, i) =>
+              <li key={i}>{u.name || '(no name)'} — {u.result || ''} {u.why ? `(${u.why})` : ''}</li>)}</ul>
+          </div>}
+        </div>}
+      </Card>
+    </>
+  );
+}
+
+/** Read a pasted tab or comma separated block with a header row. */
+function parsePaste(text) {
+  const lines = String(text).trim().split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const head = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_'));
+  const KEY = {
+    driver_name: 'driver_name', name: 'driver_name', driver: 'driver_name',
+    last_name: 'last_name', first_name: 'first_name',
+    cdl: 'cdl', cdl_number: 'cdl', license_number: 'cdl',
+    result: 'result', query_result: 'result', status: 'result',
+    query_id: 'external_query_id', external_query_id: 'external_query_id',
+    summary: 'summary', query_result_summary: 'summary',
+  };
+  return lines.slice(1).map(l => {
+    const cells = l.split(sep);
+    const o = {};
+    head.forEach((h, i) => { const k = KEY[h]; if (k) o[k] = (cells[i] || '').trim(); });
+    return o;
+  }).filter(o => (o.driver_name || o.last_name) && o.result);
+}
+
+// ── 3. Random testing ──────────────────────────────────────────────────────
 function RandomTesting({ me, busy, setBusy }) {
   const [pools, setPools] = useState(null);
   const [err, setErr] = useState('');
@@ -557,4 +834,15 @@ const S = {
   err: { background: '#fee2e2', color: '#991b1b', padding: '12px', fontSize: '13px', borderRadius: '6px' },
   code: { background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' },
   foot: { textAlign: 'center', padding: '20px', fontSize: '11px', color: '#64748b' },
+  ok: { background: '#dcfce7', color: '#166534', padding: '12px', fontSize: '13px',
+        borderRadius: '6px', marginTop: '12px' },
+  warnBox: { background: '#fef3c7', color: '#92400e', padding: '10px', fontSize: '12px',
+             borderRadius: '6px', marginTop: '8px' },
+  textarea: { width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px',
+              fontSize: '12px', fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
+              boxSizing: 'border-box', margin: '10px 0' },
+  input: { padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px',
+           fontSize: '14px', boxSizing: 'border-box' },
+  formRow3: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' },
+  batch: { borderTop: '1px solid #f1f5f9', padding: '10px 0' },
 };

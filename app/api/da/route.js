@@ -166,6 +166,100 @@ export async function GET(request) {
     return NextResponse.json({ driver_id: driverId, full_name: drv.full_name, cdl_number: cdl })
   }
 
+  // What a bulk file would contain, and whether each driver is actually
+  // ready to be in one. A driver missing a DOB cannot go in the file at all;
+  // one missing limited-query consent can be queried but should not be.
+  if (view === 'bulk_ready') {
+    const clientId = wanted
+    if (!clientId) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+    if (allow(s, clientId) === false) {
+      return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+    }
+    const { data: due } = await pageAll(() => db().from('da_clearinghouse_annual_due')
+      .select('driver_id, full_name, due_status, last_query_date, next_due_date, days_until_due, pending_since')
+      .eq('client_id', clientId))
+    const actionable = (due || []).filter(d =>
+      ['never_queried', 'overdue', 'due_soon', 'query_pending'].includes(d.due_status))
+
+    const ids = actionable.map(d => d.driver_id)
+    const { data: drivers } = ids.length
+      ? await db().from('da_drivers').select('id, full_name, dob_year, cdl_last4, cdl_state').in('id', ids)
+      : { data: [] }
+    const byId = Object.fromEntries((drivers || []).map(d => [d.id, d]))
+
+    const consents = {}
+    for (const id of ids) {
+      const { data: ok } = await db().rpc('da_has_limited_consent', { p_driver: id })
+      consents[id] = ok === true
+    }
+    const { data: client } = await db().from('da_clients')
+      .select('id, name, query_balance, query_balance_as_of, query_balance_note')
+      .eq('id', clientId).maybeSingle()
+    const { data: batches } = await pageAll(() => db().from('da_bulk_batches')
+      .select('*').eq('client_id', clientId).order('created_at', { ascending: false }))
+
+    return NextResponse.json({
+      client,
+      batches: batches || [],
+      drivers: actionable.map(d => ({
+        ...d,
+        dob_on_file: !!byId[d.driver_id]?.dob_year,
+        cdl_on_file: !!byId[d.driver_id]?.cdl_last4,
+        limited_consent: consents[d.driver_id] === true,
+        blocked: !byId[d.driver_id]?.dob_year || !byId[d.driver_id]?.cdl_last4,
+      })),
+    })
+  }
+
+  // The generated file itself. Built here rather than in the browser because
+  // it carries full CDL numbers and dates of birth, which are decrypted
+  // server-side and never sent to a list view.
+  if (view === 'bulk_file') {
+    const batchId = url.searchParams.get('batch_id')
+    if (!batchId) return NextResponse.json({ error: 'batch_id is required' }, { status: 400 })
+    const { data: batch } = await db().from('da_bulk_batches')
+      .select('*, da_clients(name)').eq('id', batchId).maybeSingle()
+    if (!batch) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (allow(s, batch.client_id) === false) {
+      return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+    }
+    const { data: rows } = await pageAll(() => db().from('da_clearinghouse_queries')
+      .select('id, driver_id, da_drivers(full_name, cdl_state)').eq('bulk_batch_id', batchId))
+
+    // FMCSA template columns, in order.
+    const out = [['LastName', 'FirstName', 'DOB', 'CDL', 'Country', 'QueryType'].join('\t')]
+    const skipped = []
+    for (const r of rows || []) {
+      const { data: cdl } = await db().rpc('da_reveal_cdl', { p_driver: r.driver_id })
+      const { data: dob } = await db().rpc('da_reveal_dob', { p_driver: r.driver_id })
+      const name = String(r.da_drivers?.full_name || '').trim()
+      if (!cdl || !dob) { skipped.push({ name, missing: !cdl ? 'CDL' : 'DOB' }); continue }
+      // "Last, First" and "First Last" both appear in the imported data.
+      let first = '', last = ''
+      if (name.includes(',')) { const [a, b] = name.split(','); last = a.trim(); first = (b || '').trim() }
+      else { const parts = name.split(/\s+/); last = parts.pop() || ''; first = parts.join(' ') }
+      const d = new Date(dob)
+      const mdy = `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${String(d.getUTCDate()).padStart(2, '0')}/${d.getUTCFullYear()}`
+      out.push([last, first, mdy, cdl, 'US', batch.query_type].join('\t'))
+    }
+    console.warn('[da] bulk file built for batch=%s by %s (%d rows)', batchId, s.user.email, out.length - 1)
+    return NextResponse.json({
+      batch, filename: batch.filename, content: out.join('\n'),
+      row_count: out.length - 1, skipped,
+    })
+  }
+
+  if (view === 'consents') {
+    const driver = url.searchParams.get('driver_id')
+    let q = db().from('da_query_consents').select('*, da_drivers(full_name)')
+      .order('signed_date', { ascending: false })
+    if (driver) q = q.eq('driver_id', driver)
+    if (scoped) q = Array.isArray(scoped) ? q.in('client_id', scoped) : q.eq('client_id', scoped)
+    const { data, error } = await pageAll(() => q)
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ consents: data || [] })
+  }
+
   if (view === 'sap') {
     let q = db().from('da_sap_programs').select('*, da_drivers(full_name)').is('closed_at', null)
     if (scoped) q = Array.isArray(scoped) ? q.in('client_id', scoped) : q.eq('client_id', scoped)
@@ -380,6 +474,267 @@ export async function POST(request) {
         return NextResponse.json({ error: error.message }, { status: 400 })
       }
       return NextResponse.json({ query: data })
+    }
+
+    // ── Identification data ─────────────────────────────────────────────────
+    case 'set_driver_ids': {
+      // DOB and CDL together, because a driver is only usable in a bulk file
+      // when both are present.
+      const { driver_id, cdl_number, dob } = body
+      if (!driver_id) return NextResponse.json({ error: 'driver_id is required' }, { status: 400 })
+      const { data: drv } = await db().from('da_drivers')
+        .select('id, client_id').eq('id', driver_id).maybeSingle()
+      if (!drv || (!s.isStaff && !s.clientIds.includes(drv.client_id))) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      const done = {}
+      if (cdl_number) {
+        const { error } = await db().rpc('da_store_cdl', { p_driver: driver_id, p_cdl: cdl_number })
+        if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+        done.cdl = true
+      }
+      if (dob) {
+        const { error } = await db().rpc('da_store_dob', { p_driver: driver_id, p_dob: dob })
+        if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+        done.dob = true
+      }
+      return NextResponse.json({ stored: done })
+    }
+
+    // ── Limited-query general consent ───────────────────────────────────────
+    case 'record_consent': {
+      const c = body.consent || {}
+      if (!c.driver_id || !c.signed_date || !String(c.scope || '').trim()) {
+        return NextResponse.json(
+          { error: 'driver_id, signed_date and scope are required' }, { status: 400 })
+      }
+      const { data: drv } = await db().from('da_drivers')
+        .select('id, client_id').eq('id', c.driver_id).maybeSingle()
+      if (!drv || (!s.isStaff && !s.clientIds.includes(drv.client_id))) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      const { data, error } = await db().from('da_query_consents').insert([{
+        driver_id: c.driver_id, client_id: drv.client_id,
+        signed_date: c.signed_date, expires_date: c.expires_date || null,
+        scope: String(c.scope).trim(), method: c.method || null,
+        document_ref: c.document_ref || null, obtained_by: actor, notes: c.notes || null,
+      }]).select().single()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ consent: data })
+    }
+
+    // ── Query balance ───────────────────────────────────────────────────────
+    case 'set_query_balance': {
+      if (!body.client_id) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+      if (allow(s, body.client_id) === false) {
+        return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+      }
+      const bal = Number(body.query_balance)
+      if (!Number.isFinite(bal) || bal < 0) {
+        return NextResponse.json({ error: 'query_balance must be zero or more' }, { status: 400 })
+      }
+      const { data, error } = await db().from('da_clients').update({
+        query_balance: Math.floor(bal),
+        query_balance_as_of: body.as_of || new Date().toISOString().slice(0, 10),
+        query_balance_note: body.note || null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', body.client_id).select().single()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ client: data })
+    }
+
+    // ── Bulk: generate ──────────────────────────────────────────────────────
+    case 'create_bulk_batch': {
+      const clientId = body.client_id
+      if (!clientId) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+      if (allow(s, clientId) === false) {
+        return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+      }
+      const qType = Number(body.query_type || 1)
+      if (![1, 2, 3, 4].includes(qType)) {
+        return NextResponse.json({ error: 'query_type must be 1, 2, 3 or 4' }, { status: 400 })
+      }
+      const ids = Array.isArray(body.driver_ids) ? [...new Set(body.driver_ids)] : []
+      if (!ids.length) return NextResponse.json({ error: 'No drivers selected' }, { status: 400 })
+
+      // A driver with no DOB or no CDL cannot appear in the file, so keeping
+      // them would produce a batch whose row count lies.
+      const { data: drivers } = await db().from('da_drivers')
+        .select('id, client_id, full_name, dob_year, cdl_last4').in('id', ids)
+      const usable = (drivers || []).filter(d =>
+        d.client_id === clientId && d.dob_year && d.cdl_last4)
+      const blocked = (drivers || []).filter(d => !d.dob_year || !d.cdl_last4)
+        .map(d => ({ id: d.id, full_name: d.full_name, missing: !d.dob_year ? 'DOB' : 'CDL' }))
+      if (!usable.length) {
+        return NextResponse.json(
+          { error: 'None of the selected drivers has both a DOB and a CDL on file', blocked },
+          { status: 400 })
+      }
+
+      // Drivers already sitting in an open batch are skipped rather than
+      // queued twice; that is what makes re-generating safe.
+      const { data: open } = await pageAll(() => db().from('da_clearinghouse_queries')
+        .select('driver_id, bulk_batch_id, da_bulk_batches!inner(status)')
+        .eq('result', 'pending').not('bulk_batch_id', 'is', null)
+        .in('driver_id', usable.map(d => d.id)))
+      const alreadyQueued = new Set((open || [])
+        .filter(r => r.da_bulk_batches?.status !== 'ingested' && r.da_bulk_batches?.status !== 'cancelled')
+        .map(r => r.driver_id))
+      const finalIds = usable.map(d => d.id).filter(id => !alreadyQueued.has(id))
+      if (!finalIds.length) {
+        return NextResponse.json(
+          { error: 'Every selected driver is already in an open batch', blocked,
+            already_queued: [...alreadyQueued] }, { status: 409 })
+      }
+
+      const { data: client } = await db().from('da_clients')
+        .select('name, query_balance').eq('id', clientId).maybeSingle()
+      const stamp = new Date().toISOString().slice(0, 10)
+      const { data: batch, error: bErr } = await db().from('da_bulk_batches').insert([{
+        client_id: clientId, query_type: qType, created_by: actor,
+        driver_count: finalIds.length,
+        filename: `${String(client?.name || 'client').replace(/[^A-Za-z0-9]+/g, '_')}_clearinghouse_${stamp}.txt`,
+        notes: body.notes || null,
+      }]).select().single()
+      if (bErr) return NextResponse.json({ error: bErr.message }, { status: 400 })
+
+      const rows = finalIds.map(id => ({
+        driver_id: id, client_id: clientId, query_date: stamp,
+        query_type: qType === 1 || qType === 4 ? 'limited' : 'full',
+        consent_on_file: false, result: 'pending',
+        bulk_batch_id: batch.id,
+        notes: `Queued in bulk batch ${batch.id.slice(0, 8)} (FMCSA query type ${qType})`,
+      }))
+      const { error: qErr } = await db().from('da_clearinghouse_queries').insert(rows)
+      if (qErr) {
+        await db().from('da_bulk_batches').delete().eq('id', batch.id)
+        return NextResponse.json({ error: qErr.message }, { status: 400 })
+      }
+
+      const warnings = []
+      if (client?.query_balance != null && client.query_balance < finalIds.length) {
+        warnings.push(`This client's last reported query balance is ${client.query_balance}, ` +
+          `below the ${finalIds.length} queries in this file. A C/TPA cannot buy queries on ` +
+          `their behalf, so confirm their balance before uploading.`)
+      }
+      return NextResponse.json({ batch, queued: finalIds.length, blocked,
+        already_queued: [...alreadyQueued], warnings })
+    }
+
+    case 'set_batch_status': {
+      const { batch_id, status } = body
+      if (!batch_id || !['submitted', 'cancelled'].includes(status)) {
+        return NextResponse.json({ error: 'batch_id and a valid status are required' }, { status: 400 })
+      }
+      const { data: b } = await db().from('da_bulk_batches')
+        .select('id, client_id').eq('id', batch_id).maybeSingle()
+      if (!b || allow(s, b.client_id) === false) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      const patch = { status }
+      if (status === 'submitted') patch.submitted_at = new Date().toISOString()
+      const { data, error } = await db().from('da_bulk_batches')
+        .update(patch).eq('id', batch_id).select().single()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ batch: data })
+    }
+
+    // ── Bulk: ingest the Query History export ───────────────────────────────
+    //
+    // Idempotent by construction. Every row is matched to an existing query
+    // row, never inserted, so importing the same export twice changes nothing
+    // the second time. A row whose stored result already differs from the
+    // export is reported as a conflict rather than silently overwritten: a
+    // compliance record that changes without anyone noticing is worse than one
+    // that refuses to.
+    case 'ingest_query_history': {
+      const rowsIn = Array.isArray(body.rows) ? body.rows : []
+      if (!rowsIn.length) return NextResponse.json({ error: 'No rows supplied' }, { status: 400 })
+      const batchId = body.batch_id || null
+
+      let candidates
+      if (batchId) {
+        const { data: b } = await db().from('da_bulk_batches')
+          .select('id, client_id').eq('id', batchId).maybeSingle()
+        if (!b || allow(s, b.client_id) === false) {
+          return NextResponse.json({ error: 'Batch not found' }, { status: 404 })
+        }
+        const { data } = await pageAll(() => db().from('da_clearinghouse_queries')
+          .select('id, driver_id, result, query_type, external_query_id, da_drivers(full_name, cdl_last4, dob_year)')
+          .eq('bulk_batch_id', batchId))
+        candidates = data || []
+      } else {
+        let q = db().from('da_clearinghouse_queries')
+          .select('id, driver_id, result, query_type, external_query_id, da_drivers(full_name, cdl_last4, dob_year)')
+          .eq('result', 'pending')
+        if (scoped) q = Array.isArray(scoped) ? q.in('client_id', scoped) : q.eq('client_id', scoped)
+        const { data } = await pageAll(() => q)
+        candidates = data || []
+      }
+
+      const norm = (v) => String(v || '').toLowerCase().replace(/[^a-z]/g, '')
+      const RESULT = {
+        'no record found': 'clear', 'clear': 'clear', 'not prohibited': 'clear',
+        'driver not prohibited': 'clear', 'record found': 'record_exists',
+        'record exists': 'record_exists', 'prohibited': 'prohibited',
+      }
+
+      const applied = [], skipped = [], conflicts = [], unmatched = []
+      for (const r of rowsIn) {
+        const name = r.driver_name || r.name || [r.first_name, r.last_name].filter(Boolean).join(' ')
+        const last4 = String(r.cdl || r.cdl_number || '').replace(/[^A-Za-z0-9]/g, '').slice(-4)
+        const raw = String(r.result || r.query_result || '').trim()
+        const mapped = RESULT[raw.toLowerCase()] ||
+          (/prohibit/i.test(raw) ? 'prohibited' : /record/i.test(raw) ? 'record_exists' : null)
+
+        // Match on the external id first where the export supplies one; it is
+        // the only truly unambiguous key.
+        let hit = r.external_query_id
+          ? candidates.find(c => c.external_query_id === r.external_query_id)
+          : null
+        if (!hit) hit = candidates.find(c => norm(c.da_drivers?.full_name) === norm(name)
+          && (!last4 || !c.da_drivers?.cdl_last4 || c.da_drivers.cdl_last4 === last4))
+        if (!hit) { unmatched.push({ name, result: raw }); continue }
+        if (!mapped) { unmatched.push({ name, result: raw, why: 'unrecognised result value' }); continue }
+
+        if (hit.result !== 'pending') {
+          if (hit.result === mapped) skipped.push({ name, result: mapped, why: 'already recorded' })
+          else conflicts.push({ name, stored: hit.result, incoming: mapped })
+          continue
+        }
+
+        const patch = {
+          result: mapped,
+          query_result_summary: r.summary || r.query_result_summary || raw || null,
+          resolved_at: new Date().toISOString(),
+          resolved_by: actor,
+          needs_review: false,
+          updated_at: new Date().toISOString(),
+        }
+        if (r.external_query_id) patch.external_query_id = r.external_query_id
+        if (r.consent_on_file !== undefined) patch.consent_on_file = !!r.consent_on_file
+        if (mapped !== 'clear') patch.violation_reported = true
+
+        const { error } = await db().from('da_clearinghouse_queries')
+          .update(patch).eq('id', hit.id).eq('result', 'pending')
+        if (error) { conflicts.push({ name, stored: hit.result, incoming: mapped, error: error.message }); continue }
+        hit.result = mapped
+        applied.push({ name, result: mapped })
+      }
+
+      if (batchId && applied.length) {
+        const { data: left } = await db().from('da_clearinghouse_queries')
+          .select('id').eq('bulk_batch_id', batchId).eq('result', 'pending')
+        if (!left || !left.length) {
+          await db().from('da_bulk_batches')
+            .update({ status: 'ingested', ingested_at: new Date().toISOString() })
+            .eq('id', batchId)
+        }
+      }
+      return NextResponse.json({
+        applied: applied.length, skipped: skipped.length,
+        conflicts, unmatched, detail: { applied, skipped },
+      })
     }
 
     // ── Random testing ──────────────────────────────────────────────────────
