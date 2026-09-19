@@ -1,4 +1,5 @@
 'use client';
+import { COMPANY_FILTER_OPTIONS as COMPANIES } from '@/lib/companies'
 import { useState, useEffect } from 'react';
 import { authFetch } from '@/lib/authFetch';
 
@@ -9,8 +10,6 @@ import { authFetch } from '@/lib/authFetch';
 // which is a convenience and not a boundary. Every read and write now goes
 // through /api/sail, where the company scope is derived from the caller's own
 // session and cannot be set by the request.
-
-const COMPANIES = ['All', 'A-C Electric', 'Ace Energy Services', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services', 'CCI-Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction', 'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West', 'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream', 'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders', 'Narwhal Exploration', 'Nordic-Calista', 'Parker TRS', 'Peninsula Paving', 'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other'];
 
 const STATUSES = ['All', 'Open', 'In Progress', 'Delayed', 'Pending Verification', 'Closed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];

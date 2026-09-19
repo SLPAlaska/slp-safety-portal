@@ -1,4 +1,5 @@
 'use client'
+import { COMPANIES } from '@/lib/companies'
 
 import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
@@ -9,8 +10,6 @@ const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4'
 )
-
-const COMPANIES = ['A-C Electric','Ace Energy Services', 'AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services','CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction','ConocoPhillips','Five Star Oilfield Services','Fox Energy Services','G.A. West','GBR Equipment','GLM Energy Services','Graham Industrial Coatings','Harvest Midstream','Hilcorp Alaska','MagTec Alaska','Merkes Builders','Narwhal Exploration','Nordic-Calista','Parker TRS','Peninsula Paving','Pollard Wireline','Ridgeline Oilfield Services','Santos','Summit Excavation','Tesoro Refinery','Yellowjacket','Other']
 
 const LOCATIONS = ['Kenai','CIO','Beaver Creek','Swanson River','Ninilchik','Nikiski','Other Kenai Asset','Deadhorse','Prudhoe Bay','Kuparuk','Alpine','Willow','ENI','PIKKA','Point Thompson','North Star Island','Endicott','Badami', 'West Harrison Bay', 'Other North Slope']
 
@@ -743,7 +742,6 @@ export default function WeldingGrindingAudit() {
 
             {/* PHOTO SECTION */}
             <MultiPhotoUpload ref={photoRef} formType="welding-grinding-audit" />
-
 
             <button
               type="submit"

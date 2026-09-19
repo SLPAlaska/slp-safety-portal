@@ -1,18 +1,9 @@
 'use client'
+import { COMPANIES } from '@/lib/companies'
 
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { safeInsert } from '@/components/SafeSubmit';
-
-const COMPANIES = [
-  'A-C Electric', 'Ace Energy Services', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services',
-  'CCI-Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction',
-  'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West',
-  'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream',
-  'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders','Narwhal Exploration', 'Nordic-Calista', 'Parker TRS',
-  'Peninsula Paving', 'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos',
-  'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other'
-]
 
 const LOCATIONS = [
   'Kenai', 'CIO', 'Beaver Creek', 'Swanson River', 'Ninilchik', 'Nikiski', 'Other Kenai Asset',

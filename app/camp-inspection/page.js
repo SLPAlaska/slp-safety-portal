@@ -1,5 +1,5 @@
 'use client';
-
+import { COMPANIES } from '@/lib/companies'
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
@@ -19,12 +19,6 @@ const supabase = createClient(
 
 // NOTE: Sync this list with your other Field Forms (e.g. app/safety-meetings/page.js)
 // if you've added/edited companies elsewhere. Apache Corp. is present per Trent's note.
-const COMPANIES = [
-  'A-C Electric','Ace Energy Services', 'AKE-Line','Apache Corp.','Armstrong Oil & Gas','ASRC Energy Services',
-  'CCI-Industrial','Chosen Construction','CINGSA','Coho Enterprises','Conam Construction',
-  'ConocoPhillips','Fox Energy Services','GBR','Harvest Midstream','MagTec Alaska',
-  'Pollard Wireline','Ridgeline','SLP Alaska','Other'
-];
 
 const LOCATIONS = [
   // Sync with your standard portal LOCATIONS array if needed
