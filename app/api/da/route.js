@@ -10,14 +10,21 @@
 // check below is not a convenience: it is the access control.
 //
 // Two kinds of caller:
-//   SLP staff  — superAdmins.js or portal_staff. Every client. Must name a
-//                client_id explicitly for client-scoped actions, so acting
-//                across tenants is always deliberate.
-//   DER        — named per client in da_client_ders. Their own client only.
+//   D&A administrator — SLP Alaska's C/TPA staff, an exact-match list of three
+//                       in app/lib/daAdmins.js. Every client, but must name a
+//                       client_id explicitly for client-scoped actions so that
+//                       acting across tenants is always deliberate.
+//   DER               — named per client in da_client_ders. Own client only.
+//
+// Deliberately NOT portal_staff. That table holds nine people and opens every
+// gated management page to all of them; six have no business in drug and
+// alcohol records, and two of those six are company admins at MagTec, so
+// portal_staff would hand a client's own staff another client's testing data.
+// Being a platform super admin does not grant this either.
 //
 // A general company_admin is NOT a caller here. Pending selections, instant
-// test results, Clearinghouse records and CDL numbers are SLP staff and DER
-// only, and a portal role grants none of them.
+// test results, Clearinghouse records and CDL numbers are D&A administrators
+// and the client's own DER only.
 //
 // CDL numbers never appear in a list response. They are fetched one at a time
 // through view=cdl, which is logged by its own nature: one request, one driver.
@@ -25,7 +32,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { pageAll } from '@/lib/supabasePage'
-import { isSuperAdmin } from '@/lib/superAdmins'
+import { isDaAdmin } from '@/lib/daAdmins'
 import {
   runSelection, periodLabel, ratesFor, drawCount, RNG_METHOD_NOTE, PERIODS_PER_YEAR,
 } from '@/lib/daSelection'
@@ -56,11 +63,9 @@ async function scope(request) {
   const user = data?.user
   if (error || !user) return deny(401, 'Session invalid — please sign in again')
 
-  if (isSuperAdmin(user.email)) return { ok: true, user, isStaff: true, clientIds: null }
-
-  const { data: staff } = await db().from('portal_staff')
-    .select('email').eq('email', (user.email || '').toLowerCase()).maybeSingle()
-  if (staff) return { ok: true, user, isStaff: true, clientIds: null }
+  // The SLP side: exact email match, nothing else. No portal_staff lookup, no
+  // domain test, no super-admin shortcut.
+  if (isDaAdmin(user.email)) return { ok: true, user, isStaff: true, clientIds: null }
 
   const { data: ders } = await db().from('da_client_ders')
     .select('client_id').eq('auth_user_id', user.id).eq('active', true)
@@ -68,8 +73,9 @@ async function scope(request) {
     return { ok: true, user, isStaff: false, clientIds: ders.map(d => d.client_id) }
   }
 
-  // Deliberately the same message a learner or a company_admin gets: this
-  // module simply is not theirs.
+  // The same message for a learner, a company_admin and a portal_staff member
+  // who is not a D&A administrator. Telling them apart would say which kind of
+  // account they hold, and none of them is getting in either way.
   return deny(403, 'This account is not authorized for drug and alcohol testing records.')
 }
 
@@ -327,6 +333,103 @@ export async function GET(request) {
       filename: client.name.replace(/[^A-Za-z0-9]+/g, '_') + '_roster_confirmation_' + today + '.csv',
       cover, csv, rows,
     })
+  }
+
+  // What changing frequency mid-year does to the annual position.
+  //
+  // The annual minimum is a RATE against the pool, not a count of periods, so
+  // switching monthly to quarterly does not reduce what is owed - it reduces
+  // how many chances are left to deliver it. This exists so that trade is
+  // visible before it is saved rather than discovered in December.
+  if (view === 'frequency_preview') {
+    const clientId = wanted
+    const to = url.searchParams.get('to')
+    if (!clientId) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+    if (!PERIODS_PER_YEAR[to]) {
+      return NextResponse.json({ error: "to must be 'monthly' or 'quarterly'" }, { status: 400 })
+    }
+    if (allow(s, clientId) === false) {
+      return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+    }
+
+    const { data: pools } = await pageAll(() => db().from('da_pools')
+      .select('*').eq('client_id', clientId).eq('active', true))
+    if (!pools || !pools.length) {
+      return NextResponse.json({ error: 'This client has no pool of its own' }, { status: 400 })
+    }
+
+    const year = String(new Date().getUTCFullYear())
+    const out = []
+    for (const pool of pools) {
+      const { data: members } = await pageAll(() => db().from('da_pool_members')
+        .select('id').eq('pool_id', pool.id).eq('active', true))
+      const size = (members || []).length
+      const rates = ratesFor(pool)
+
+      const { data: pulls } = await pageAll(() => db().from('da_pulls')
+        .select('id, period_label, drug_select_count, alcohol_select_count, pool_size_at_pull')
+        .eq('pool_id', pool.id).like('period_label', `${year}%`))
+      const done = pulls || []
+
+      // Completed tests, not selected ones. A selection that was never tested
+      // does not count towards the minimum and must not flatter the number.
+      const pullIds = done.map(p => p.id)
+      let completedDrug = 0, completedAlcohol = 0
+      if (pullIds.length) {
+        const { data: sels } = await pageAll(() => db().from('da_selections')
+          .select('test_type, status').in('pull_id', pullIds).eq('status', 'completed'))
+        for (const x of sels || []) {
+          if (x.test_type === 'drug' || x.test_type === 'both') completedDrug++
+          if (x.test_type === 'alcohol' || x.test_type === 'both') completedAlcohol++
+        }
+      }
+
+      // Periods elapsed and remaining, under each frequency.
+      const month = new Date().getUTCMonth() + 1
+      const elapsed = (f) => f === 'monthly' ? month : Math.floor((month - 1) / 3) + 1
+      const ranLabels = new Set(done.map(p => p.period_label))
+      const remaining = (f) => Math.max(0, PERIODS_PER_YEAR[f] - elapsed(f))
+
+      const project = (f) => {
+        const perPull = {
+          drug: drawCount(size, rates.drug, f),
+          alcohol: drawCount(size, rates.alcohol, f),
+        }
+        const left = remaining(f)
+        return {
+          frequency: f,
+          periods_per_year: PERIODS_PER_YEAR[f],
+          per_pull: perPull,
+          periods_remaining: left,
+          projected_drug: completedDrug + perPull.drug * left,
+          projected_alcohol: completedAlcohol + perPull.alcohol * left,
+        }
+      }
+
+      const requiredDrug = Math.ceil(size * Number(rates.drug) / 100)
+      const requiredAlcohol = Math.ceil(size * Number(rates.alcohol) / 100)
+      const now = project(pool.frequency)
+      const next = project(to)
+
+      out.push({
+        pool_id: pool.id, pool_kind: pool.pool_kind, pool_size: size,
+        rates, pulls_run_this_year: done.length,
+        periods_already_run: [...ranLabels].sort(),
+        completed: { drug: completedDrug, alcohol: completedAlcohol },
+        required: { drug: requiredDrug, alcohol: requiredAlcohol },
+        current: now, proposed: next,
+        // The whole point of the preview.
+        shortfall_if_changed: {
+          drug: Math.max(0, requiredDrug - next.projected_drug),
+          alcohol: Math.max(0, requiredAlcohol - next.projected_alcohol),
+        },
+        shortfall_if_unchanged: {
+          drug: Math.max(0, requiredDrug - now.projected_drug),
+          alcohol: Math.max(0, requiredAlcohol - now.projected_alcohol),
+        },
+      })
+    }
+    return NextResponse.json({ year, from: pools[0].frequency, to, pools: out })
   }
 
   if (view === 'consents') {
@@ -624,6 +727,37 @@ export async function POST(request) {
     }
 
     // ── Bulk: generate ──────────────────────────────────────────────────────
+    // Frequency is per client, and changeable after the fact.
+    //
+    // It is stored on the POOL rather than the client because a consortium
+    // applies its rate to the combined pool and cannot run on two calendars
+    // at once. For a client that owns its own pools this is the same thing as
+    // a per-client setting; for a consortium member it is not, which is why a
+    // consortium pool is refused here rather than silently skipped.
+    case 'set_frequency': {
+      const clientId = body.client_id
+      const freq = body.frequency
+      if (!clientId) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+      if (!PERIODS_PER_YEAR[freq]) {
+        return NextResponse.json({ error: "frequency must be 'monthly' or 'quarterly'" }, { status: 400 })
+      }
+      if (allow(s, clientId) === false) {
+        return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+      }
+      const { data: pools } = await pageAll(() => db().from('da_pools')
+        .select('id, pool_kind, frequency, consortium_id').eq('client_id', clientId).eq('active', true))
+      if (!pools || !pools.length) {
+        return NextResponse.json(
+          { error: 'This client has no pool of its own. A consortium pool runs on the consortium calendar.' },
+          { status: 400 })
+      }
+      const { data, error } = await db().from('da_pools')
+        .update({ frequency: freq }).eq('client_id', clientId).eq('active', true).select()
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+      console.warn('[da] frequency for client=%s set to %s by %s', clientId, freq, actor)
+      return NextResponse.json({ pools: data, frequency: freq })
+    }
+
     // ---- DOB import -------------------------------------------------------
     //
     // Matching order, strictest first:

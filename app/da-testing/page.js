@@ -652,6 +652,8 @@ function RandomTesting({ me, busy, setBusy }) {
   const [pools, setPools] = useState(null);
   const [err, setErr] = useState('');
   const [result, setResult] = useState(null);
+  const [freqClient, setFreqClient] = useState(me.clients[0]?.id || '');
+  const [preview, setPreview] = useState(null);
 
   const load = useCallback(async () => {
     const r = await authFetch('/api/da?view=pools');
@@ -669,6 +671,10 @@ function RandomTesting({ me, busy, setBusy }) {
 
   return (
     <>
+      <FrequencyPanel me={me} busy={busy} setBusy={setBusy}
+        client={freqClient} setClient={setFreqClient}
+        preview={preview} setPreview={setPreview}
+        setErr={setErr} reload={load} />
       {pools.map(p => (
         <Card key={p.id}>
           <div style={S.rowBetween}>
@@ -725,6 +731,132 @@ function RandomTesting({ me, busy, setBusy }) {
         <p style={S.fine}>{result.pull.method_note}</p>
       </Card>}
     </>
+  );
+}
+
+// Frequency, per client, changeable after the fact.
+//
+// The annual minimum is a RATE against the pool, not a count of periods, so
+// switching monthly to quarterly does not reduce what is owed - it reduces how
+// many chances are left to deliver it. The panel shows that trade before the
+// change is saved, rather than leaving it to be discovered in December.
+function FrequencyPanel({ me, busy, setBusy, client, setClient, preview, setPreview, setErr, reload }) {
+  const [to, setTo] = useState('quarterly');
+
+  return (
+    <Card>
+      <div style={S.rowBetween}>
+        <h3 style={S.h3}>Selection frequency <span style={S.hint}>per client</span></h3>
+        <div style={S.btnRow}>
+          <select style={S.select} value={client} onChange={e => { setClient(e.target.value); setPreview(null); }}>
+            {me.clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select style={S.select} value={to} onChange={e => { setTo(e.target.value); setPreview(null); }}>
+            <option value="monthly">Monthly (12 periods)</option>
+            <option value="quarterly">Quarterly (4 periods)</option>
+          </select>
+          <button style={S.link} disabled={busy || !client} onClick={async () => {
+            setBusy(true); setPreview(null);
+            const r = await authFetch(`/api/da?view=frequency_preview&client_id=${client}&to=${to}`);
+            const j = await r.json().catch(() => ({}));
+            setBusy(false);
+            if (!r.ok) { setErr(j.error || 'Could not build the preview'); return; }
+            setPreview(j);
+          }}>show me what this does</button>
+        </div>
+      </div>
+
+      {!preview && <p style={S.muted}>
+        Pick a client and a frequency, then see the effect on this year&apos;s
+        position before saving anything.
+      </p>}
+
+      {preview && <>
+        <p style={S.muted}>
+          {preview.from === preview.to
+            ? <>Already <b>{preview.to}</b>. Shown for reference.</>
+            : <>Changing <b>{preview.from}</b> to <b>{preview.to}</b> for {preview.year}.</>}
+        </p>
+        {preview.pools.map(p => {
+          const worse = p.shortfall_if_changed.drug > p.shortfall_if_unchanged.drug
+            || p.shortfall_if_changed.alcohol > p.shortfall_if_unchanged.alcohol;
+          return (
+            <div key={p.pool_id} style={S.freqBlock}>
+              <b>{p.pool_kind === 'NON_DOT' ? 'Non-DOT' : 'DOT'} pool</b>
+              <span style={S.hint}>
+                {p.pool_size} active &middot; {p.rates.drug}% drug / {p.rates.alcohol}% alcohol
+                &middot; {p.pulls_run_this_year} pull(s) run this year
+              </span>
+              <table style={S.table}>
+                <thead><tr>{['', 'Per pull', 'Periods left', 'Projected by year end', 'Annual minimum'].map(h =>
+                  <th key={h} style={S.th}>{h}</th>)}</tr></thead>
+                <tbody>
+                  <tr style={S.tr}>
+                    <td style={S.td}>Drug &mdash; staying {p.current.frequency}</td>
+                    <td style={S.tdN}>{p.current.per_pull.drug}</td>
+                    <td style={S.tdN}>{p.current.periods_remaining}</td>
+                    <td style={S.tdN}>{p.current.projected_drug}</td>
+                    <td style={S.tdN}>{p.required.drug}</td>
+                  </tr>
+                  <tr style={S.tr}>
+                    <td style={S.td}><b>Drug &mdash; if {p.proposed.frequency}</b></td>
+                    <td style={S.tdN}><b>{p.proposed.per_pull.drug}</b></td>
+                    <td style={S.tdN}><b>{p.proposed.periods_remaining}</b></td>
+                    <td style={{ ...S.tdN, ...(p.shortfall_if_changed.drug ? S.bad : S.good) }}>
+                      <b>{p.proposed.projected_drug}</b></td>
+                    <td style={S.tdN}>{p.required.drug}</td>
+                  </tr>
+                  <tr style={S.tr}>
+                    <td style={S.td}>Alcohol &mdash; if {p.proposed.frequency}</td>
+                    <td style={S.tdN}>{p.proposed.per_pull.alcohol}</td>
+                    <td style={S.tdN}>{p.proposed.periods_remaining}</td>
+                    <td style={{ ...S.tdN, ...(p.shortfall_if_changed.alcohol ? S.bad : S.good) }}>
+                      {p.proposed.projected_alcohol}</td>
+                    <td style={S.tdN}>{p.required.alcohol}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p style={S.fine}>
+                Completed so far this year: {p.completed.drug} drug, {p.completed.alcohol} alcohol.
+                Selections that were never tested do not count towards the minimum.
+              </p>
+              {p.shortfall_if_changed.drug > 0 || p.shortfall_if_changed.alcohol > 0 ? (
+                <div style={S.warnBox}>
+                  <b>This change misses the annual minimum.</b> Short by{' '}
+                  {p.shortfall_if_changed.drug} drug and {p.shortfall_if_changed.alcohol} alcohol
+                  test(s) by 31 December. {p.periods_already_run.length > 0 &&
+                    <>Periods already run ({p.periods_already_run.join(', ')}) cannot be re-run, so the
+                    remaining pulls have to carry the difference.</>}{' '}
+                  You can still save it &mdash; but the gap has to be closed another way, usually by
+                  raising the rate or running a catch-up selection.
+                </div>
+              ) : worse ? (
+                <div style={S.warnBox}>
+                  Still meets the minimum, but with less headroom than staying{' '}
+                  {p.current.frequency}.
+                </div>
+              ) : (
+                <div style={S.okBox}>Meets the annual minimum with the periods remaining.</div>
+              )}
+            </div>
+          );
+        })}
+        <button style={S.btn} disabled={busy || preview.from === preview.to} onClick={async () => {
+          if (!window.confirm(
+            `Set ${me.clients.find(c => c.id === client)?.name} to ${preview.to} selections?\n\n` +
+            `This changes every pool this client owns. Pulls already run are unaffected.`)) return;
+          setBusy(true);
+          const r = await authFetch('/api/da', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'set_frequency', client_id: client, frequency: preview.to }),
+          });
+          const j = await r.json().catch(() => ({}));
+          setBusy(false);
+          if (!r.ok) { setErr(j.error || 'Could not save'); return; }
+          setPreview(null); reload();
+        }}>{preview.from === preview.to ? 'Already set' : `Save ${preview.to}`}</button>
+      </>}
+    </Card>
   );
 }
 
@@ -984,4 +1116,7 @@ const S = {
            fontSize: '14px', boxSizing: 'border-box' },
   formRow3: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' },
   batch: { borderTop: '1px solid #f1f5f9', padding: '10px 0' },
+  freqBlock: { borderTop: '1px solid #e5e7eb', paddingTop: '12px', marginTop: '12px' },
+  okBox: { background: '#dcfce7', color: '#166534', padding: '10px', fontSize: '12px',
+           borderRadius: '6px', marginTop: '8px' },
 };
