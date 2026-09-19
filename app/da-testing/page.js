@@ -110,7 +110,8 @@ function Clearinghouse({ me, busy, setBusy }) {
 
   const byName = Object.fromEntries(me.clients.map(c => [c.id, c.name]));
   const c = data.counts || {};
-  const listed = data.drivers.filter(d => d.due_status === 'overdue' || d.due_status === 'never_queried');
+  const ACTION = ['never_queried', 'overdue', 'query_pending'];
+  const listed = data.drivers.filter(d => ACTION.includes(d.due_status));
 
   return (
     <>
@@ -123,14 +124,21 @@ function Clearinghouse({ me, busy, setBusy }) {
           </select>
         </div>
         <div style={S.grid}>
-          <Stat label="Overdue" value={c.overdue || 0} tone="bad" />
           <Stat label="Never queried" value={c.never_queried || 0} tone="bad" />
+          <Stat label="Overdue" value={c.overdue || 0} tone="bad" />
+          <Stat label="Result not recorded" value={c.query_pending || 0} tone="warn" />
           <Stat label="Due within 30 days" value={c.due_soon || 0} tone="warn" />
           <Stat label="Current" value={c.current || 0} tone="good" />
         </div>
         <p style={S.muted}>
           A limited query is required for every active CDL driver each 12 months.
-          A driver who has left still shows here until someone confirms it — nobody
+          <b> Result not recorded</b> means the query was run but its outcome was
+          never entered — the annual clock is not satisfied, but this is a records
+          gap on our side, not a driver who was never checked. It needs a different
+          conversation from a genuine miss.
+        </p>
+        <p style={S.muted}>
+          A driver who has left still shows here until someone confirms it. Nobody
           is marked inactive automatically, because guessing wrong either hides a
           real gap or erases a real driver.
         </p>
@@ -146,10 +154,16 @@ function Clearinghouse({ me, busy, setBusy }) {
               <tr key={d.driver_id} style={S.tr}>
                 <td style={S.td}>{d.full_name}</td>
                 <td style={S.td}>{byName[d.client_id] || '—'}</td>
-                <td style={S.td}>{d.last_query_date || <em style={S.never}>never</em>}</td>
+                <td style={S.td}>{d.last_query_date
+                  || (d.due_status === 'query_pending'
+                        ? <em style={S.warn}>pending {d.pending_since}</em>
+                        : <em style={S.never}>never</em>)}</td>
                 <td style={S.td}>{d.next_due_date || '—'}</td>
-                <td style={{ ...S.td, ...S.bad }}>
-                  {d.due_status === 'never_queried' ? 'NEVER QUERIED' : Math.abs(d.days_until_due)}
+                <td style={{ ...S.td, ...(d.due_status === 'query_pending' ? S.warn : S.bad) }}>
+                  {d.due_status === 'never_queried' ? 'NEVER QUERIED'
+                    : d.due_status === 'query_pending'
+                      ? `result not recorded (${d.pending_full_query ? 'full' : 'limited'} query ${d.pending_since})`
+                      : Math.abs(d.days_until_due)}
                 </td>
                 <td style={S.td}>
                   {cdl[d.driver_id]
@@ -203,9 +217,12 @@ function printSheet(clientName, rows) {
     '12 months. The drivers below are past due or have never been queried.',
     'Please confirm which are still employed and CDL-active.',
     '',
-    'DRIVER                        LAST QUERY   DUE          DAYS OVERDUE',
-    '-'.repeat(68),
-    ...rows.map(d => `${String(d.full_name).padEnd(30)}${String(d.last_query_date || 'never').padEnd(13)}${String(d.next_due_date || '-').padEnd(13)}${d.due_status === 'never_queried' ? 'NEVER QUERIED' : Math.abs(d.days_until_due)}`),
+    'DRIVER                        LAST QUERY              DUE          STATUS',
+    '-'.repeat(80),
+    ...rows.map(d => `${String(d.full_name).padEnd(30)}${String(d.last_query_date || (d.due_status === 'query_pending' ? 'submitted ' + d.pending_since : 'never')).padEnd(24)}${String(d.next_due_date || '-').padEnd(13)}${
+      d.due_status === 'never_queried' ? 'NEVER QUERIED'
+      : d.due_status === 'query_pending' ? 'RESULT NOT RECORDED'
+      : Math.abs(d.days_until_due)}`),
     '',
     'No CDL numbers are included in this list by design.',
     'Return this sheet marked with any driver who has left.',

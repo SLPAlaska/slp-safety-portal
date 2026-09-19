@@ -117,13 +117,17 @@ export async function GET(request) {
   // ── Clearinghouse: the annual query position ──────────────────────────────
   if (view === 'clearinghouse') {
     let q = db().from('da_clearinghouse_annual_due')
-      .select('driver_id, client_id, full_name, last_query_date, next_due_date, days_until_due, due_status')
+      .select('driver_id, client_id, full_name, last_query_date, next_due_date, '
+              + 'days_until_due, due_status, pending_count, pending_since, pending_full_query')
     if (scoped) q = Array.isArray(scoped) ? q.in('client_id', scoped) : q.eq('client_id', scoped)
     const { data, error } = await pageAll(() => q)
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
     const rows = data || []
-    const rank = { overdue: 0, never_queried: 1, due_soon: 2, current: 3 }
+    // never_queried first: a driver with no query at all is the worst finding.
+    // query_pending sits below overdue because the query WAS run - what is
+    // missing is the result on our side, not the check itself.
+    const rank = { never_queried: 0, overdue: 1, query_pending: 2, due_soon: 3, current: 4 }
     rows.sort((a, b) =>
       (rank[a.due_status] - rank[b.due_status]) ||
       ((a.days_until_due ?? 0) - (b.days_until_due ?? 0)) ||
