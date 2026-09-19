@@ -249,6 +249,8 @@ function BulkQueries({ me, busy, setBusy }) {
   const [paste, setPaste] = useState('');
   const [ingestBatch, setIngestBatch] = useState('');
   const [ingestResult, setIngestResult] = useState(null);
+  const [dobPaste, setDobPaste] = useState('');
+  const [dobResult, setDobResult] = useState(null);
 
   const load = useCallback(async () => {
     if (!client) return;
@@ -304,6 +306,112 @@ function BulkQueries({ me, busy, setBusy }) {
             setBusy(false); load();
           }}>Update balance</button>
         </div>
+      </Card>
+
+      <Card>
+        <h3 style={S.h3}>Roster confirmation sheet</h3>
+        <p style={S.muted}>
+          Names only. No CDL numbers and no dates of birth we already hold —
+          this goes out by email to a dispatcher, so it carries nothing that
+          would matter if it landed in the wrong inbox. It asks three things at
+          once: who still works there, every missing date of birth, and their
+          current Clearinghouse query balance.
+        </p>
+        <p style={S.fine}>
+          The <b>Ref</b> column is how a returned sheet matches back exactly
+          rather than by name — a roster this size will have two drivers
+          sharing a surname. Ask them not to touch it. Send the sheet, and drop
+          the file they return into the importer below.
+        </p>
+        <div style={S.btnRow}>
+          <button style={S.btn} disabled={busy} onClick={async () => {
+            setBusy(true);
+            const r = await authFetch(`/api/da?view=roster_sheet&client_id=${client}`);
+            const j = await r.json().catch(() => ({}));
+            setBusy(false);
+            if (!r.ok) { setErr(j.error || 'Could not build the sheet'); return; }
+            const blob = new Blob([j.csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = j.filename; a.click();
+            URL.revokeObjectURL(a.href);
+            setMsg({ sheet: j });
+          }}>Download roster sheet (CSV)</button>
+          <button style={S.link} disabled={busy} onClick={async () => {
+            const r = await authFetch(`/api/da?view=roster_sheet&client_id=${client}`);
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok) { setErr(j.error || 'Could not build the sheet'); return; }
+            const w = window.open('', '_blank');
+            if (w) {
+              w.document.write('<pre>' + (j.cover + '\n\n' + j.csv).replace(/</g, '&lt;') + '</pre>');
+              w.document.close(); w.print();
+            }
+          }}>preview the covering note</button>
+        </div>
+        {msg?.sheet && <div style={S.ok}>
+          {msg.sheet.driver_count} driver(s) listed, {msg.sheet.missing_dob} still
+          needing a date of birth.
+        </div>}
+      </Card>
+
+      <Card>
+        <h3 style={S.h3}>Import dates of birth</h3>
+        <p style={S.muted}>
+          Paste the returned sheet, or any CSV with a Ref or Driver column and a
+          date of birth. Matching is by Ref first, then name plus CDL last four,
+          then name alone only when it is unique for this client. Anything that
+          does not match cleanly is reported, never guessed at.
+        </p>
+        <p style={S.fine}>
+          A date that differs from one already stored is reported as a conflict
+          and left alone. A driver marked N for still employed is listed for your
+          decision; nobody is deactivated here.
+        </p>
+        <textarea style={S.textarea} rows={7} value={dobPaste} placeholder={
+          'Ref,Driver,Still Employed (Y/N),Date of Birth (MM/DD/YYYY),Notes\n' +
+          'a1b2c3d4,"Morris, Jack",Y,03/14/1981,\n' +
+          'e5f6a7b8,"Perl, Luke",N,,left in June'}
+          onChange={e => setDobPaste(e.target.value)} />
+        <button style={S.btn} disabled={busy || !dobPaste.trim()} onClick={async () => {
+          const rows = parseRoster(dobPaste);
+          if (!rows.length) { setErr('Could not read any rows from that.'); return; }
+          setBusy(true); setDobResult(null);
+          const r = await authFetch('/api/da', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'import_dobs', client_id: client, rows }),
+          });
+          const j = await r.json().catch(() => ({}));
+          setBusy(false);
+          if (!r.ok) { setErr(j.error || 'Import failed'); return; }
+          setDobResult(j); load();
+        }}>{busy ? 'Importing…' : 'Import dates of birth'}</button>
+
+        {dobResult && <div style={S.ok}>
+          <b>{dobResult.applied}</b> stored, <b>{dobResult.unchanged}</b> already correct,
+          {' '}<b>{dobResult.conflicts.length}</b> conflict(s),
+          {' '}<b>{dobResult.unmatched.length}</b> unmatched,
+          {' '}<b>{dobResult.invalid.length}</b> invalid.
+          {dobResult.conflicts.length > 0 && <div style={S.warnBox}>
+            Conflicts — a different date is already stored, left unchanged:
+            <ul>{dobResult.conflicts.map((c, i) =>
+              <li key={i}>{c.name}: stored {c.stored}, sheet says {c.incoming}</li>)}</ul>
+          </div>}
+          {dobResult.unmatched.length > 0 && <div style={S.warnBox}>
+            Unmatched — not applied:
+            <ul>{dobResult.unmatched.slice(0, 15).map((u, i) =>
+              <li key={i}>{u.name || u.ref || '(blank)'} — {u.why}</li>)}</ul>
+          </div>}
+          {dobResult.invalid.length > 0 && <div style={S.warnBox}>
+            Rejected dates:
+            <ul>{dobResult.invalid.map((u, i) =>
+              <li key={i}>{u.name}: {u.dob} — {u.why}</li>)}</ul>
+          </div>}
+          {dobResult.employment_flags.length > 0 && <div style={S.warnBox}>
+            Marked as no longer employed by the client. <b>Nobody has been
+            deactivated</b> — this is for your decision:
+            <ul>{dobResult.employment_flags.map((e, i) =>
+              <li key={i}>{e.full_name}</li>)}</ul>
+          </div>}
+        </div>}
       </Card>
 
       {blocked.length > 0 && <Card>
@@ -484,6 +592,37 @@ function BulkQueries({ me, busy, setBusy }) {
       </Card>
     </>
   );
+}
+
+/** Read a returned roster sheet: Ref, Driver, Still Employed, Date of Birth. */
+function parseRoster(text) {
+  const lines = String(text).trim().split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const split = (line) => {
+    // Quoted separators are normal here: the Driver column is "Last, First".
+    const out = []; let cur = '', q = false;
+    for (const ch of line) {
+      if (ch === '"') q = !q;
+      else if (ch === sep && !q) { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur); return out.map(x => x.trim());
+  };
+  const head = split(lines[0]).map(h =>
+    h.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+$/, ''));
+  const KEY = {
+    ref: 'ref', driver: 'driver_name', driver_name: 'driver_name', name: 'driver_name',
+    still_employed_y_n: 'still_employed', still_employed: 'still_employed',
+    employed: 'still_employed',
+    date_of_birth_mm_dd_yyyy: 'dob', date_of_birth: 'dob', dob: 'dob',
+    cdl: 'cdl_last4', cdl_last_four: 'cdl_last4', cdl_last4: 'cdl_last4',
+  };
+  return lines.slice(1).map(l => {
+    const cells = split(l); const o = {};
+    head.forEach((h, i) => { const k = KEY[h]; if (k) o[k] = cells[i] || ''; });
+    return o;
+  }).filter(o => o.ref || o.driver_name);
 }
 
 /** Read a pasted tab or comma separated block with a header row. */

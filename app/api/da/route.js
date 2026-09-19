@@ -249,6 +249,86 @@ export async function GET(request) {
     })
   }
 
+  // The sheet a client fills in and sends back.
+  //
+  // Names only. No CDL numbers and no dates of birth we already hold - this
+  // goes out by email to a dispatcher, so it carries nothing that would matter
+  // if it landed in the wrong inbox.
+  //
+  // The Ref column is the one thing that has to survive the round trip. It is
+  // an opaque fragment of the driver id, meaningless on its own, and it is
+  // what lets a returned sheet match exactly instead of by name. Two drivers
+  // sharing a surname is a certainty on a roster this size.
+  if (view === 'roster_sheet') {
+    const clientId = wanted
+    if (!clientId) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+    if (allow(s, clientId) === false) {
+      return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+    }
+    const { data: client } = await db().from('da_clients')
+      .select('id, name, query_balance, query_balance_as_of').eq('id', clientId).maybeSingle()
+    if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    const { data: drivers } = await pageAll(() => db().from('da_drivers')
+      .select('id, full_name, dob_year, active').eq('client_id', clientId).eq('active', true)
+      .order('full_name'))
+
+    const rows = (drivers || []).map(d => ({
+      ref: d.id.slice(0, 8),
+      full_name: d.full_name,
+      dob_on_file: !!d.dob_year,
+    }))
+
+    const today = new Date().toISOString().slice(0, 10)
+    const csv = [
+      ['Ref', 'Driver', 'Still Employed (Y/N)', 'Date of Birth (MM/DD/YYYY)', 'Notes'].join(','),
+      ...rows.map(r => [r.ref, '"' + r.full_name.replace(/"/g, '""') + '"',
+                        '', r.dob_on_file ? 'ON FILE' : '', ''].join(',')),
+    ].join('\n')
+
+    const cover = [
+      'SLP ALASKA - DRIVER ROSTER CONFIRMATION',
+      'Client: ' + client.name,
+      'Date:   ' + today,
+      '',
+      'We administer your FMCSA Clearinghouse queries as your C/TPA. To keep',
+      'your annual query obligation (49 CFR 382.701) accurate we need two',
+      'things from you.',
+      '',
+      '1. CONFIRM THE ROSTER',
+      '   Mark each driver below Y or N for still employed and CDL-active.',
+      '   Please do not delete rows - mark them N so we keep the history.',
+      '',
+      '2. DATE OF BIRTH',
+      '   Fill in the date of birth for every driver marked Y. FMCSA requires',
+      '   it to run a query and we cannot submit one without it. Rows already',
+      '   marked ON FILE can be left alone.',
+      '',
+      '3. YOUR CLEARINGHOUSE QUERY BALANCE',
+      '   How many queries remain on your Clearinghouse plan today? ______',
+      '   As your C/TPA we can run your queries but we cannot buy them for',
+      '   you, so we need your number to plan.',
+      '',
+      client.query_balance != null
+        ? '   Our last record: ' + client.query_balance + ', as of ' + (client.query_balance_as_of || 'unknown') + '.'
+        : '   We have no balance on record for you.',
+      '',
+      'Return this file as-is. Please do not add or reorder columns, and leave',
+      'the Ref column untouched - it is how we match your answers back without',
+      'putting CDL numbers in an email.',
+      '',
+      rows.length + ' driver(s) listed. No CDL numbers appear in this file.',
+    ].join('\n')
+
+    return NextResponse.json({
+      client: { id: client.id, name: client.name },
+      driver_count: rows.length,
+      missing_dob: rows.filter(r => !r.dob_on_file).length,
+      filename: client.name.replace(/[^A-Za-z0-9]+/g, '_') + '_roster_confirmation_' + today + '.csv',
+      cover, csv, rows,
+    })
+  }
+
   if (view === 'consents') {
     const driver = url.searchParams.get('driver_id')
     let q = db().from('da_query_consents').select('*, da_drivers(full_name)')
@@ -544,6 +624,113 @@ export async function POST(request) {
     }
 
     // ── Bulk: generate ──────────────────────────────────────────────────────
+    // ---- DOB import -------------------------------------------------------
+    //
+    // Matching order, strictest first:
+    //   1. Ref  - the opaque id fragment from the sheet we sent. Exact.
+    //   2. Name + CDL last four, where the client happens to supply it.
+    //   3. Name alone, ONLY when it is unique within that client.
+    //
+    // Anything else is reported. A roster this size will have two drivers
+    // sharing a surname, and writing a date of birth onto the wrong person is
+    // not a mistake worth risking to save a manual line.
+    case 'import_dobs': {
+      const clientId = body.client_id
+      if (!clientId) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
+      if (allow(s, clientId) === false) {
+        return NextResponse.json({ error: 'Not authorized for this client' }, { status: 403 })
+      }
+      const rowsIn = Array.isArray(body.rows) ? body.rows : []
+      if (!rowsIn.length) return NextResponse.json({ error: 'No rows supplied' }, { status: 400 })
+
+      const { data: drivers } = await pageAll(() => db().from('da_drivers')
+        .select('id, full_name, cdl_last4, dob_year, active').eq('client_id', clientId))
+      const all = drivers || []
+      const norm = (v) => String(v || '').toLowerCase().replace(/[^a-z]/g, '')
+
+      const applied = [], unchanged = [], conflicts = [], unmatched = [], invalid = []
+      const employment = []
+
+      for (const r of rowsIn) {
+        const ref = String(r.ref || '').trim().toLowerCase()
+        const name = String(r.driver_name || r.driver || r.full_name || '').trim()
+        const last4 = String(r.cdl_last4 || r.cdl || '').replace(/[^A-Za-z0-9]/g, '').slice(-4)
+        const rawDob = String(r.dob || r.date_of_birth || '').trim()
+        const still = String(r.still_employed || r.employed || '').trim().toUpperCase()
+
+        let hit = null, why = ''
+        if (ref) {
+          const m = all.filter(d => d.id.slice(0, 8).toLowerCase() === ref)
+          if (m.length === 1) hit = m[0]
+          else why = m.length ? 'ref matched more than one driver' : 'ref not recognised'
+        }
+        if (!hit && name) {
+          let m = all.filter(d => norm(d.full_name) === norm(name))
+          if (last4) {
+            const withCdl = m.filter(d => d.cdl_last4 === last4)
+            if (withCdl.length) m = withCdl
+            else if (m.length && m.every(d => d.cdl_last4)) {
+              why = 'name matched but CDL last four did not (sheet says ' + last4 + ')'
+              m = []
+            }
+          }
+          if (m.length === 1) hit = m[0]
+          else if (m.length > 1) why = 'name is not unique for this client (' + m.length + ' matches) and no CDL last four supplied'
+          else if (!why) why = 'no driver of that name for this client'
+        }
+        if (!hit) { unmatched.push({ ref, name, dob: rawDob, why: why || 'no ref or name supplied' }); continue }
+
+        if (still === 'N' || still === 'NO') {
+          // Recorded for a decision, never acted on here.
+          employment.push({ driver_id: hit.id, full_name: hit.full_name, answer: 'no longer employed' })
+        }
+
+        if (!rawDob || rawDob.toUpperCase() === 'ON FILE') {
+          if (!hit.dob_year) unmatched.push({ ref, name: hit.full_name, why: 'no date of birth supplied' })
+          continue
+        }
+
+        // Accept MM/DD/YYYY and YYYY-MM-DD; refuse anything ambiguous.
+        let iso = null
+        const m1 = rawDob.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
+        const m2 = rawDob.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        if (m1) iso = m1[3] + '-' + String(m1[1]).padStart(2, '0') + '-' + String(m1[2]).padStart(2, '0')
+        else if (m2) iso = rawDob
+        const dt = iso ? new Date(iso + 'T00:00:00Z') : null
+        const year = dt ? dt.getUTCFullYear() : NaN
+        if (!dt || isNaN(dt.getTime()) || year < 1920 || year > new Date().getUTCFullYear() - 16) {
+          invalid.push({ ref, name: hit.full_name, dob: rawDob,
+                         why: iso ? 'date out of a plausible range for a CDL holder' : 'unrecognised date format' })
+          continue
+        }
+
+        // Already holding one? Compare before writing, so a re-import of the
+        // same sheet is a no-op and a DIFFERENT date is surfaced rather than
+        // quietly replacing what is there.
+        if (hit.dob_year) {
+          const { data: existing } = await db().rpc('da_reveal_dob', { p_driver: hit.id })
+          const cur = String(existing || '').slice(0, 10)
+          if (cur === iso) { unchanged.push({ name: hit.full_name, dob: iso }); continue }
+          conflicts.push({ name: hit.full_name, stored: cur, incoming: iso })
+          continue
+        }
+
+        const { error } = await db().rpc('da_store_dob', { p_driver: hit.id, p_dob: iso })
+        if (error) { invalid.push({ ref, name: hit.full_name, dob: rawDob, why: error.message }); continue }
+        applied.push({ name: hit.full_name, dob_year: year })
+      }
+
+      console.warn('[da] DOB import for client=%s by %s: %d applied, %d unmatched',
+                   clientId, s.user.email, applied.length, unmatched.length)
+      return NextResponse.json({
+        applied: applied.length, unchanged: unchanged.length,
+        conflicts, unmatched, invalid,
+        // Reported only. Nobody is deactivated without a separate decision.
+        employment_flags: employment,
+        detail: { applied, unchanged },
+      })
+    }
+
     case 'create_bulk_batch': {
       const clientId = body.client_id
       if (!clientId) return NextResponse.json({ error: 'client_id is required' }, { status: 400 })
