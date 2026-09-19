@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "check:companies": "node scripts/check-companies.mjs"
+    "check:companies": "node scripts/check-companies.mjs",
+    "sweep:secrets": "node scripts/sweep-secrets.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

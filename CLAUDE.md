@@ -33,6 +33,66 @@ nothing sensitive is stored in `cron.job`, which is readable by any role that
 can query it. The setup functions are `security definer` and granted to
 `service_role` only.
 
+### Driver identification data (CDL numbers, dates of birth)
+
+`da_drivers.cdl_number_enc` and `da_drivers.dob_enc` are encrypted at rest with
+pgcrypto, keyed from Vault (`da_cdl_key`), and readable only through
+service-role functions. Both columns are revoked from `authenticated` outright:
+even a DER reads the driver list without them.
+
+**That encryption protects the database. It does not protect anything you
+print.** The moment `da_reveal_cdl` or `da_reveal_dob` hands back a value and
+it reaches tool output, it can land on disk in the clear and outlive the
+session — see the sweep below for how. So:
+
+- **Never print a decrypted CDL number or date of birth.** Not in a table, not
+  in a debug line, not "just this once to check the import worked".
+- **Counts, CDL last four, and birth year only.** `cdl_last4` and `dob_year`
+  exist precisely so a list can be rendered and a record matched without
+  decrypting anything. A birth year alone is not identification; a full date is.
+- **Never background a command that touches driver data** (`run_in_background`),
+  whatever the output size. Backgrounding writes the complete stdout to a file
+  on its own, with no size threshold involved.
+- **Keep any output touching driver data under ~40KB.** Measured on this
+  machine: 54KB stayed in the conversation, 112KB was written to disk, and two
+  real spills happened at 88KB and 90KB. 40KB is inside the margin. For 75
+  drivers that means summarising, not listing.
+- **Need a full listing?** Write it to a scratchpad file you then delete, rather
+  than printing it.
+
+Generating the FMCSA bulk upload file is already safe and does not need special
+handling: `/api/da?view=bulk_file` decrypts inside the route and returns the
+content straight to the browser, so the cleartext never passes through tool
+output at all. The exposure is verification queries that print what they read.
+
+### End-of-session sweep
+
+**Any session that touches driver data ends with a sweep, reported without
+being asked.** This is not optional and does not wait for a prompt.
+
+Three places persist tool output automatically, unredacted:
+
+| Location | Written when | Lifetime |
+| --- | --- | --- |
+| `<scratchpad>/` | you put it there | until deleted |
+| `<session>/tasks/*.output` | ANY background command, any size | Temp |
+| `~/.claude/projects/<project>/<session>/tool-results/` | output over roughly 60–90KB, and every binary fetch | **not temporary — a normal user directory** |
+
+The third is the one that matters. It sits under the home directory, which on
+this machine is inside a OneDrive-synced tree, and nothing there expires on its
+own. A 90KB query result containing 79 CDL numbers lived there for hours in
+September 2026 purely as a side effect of ordinary verification work — nothing
+unusual happened, which is the point.
+
+Sweep all three for secrets, credentials and driver identification data,
+**report what was found before deleting anything**, then delete on
+instruction. Overwrite with random bytes and fsync before unlinking, so the
+contents are not merely de-linked.
+
+`npm run sweep:secrets` does the scan. It reports file names and the kind of
+match only — never the matched value, because a sweep that prints what it
+found has just recreated the problem it was looking for.
+
 ### Known gaps
 
 Open security items. Each is a decision waiting on a person, not a bug to fix
