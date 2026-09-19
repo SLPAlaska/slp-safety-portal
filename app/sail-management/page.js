@@ -1,11 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { authFetch } from '@/lib/authFetch';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+// No Supabase client here on purpose.
+//
+// This page used to read sail_log straight from the browser with the anon key
+// and narrow it with the company dropdown below - a filter the client chooses,
+// which is a convenience and not a boundary. Every read and write now goes
+// through /api/sail, where the company scope is derived from the caller's own
+// session and cannot be set by the request.
 
 const COMPANIES = ['All', 'A-C Electric', 'Ace Energy Services', 'AKE-Line', 'Apache Corp.', 'Armstrong Oil & Gas', 'ASRC Energy Services', 'CCI-Industrial', 'Chosen Construction', 'CINGSA', 'Coho Enterprises', 'Conam Construction', 'ConocoPhillips', 'Five Star Oilfield Services', 'Fox Energy Services', 'G.A. West', 'GBR Equipment', 'GLM Energy Services', 'Graham Industrial Coatings', 'Harvest Midstream', 'Hilcorp Alaska', 'MagTec Alaska', 'Merkes Builders', 'Narwhal Exploration', 'Nordic-Calista', 'Parker TRS', 'Peninsula Paving', 'Pollard Wireline', 'Ridgeline Oilfield Services', 'Santos', 'Summit Excavation', 'Tesoro Refinery', 'Yellowjacket', 'Other'];
 
@@ -37,6 +40,9 @@ export default function SAILManagement() {
   const [sortDir, setSortDir] = useState('desc');
   const [stats, setStats] = useState({ total: 0, open: 0, inProgress: 0, delayed: 0, closed: 0, avgDaysOpen: 0, overdue: 0 });
   const [showClosed, setShowClosed] = useState(false);
+  // { all_companies, company_name } from the server. Labels the page for a
+  // single-tenant caller; it is not the access control, /api/sail is.
+  const [scope, setScope] = useState(null);
 
   // Edit modal
   const [editItem, setEditItem] = useState(null);
@@ -51,13 +57,18 @@ export default function SAILManagement() {
   async function loadData() {
     setLoading(true);
     try {
-      // Always fetch ALL items for accurate stats (ignore showClosed for stats)
-      let statsQuery = supabase.from('sail_log').select('*');
-      if (selectedCompany !== 'All') statsQuery = statsQuery.eq('client_company', selectedCompany);
-      const { data: allItems, error: statsError } = await statsQuery;
-      if (statsError) throw statsError;
+      // One scoped fetch; the server decides which companies are in it. The
+      // dropdown below narrows what is already permitted and never widens it.
+      const resp = await authFetch('/api/sail');
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(payload.error || ('Could not load SAIL data (' + resp.status + ')'));
 
-      const all = allItems || [];
+      const permitted = payload.rows || [];
+      setScope(payload.scope || null);
+
+      const all = selectedCompany !== 'All'
+        ? permitted.filter(i => i.client_company === selectedCompany)
+        : permitted;
       const open = all.filter(i => i.status === 'Open');
       const inProg = all.filter(i => i.status === 'In Progress');
       const delayed = all.filter(i => i.status === 'Delayed');
@@ -69,18 +80,14 @@ export default function SAILManagement() {
         : 0;
       setStats({ total: all.length, open: open.length, inProgress: inProg.length, delayed: delayed.length, closed: closed.length, avgDaysOpen: avgDays, overdue: overdue.length });
 
-      // Now fetch display items — hide closed unless showClosed is true
-      let query = supabase.from('sail_log').select('*').order('date', { ascending: false });
-      if (selectedCompany !== 'All') query = query.eq('client_company', selectedCompany);
+      // Display list: same rows, filtered client-side. Hide closed unless asked.
+      let items = all;
       if (selectedStatus !== 'All') {
-        query = query.eq('status', selectedStatus);
+        items = items.filter(i => i.status === selectedStatus);
       } else if (!showClosed) {
-        query = query.neq('status', 'Closed');
+        items = items.filter(i => i.status !== 'Closed');
       }
-
-      const { data: items, error } = await query;
-      if (error) throw error;
-      setSailItems(items || []);
+      setSailItems(items);
     } catch (error) {
       console.error('Error loading SAIL data:', error);
       alert('Error loading SAIL data: ' + error.message);
@@ -149,8 +156,13 @@ export default function SAILManagement() {
         updates.corrective_action = (updates.corrective_action || '') + narrativeEntry;
       }
 
-      const { error } = await supabase.from('sail_log').update(updates).eq('id', editItem.id);
-      if (error) throw error;
+      const resp = await authFetch('/api/sail', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editItem.id, updates })
+      });
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(payload.error || ('Update failed (' + resp.status + ')'));
 
       alert('SAIL item updated!');
       setEditItem(null);
@@ -166,8 +178,13 @@ export default function SAILManagement() {
     );
     if (!confirmed) return;
     try {
-      const { error } = await supabase.from('sail_log').delete().eq('id', item.id);
-      if (error) throw error;
+      const resp = await authFetch('/api/sail?id=' + encodeURIComponent(item.id), { method: 'DELETE' });
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        // 403 here is a company admin trying to delete rather than close. The
+        // subject of a safety finding must not be able to erase it.
+        throw new Error(payload.error || ('Delete failed (' + resp.status + ')'));
+      }
       loadData();
     } catch (error) {
       alert('Error deleting item: ' + error.message);

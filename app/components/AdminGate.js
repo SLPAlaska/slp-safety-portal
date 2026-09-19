@@ -25,8 +25,27 @@ const supabase = (typeof globalThis !== 'undefined' && globalThis.__slpAuthClien
  * on the device, so this is a one-time step per device, not per visit.
  *
  * Field forms are NOT wrapped by this and remain login-free.
+ *
+ * COMPANY ADMINS
+ *
+ * `area` opens a page to client company admins as well. Omit it and the page
+ * stays portal_staff-only, so a page is never widened by forgetting to think
+ * about it — only by naming it.
+ *
+ * Membership of portal_staff is all-or-nothing across every gated page, which
+ * is why a client admin is not simply added to it: that would hand an
+ * AKE-Line employee the investigation dashboard, incident records and the
+ * client export for every tenant. A company admin is admitted only to areas
+ * whose DATA is scoped server-side, and today that is SAIL alone
+ * (app/api/sail + app/lib/companyAccess.js).
+ *
+ * This gate decides what RENDERS. It is not the access control: the pages it
+ * opens fetch through endpoints that re-derive the caller's scope from their
+ * session. Anything relying on this component alone is unprotected.
  */
-export default function AdminGate({ children }) {
+const COMPANY_ADMIN_AREAS = new Set(['sail']);
+
+export default function AdminGate({ children, area }) {
   const [status, setStatus] = useState('loading'); // loading | signedout | unauthorized | ready
   const [userEmail, setUserEmail] = useState('');
   const [email, setEmail] = useState('');
@@ -85,8 +104,24 @@ export default function AdminGate({ children }) {
         setStatusSafe('signedout');
         return;
       }
-      // Definitive answer from the database:
-      setStatusSafe(data ? 'ready' : 'unauthorized');
+      if (data) { setStatusSafe('ready'); return; }
+
+      // Not SLP staff. A company admin may still enter an area whose data is
+      // scoped server-side. The role is read from lms_users — the same single
+      // source of truth app/lib/companyAccess.js uses to scope the data — and
+      // never from user_metadata, which the signed-in user can rewrite.
+      if (COMPANY_ADMIN_AREAS.has(area)) {
+        const { data: lmsUser } = await supabase
+          .from('lms_users')
+          .select('role, active')
+          .eq('auth_user_id', session.user.id)
+          .maybeSingle();
+        if (lmsUser && lmsUser.role === 'company_admin' && lmsUser.active !== false) {
+          setStatusSafe('ready');
+          return;
+        }
+      }
+      setStatusSafe('unauthorized');
     } catch (e) {
       console.error('Staff check failed:', e.message);
       setStatusSafe('signedout');
