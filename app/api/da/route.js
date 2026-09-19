@@ -432,6 +432,54 @@ export async function GET(request) {
     return NextResponse.json({ year, from: pools[0].frequency, to, pools: out })
   }
 
+  // The blank sheet, so it is built once and built right.
+  if (view === 'history_template') {
+    const { data: clients } = await pageAll(() => db().from('da_clients')
+      .select('name').eq('active', true).order('name'))
+    const header = [
+      'external_ref', 'client', 'employee_name', 'employee_id',
+      'test_date', 'program', 'test_kind', 'reason', 'outcome',
+      'drugs_positive_for', 'lab_confirmation_date', 'lab_outcome', 'notes',
+    ]
+    const examples = [
+      ['P-2024-0417', 'Pollard Wireline', 'Morris, Jack', 'PW-0142',
+       '04/17/2024', 'DOT', 'drug', 'random', 'negative', '', '', '', ''],
+      ['P-2024-0418', 'Pollard Wireline', 'Perl, Luke', 'PW-0187',
+       '04/18/2024', 'DOT', 'alcohol', 'random', '0.04-or-more', '', '', '',
+       'confirmation 0.061'],
+      ['P-2024-0503', 'Pollard Wireline', 'Coon, Jonathan', 'PW-0203',
+       '05/03/2024', 'DOT', 'drug', 'pre-employment', 'positive', 'marijuana', '', '', ''],
+      ['S-2024-0611', 'Summit Excavation', 'Willey, Scot', 'SE-014',
+       '06/11/2024', 'NON_DOT', 'drug', 'post-accident', 'non-negative-sent-to-lab',
+       '', '06/14/2024', 'positive', 'instant presumptive, lab confirmed'],
+      ['S-2024-0612', 'Summit Excavation', 'Taylor, Neilo', 'SE-021',
+       '06/12/2024', 'NON_DOT', 'drug', 'random', 'negative', '', '', '', ''],
+    ]
+    const csv = [header.join(','),
+      ...examples.map(r => r.map(c => /[",]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c).join(','))
+    ].join('\n')
+    return NextResponse.json({
+      header, examples, csv,
+      filename: 'slp_test_history_template.csv',
+      clients: (clients || []).map(c => c.name),
+      vocabulary: {
+        program: ['DOT', 'NON_DOT'],
+        test_kind: ['drug', 'alcohol'],
+        reason: ['pre-employment', 'random', 'post-accident',
+                 'reasonable-suspicion', 'return-to-duty', 'follow-up'],
+        outcome_dot_drug: ['negative', 'positive', 'refusal-adulterated',
+                           'refusal-substituted', 'refusal-shy-bladder',
+                           'refusal-other', 'cancelled'],
+        outcome_dot_alcohol: ['negative', '0.02-0.039', '0.04-or-more',
+                              'refusal-shy-lung', 'refusal-other', 'cancelled'],
+        outcome_nondot_instant: ['negative', 'non-negative-sent-to-lab'],
+        lab_outcome: ['negative', 'positive', 'adulterated', 'substituted',
+                      'invalid', 'cancelled'],
+        drugs_positive_for: ['marijuana', 'cocaine', 'pcp', 'opiates', 'amphetamines'],
+      },
+    })
+  }
+
   if (view === 'consents') {
     const driver = url.searchParams.get('driver_id')
     let q = db().from('da_query_consents').select('*, da_drivers(full_name)')
@@ -756,6 +804,241 @@ export async function POST(request) {
       if (error) return NextResponse.json({ error: error.message }, { status: 400 })
       console.warn('[da] frequency for client=%s set to %s by %s', clientId, freq, actor)
       return NextResponse.json({ pools: data, frequency: freq })
+    }
+
+    // ---- Historical test records ------------------------------------------
+    //
+    // DOT rows store an MIS outcome bucket and nothing else - no individual
+    // verified result, same rule as everywhere else in this module. Non-DOT
+    // instant tests DO store a per-person result, but only through the
+    // negative_final / non_negative_sent_to_lab structure, so a bare positive
+    // remains unrecordable off the instant device.
+    //
+    // Idempotent: a row is matched on external_ref where the sheet has one,
+    // otherwise on the natural key of person, day, programme, kind and reason.
+    // Re-importing the same sheet applies nothing.
+    case 'import_test_history': {
+      if (!s.isStaff) {
+        return NextResponse.json(
+          { error: 'Only SLP D&A administrators may import historical records' }, { status: 403 })
+      }
+      const rowsIn = Array.isArray(body.rows) ? body.rows : []
+      if (!rowsIn.length) return NextResponse.json({ error: 'No rows supplied' }, { status: 400 })
+
+      const { data: clients } = await pageAll(() => db().from('da_clients').select('id, name'))
+      const norm = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+      const byClient = {}
+      for (const c of clients || []) byClient[norm(c.name)] = c.id
+
+      // Everyone we could plausibly link a name to.
+      const { data: members } = await pageAll(() => db().from('da_pool_members')
+        .select('id, client_id, full_name, employee_ident').eq('active', true))
+      const { data: drivers } = await pageAll(() => db().from('da_drivers')
+        .select('id, client_id, full_name').eq('active', true))
+
+      const REASON = {
+        'preemployment': 'pre_employment', 'pre_employment': 'pre_employment',
+        'random': 'random',
+        'postaccident': 'post_accident', 'post_accident': 'post_accident',
+        'reasonablesuspicion': 'reasonable_suspicion', 'reasonablecause': 'reasonable_suspicion',
+        'returntoduty': 'return_to_duty', 'rtd': 'return_to_duty',
+        'followup': 'follow_up',
+      }
+      const DRUG_MIS = {
+        'negative': 'verified_negative', 'verifiednegative': 'verified_negative',
+        'positive': 'verified_positive', 'verifiedpositive': 'verified_positive',
+        'refusaladulterated': 'refusal_adulterated', 'adulterated': 'refusal_adulterated',
+        'refusalsubstituted': 'refusal_substituted', 'substituted': 'refusal_substituted',
+        'refusalshybladder': 'refusal_shy_bladder_no_medical', 'shybladder': 'refusal_shy_bladder_no_medical',
+        'refusalother': 'refusal_other', 'refusal': 'refusal_other',
+        'cancelled': 'cancelled', 'canceled': 'cancelled',
+      }
+      const ALC = {
+        'negative': ['below_002', 'not_required'],
+        'below002': ['below_002', 'not_required'],
+        '002': ['002_or_greater', 'not_required'],
+        '0020039': ['002_or_greater', '002_through_0039'],
+        '004ormore': ['002_or_greater', '004_or_greater'],
+        '004': ['002_or_greater', '004_or_greater'],
+        'refusalshylung': ['refusal_shy_lung_no_medical', null],
+        'shylung': ['refusal_shy_lung_no_medical', null],
+        'refusalother': ['refusal_other', null],
+        'refusal': ['refusal_other', null],
+        'cancelled': ['cancelled', null], 'canceled': ['cancelled', null],
+      }
+      const INSTANT = {
+        'negative': 'negative_final', 'negativefinal': 'negative_final',
+        'nonnegativesenttolab': 'non_negative_sent_to_lab',
+        'nonnegative': 'non_negative_sent_to_lab',
+      }
+      const LAB = ['negative', 'positive', 'adulterated', 'substituted', 'invalid', 'cancelled']
+      const DRUGS = ['marijuana', 'cocaine', 'pcp', 'opiates', 'amphetamines']
+
+      const parseDate = (raw) => {
+        const t = String(raw || '').trim()
+        let m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
+        if (m) return `${m[3]}-${String(m[1]).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`
+        m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+        return m ? t : null
+      }
+
+      const { data: batch } = await db().from('da_import_batches').insert([{
+        kind: 'test_history', filename: body.filename || null,
+        imported_by: actor, row_count: rowsIn.length,
+      }]).select().single()
+
+      const applied = [], skipped = [], rejected = [], unmatchedPeople = []
+      for (let i = 0; i < rowsIn.length; i++) {
+        const r = rowsIn[i]
+        const line = i + 2  // header is line 1
+        const reject = (why) => rejected.push({ line, client: r.client, name: r.employee_name, why })
+
+        const clientId = byClient[norm(r.client)]
+        if (!clientId) { reject(`client "${r.client || '(blank)'}" is not a known D&A client`); continue }
+
+        const name = String(r.employee_name || '').trim()
+        if (!name) { reject('employee_name is blank'); continue }
+
+        const date = parseDate(r.test_date)
+        if (!date) { reject(`test_date "${r.test_date || '(blank)'}" is not MM/DD/YYYY or YYYY-MM-DD`); continue }
+
+        const program = norm(r.program) === 'dot' ? 'DOT'
+          : (norm(r.program) === 'nondot' ? 'NON_DOT' : null)
+        if (!program) { reject(`program "${r.program || '(blank)'}" must be DOT or NON_DOT`); continue }
+
+        const kind = norm(r.test_kind) === 'drug' ? 'drug'
+          : (norm(r.test_kind) === 'alcohol' ? 'alcohol' : null)
+        if (!kind) { reject(`test_kind "${r.test_kind || '(blank)'}" must be drug or alcohol`); continue }
+
+        const reason = REASON[norm(r.reason)]
+        if (!reason) { reject(`reason "${r.reason || '(blank)'}" is not one of the six`); continue }
+
+        // Outcome, whose vocabulary depends on programme and kind.
+        const oc = norm(r.outcome)
+        const ev = {
+          client_id: clientId, subject_name: name,
+          subject_ident: String(r.employee_id || '').trim() || null,
+          program, test_kind: kind, reason, event_date: date,
+          status: 'completed',
+          external_ref: String(r.external_ref || '').trim() || null,
+          import_batch: batch.id, imported_at: new Date().toISOString(), imported_by: actor,
+          notes: String(r.notes || '').trim() || null,
+        }
+        let instantOutcome = null
+        if (program === 'DOT' && kind === 'drug') {
+          const b = DRUG_MIS[oc]
+          if (!b) { reject(`outcome "${r.outcome}" is not a DOT drug outcome`); continue }
+          ev.drug_mis_outcome = b
+          if (b === 'verified_positive') {
+            const list = String(r.drugs_positive_for || '').split(/[;,|]/)
+              .map(x => norm(x)).filter(Boolean)
+            const bad = list.filter(x => !DRUGS.includes(x))
+            if (bad.length) { reject(`drugs_positive_for has unknown value(s): ${bad.join(', ')}`); continue }
+            ev.drug_positive_for = list
+          }
+        } else if (program === 'DOT' && kind === 'alcohol') {
+          const pair = ALC[oc]
+          if (!pair) { reject(`outcome "${r.outcome}" is not a DOT alcohol outcome`); continue }
+          ev.alcohol_screen_mis = pair[0]
+          ev.alcohol_confirm_mis = pair[1]
+        } else if (kind === 'alcohol') {
+          const pair = ALC[oc]
+          if (!pair) { reject(`outcome "${r.outcome}" is not an alcohol outcome`); continue }
+          ev.alcohol_screen_mis = pair[0]
+          ev.alcohol_confirm_mis = pair[1]
+        } else {
+          // Non-DOT drug: the instant-test structure.
+          instantOutcome = INSTANT[oc]
+          if (!instantOutcome) {
+            reject(`outcome "${r.outcome}" must be negative or non-negative-sent-to-lab for a non-DOT drug test`)
+            continue
+          }
+          // The MIS buckets are a DOT concept; a non-DOT row carries none, so
+          // the event is recorded as notified rather than completed and the
+          // result lives on the instant test and its lab confirmation.
+          ev.status = 'notified'
+        }
+
+        // Already here?
+        let dupe = null
+        if (ev.external_ref) {
+          const { data: d } = await db().from('da_test_events').select('id')
+            .eq('client_id', clientId).eq('external_ref', ev.external_ref).maybeSingle()
+          dupe = d
+        } else {
+          const { data: d } = await db().from('da_test_events').select('id')
+            .eq('client_id', clientId).eq('event_date', date).eq('program', program)
+            .eq('test_kind', kind).eq('reason', reason)
+            .ilike('subject_name', name).maybeSingle()
+          dupe = d
+        }
+        if (dupe) { skipped.push({ line, name, why: 'already imported' }); continue }
+
+        // Link the person where we can, and say so when we cannot.
+        const ident = String(r.employee_id || '').trim()
+        const cand = (members || []).filter(m => m.client_id === clientId && norm(m.full_name) === norm(name))
+        let member = cand.length === 1 ? cand[0]
+          : cand.find(m => ident && norm(m.employee_ident) === norm(ident)) || null
+        if (member) ev.member_id = member.id
+        else {
+          const dcand = (drivers || []).filter(d => d.client_id === clientId && norm(d.full_name) === norm(name))
+          if (dcand.length !== 1) {
+            ev.subject_unmatched = true
+            unmatchedPeople.push({ line, name, client: r.client,
+              why: cand.length > 1 ? 'name is not unique for this client' : 'no pool member or driver of that name' })
+          }
+        }
+
+        const { data: made, error } = await db().from('da_test_events').insert([ev]).select().single()
+        if (error) {
+          if (error.code === '23505') { skipped.push({ line, name, why: 'already imported' }); continue }
+          reject(error.message.slice(0, 120)); continue
+        }
+
+        if (instantOutcome) {
+          const sentAt = instantOutcome === 'non_negative_sent_to_lab'
+            ? (parseDate(r.lab_confirmation_date) || date) + 'T00:00:00Z' : null
+          const { data: it, error: ie } = await db().from('da_instant_tests').insert([{
+            test_event_id: made.id, client_id: clientId,
+            collected_at: date + 'T00:00:00Z',
+            instant_outcome: instantOutcome,
+            sent_to_lab_at: sentAt,
+            notes: String(r.notes || '').trim() || null,
+          }]).select().single()
+          if (ie) { reject('instant test: ' + ie.message.slice(0, 100)); continue }
+
+          const labRaw = norm(r.lab_outcome)
+          if (labRaw) {
+            if (instantOutcome !== 'non_negative_sent_to_lab') {
+              reject('lab_outcome given but the instant outcome was negative; a negative goes to no lab')
+              continue
+            }
+            const lab = LAB.find(x => norm(x) === labRaw)
+            if (!lab) { reject(`lab_outcome "${r.lab_outcome}" is not a known value`); continue }
+            const { error: le } = await db().from('da_lab_confirmations').insert([{
+              instant_test_id: it.id, client_id: clientId,
+              reported_at: (parseDate(r.lab_confirmation_date) || date) + 'T00:00:00Z',
+              outcome: lab,
+              substances: lab === 'positive'
+                ? String(r.drugs_positive_for || '').split(/[;,|]/).map(x => norm(x)).filter(Boolean) : [],
+            }])
+            if (le) { reject('lab confirmation: ' + le.message.slice(0, 100)); continue }
+          }
+        }
+        applied.push({ line, name, client: r.client })
+      }
+
+      await db().from('da_import_batches').update({
+        applied: applied.length, skipped: skipped.length, rejected: rejected.length,
+      }).eq('id', batch.id)
+
+      return NextResponse.json({
+        batch_id: batch.id,
+        applied: applied.length, skipped: skipped.length, rejected: rejected.length,
+        rejected_rows: rejected,
+        unmatched_people: unmatchedPeople,
+        detail: { applied: applied.slice(0, 50), skipped: skipped.slice(0, 50) },
+      })
     }
 
     // ---- DOB import -------------------------------------------------------

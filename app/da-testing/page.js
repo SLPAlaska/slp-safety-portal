@@ -84,7 +84,7 @@ export default function DAConsole() {
         {tab === 'bulk' && <BulkQueries me={me} busy={busy} setBusy={setBusy} />}
         {tab === 'random' && <RandomTesting me={me} busy={busy} setBusy={setBusy} />}
         {tab === 'selections' && <Selections me={me} busy={busy} setBusy={setBusy} />}
-        {tab === 'mis' && <MisReport me={me} />}
+        {tab === 'mis' && <><MisReport me={me} /><HistoryImport me={me} busy={busy} setBusy={setBusy} /></>}
       </div>
       <div style={S.foot}>AnthroSafe&trade; Field Driven Safety | &copy; 2026 SLP Alaska, LLC</div>
     </div>
@@ -1042,6 +1042,127 @@ function MisReport({ me }) {
   );
 }
 
+// Historical test records.
+//
+// Sits under MIS because that is what it feeds: the federal form is built from
+// these rows, and a year with no history produces an empty form.
+function HistoryImport({ me, busy, setBusy }) {
+  const [tpl, setTpl] = useState(null);
+  const [paste, setPaste] = useState('');
+  const [res, setRes] = useState(null);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    authFetch('/api/da?view=history_template')
+      .then(r => r.json()).then(setTpl).catch(() => {});
+  }, []);
+
+  return (
+    <Card>
+      <h3 style={S.h3}>Import historical test records</h3>
+      <p style={S.muted}>
+        DOT rows store the MIS outcome bucket and nothing else &mdash; no individual
+        verified result, the same rule as everywhere else here. Non-DOT drug
+        tests store a per-person result, but only through the instant structure,
+        so a bare positive off the device remains unrecordable. Anything that
+        does not match a known client, or uses a word outside the vocabulary, is
+        rejected with the line number rather than guessed at.
+      </p>
+      <p style={S.fine}>
+        Re-importing the same file changes nothing. Rows are matched on
+        <code style={S.code}>external_ref</code> when the sheet has one, otherwise on
+        person + date + programme + kind + reason.
+      </p>
+
+      {tpl && <>
+        <div style={S.btnRow}>
+          <button style={S.btn} onClick={() => {
+            const blob = new Blob([tpl.csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = tpl.filename; a.click();
+            URL.revokeObjectURL(a.href);
+          }}>Download the blank template</button>
+        </div>
+        <details style={S.details}>
+          <summary style={S.summary}>Allowed values for every column</summary>
+          <table style={S.table}>
+            <tbody>
+              {Object.entries(tpl.vocabulary).map(([k, v]) => (
+                <tr key={k} style={S.tr}>
+                  <td style={S.td}><code style={S.code}>{k}</code></td>
+                  <td style={S.td}>{v.join(' \u00b7 ')}</td>
+                </tr>
+              ))}
+              <tr style={S.tr}>
+                <td style={S.td}><code style={S.code}>client</code></td>
+                <td style={S.td}>{tpl.clients.join(' \u00b7 ')}</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </>}
+
+      <textarea style={S.textarea} rows={8} value={paste}
+        placeholder={tpl ? tpl.csv : 'Paste the filled-in sheet here'}
+        onChange={e => setPaste(e.target.value)} />
+      {err && <div style={S.err}>{err}</div>}
+      <button style={S.btn} disabled={busy || !paste.trim()} onClick={async () => {
+        const rows = parseHistory(paste);
+        if (!rows.length) { setErr('Could not read any rows from that.'); return; }
+        setBusy(true); setErr(''); setRes(null);
+        const r = await authFetch('/api/da', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'import_test_history', rows }),
+        });
+        const j = await r.json().catch(() => ({}));
+        setBusy(false);
+        if (!r.ok) { setErr(j.error || 'Import failed'); return; }
+        setRes(j);
+      }}>{busy ? 'Importing\u2026' : 'Import records'}</button>
+
+      {res && <div style={S.ok}>
+        <b>{res.applied}</b> imported, <b>{res.skipped}</b> already present,
+        {' '}<b>{res.rejected}</b> rejected.
+        {res.rejected_rows.length > 0 && <div style={S.warnBox}>
+          Rejected, with the line from your sheet:
+          <ul>{res.rejected_rows.slice(0, 25).map((r, i) =>
+            <li key={i}>line {r.line} &mdash; {r.why}</li>)}</ul>
+        </div>}
+        {res.unmatched_people.length > 0 && <div style={S.warnBox}>
+          Imported, but the person could not be matched to a pool member or
+          driver. These still count towards MIS, which aggregates by client and
+          reason rather than by individual &mdash; only the link is missing:
+          <ul>{res.unmatched_people.slice(0, 25).map((u, i) =>
+            <li key={i}>line {u.line} &mdash; {u.name} ({u.client}): {u.why}</li>)}</ul>
+        </div>}
+      </div>}
+    </Card>
+  );
+}
+
+/** Read the filled-in history sheet. Quoted commas are expected in names. */
+function parseHistory(text) {
+  const lines = String(text).trim().split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const split = (line) => {
+    const out = []; let cur = '', q = false;
+    for (const ch of line) {
+      if (ch === '"') q = !q;
+      else if (ch === sep && !q) { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur); return out.map(x => x.trim());
+  };
+  const head = split(lines[0]).map(h =>
+    h.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''));
+  return lines.slice(1).map(l => {
+    const cells = split(l); const o = {};
+    head.forEach((h, i) => { o[h] = cells[i] || ''; });
+    return o;
+  }).filter(o => o.client || o.employee_name);
+}
+
 // ── bits ────────────────────────────────────────────────────────────────────
 const Shell = ({ children }) => (
   <div style={S.wrap}><div style={{ ...S.inner, maxWidth: '560px' }}>
@@ -1117,6 +1238,8 @@ const S = {
   formRow3: { display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' },
   batch: { borderTop: '1px solid #f1f5f9', padding: '10px 0' },
   freqBlock: { borderTop: '1px solid #e5e7eb', paddingTop: '12px', marginTop: '12px' },
+  details: { margin: '10px 0', fontSize: '12px' },
+  summary: { cursor: 'pointer', color: '#1e3a8a', fontWeight: 600 },
   okBox: { background: '#dcfce7', color: '#166534', padding: '10px', fontSize: '12px',
            borderRadius: '6px', marginTop: '8px' },
 };
