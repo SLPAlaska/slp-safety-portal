@@ -22,6 +22,16 @@ export async function POST(request) {
     if (!count || count === 0)
       return NextResponse.json({ error: 'No slides found.' }, { status: 404 })
 
+    // Controlled-course lock: authored narration on competency courses must never be regenerated.
+    // Add narration (audio) is still allowed.
+    const { data: course } = await supabaseAdmin
+      .from('lms_courses')
+      .select('controlled')
+      .eq('id', course_id)
+      .single()
+    if (course?.controlled && mode !== 'audio')
+      return NextResponse.json({ error: 'Controlled course: the authored narration cannot be regenerated. Use Add narration only.' }, { status: 403 })
+
     const { data: job } = await supabaseAdmin
       .from('lms_ai_jobs')
       .insert({ course_id, mode, status: 'pending', progress: 0, total_slides: count })
