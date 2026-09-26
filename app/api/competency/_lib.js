@@ -3,7 +3,15 @@
 // AnthroSafe(TM) Field Driven Safety | (c) 2026 SLP Alaska, LLC
 import { createClient } from '@supabase/supabase-js'
 
-export const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+// Created on first use, not at import, so next build can load this module without the service key.
+let _admin = null
+export const admin = new Proxy({}, {
+  get(_, prop) {
+    if (!_admin) _admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+    const v = _admin[prop]
+    return typeof v === 'function' ? v.bind(_admin) : v
+  }
+})
 export const MANAGERS = ['super_admin', 'admin', 'company_admin']
 export const json = (body, status = 200) => Response.json(body, { status })
 
