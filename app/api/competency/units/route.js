@@ -1,5 +1,6 @@
 // app/api/competency/units/route.js
 // GET ?subject_id=  -> the competency and its ordered units with this learner's progress
+// GET ?program_code= -> same, for this learner's company's copy of the program
 // GET ?unit_id=     -> one unit for the player (scenario without answers, practice definition)
 import { admin, me, json, loadUnit, unitStatus, publicScenario, pickScenario, pickPractice, pickQuizId, pickTitle, MANAGERS } from '../_lib'
 
@@ -8,7 +9,15 @@ export async function GET(req) {
   if (!u) return json({ error: 'Unauthorized' }, 401)
   const { searchParams } = new URL(req.url)
   const unitId = searchParams.get('unit_id')
-  const subjectId = searchParams.get('subject_id')
+  let subjectId = searchParams.get('subject_id')
+  const programCode = searchParams.get('program_code')
+  if (!unitId && !subjectId && programCode) {
+    // Same link works for every company: resolve this learner's own copy of the program.
+    const { data: s } = await admin.from('lms_competency_subjects').select('id')
+      .eq('company_id', u.company_id).eq('program_code', programCode).eq('active', true).maybeSingle()
+    if (!s) return json({ error: 'Competency not found' }, 404)
+    subjectId = s.id
+  }
 
   if (unitId) {
     const unit = await loadUnit(u, unitId)
