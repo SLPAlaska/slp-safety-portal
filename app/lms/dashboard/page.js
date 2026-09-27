@@ -46,7 +46,7 @@ export default function LmsDashboard() {
   const [lmsUser, setLmsUser] = useState(null)
   const [isCompanyAdmin, setIsCompanyAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(''); const [comp, setComp] = useState(null)
 
   useEffect(() => {
     async function load() {
@@ -66,7 +66,7 @@ export default function LmsDashboard() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Failed to load courses.'); setLoading(false); return }
       setCourses(data.courses || [])
-      setLmsUser(data.lmsUser)
+      setLmsUser(data.lmsUser); const LAUNCH = 'National Crane Series 1800 Operator Competency'; if ((data.courses || []).some(c => c.title === LAUNCH)) { setCourses((data.courses || []).filter(c => c.title !== LAUNCH)); try { const cr = await fetch('/api/competency/units?program_code=NC1800-OP', { headers: { 'Authorization': `Bearer ${session.access_token}` } }); if (cr.ok) setComp(await cr.json()) } catch (e) {} }
       setLoading(false)
     }
     load()
@@ -130,6 +130,23 @@ export default function LmsDashboard() {
       </div>
 
       {error && <div style={S.error}>{error}</div>}
+      {comp && (
+        <div style={{ ...S.card, marginBottom: '20px' }}>
+          <div style={S.cardTop}>
+            <div style={S.cardTitleRow}>
+              <h2 style={S.cardTitle}>{comp.subject.title}</h2>
+              <StatusBadge status={comp.all_complete ? 'Complete' : comp.units.some(u => u.status.complete) ? 'In Progress' : 'Not Started'} />
+            </div>
+            <p style={S.regulation}>Competency program: {comp.units.filter(u => u.status.complete).length} of {comp.units.length} units complete</p>
+          </div>
+          <div style={S.cardActions}>
+            <button style={{ ...S.btn, background: comp.all_complete ? '#e8f5e9' : '#b71c1c', color: comp.all_complete ? '#2e7d32' : '#fff' }}
+              onClick={() => window.location.href = `/lms/competency/program/${comp.subject.id}`}>
+              {comp.all_complete ? 'Review Program' : 'Open Program'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {courses.length === 0 ? (
         <div style={S.empty}>
