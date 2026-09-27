@@ -34,20 +34,31 @@ const FOLLOW_UP_OPTIONS = [
   'Equipment-Specific Training Required'
 ];
 
+// Configuration evaluated (29 CFR 1926.1427: the record shows make, model, and configuration)
+const SPAN_OPTIONS = ['Full span', 'Mid span', 'Other (describe in comments)'];
+const JIB_OPTIONS = ['No jib', 'Jib stowed', 'Jib erected'];
+const BLIND_OPTIONS = [
+  { value: 'Evaluated - competent', label: '✅ Evaluated - competent for blind lifts' },
+  { value: 'Not evaluated', label: '🚫 Not evaluated - not authorized for blind lifts' }
+];
+
 // Safety critical items with their sections
 const PRE_OPERATION_ITEMS = [
   { name: 'pre_lift_inspection', label: 'Conducted complete pre-lift inspection?', critical: true },
   { name: 'load_chart', label: 'Verified load chart and capacity ratings?', critical: true },
   { name: 'fluid_check', label: 'Checked hydraulic fluid and engine oil?', critical: false },
   { name: 'wire_rope_inspection', label: 'Inspected wire rope/cables for damage?', critical: true },
-  { name: 'load_block_hook', label: 'Tested load block and hook operation?', critical: true }
+  { name: 'load_block_hook', label: 'Tested load block and hook operation?', critical: true },
+  { name: 'lmi_tested', label: 'Tested LMI, anti-two-block, and level indicator?', critical: true }
 ];
 
 const OUTRIGGER_ITEMS = [
   { name: 'firm_level_ground', label: 'Sets up on firm, level ground?', critical: true },
   { name: 'outrigger_setup', label: 'Properly extends and sets all outriggers?', critical: true },
   { name: 'outrigger_floats', label: 'Uses proper outrigger floats/pads?', critical: true },
-  { name: 'underground_utilities', label: 'Checks for underground utilities/hazards?', critical: false }
+  { name: 'underground_utilities', label: 'Checks for underground utilities/hazards?', critical: false },
+  { name: 'stabilizer_locks', label: 'Sets front stabilizer and outrigger span locks per the manufacturer?', critical: true },
+  { name: 'lmi_mode', label: 'Sets LMI mode to match span, jib, and parts of line, and checks it against a known load?', critical: true }
 ];
 
 const LIFTING_ITEMS = [
@@ -72,58 +83,44 @@ const SHUTDOWN_ITEMS = [
   { name: 'equipment_secured', label: 'Secures equipment in authorized area?', critical: true }
 ];
 
-const ALL_CRITICAL_ITEMS = [
-  ...PRE_OPERATION_ITEMS.filter(i => i.critical),
-  ...OUTRIGGER_ITEMS.filter(i => i.critical),
-  ...LIFTING_ITEMS.filter(i => i.critical),
-  ...SAFETY_ITEMS.filter(i => i.critical),
-  ...SHUTDOWN_ITEMS.filter(i => i.critical)
-];
+const ALL_ITEMS = [...PRE_OPERATION_ITEMS, ...OUTRIGGER_ITEMS, ...LIFTING_ITEMS, ...SAFETY_ITEMS, ...SHUTDOWN_ITEMS];
+const ALL_CRITICAL_ITEMS = ALL_ITEMS.filter(i => i.critical);
+
+const EMPTY_FORM = () => ({
+  employee_name: '',
+  evaluator_name: '',
+  company: '',
+  location: '',
+  evaluation_date: new Date().toLocaleDateString('en-CA'),
+  equipment_id: '',
+  crane_make: '',
+  crane_model: '',
+  crane_serial: '',
+  outrigger_span: '',
+  jib_config: '',
+  parts_of_line: '',
+  blind_lift: '',
+  energy_sources: [],
+  stky_assessment: '',
+  ...Object.fromEntries(ALL_ITEMS.map(i => [i.name, ''])),
+  overall_assessment: '',
+  follow_up_required: 'None - Employee is competent',
+  evaluator_comments: '',
+  evaluator_signature: '',
+  evaluator_attestation: false
+});
 
 export default function CraneBoomPractical() {
-  const [formData, setFormData] = useState({
-    employee_name: '',
-    evaluator_name: '',
-    company: '',
-    location: '',
-    evaluation_date: new Date().toLocaleDateString('en-CA'),
-    equipment_id: '',
-    energy_sources: [],
-    stky_assessment: '',
-    pre_lift_inspection: '',
-    load_chart: '',
-    fluid_check: '',
-    wire_rope_inspection: '',
-    load_block_hook: '',
-    firm_level_ground: '',
-    outrigger_setup: '',
-    outrigger_floats: '',
-    underground_utilities: '',
-    load_calculation: '',
-    rigging_slings: '',
-    test_lift: '',
-    signal_person: '',
-    no_swing_over_personnel: '',
-    proper_ppe: '',
-    power_line_safety: '',
-    exclusion_zones: '',
-    hand_signals: '',
-    load_block_secured: '',
-    boom_retracted: '',
-    outriggers_retracted: '',
-    equipment_secured: '',
-    overall_assessment: '',
-    follow_up_required: 'None - Employee is competent',
-    evaluator_comments: ''
-  });
-
+  const [formData, setFormData] = useState(EMPTY_FORM());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [assessmentId, setAssessmentId] = useState('');
 
+  const criticalFailure = ALL_CRITICAL_ITEMS.some(item => formData[item.name] === 'Fail');
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const toggleEnergySource = (source) => {
@@ -140,16 +137,19 @@ export default function CraneBoomPractical() {
   const setPassFail = (name, value) => {
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
-      
       // Auto-fail logic
       const hasFailure = ALL_CRITICAL_ITEMS.some(item => newData[item.name] === 'Fail');
-      
       if (hasFailure && newData.overall_assessment !== 'FAIL') {
         newData.overall_assessment = 'FAIL';
       }
-      
       return newData;
     });
+  };
+
+  const setOverall = (value) => {
+    // PASS is blocked while any safety-critical item is failed.
+    if (value === 'PASS' && criticalFailure) return;
+    setFormData(prev => ({ ...prev, overall_assessment: value }));
   };
 
   const generateAssessmentId = () => {
@@ -161,11 +161,19 @@ export default function CraneBoomPractical() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.overall_assessment === 'PASS' && criticalFailure) {
+      alert('A safety-critical item is marked Fail. The overall assessment must be FAIL.');
+      return;
+    }
+    if (!formData.evaluator_attestation || !formData.evaluator_signature.trim()) {
+      alert('The evaluator must sign and check the qualification statement.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       const newAssessmentId = generateAssessmentId();
-      
+
       const submitData = {
         assessment_id: newAssessmentId,
         employee_name: formData.employee_name,
@@ -174,33 +182,22 @@ export default function CraneBoomPractical() {
         location: formData.location,
         evaluation_date: formData.evaluation_date,
         equipment_id: formData.equipment_id || null,
+        crane_make: formData.crane_make,
+        crane_model: formData.crane_model,
+        crane_serial: formData.crane_serial,
+        outrigger_span: formData.outrigger_span,
+        jib_config: formData.jib_config,
+        parts_of_line: formData.parts_of_line,
+        blind_lift: formData.blind_lift,
         energy_sources: formData.energy_sources.join(', ') || null,
         stky_assessment: formData.stky_assessment,
-        pre_lift_inspection: formData.pre_lift_inspection,
-        load_chart: formData.load_chart,
-        fluid_check: formData.fluid_check,
-        wire_rope_inspection: formData.wire_rope_inspection,
-        load_block_hook: formData.load_block_hook,
-        firm_level_ground: formData.firm_level_ground,
-        outrigger_setup: formData.outrigger_setup,
-        outrigger_floats: formData.outrigger_floats,
-        underground_utilities: formData.underground_utilities,
-        load_calculation: formData.load_calculation,
-        rigging_slings: formData.rigging_slings,
-        test_lift: formData.test_lift,
-        signal_person: formData.signal_person,
-        no_swing_over_personnel: formData.no_swing_over_personnel,
-        proper_ppe: formData.proper_ppe,
-        power_line_safety: formData.power_line_safety,
-        exclusion_zones: formData.exclusion_zones,
-        hand_signals: formData.hand_signals,
-        load_block_secured: formData.load_block_secured,
-        boom_retracted: formData.boom_retracted,
-        outriggers_retracted: formData.outriggers_retracted,
-        equipment_secured: formData.equipment_secured,
+        ...Object.fromEntries(ALL_ITEMS.map(i => [i.name, formData[i.name]])),
         overall_assessment: formData.overall_assessment,
         follow_up_required: formData.follow_up_required,
-        evaluator_comments: formData.evaluator_comments || null
+        evaluator_comments: formData.evaluator_comments || null,
+        evaluator_signature: formData.evaluator_signature.trim(),
+        evaluator_attestation: true,
+        signed_at: new Date().toISOString()
       };
 
       const { error } = await safeInsert('crane_boom_evaluations', [submitData]);
@@ -217,41 +214,7 @@ export default function CraneBoomPractical() {
   };
 
   const resetForm = () => {
-    setFormData({
-      employee_name: '',
-      evaluator_name: '',
-      company: '',
-      location: '',
-      evaluation_date: new Date().toLocaleDateString('en-CA'),
-      equipment_id: '',
-      energy_sources: [],
-      stky_assessment: '',
-      pre_lift_inspection: '',
-      load_chart: '',
-      fluid_check: '',
-      wire_rope_inspection: '',
-      load_block_hook: '',
-      firm_level_ground: '',
-      outrigger_setup: '',
-      outrigger_floats: '',
-      underground_utilities: '',
-      load_calculation: '',
-      rigging_slings: '',
-      test_lift: '',
-      signal_person: '',
-      no_swing_over_personnel: '',
-      proper_ppe: '',
-      power_line_safety: '',
-      exclusion_zones: '',
-      hand_signals: '',
-      load_block_secured: '',
-      boom_retracted: '',
-      outriggers_retracted: '',
-      equipment_secured: '',
-      overall_assessment: '',
-      follow_up_required: 'None - Employee is competent',
-      evaluator_comments: ''
-    });
+    setFormData(EMPTY_FORM());
     setSubmitted(false);
     setAssessmentId('');
   };
@@ -288,6 +251,31 @@ export default function CraneBoomPractical() {
           <span>❌ Fail</span>
         </div>
       </div>
+    </div>
+  );
+
+  // Render a single-choice button group
+  const renderChoice = (name, options, required = true) => (
+    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+      {options.map(opt => {
+        const value = typeof opt === 'string' ? opt : opt.value;
+        const label = typeof opt === 'string' ? opt : opt.label;
+        return (
+          <div
+            key={value}
+            onClick={() => setFormData(prev => ({ ...prev, [name]: value }))}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px',
+              border: `2px solid ${formData[name] === value ? '#c2410c' : '#e5e7eb'}`,
+              borderRadius: '8px', cursor: 'pointer',
+              background: formData[name] === value ? '#fed7d7' : 'white'
+            }}
+          >
+            <input type="radio" name={name} value={value} checked={formData[name] === value} onChange={() => {}} required={required} />
+            <span>{label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -329,10 +317,12 @@ export default function CraneBoomPractical() {
     safetyCritical: { background: '#fef2f2', border: '2px solid #fca5a5', borderRadius: '8px', padding: '12px', marginBottom: '15px' }
   };
 
+  const req = <span style={{ color: '#ef4444' }}>*</span>;
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #7c2d12 0%, #9a3412 50%, #c2410c 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '700px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
-        
+
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg, #c2410c 0%, #9a3412 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
@@ -344,7 +334,7 @@ export default function CraneBoomPractical() {
         {/* Form */}
         <div style={{ padding: '40px' }}>
           <form onSubmit={handleSubmit}>
-            
+
             {/* Basic Information */}
             <div style={styles.section}>
               <div style={styles.sectionHeader}>
@@ -353,35 +343,76 @@ export default function CraneBoomPractical() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '15px' }}>
                 <div>
-                  <label style={styles.label}>Employee Name <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label style={styles.label}>Employee Name {req}</label>
                   <input type="text" name="employee_name" value={formData.employee_name} onChange={handleChange} required style={styles.input} />
                 </div>
                 <div>
-                  <label style={styles.label}>Evaluator Name <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label style={styles.label}>Evaluator Name {req}</label>
                   <input type="text" name="evaluator_name" value={formData.evaluator_name} onChange={handleChange} required style={styles.input} />
                 </div>
                 <div>
-                  <label style={styles.label}>Company <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label style={styles.label}>Company {req}</label>
                   <select name="company" value={formData.company} onChange={handleChange} required style={styles.select}>
                     <option value="">Select Company...</option>
                     {COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={styles.label}>Location <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label style={styles.label}>Location {req}</label>
                   <select name="location" value={formData.location} onChange={handleChange} required style={styles.select}>
                     <option value="">Select Location...</option>
                     {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={styles.label}>Evaluation Date <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label style={styles.label}>Evaluation Date {req}</label>
                   <input type="date" name="evaluation_date" value={formData.evaluation_date} onChange={handleChange} required style={styles.input} />
                 </div>
                 <div>
-                  <label style={styles.label}>Crane/Boom Truck ID/Model</label>
-                  <input type="text" name="equipment_id" value={formData.equipment_id} onChange={handleChange} placeholder="e.g., GROVE-RT540E, Link-Belt-210" style={styles.input} />
+                  <label style={styles.label}>Unit / Truck Number</label>
+                  <input type="text" name="equipment_id" value={formData.equipment_id} onChange={handleChange} placeholder="e.g., Unit 14" style={styles.input} />
                 </div>
+              </div>
+            </div>
+
+            {/* Crane Evaluated */}
+            <div style={styles.section}>
+              <div style={styles.sectionHeader}>
+                <span style={{ fontSize: '24px', marginRight: '12px' }}>🏗️</span>
+                Crane and Configuration Evaluated
+              </div>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '-10px', marginBottom: '15px' }}>
+                The evaluation covers only the crane and configuration recorded here (29 CFR 1926.1427).
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                <div>
+                  <label style={styles.label}>Make {req}</label>
+                  <input type="text" name="crane_make" value={formData.crane_make} onChange={handleChange} required placeholder="e.g., National Crane" style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>Model {req}</label>
+                  <input type="text" name="crane_model" value={formData.crane_model} onChange={handleChange} required placeholder="e.g., 18142" style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>Serial Number {req}</label>
+                  <input type="text" name="crane_serial" value={formData.crane_serial} onChange={handleChange} required style={styles.input} />
+                </div>
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={styles.label}>Outrigger Span {req}</label>
+                {renderChoice('outrigger_span', SPAN_OPTIONS)}
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={styles.label}>Jib {req}</label>
+                {renderChoice('jib_config', JIB_OPTIONS)}
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={styles.label}>Parts of Line {req}</label>
+                <input type="text" name="parts_of_line" value={formData.parts_of_line} onChange={handleChange} required placeholder="e.g., 2" style={{ ...styles.input, maxWidth: '180px' }} />
+              </div>
+              <div>
+                <label style={styles.label}>Blind Lifts {req}</label>
+                {renderChoice('blind_lift', BLIND_OPTIONS)}
               </div>
             </div>
 
@@ -418,29 +449,17 @@ export default function CraneBoomPractical() {
               </div>
               <div style={styles.safetyCritical}>
                 <label style={{ ...styles.label, color: '#dc2626' }}>
-                  Does this crane/boom truck operation involve Life-Threatening, Life-Altering, or Life-Ending potential? <span style={{ color: '#ef4444' }}>*</span>
+                  Does this crane/boom truck operation involve Life-Threatening, Life-Altering, or Life-Ending potential? {req}
                 </label>
-                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginTop: '10px' }}>
-                  {[
-                    { value: 'Yes', label: '🔴 Yes - High Energy/SIF Potential' },
-                    { value: 'No', label: '🟢 No - Low Energy Operation' }
-                  ].map(opt => (
-                    <div
-                      key={opt.value}
-                      onClick={() => setFormData(prev => ({ ...prev, stky_assessment: opt.value }))}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-                        border: `2px solid ${formData.stky_assessment === opt.value ? '#c2410c' : '#e5e7eb'}`,
-                        borderRadius: '8px', cursor: 'pointer',
-                        background: formData.stky_assessment === opt.value ? '#fed7d7' : 'white'
-                      }}
-                    >
-                      <input type="radio" name="stky_assessment" value={opt.value} checked={formData.stky_assessment === opt.value} onChange={() => {}} required />
-                      <span>{opt.label}</span>
-                    </div>
-                  ))}
-                </div>
+                {renderChoice('stky_assessment', [
+                  { value: 'Yes', label: '🔴 Yes - High Energy/SIF Potential' },
+                  { value: 'No', label: '🟢 No - Low Energy Operation' }
+                ])}
               </div>
+            </div>
+
+            <div style={{ ...styles.safetyCritical, marginBottom: '25px', fontSize: '14px', color: '#991b1b' }}>
+              <strong>Items outlined in red are safety-critical.</strong> A Fail on any of them makes the overall assessment FAIL.
             </div>
 
             {/* Pre-Operation Inspection */}
@@ -494,7 +513,7 @@ export default function CraneBoomPractical() {
                 <span style={{ fontSize: '24px', marginRight: '12px' }}>💭</span>
                 Final Assessment
               </div>
-              
+
               <div style={{ marginBottom: '20px' }}>
                 <label style={styles.label}>Evaluator Comments</label>
                 <textarea
@@ -508,26 +527,28 @@ export default function CraneBoomPractical() {
 
               <div style={styles.safetyCritical}>
                 <label style={{ ...styles.label, color: '#dc2626' }}>
-                  Overall Assessment <span style={{ color: '#ef4444' }}>*</span>
+                  Overall Assessment {req}
                 </label>
                 <p style={{ marginBottom: '10px', fontSize: '14px', color: '#dc2626' }}>
                   <strong>Note:</strong> Any safety-critical failure results in automatic FAIL.
+                  {criticalFailure && ' A safety-critical item is marked Fail, so PASS is not available.'}
                 </p>
                 <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                   <div
-                    onClick={() => setFormData(prev => ({ ...prev, overall_assessment: 'PASS' }))}
+                    onClick={() => setOverall('PASS')}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px',
                       border: `2px solid ${formData.overall_assessment === 'PASS' ? '#059669' : '#e5e7eb'}`,
-                      borderRadius: '8px', cursor: 'pointer',
+                      borderRadius: '8px', cursor: criticalFailure ? 'not-allowed' : 'pointer',
+                      opacity: criticalFailure ? 0.45 : 1,
                       background: formData.overall_assessment === 'PASS' ? '#d1fae5' : 'white'
                     }}
                   >
-                    <input type="radio" name="overall_assessment" value="PASS" checked={formData.overall_assessment === 'PASS'} onChange={() => {}} required />
+                    <input type="radio" name="overall_assessment" value="PASS" checked={formData.overall_assessment === 'PASS'} onChange={() => {}} disabled={criticalFailure} required />
                     <span style={{ fontWeight: '600' }}>✅ PASS - Competent for independent operation</span>
                   </div>
                   <div
-                    onClick={() => setFormData(prev => ({ ...prev, overall_assessment: 'FAIL' }))}
+                    onClick={() => setOverall('FAIL')}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px',
                       border: `2px solid ${formData.overall_assessment === 'FAIL' ? '#dc2626' : '#e5e7eb'}`,
@@ -547,6 +568,21 @@ export default function CraneBoomPractical() {
                   {FOLLOW_UP_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
+            </div>
+
+            {/* Evaluator Sign-off */}
+            <div style={styles.section}>
+              <div style={styles.sectionHeader}>
+                <span style={{ fontSize: '24px', marginRight: '12px' }}>✍️</span>
+                Evaluator Sign-off
+              </div>
+              <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '15px', cursor: 'pointer', fontSize: '14px', color: '#374151' }}>
+                <input type="checkbox" name="evaluator_attestation" checked={formData.evaluator_attestation} onChange={handleChange} required style={{ marginTop: '3px' }} />
+                <span>I have the knowledge, training, and experience to evaluate operators on this equipment. I personally observed this operator on the crane and configuration recorded above, and this evaluation is accurate.</span>
+              </label>
+              <label style={styles.label}>Evaluator Signature (type full name) {req}</label>
+              <input type="text" name="evaluator_signature" value={formData.evaluator_signature} onChange={handleChange} required style={{ ...styles.input, fontFamily: 'cursive', fontSize: '18px' }} />
+              <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>The date and time are recorded when you submit.</p>
             </div>
 
             {/* Submit */}
