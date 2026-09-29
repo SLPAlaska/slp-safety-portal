@@ -50,3 +50,7 @@ deno.lock
 # credentials into a public repository; no zipped snapshot of the app belongs
 # in git.
 *.zip
+
+# Screenshots written by scripts/check-audit-mobile.mjs. Regenerated on every
+# run; the PASS/FAIL table is the record, not the images.
+scripts/mobile-shots/

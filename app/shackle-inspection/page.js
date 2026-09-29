@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -187,30 +188,30 @@ export default function ShackleInspection() {
   }
 
   const InspectionItem = ({ label, name, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '100px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         <option value="Pass">Pass</option>
         <option value="Fail">Fail</option>
         {showNA && <option value="N/A">N/A</option>}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -242,7 +243,7 @@ export default function ShackleInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Inspector & Location Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -288,7 +289,7 @@ export default function ShackleInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#6366f1', marginBottom: '15px' }}>
                 🔩 Shackle Details
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Shackle Type *</label>
                   <select name="shackle_type" value={formData.shackle_type} onChange={handleChange} required
@@ -332,7 +333,7 @@ export default function ShackleInspection() {
                   🚨 CRITICAL: Any cracks, significant wear, or distortion requires immediate removal from service. Never use a shackle that shows 10% or more wear.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="No Cracks / Nicks / Gouges" name="body_cracks" />
                 <InspectionItem label="No Excessive Wear / Corrosion" name="body_wear" />
                 <InspectionItem label="No Distortion / Stretching / Bending" name="body_distortion" />
@@ -349,7 +350,7 @@ export default function ShackleInspection() {
                   ⚠️ Never substitute a bolt for a shackle pin. Pins must be properly matched to the shackle body and fully seated.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Pin Straight (Not Bent)" name="pin_straightness" />
                 <InspectionItem label="Threads in Good Condition" name="pin_thread" />
                 <InspectionItem label="No Excessive Wear / Corrosion" name="pin_wear" />
@@ -368,7 +369,7 @@ export default function ShackleInspection() {
                   ℹ️ All shackles must have legible capacity markings. Never use a shackle with illegible or missing WLL marking.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Capacity/WLL Marking Legible" name="capacity_marking" />
                 <InspectionItem label="Manufacturer Marking Present" name="manufacturer_marking" showNA />
                 <InspectionItem label="Pin Properly Matched to Body" name="proper_match" />
@@ -381,7 +382,7 @@ export default function ShackleInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -427,7 +428,7 @@ export default function ShackleInspection() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Quantity Passed</label>
                   <input type="number" name="quantity_passed" value={formData.quantity_passed} onChange={handleChange} min="0"

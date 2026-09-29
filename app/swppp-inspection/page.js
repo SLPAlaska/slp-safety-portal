@@ -5,6 +5,7 @@ import React, { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -86,13 +87,12 @@ export default function SWPPPInspectionPage() {
   }
 
   const renderChecklistItem = (label, name, options = CONDITION_OPTIONS) => (
-    <div style={styles.checklistItem}>
-      <label style={styles.checklistLabel}>{label}</label>
-      <select name={name} value={formData[name]} onChange={handleInputChange} style={styles.checklistSelect}>
+    <AnswerRow label={label} labelStyle={styles.checklistLabel} style={styles.checklistItem}>
+      <select className={answerSelect} name={name} value={formData[name]} onChange={handleInputChange} style={styles.checklistSelect}>
         <option value="">Select...</option>
         {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
       </select>
-    </div>
+    </AnswerRow>
   )
 
   if (submitted) {
@@ -331,16 +331,16 @@ const styles = {
   sectionHeaderPurple: { background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' },
   sectionHeaderRed: { background: 'linear-gradient(135deg, #b91c1c, #dc2626)' },
   sectionBody: { padding: '15px', background: '#f8fafc' },
-  formRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' },
+  formRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' },
   formGroup: { display: 'flex', flexDirection: 'column' },
   label: { fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '0.85rem' },
   required: { color: '#b91c1c' },
   input: { padding: '10px 12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', background: 'white', outline: 'none' },
   select: { padding: '10px 12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', background: 'white', outline: 'none' },
   textarea: { padding: '10px 12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '0.9rem', minHeight: '70px', resize: 'vertical', background: 'white', outline: 'none', fontFamily: 'inherit' },
-  checklistItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 15px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '8px' },
-  checklistLabel: { flex: '1', fontWeight: '500', color: '#374151', fontSize: '0.85rem', marginBottom: 0 },
-  checklistSelect: { width: '140px', padding: '6px 8px', fontSize: '0.8rem', border: '2px solid #d1d5db', borderRadius: '6px', background: 'white' },
+  checklistItem: { background: 'white', padding: '10px 15px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '8px' },
+  checklistLabel: { fontWeight: '500', color: '#374151', fontSize: '0.85rem', marginBottom: 0 },
+  checklistSelect: { padding: '6px 8px', fontSize: '0.8rem', border: '2px solid #d1d5db', borderRadius: '6px', background: 'white' },
   submitBtn: { width: '100%', padding: '14px 28px', background: 'linear-gradient(135deg, #1e3a8a, #1e40af)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '1.05rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 15px rgba(30, 58, 138, 0.3)' },
   submitBtnDisabled: { background: '#9ca3af', cursor: 'not-allowed', boxShadow: 'none' },
   successMessage: { textAlign: 'center', padding: '60px 40px' },

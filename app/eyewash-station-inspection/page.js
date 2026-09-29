@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -243,19 +244,19 @@ export default function EyewashStationInspection() {
   }
 
   const InspectionItem = ({ label, name, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
@@ -263,8 +264,7 @@ export default function EyewashStationInspection() {
           padding: '6px 10px',
           border: '1px solid #d1d5db',
           borderRadius: '6px',
-          fontSize: '14px',
-          minWidth: '100px'
+          fontSize: '14px'
         }}
       >
         <option value="">Select...</option>
@@ -272,7 +272,7 @@ export default function EyewashStationInspection() {
         <option value="Fail">Fail</option>
         {showNA && <option value="N/A">N/A</option>}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -304,7 +304,7 @@ export default function EyewashStationInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Station & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -417,7 +417,7 @@ export default function EyewashStationInspection() {
                   ℹ️ ANSI Z358.1 requires eyewash stations to be within 10 seconds (55 feet) travel distance from hazard, on same level, and free of obstructions.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Accessible & Unobstructed" name="accessible" />
                 <InspectionItem label="Within 10 Seconds of Hazard" name="within_distance" />
                 <InspectionItem label="Signage Visible & Correct" name="signage_visible" />
@@ -434,7 +434,7 @@ export default function EyewashStationInspection() {
                   🚨 CRITICAL: Water must be tepid (60-100°F / 16-38°C) and flow for minimum 15 minutes. Weekly flushing required for plumbed units.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Activation Tested" name="activation_tested" />
                 <InspectionItem label="Water Flow Adequate (0.4 GPM min)" name="water_flow_adequate" />
                 <InspectionItem label="Both Nozzles Flow Equally" name="both_nozzles_flow" />
@@ -448,7 +448,7 @@ export default function EyewashStationInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px' }}>
                 🔧 Components & Condition
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Nozzle Covers Present" name="nozzle_covers" />
                 <InspectionItem label="Dust Covers Functional" name="dust_covers" showNA />
                 <InspectionItem label="Basin/Bowl Clean" name="basin_clean" />
@@ -465,7 +465,7 @@ export default function EyewashStationInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ea580c', marginBottom: '15px' }}>
                 📄 Documentation & Certification
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Inspection Tag Present" name="inspection_tag_present" />
                 <InspectionItem label="Inspection Tag Current" name="inspection_tag_current" />
                 <InspectionItem label="Annual Certification Current" name="annual_cert_current" showNA />
@@ -482,7 +482,7 @@ export default function EyewashStationInspection() {
                   ℹ️ Complete this section only for portable eyewash stations, gravity-fed tanks, or bottled solutions.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Portable Tank Full" name="portable_tank_full" showNA />
                 <InspectionItem label="Solution Not Expired" name="solution_not_expired" showNA />
               </div>
@@ -493,7 +493,7 @@ export default function EyewashStationInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Station Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -547,7 +547,7 @@ export default function EyewashStationInspection() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Next Inspection Due</label>
                   <input type="date" name="next_inspection_due" value={formData.next_inspection_due} onChange={handleChange}

@@ -3,6 +3,7 @@ import { COMPANIES } from '@/lib/companies'
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { safeInsert } from '@/components/SafeSubmit';
+import AnswerRow, { answerOption, answerOptionLabel } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -139,13 +140,12 @@ export default function FluidTransferAuditForm() {
     }
   };
 
+  const RESPONSE_COLORS = { Yes: '#059669', No: '#dc2626', 'Needs Improvement': '#f59e0b', 'N/A': '#6b7280' };
+
   const RadioGroup = ({ label, name, required = false }) => (
-    <tr>
-      <td style={{ padding: '12px 8px', borderBottom: '1px solid #f3f4f6', fontSize: '14px', textAlign: 'left' }}>
-        {label}
-      </td>
+    <AnswerRow label={label} labelStyle={{ fontSize: '14px' }} style={{ padding: '12px 8px', borderBottom: '1px solid #f3f4f6' }}>
       {RESPONSE_OPTIONS.map(option => (
-        <td key={option} style={{ padding: '12px 8px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
+        <label key={option} className={answerOption} style={{ gap: '6px', padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', fontWeight: '600', color: RESPONSE_COLORS[option], cursor: 'pointer' }}>
           <input
             type="radio"
             name={name}
@@ -155,9 +155,10 @@ export default function FluidTransferAuditForm() {
             required={required && option === 'Yes'}
             style={{ width: '18px', height: '18px', cursor: 'pointer' }}
           />
-        </td>
+          <span className={answerOptionLabel}>{option}</span>
+        </label>
       ))}
-    </tr>
+    </AnswerRow>
   );
 
   const styles = {
@@ -175,8 +176,6 @@ export default function FluidTransferAuditForm() {
     select: { width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box', backgroundColor: '#fff' },
     textarea: { width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
     infoBox: { background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: '8px', padding: '15px', marginBottom: '20px', fontSize: '13px', color: '#0e7490' },
-    table: { width: '100%', borderCollapse: 'collapse', marginBottom: '20px' },
-    tableHeader: { background: '#f3f4f6', padding: '10px 8px', textAlign: 'center', fontSize: '12px', borderBottom: '2px solid #d1d5db' },
     photoUpload: { border: '2px dashed #d1d5db', borderRadius: '8px', padding: '30px', textAlign: 'center', cursor: 'pointer' },
     photoPreview: { display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' },
     photoThumb: { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' },
@@ -279,88 +278,44 @@ return (
               <strong>Pre-Transfer Requirements:</strong> Ensure all permits are complete and hazard assessments are documented before fluid transfer operations begin.
             </div>
 
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={{ ...styles.tableHeader, textAlign: 'left', paddingLeft: '12px', width: '55%' }}>Audit Question</th>
-                  <th style={{ ...styles.tableHeader, color: '#059669' }}>Yes</th>
-                  <th style={{ ...styles.tableHeader, color: '#dc2626' }}>No</th>
-                  <th style={{ ...styles.tableHeader, color: '#f59e0b' }}>Needs Improvement</th>
-                  <th style={{ ...styles.tableHeader, color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <RadioGroup label="Fluid Transfer Permit filled out correctly & completely" name="ftp_complete" required />
                 <RadioGroup label="Hazards adequately addressed for fluid type being transferred" name="hazards_addressed" required />
                 <RadioGroup label="THA completed and hazards identified correctly" name="tha_completed" required />
-              </tbody>
-            </table>
+            </div>
 
             {/* Equipment & Lines */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>
               🔧 Equipment & Lines
             </div>
 
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={{ ...styles.tableHeader, textAlign: 'left', paddingLeft: '12px', width: '55%' }}>Audit Question</th>
-                  <th style={{ ...styles.tableHeader, color: '#059669' }}>Yes</th>
-                  <th style={{ ...styles.tableHeader, color: '#dc2626' }}>No</th>
-                  <th style={{ ...styles.tableHeader, color: '#f59e0b' }}>Needs Improvement</th>
-                  <th style={{ ...styles.tableHeader, color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <RadioGroup label="All lines physically walked down prior to transfer" name="lines_walked" required />
                 <RadioGroup label="Valve alignment verified & appropriate for job" name="valve_alignment" required />
                 <RadioGroup label="Rated whip checks used at all connections" name="whip_checks" required />
                 <RadioGroup label="Lines inspected prior to beginning transfer" name="lines_inspected" required />
-              </tbody>
-            </table>
+            </div>
 
             {/* Safety Measures */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#dc2626' }}>
               ⚠️ Safety Measures
             </div>
 
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={{ ...styles.tableHeader, textAlign: 'left', paddingLeft: '12px', width: '55%' }}>Audit Question</th>
-                  <th style={{ ...styles.tableHeader, color: '#059669' }}>Yes</th>
-                  <th style={{ ...styles.tableHeader, color: '#dc2626' }}>No</th>
-                  <th style={{ ...styles.tableHeader, color: '#f59e0b' }}>Needs Improvement</th>
-                  <th style={{ ...styles.tableHeader, color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <RadioGroup label="Bonding/grounding connections in place for flammables" name="bonding_grounding" required />
                 <RadioGroup label="Drip pans/duck ponds under every connection" name="drip_pans" required />
-              </tbody>
-            </table>
+            </div>
 
             {/* Communication & Staffing */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#059669' }}>
               👥 Communication & Staffing
             </div>
 
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={{ ...styles.tableHeader, textAlign: 'left', paddingLeft: '12px', width: '55%' }}>Audit Question</th>
-                  <th style={{ ...styles.tableHeader, color: '#059669' }}>Yes</th>
-                  <th style={{ ...styles.tableHeader, color: '#dc2626' }}>No</th>
-                  <th style={{ ...styles.tableHeader, color: '#f59e0b' }}>Needs Improvement</th>
-                  <th style={{ ...styles.tableHeader, color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <RadioGroup label="Effective communications between all involved parties" name="effective_comms" required />
                 <RadioGroup label="Enough staff for task without environmental or safety risks" name="enough_staff" required />
                 <RadioGroup label="SIMOPS which impact safety or environmental aspects reviewed" name="simops" required />
-              </tbody>
-            </table>
+            </div>
 
             {/* Observations */}
             <div style={{ ...styles.sectionHeader, backgroundColor: '#f59e0b', color: '#000' }}>

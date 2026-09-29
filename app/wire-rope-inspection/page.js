@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -218,23 +219,23 @@ export default function WireRopeInspection() {
   }
 
   const InspectionItem = ({ label, name, options = null, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '120px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         {options ? options.map(opt => (
@@ -247,7 +248,7 @@ export default function WireRopeInspection() {
           </>
         )}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -279,7 +280,7 @@ export default function WireRopeInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Wire Rope & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -391,7 +392,7 @@ export default function WireRopeInspection() {
                   🚨 CRITICAL: Wire rope must be removed from service if broken wires exceed limits, or if kinking, bird caging, core protrusion, or crushing is present. See ASME B30.9 for specific criteria.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="No Broken Wires (Beyond Limits)" name="broken_wires" options={[
                   { value: 'Pass', label: 'Pass' },
                   { value: 'Fail', label: 'Fail - Broken Wires Found' }
@@ -430,7 +431,7 @@ export default function WireRopeInspection() {
                   ⚠️ Inspect all fittings, thimbles, and ferrules for cracks, deformation, and proper seating. Damaged terminations require immediate removal.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="End Fittings in Good Condition" name="end_fitting" showNA />
                 <InspectionItem label="Thimbles Not Cracked / Distorted" name="thimble_condition" showNA />
                 <InspectionItem label="Ferrules / Sleeves in Good Condition" name="ferrule_condition" showNA />
@@ -447,7 +448,7 @@ export default function WireRopeInspection() {
                   ℹ️ All wire rope slings must have legible identification tags. Proper lubrication extends rope life and aids inspection.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Tag Present & Legible" name="missing_tag" options={[
                   { value: 'Pass', label: 'Pass' },
                   { value: 'Fail', label: 'Fail - Missing/Illegible' }
@@ -464,7 +465,7 @@ export default function WireRopeInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Wire Rope Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required

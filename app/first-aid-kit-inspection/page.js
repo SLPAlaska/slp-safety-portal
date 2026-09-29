@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -229,23 +230,23 @@ export default function FirstAidKitInspection() {
   }
 
   const AccessibilityItem = ({ label, name, options = null }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getAccessibilityStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getAccessibilityStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '140px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         {options ? options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>) : (
@@ -256,27 +257,27 @@ export default function FirstAidKitInspection() {
           </>
         )}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   const SupplyItem = ({ label, name, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getSupplyStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getSupplyStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '140px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         <option value="Stocked">Stocked</option>
@@ -284,7 +285,7 @@ export default function FirstAidKitInspection() {
         <option value="Empty">Empty</option>
         {showNA && <option value="N/A">N/A</option>}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -321,7 +322,7 @@ export default function FirstAidKitInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#002868', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #e5e7eb' }}>
                 📋 Kit & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -396,7 +397,7 @@ export default function FirstAidKitInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#002868', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #e5e7eb' }}>
                 🚶 Accessibility & General Condition
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <AccessibilityItem label="Easily Accessible (Unobstructed)" name="easily_accessible" options={[{ value: 'Pass', label: 'Pass' }, { value: 'Fail', label: 'Fail' }]} />
                 <AccessibilityItem label="Clearly Marked / Signage Visible" name="clearly_marked" options={[{ value: 'Pass', label: 'Pass' }, { value: 'Fail', label: 'Fail' }]} />
                 <AccessibilityItem label="Seal/Tamper Indicator Intact" name="seal_intact" />
@@ -414,7 +415,7 @@ export default function FirstAidKitInspection() {
                   ℹ️ ANSI Z308.1 minimum requirements include: adhesive bandages, gauze pads, tape, bandage compresses, and antiseptic.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <SupplyItem label="Adhesive Bandages (Assorted)" name="adhesive_bandages" />
                 <SupplyItem label="Gauze Pads (Sterile)" name="gauze_pads" />
                 <SupplyItem label="Gauze Rolls / Roller Bandages" name="gauze_rolls" />
@@ -429,7 +430,7 @@ export default function FirstAidKitInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#002868', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #e5e7eb' }}>
                 🔧 Tools & Wound Care
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <SupplyItem label="Scissors" name="scissors" />
                 <SupplyItem label="Tweezers" name="tweezers" />
                 <SupplyItem label="Disposable Gloves (Nitrile/Latex)" name="disposable_gloves" />
@@ -445,7 +446,7 @@ export default function FirstAidKitInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#BF0A30', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #e5e7eb' }}>
                 🚑 Emergency & Specialty Items
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <SupplyItem label="Eye Wash Solution" name="eye_wash" showNA />
                 <SupplyItem label="Cold Pack (Instant)" name="cold_pack" showNA />
                 <SupplyItem label="First Aid Guide / Instructions" name="first_aid_guide" />
@@ -464,7 +465,7 @@ export default function FirstAidKitInspection() {
                   🚨 CRITICAL: Trauma items are essential for severe bleeding emergencies. "Stop the Bleed" certified personnel should be available.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <SupplyItem label="Tourniquet (CAT/SOFT-T)" name="tourniquet" showNA />
                 <SupplyItem label="Blood Stopper / Hemostatic Agent" name="blood_stopper" showNA />
                 <SupplyItem label="SAM Splint" name="sam_splint" showNA />
@@ -476,7 +477,7 @@ export default function FirstAidKitInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px', paddingBottom: '10px', borderBottom: '2px solid #e5e7eb' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Kit Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -513,7 +514,7 @@ export default function FirstAidKitInspection() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Items Restocked This Inspection? *</label>
                   <select name="items_restocked" value={formData.items_restocked} onChange={handleChange} required

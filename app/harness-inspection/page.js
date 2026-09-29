@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -232,19 +233,19 @@ export default function HarnessInspection() {
   }
 
   const InspectionItem = ({ label, name, showNA = false, options = null }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
@@ -252,8 +253,7 @@ export default function HarnessInspection() {
           padding: '6px 10px',
           border: '1px solid #d1d5db',
           borderRadius: '6px',
-          fontSize: '14px',
-          minWidth: '100px'
+          fontSize: '14px'
         }}
       >
         <option value="">Select...</option>
@@ -267,7 +267,7 @@ export default function HarnessInspection() {
           </>
         )}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -299,7 +299,7 @@ export default function HarnessInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Harness & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -404,7 +404,7 @@ export default function HarnessInspection() {
                   🚨 CRITICAL: Any harness with damaged webbing, cut fibers, burns, or chemical damage MUST be immediately removed from service and destroyed.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Labels Legible & Intact" name="labels_legible" />
                 <InspectionItem label="Webbing - No Cuts/Frays" name="webbing_cuts" />
                 <InspectionItem label="Webbing - No Burns/Heat Damage" name="webbing_burns" />
@@ -420,7 +420,7 @@ export default function HarnessInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px' }}>
                 🔩 Hardware & Metal Components
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="D-Rings Condition (No Cracks/Distortion)" name="d_rings_condition" />
                 <InspectionItem label="D-Ring Attachments Secure" name="d_ring_attachments" />
                 <InspectionItem label="Buckles Function Properly" name="buckles_function" />
@@ -434,7 +434,7 @@ export default function HarnessInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0891b2', marginBottom: '15px' }}>
                 🎒 Straps & Padding
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Chest Strap Condition" name="chest_strap" />
                 <InspectionItem label="Leg Straps Condition" name="leg_straps" />
                 <InspectionItem label="Shoulder Straps Condition" name="shoulder_straps" />
@@ -453,7 +453,7 @@ export default function HarnessInspection() {
                   🚨 CRITICAL: Any harness that has been subjected to fall arrest forces MUST be immediately removed from service - even if no visible damage is present.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Trauma Straps Present & Intact" name="trauma_straps" showNA />
                 <InspectionItem label="Fall Indicators Clear (Not Deployed)" name="fall_indicators" showNA />
                 <InspectionItem 
@@ -472,7 +472,7 @@ export default function HarnessInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Harness Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -525,7 +525,7 @@ export default function HarnessInspection() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Next Inspection Due</label>
                   <input type="date" name="next_inspection_due" value={formData.next_inspection_due} onChange={handleChange}

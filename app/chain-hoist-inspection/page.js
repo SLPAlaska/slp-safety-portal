@@ -4,6 +4,7 @@ import { COMPANIES } from '@/lib/companies'
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { safeInsert, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
@@ -206,19 +207,19 @@ export default function ChainHoistInspection() {
   };
 
   const InspectionItem = ({ label, name, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
@@ -226,8 +227,7 @@ export default function ChainHoistInspection() {
           padding: '6px 10px',
           border: '1px solid #d1d5db',
           borderRadius: '6px',
-          fontSize: '14px',
-          minWidth: '100px'
+          fontSize: '14px'
         }}
       >
         <option value="">Select...</option>
@@ -235,7 +235,7 @@ export default function ChainHoistInspection() {
         <option value="Fail">Fail</option>
         {showNA && <option value="N/A">N/A</option>}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   if (submitted) {
@@ -298,7 +298,7 @@ export default function ChainHoistInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 📋 Hoist & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -411,7 +411,7 @@ export default function ChainHoistInspection() {
                   🚨 CRITICAL: Any chain showing wear, stretch, corrosion, or damage must be removed from service immediately.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Chain Wear/Stretch" name="chain_wear" />
                 <InspectionItem label="Chain Corrosion/Rust" name="chain_corrosion" />
                 <InspectionItem label="Chain Kinks/Twists" name="chain_kinks" />
@@ -430,7 +430,7 @@ export default function ChainHoistInspection() {
                   🚨 CRITICAL: Hooks showing throat opening &gt;15% increase, twist &gt;10°, cracks, or non-functioning latch = REMOVE FROM SERVICE
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Hook Throat Opening" name="hook_throat" />
                 <InspectionItem label="Hook Twist/Bend" name="hook_twist" />
                 <InspectionItem label="Hook Cracks/Gouges" name="hook_cracks" />
@@ -444,7 +444,7 @@ export default function ChainHoistInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 ⚙️ Operating Mechanism
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Load Brake Function" name="load_brake" />
                 <InspectionItem label="Lifting Mechanism Smooth" name="lifting_mechanism" />
                 <InspectionItem label="Chain Container Condition" name="chain_container" showNA />
@@ -457,7 +457,7 @@ export default function ChainHoistInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#059669', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 🏠 Housing, Frame & Labels
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Housing/Frame Condition" name="housing_frame" />
                 <InspectionItem label="Suspension Hook/Attachment" name="suspension_hook" />
                 <InspectionItem label="Warning Labels Legible" name="warning_labels" />
@@ -470,7 +470,7 @@ export default function ChainHoistInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0891b2', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 🧪 Testing & Certification
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Load Test Current" name="load_test_current" showNA />
                 <InspectionItem label="Operational Test Performed" name="operational_test" />
               </div>
@@ -481,7 +481,7 @@ export default function ChainHoistInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Hoist Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -533,7 +533,7 @@ export default function ChainHoistInspection() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Next Inspection Due</label>
                   <input type="date" name="next_inspection_due" value={formData.next_inspection_due} onChange={handleChange}

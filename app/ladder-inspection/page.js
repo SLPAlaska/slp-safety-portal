@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -257,30 +258,30 @@ export default function LadderInspection() {
   }
 
   const InspectionItem = ({ label, name, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '100px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         <option value="Pass">Pass</option>
         <option value="Fail">Fail</option>
         {showNA && <option value="N/A">N/A</option>}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -312,7 +313,7 @@ export default function LadderInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Ladder & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -417,7 +418,7 @@ export default function LadderInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px' }}>
                 🏷️ Labels & Warnings
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Labels Legible & Intact" name="labels_legible" />
                 <InspectionItem label="Safety Warnings Visible" name="warnings_visible" />
               </div>
@@ -433,7 +434,7 @@ export default function LadderInspection() {
                   🚨 CRITICAL: Any cracks, splits, or significant damage to side rails requires immediate removal from service.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="No Cracks or Splits" name="side_rails_cracks" />
                 <InspectionItem label="No Dents or Bends" name="side_rails_dents" />
                 <InspectionItem label="No Corrosion / Rust" name="side_rails_corrosion" />
@@ -446,7 +447,7 @@ export default function LadderInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ea580c', marginBottom: '15px' }}>
                 🚶 Steps / Rungs
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Steps/Rungs Securely Attached" name="steps_secure" />
                 <InspectionItem label="Steps/Rungs Condition (No Damage)" name="steps_condition" />
                 <InspectionItem label="Slip-Resistant Surface Intact" name="steps_slip_resistant" />
@@ -458,7 +459,7 @@ export default function LadderInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0891b2', marginBottom: '15px' }}>
                 🔩 Hardware & Safety Feet
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="All Hardware Secure" name="hardware_secure" />
                 <InspectionItem label="Rivets/Bolts Condition" name="rivets_bolts" />
                 <InspectionItem label="Safety Feet Condition" name="safety_feet_condition" />
@@ -472,7 +473,7 @@ export default function LadderInspection() {
                 <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                   🔺 Step Ladder Components
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                   <InspectionItem label="Spreaders Function Properly" name="spreaders_function" showNA />
                   <InspectionItem label="Spreader Locks Engage" name="spreader_locks" showNA />
                 </div>
@@ -485,7 +486,7 @@ export default function LadderInspection() {
                 <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px' }}>
                   📐 Extension Ladder Components
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                   <InspectionItem label="Extension Locks Function" name="extension_locks" showNA />
                   <InspectionItem label="Rope/Pulley Condition" name="rope_pulley" showNA />
                   <InspectionItem label="Fly Section Operates Smoothly" name="fly_section" showNA />
@@ -500,7 +501,7 @@ export default function LadderInspection() {
                 <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                   🔄 Multi-Position / Articulating Components
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                   <InspectionItem label="Hinges Condition" name="hinges_condition" showNA />
                 </div>
               </div>
@@ -512,7 +513,7 @@ export default function LadderInspection() {
                 <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0d9488', marginBottom: '15px' }}>
                   🏗️ Platform Ladder Components
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                   <InspectionItem label="Platform Condition" name="platform_condition" showNA />
                   <InspectionItem label="Handrails Secure" name="handrails_secure" showNA />
                 </div>
@@ -524,7 +525,7 @@ export default function LadderInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#6366f1', marginBottom: '15px' }}>
                 🧹 General Condition & Storage
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Clean and Debris-Free" name="clean_debris_free" />
                 <InspectionItem label="No Unauthorized Repairs/Modifications" name="no_unauthorized_repairs" />
                 <InspectionItem label="Stored Properly (Horizontal/Supported)" name="proper_storage" />
@@ -536,7 +537,7 @@ export default function LadderInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Ladder Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -588,7 +589,7 @@ export default function LadderInspection() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Next Inspection Due</label>
                   <input type="date" name="next_inspection_due" value={formData.next_inspection_due} onChange={handleChange}

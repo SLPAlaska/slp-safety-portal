@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -226,19 +227,19 @@ export default function FireExtinguisherInspection() {
   }
 
   const InspectionItem = ({ label, name, showNA = false, naLabel = 'N/A' }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
@@ -246,8 +247,7 @@ export default function FireExtinguisherInspection() {
           padding: '6px 10px',
           border: '1px solid #d1d5db',
           borderRadius: '6px',
-          fontSize: '14px',
-          minWidth: '100px'
+          fontSize: '14px'
         }}
       >
         <option value="">Select...</option>
@@ -255,7 +255,7 @@ export default function FireExtinguisherInspection() {
         <option value="Fail">Fail</option>
         {showNA && <option value={naLabel}>{naLabel}</option>}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -287,7 +287,7 @@ export default function FireExtinguisherInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Extinguisher & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -396,7 +396,7 @@ export default function FireExtinguisherInspection() {
                   ℹ️ NFPA 10 requires extinguishers to be mounted 3.5-5 feet above floor (for units ≤40 lbs) and clearly visible with proper signage.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Accessible & Visible" name="accessible" />
                 <InspectionItem label="Proper Mounting Height" name="mounting_height" />
                 <InspectionItem label="Signage Visible" name="signage_visible" />
@@ -413,7 +413,7 @@ export default function FireExtinguisherInspection() {
                   🚨 CRITICAL: Extinguisher with gauge not in green zone, missing safety pin, or broken tamper seal must be immediately removed from service.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Pressure Gauge in Green Zone" name="pressure_gauge" showNA naLabel="N/A (No Gauge)" />
                 <InspectionItem label="Safety Pin Intact" name="safety_pin" />
                 <InspectionItem label="Tamper Seal Intact" name="tamper_seal" />
@@ -425,7 +425,7 @@ export default function FireExtinguisherInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px' }}>
                 🔧 Physical Condition
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Handle/Lever Condition" name="handle_lever" />
                 <InspectionItem label="Hose/Nozzle Condition" name="hose_nozzle" showNA />
                 <InspectionItem label="Cylinder Condition (No Rust/Dents)" name="cylinder_condition" />
@@ -444,7 +444,7 @@ export default function FireExtinguisherInspection() {
                   ℹ️ Annual service required per NFPA 10. Hydrostatic testing required every 5-12 years depending on extinguisher type.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Inspection Tag Present" name="inspection_tag_present" />
                 <InspectionItem label="Inspection Tag Current" name="inspection_tag_current" />
                 <InspectionItem label="Annual Service Current" name="annual_service_current" />
@@ -457,7 +457,7 @@ export default function FireExtinguisherInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Extinguisher Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -511,7 +511,7 @@ export default function FireExtinguisherInspection() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Next Inspection Due</label>
                   <input type="date" name="next_inspection_due" value={formData.next_inspection_due} onChange={handleChange}

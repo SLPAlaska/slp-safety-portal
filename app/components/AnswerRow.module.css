@@ -1,0 +1,72 @@
+/* Question + answer row shared by the audit and inspection forms.
+   Everything wraps: no answer control is ever pushed past the card edge,
+   where the forms' overflow:hidden cards would clip it (the N/A symptom). */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.question {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Yes / No / N/A buttons. Sized by content, never a fixed width. */
+.option {
+  flex: 1 1 auto;
+  min-width: 4.5em;
+  min-height: 44px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* On the label only, so "N/A" never splits into "N/" and "A". */
+.optionLabel {
+  white-space: nowrap;
+}
+
+/* A dropdown standing in for the buttons. min-width:0 lets it shrink below
+   its longest option instead of overflowing; the native picker still shows
+   the full text. */
+.select {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 479px) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .question {
+    flex: none;
+  }
+  .answers {
+    width: 100%;
+  }
+  .select {
+    width: 100%;
+  }
+}

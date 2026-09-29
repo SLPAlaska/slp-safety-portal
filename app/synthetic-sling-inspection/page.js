@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -218,23 +219,23 @@ export default function SyntheticSlingInspection() {
   }
 
   const InspectionItem = ({ label, name, options = null, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '120px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         {options ? options.map(opt => (
@@ -247,7 +248,7 @@ export default function SyntheticSlingInspection() {
           </>
         )}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -279,7 +280,7 @@ export default function SyntheticSlingInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Sling & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -391,7 +392,7 @@ export default function SyntheticSlingInspection() {
                   🚨 CRITICAL: Any cuts, tears, holes, snags, or heat damage requires immediate removal from service. Synthetic slings are single-use if damaged.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="No Cuts, Tears, Holes, or Snags" name="cuts_tears" />
                 <InspectionItem label="No Excessive Abrasion Damage" name="abrasion_damage" />
                 <InspectionItem label="No Heat Damage / Melting" name="heat_damage" />
@@ -411,7 +412,7 @@ export default function SyntheticSlingInspection() {
                   ⚠️ Broken, cut, or worn stitching compromises sling integrity. Eyes must be free of distortion and wear.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Stitching Intact (Not Broken/Cut/Worn)" name="broken_stitching" />
                 <InspectionItem label="Eyes Not Worn or Damaged" name="worn_eyes" options={[
                   { value: 'Pass', label: 'Pass' },
@@ -431,7 +432,7 @@ export default function SyntheticSlingInspection() {
                   ℹ️ OSHA requires all slings to have legible identification tags showing capacity, manufacturer, and material type.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Tag Present & Legible" name="missing_tag" options={[
                   { value: 'Pass', label: 'Pass' },
                   { value: 'Fail', label: 'Fail - Missing/Illegible' }
@@ -444,7 +445,7 @@ export default function SyntheticSlingInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#ea580c', marginBottom: '15px' }}>
                 🔧 General Condition
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="No Knots in Sling" name="knots_present" options={[
                   { value: 'Pass', label: 'Pass' },
                   { value: 'Fail', label: 'Fail - Knots Present' }
@@ -459,7 +460,7 @@ export default function SyntheticSlingInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Sling Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required

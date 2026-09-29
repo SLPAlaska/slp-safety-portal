@@ -3,6 +3,7 @@ import { COMPANIES } from '@/lib/companies'
 import { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { safeInsert } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -78,16 +79,16 @@ export default function SpillKitInspection(){
     sectionPurple:{background:'linear-gradient(135deg, #7c3aed, #6d28d9)'},
     sectionCyan:{background:'linear-gradient(135deg, #0891b2, #0e7490)'},
     sectionBody:{padding:'20px',background:'#f8fafc'},
-    formRow:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',gap:'20px',marginBottom:'20px'},
+    formRow:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',gap:'20px',marginBottom:'20px'},
     formGroup:{display:'flex',flexDirection:'column'},
     label:{fontWeight:'600',color:'#374151',marginBottom:'6px',fontSize:'0.9rem'},
     required:{color:'#b91c1c'},
     input:{padding:'10px 12px',border:'2px solid #d1d5db',borderRadius:'8px',fontSize:'0.95rem',background:'white'},
     select:{padding:'10px 12px',border:'2px solid #d1d5db',borderRadius:'8px',fontSize:'0.95rem',background:'white'},
     textarea:{padding:'10px 12px',border:'2px solid #d1d5db',borderRadius:'8px',fontSize:'0.95rem',minHeight:'80px',resize:'vertical'},
-    checklistGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))',gap:'12px'},
-    checklistItem:{display:'flex',justifyContent:'space-between',alignItems:'center',background:'white',padding:'12px 15px',borderRadius:'8px',border:'2px solid #e5e7eb',transition:'all 0.2s'},
-    checklistSelect:{width:'100px',padding:'6px 8px',fontSize:'0.85rem',border:'2px solid #d1d5db',borderRadius:'6px'},
+    checklistGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',gap:'12px'},
+    checklistItem:{background:'white',padding:'12px 15px',borderRadius:'8px',border:'2px solid #e5e7eb',transition:'all 0.2s'},
+    checklistSelect:{padding:'6px 8px',fontSize:'0.85rem',border:'2px solid #d1d5db',borderRadius:'6px'},
     conditionalField:{marginTop:'15px',padding:'15px',background:'#fef3c7',border:'2px solid #f59e0b',borderRadius:'8px'},
     submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a8a, #1e40af)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(30,58,138,0.3)',marginTop:'10px'},
     successBox:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px'},
@@ -95,13 +96,12 @@ export default function SpillKitInspection(){
   };
 
   const ChecklistItem=({label,name,value})=>(
-    <div style={{...s.checklistItem,...getConditionStyle(value)}}>
-      <label style={{...s.label,marginBottom:0,flex:1}}>{label}</label>
-      <select name={name} value={value} onChange={handleChange} style={s.checklistSelect}>
+    <AnswerRow label={label} labelStyle={{...s.label,marginBottom:0}} style={{...s.checklistItem,...getConditionStyle(value)}}>
+      <select className={answerSelect} name={name} value={value} onChange={handleChange} style={s.checklistSelect}>
         <option value="">Select...</option>
         {ITEM_CONDITIONS.map(c=><option key={c} value={c}>{c}</option>)}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   if(submitted){return(<div style={s.container}><div style={{maxWidth:'600px',margin:'0 auto',paddingTop:'50px'}}><div style={s.successBox}><div style={{fontSize:'4rem',marginBottom:'20px'}}>✅</div><h2 style={{margin:'0 0 10px'}}>Inspection Submitted Successfully!</h2><p style={{marginBottom:'20px'}}>Your spill kit inspection has been recorded.</p><div style={{display:'flex',gap:'10px',justifyContent:'center',flexWrap:'wrap'}}><button onClick={resetForm} style={{padding:'12px 24px',background:'white',color:'#059669',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',cursor:'pointer'}}>Submit Another Inspection</button><a href="https://portal.slpalaska.com" style={{padding:'12px 24px',background:'rgba(255,255,255,0.2)',color:'white',border:'none',borderRadius:'8px',fontSize:'1rem',fontWeight:'600',textDecoration:'none'}}>Back to Portal</a></div></div></div></div>);}

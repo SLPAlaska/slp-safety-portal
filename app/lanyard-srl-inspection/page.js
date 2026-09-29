@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -259,23 +260,23 @@ export default function LanyardSRLInspection() {
   }
 
   const InspectionItem = ({ label, name, options = null, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '120px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         {options ? options.map(opt => (
@@ -288,7 +289,7 @@ export default function LanyardSRLInspection() {
           </>
         )}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -320,7 +321,7 @@ export default function LanyardSRLInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 Equipment & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -436,7 +437,7 @@ export default function LanyardSRLInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px' }}>
                 🏷️ Labels & Identification
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Labels Legible & Intact" name="labels_legible" />
               </div>
             </div>
@@ -451,7 +452,7 @@ export default function LanyardSRLInspection() {
                   🚨 CRITICAL: Any cuts, frays, burns, or chemical damage to webbing/cable requires immediate removal from service.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="No Cuts / Tears" name="webbing_cuts" />
                 <InspectionItem label="No Frays / Broken Fibers" name="webbing_frays" />
                 <InspectionItem label="No Burns / Heat Damage" name="webbing_burns" />
@@ -473,7 +474,7 @@ export default function LanyardSRLInspection() {
                     🚨 CRITICAL: If shock pack shows ANY signs of deployment or activation, remove from service immediately.
                   </p>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                   <InspectionItem label="Shock Absorber Pack Condition" name="shock_absorber_condition" showNA />
                   <InspectionItem label="Shock Pack NOT Deployed" name="shock_pack_deployed" options={[
                     { value: 'Pass', label: 'Pass - Not Deployed' },
@@ -489,7 +490,7 @@ export default function LanyardSRLInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0891b2', marginBottom: '15px' }}>
                 🔗 Connectors (Snap Hooks / Carabiners)
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Snap Hooks Function Properly" name="snap_hooks_function" showNA />
                 <InspectionItem label="Snap Hook Gates Close & Lock" name="snap_hook_gates" showNA />
                 <InspectionItem label="No Corrosion / Pitting" name="snap_hook_corrosion" />
@@ -510,7 +511,7 @@ export default function LanyardSRLInspection() {
                     ℹ️ SRLs require functional testing: Verify retraction, braking, and indicator status per manufacturer requirements.
                   </p>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                   <InspectionItem label="SRL Housing Condition (No Cracks)" name="srl_housing" showNA />
                   <InspectionItem label="Retraction Test - Smooth Operation" name="srl_retraction" showNA />
                   <InspectionItem label="Braking Test - Locks on Quick Pull" name="srl_braking" showNA />
@@ -535,7 +536,7 @@ export default function LanyardSRLInspection() {
                   🚨 CRITICAL: Any equipment that has been subjected to fall arrest forces MUST be immediately removed from service - even if no visible damage is present.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Fall Indicator Status (If Equipped)" name="fall_indicator" options={[
                   { value: 'Pass', label: 'Pass - Not Triggered' },
                   { value: 'Fail', label: 'Fail - Indicator Triggered' },
@@ -553,7 +554,7 @@ export default function LanyardSRLInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall Equipment Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -606,7 +607,7 @@ export default function LanyardSRLInspection() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Next Inspection Due</label>
                   <input type="date" name="next_inspection_due" value={formData.next_inspection_due} onChange={handleChange}

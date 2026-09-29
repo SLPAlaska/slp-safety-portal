@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 import { safeSubmit } from '@/components/SafeSubmit';
+import AnswerRow, { answerOption, answerOptionLabel } from '@/components/AnswerRow';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -197,11 +198,12 @@ export default function EmergencyDrillEvaluation() {
     );
   }
 
+  const EVAL_COLORS = { Yes: '#059669', No: '#dc2626', 'Needs Improvement': '#ea580c', 'N/A': '#6b7280' };
+
   const EvalRow = ({ label, name, required = true }) => (
-    <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-      <td style={{ padding: '12px 8px', fontSize: '14px', textAlign: 'left', paddingLeft: '12px' }}>{label}</td>
+    <AnswerRow label={label} labelStyle={{ fontSize: '14px' }} style={{ padding: '12px', borderBottom: '1px solid #f3f4f6' }}>
       {['Yes', 'No', 'Needs Improvement', 'N/A'].map(val => (
-        <td key={val} style={{ padding: '12px 8px', textAlign: 'center' }}>
+        <label key={val} className={answerOption} style={{ gap: '6px', padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', fontWeight: '600', color: EVAL_COLORS[val], cursor: 'pointer' }}>
           <input
             type="radio"
             name={name}
@@ -211,9 +213,10 @@ export default function EmergencyDrillEvaluation() {
             required={required && val === 'Yes'}
             style={{ width: '18px', height: '18px', cursor: 'pointer' }}
           />
-        </td>
+          <span className={answerOptionLabel}>{val}</span>
+        </label>
       ))}
-    </tr>
+    </AnswerRow>
   );
 
   const RadioGroup = ({ label, name, options, required = true }) => (
@@ -357,45 +360,23 @@ export default function EmergencyDrillEvaluation() {
               🔔 Alarm & Communication Systems
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-              <thead>
-                <tr style={{ background: '#f3f4f6' }}>
-                  <th style={{ padding: '10px 8px', textAlign: 'left', paddingLeft: '12px', width: '50%', fontSize: '12px' }}>Evaluation Criteria</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#059669' }}>Yes</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#dc2626' }}>No</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#ea580c' }}>Needs Improvement</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <EvalRow label="Alarm audible throughout facility" name="alarm_audible" />
                 <EvalRow label="Visual alarms functional" name="visual_alarms" />
                 <EvalRow label="PA system clear and understandable" name="pa_system" />
-              </tbody>
-            </table>
+            </div>
 
             {/* Evacuation Response */}
             <div style={{ background: '#059669', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
               🚶 Evacuation Response
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-              <thead>
-                <tr style={{ background: '#f3f4f6' }}>
-                  <th style={{ padding: '10px 8px', textAlign: 'left', paddingLeft: '12px', width: '50%', fontSize: '12px' }}>Evaluation Criteria</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#059669' }}>Yes</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#dc2626' }}>No</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#ea580c' }}>Needs Improvement</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <EvalRow label="Personnel responded promptly to alarm" name="prompt_response" />
                 <EvalRow label="Evacuation routes used correctly" name="evac_routes" />
                 <EvalRow label="Muster points used correctly" name="muster_points" />
                 <EvalRow label="Personnel accountability completed" name="accountability" />
-              </tbody>
-            </table>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
               <div>
@@ -422,49 +403,27 @@ export default function EmergencyDrillEvaluation() {
               👷 Emergency Response Team (ERT)
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-              <thead>
-                <tr style={{ background: '#f3f4f6' }}>
-                  <th style={{ padding: '10px 8px', textAlign: 'left', paddingLeft: '12px', width: '50%', fontSize: '12px' }}>Evaluation Criteria</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#059669' }}>Yes</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#dc2626' }}>No</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#ea580c' }}>Needs Improvement</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <EvalRow label="Emergency Response Team responded" name="ert_responded" />
                 <EvalRow label="ERT proper PPE worn" name="ert_ppe" />
                 <EvalRow label="ERT communication effective" name="ert_communication" />
                 <EvalRow label="ERT actions appropriate for scenario" name="ert_actions" />
                 <EvalRow label="Incident Commander identified" name="incident_commander" />
-              </tbody>
-            </table>
+            </div>
 
             {/* Emergency Equipment & Facilities */}
             <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
               🧯 Emergency Equipment & Facilities
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
-              <thead>
-                <tr style={{ background: '#f3f4f6' }}>
-                  <th style={{ padding: '10px 8px', textAlign: 'left', paddingLeft: '12px', width: '50%', fontSize: '12px' }}>Evaluation Criteria</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#059669' }}>Yes</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#dc2626' }}>No</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#ea580c' }}>Needs Improvement</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', fontSize: '12px', color: '#6b7280' }}>N/A</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div style={{ marginBottom: '20px' }}>
                 <EvalRow label="Emergency equipment accessible" name="equipment_accessible" />
                 <EvalRow label="Fire extinguishers identified/located" name="fire_extinguishers" />
                 <EvalRow label="First aid kits accessible" name="first_aid_kits" />
                 <EvalRow label="Spill kits accessible" name="spill_kits" />
                 <EvalRow label="Emergency exits clear and accessible" name="exits_accessible" />
                 <EvalRow label="Assembly area safe and appropriate" name="assembly_area_safe" />
-              </tbody>
-            </table>
+            </div>
 
             {/* External Communication */}
             <div style={{ background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>

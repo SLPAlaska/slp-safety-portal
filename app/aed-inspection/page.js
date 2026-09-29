@@ -4,6 +4,7 @@ import { COMPANIES } from '@/lib/companies'
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { safeInsert, fieldData } from '@/components/SafeSubmit';
+import AnswerRow, { answerSelect } from '@/components/AnswerRow';
 import MultiPhotoUpload from '@/components/MultiPhotoUpload';
 
 const supabase = createClient(
@@ -231,23 +232,23 @@ export default function AEDInspection() {
   }
 
   const InspectionItem = ({ label, name, options = null, showNA = false }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 12px',
-      background: 'white',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      gap: '10px',
-      ...getItemStyle(formData[name])
-    }}>
-      <span style={{ fontSize: '14px', color: '#374151', flex: 1 }}>{label}</span>
+    <AnswerRow
+      label={label}
+      labelStyle={{ fontSize: '14px', color: '#374151' }}
+      style={{
+        padding: '10px 12px',
+        background: 'white',
+        border: '2px solid #e5e7eb',
+        borderRadius: '8px',
+        ...getItemStyle(formData[name])
+      }}
+    >
       <select
+        className={answerSelect}
         name={name}
         value={formData[name]}
         onChange={handleChange}
-        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', minWidth: '120px' }}
+        style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
       >
         <option value="">Select...</option>
         {options ? options.map(opt => (
@@ -260,7 +261,7 @@ export default function AEDInspection() {
           </>
         )}
       </select>
-    </div>
+    </AnswerRow>
   );
 
   return (
@@ -292,7 +293,7 @@ export default function AEDInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#1e3a8a', marginBottom: '15px' }}>
                 📋 AED & Inspector Information
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Inspector Name *</label>
                   <input type="text" name="inspector_name" value={formData.inspector_name} onChange={handleChange} required
@@ -378,7 +379,7 @@ export default function AEDInspection() {
                   🚨 CRITICAL: If Ready Light is OFF or Service Light is ON, the AED may not be operational. Contact service provider immediately.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Cabinet/Case Present" name="cabinet_present" showNA />
                 <InspectionItem label="AED Easily Accessible" name="aed_accessible" />
                 <InspectionItem label="AED Signage Visible" name="signage_visible" />
@@ -404,13 +405,13 @@ export default function AEDInspection() {
                   ℹ️ Most AED batteries last 2-5 years. Replace batteries before expiration date to ensure reliability.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px', marginBottom: '15px' }}>
                 <InspectionItem label="Battery Status Indicator" name="battery_status" options={[
                   { value: 'Pass', label: 'Pass - Full/Good' },
                   { value: 'Fail', label: 'Fail - Low/Replace' }
                 ]} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Battery Expiration Date</label>
                   <input type="date" name="battery_expiration" value={formData.battery_expiration} onChange={handleChange}
@@ -434,12 +435,12 @@ export default function AEDInspection() {
                   ⚠️ Pads must be sealed in original packaging and within expiration date. Expired pads may not adhere properly or deliver effective shock.
                 </p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px', marginBottom: '15px' }}>
                 <InspectionItem label="Adult Pads Present" name="adult_pads_present" />
                 <InspectionItem label="Adult Pads Sealed (Unopened)" name="adult_pads_sealed" />
                 <InspectionItem label="Pediatric Pads Present" name="pediatric_pads_present" showNA />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Adult Pads Expiration Date</label>
                   <input type="date" name="adult_pads_expiration" value={formData.adult_pads_expiration} onChange={handleChange}
@@ -458,7 +459,7 @@ export default function AEDInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0891b2', marginBottom: '15px' }}>
                 🧰 Rescue Supplies & Accessories
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
                 <InspectionItem label="Razor Present" name="razor_present" showNA />
                 <InspectionItem label="Scissors Present" name="scissors_present" showNA />
                 <InspectionItem label="Disposable Gloves Present" name="gloves_present" showNA />
@@ -474,11 +475,11 @@ export default function AEDInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#6366f1', marginBottom: '15px' }}>
                 🗄️ Cabinet / Housing Condition
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px', marginBottom: '15px' }}>
                 <InspectionItem label="Cabinet Alarm Working (If Equipped)" name="cabinet_alarm_working" showNA />
                 <InspectionItem label="Cabinet Clean & Undamaged" name="cabinet_clean" showNA />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Last Service Date</label>
                   <input type="date" name="last_service_date" value={formData.last_service_date} onChange={handleChange}
@@ -497,7 +498,7 @@ export default function AEDInspection() {
               <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a', marginBottom: '15px' }}>
                 ✅ Overall Condition & Inspection Result
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Overall AED Condition *</label>
                   <select name="overall_condition" value={formData.overall_condition} onChange={handleChange} required
@@ -534,7 +535,7 @@ export default function AEDInspection() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '15px', marginBottom: '15px' }}>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', color: '#374151', marginBottom: '5px', fontSize: '14px' }}>Issues Found? *</label>
                   <select name="issues_found" value={formData.issues_found} onChange={handleChange} required

@@ -4,6 +4,7 @@ import { COMPANIES } from '@/lib/companies'
 import { useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { safeInsert } from '@/components/SafeSubmit';
+import AnswerRow, { answerOption, answerOptionLabel } from '@/components/AnswerRow';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -170,16 +171,17 @@ export default function FlammableStorageAuditForm() {
   }
 
   const Question = ({ field, text }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'white', border: '2px solid #d1d5db', borderRadius: '8px', marginBottom: '10px' }}>
-      <span style={{ flex: 1, fontSize: '14px', paddingRight: '15px' }}>{text}</span>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        {['Yes', 'No', 'N/A'].map(val => (
-          <button key={val} type="button" onClick={() => setFormData(prev => ({ ...prev, [field]: val }))} style={{ padding: '8px 16px', border: '2px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: formData[field] === val ? (val === 'Yes' ? '#059669' : val === 'No' ? '#BF0A30' : '#6b7280') : 'white', color: formData[field] === val ? 'white' : '#000' }}>
-            {val}
-          </button>
-        ))}
-      </div>
-    </div>
+    <AnswerRow
+      label={text}
+      labelStyle={{ fontSize: '14px' }}
+      style={{ padding: '14px 16px', background: 'white', border: '2px solid #d1d5db', borderRadius: '8px', marginBottom: '10px' }}
+    >
+      {['Yes', 'No', 'N/A'].map(val => (
+        <button key={val} type="button" className={answerOption} onClick={() => setFormData(prev => ({ ...prev, [field]: val }))} style={{ padding: '8px 16px', border: '2px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, background: formData[field] === val ? (val === 'Yes' ? '#059669' : val === 'No' ? '#BF0A30' : '#6b7280') : 'white', color: formData[field] === val ? 'white' : '#000' }}>
+          <span className={answerOptionLabel}>{val}</span>
+        </button>
+      ))}
+    </AnswerRow>
   )
 
   if (isSubmitting && scores) {
