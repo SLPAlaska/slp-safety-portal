@@ -69,6 +69,7 @@ const FORM_CATEGORIES = [
     title: 'Monthly Inspections',
     icon: '📅',
     forms: [
+      { name: 'Beam Clamp Inspection', href: '/beam-clamp-inspection', isLocal: true },
       { name: 'Chain Hoist Inspection', href: '/chain-hoist-inspection', isLocal: true },
       { name: 'Emergency Drill Evaluation', href: '/emergency-drill-evaluation', isLocal: true },
       { name: 'Emergency Eyewash Inspection', href: '/eyewash-station-inspection', isLocal: true },
@@ -78,6 +79,7 @@ const FORM_CATEGORIES = [
       { name: 'Ladder Inspection', href: '/ladder-inspection', isLocal: true },
       { name: 'Lanyard & SRL Inspection', href: '/lanyard-srl-inspection', isLocal: true },
       { name: 'Monthly AED Inspection', href: '/aed-inspection', isLocal: true },
+      { name: 'Plate Clamp Inspection', href: '/plate-clamp-inspection', isLocal: true },
       { name: 'Shackle Inspection', href: '/shackle-inspection', isLocal: true },
       { name: 'Synthetic Sling Inspection', href: '/synthetic-sling-inspection', isLocal: true },
       { name: 'Wire Rope Inspection', href: '/wire-rope-inspection', isLocal: true },

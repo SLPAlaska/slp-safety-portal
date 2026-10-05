@@ -46,6 +46,8 @@ const RECENT_CHECK_VIEWS = {
   lanyard_srl_inspections:       'equipment_id',
   synthetic_sling_inspections:   'sling_id',
   wire_rope_inspections:         'rope_id',
+  beam_clamp_inspections:        'clamp_id',
+  plate_clamp_inspections:       'clamp_id',
 };
 
 export async function GET(request) {
