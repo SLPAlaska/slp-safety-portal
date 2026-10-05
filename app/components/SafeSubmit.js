@@ -103,7 +103,7 @@ export async function safeSubmit({ table, data, photoRef, formType }) {
   submitData = nullifyEmptyStrings(submitData);
 
   try {
-    const { error } = await supabase.from(table).insert([submitData]);
+    const { error } = await insertWithRetry(table, submitData);
     if (error) throw error;
     result.success = true;
     return result;
@@ -365,6 +365,30 @@ export async function safeCloseout(table, id, code, updates, codeId, mode) {
   } catch (e) {
     return { error: e };
   }
+}
+
+// Retry the primary insert on network-level failures only (stale connection after idle on Slope LTE).
+// Server rejections (RLS, constraints, bad data) return immediately and fall through to the backup table.
+const NET_ERR = /Load failed|Failed to fetch|NetworkError|fetch failed|Network request failed|network connection was lost/i;
+function isNetworkError(err) {
+  return !!err && !err.code && NET_ERR.test(err.message || ``);
+}
+async function insertWithRetry(table, row) {
+  const delays = [0, 800, 2000];
+  let last = null;
+  for (const d of delays) {
+    if (d) await new Promise(r => setTimeout(r, d));
+    try {
+      const { error } = await supabase.from(table).insert([row]);
+      if (!error) return { error: null };
+      last = error;
+      if (!isNetworkError(error)) return { error };
+    } catch (e) {
+      last = e;
+      if (!isNetworkError(e)) return { error: e };
+    }
+  }
+  return { error: last };
 }
 
 export default safeSubmit;
