@@ -105,7 +105,7 @@ function resolveCredential(entries, presentedCode, presentedSecret) {
   return { tenant: entry.tenant, enforced: false };
 }
 
-// ── Tenant catalogue (NOT secret) ────────────────────────────────────
+// -- Tenant catalogue (NOT secret) ---------------------------------------------
 //
 // Display name and the name fragments each tenant's rows are matched on.
 // Deliberately NOT in an environment variable: changing what a tenant can see
@@ -124,7 +124,7 @@ const TENANTS = {
   apache:       { company: 'Apache Corp.',        searchTerms: ['Apache Corp.', 'Apache Corp', 'Apache', 'Apache Corporation'] },
 };
 
-// ── Client credentials (SECRET) ─────────────────────────────────────
+// -- Client credentials (SECRET) -----------------------------------------------
 //
 // The access codes and their secrets live in CLIENT_EXPORT_CREDENTIALS, never
 // in this file. Until 2026-09-18 all 11 were hardcoded here, which put live
@@ -177,6 +177,56 @@ function loadCredentials() {
   return { entries, error: null };
 }
 
+// -- Date range (Alaska calendar days) -----------------------------------------
+//
+// The export page sends bare dates (YYYY-MM-DD). Before 2026-10-06 these went
+// straight into .gte/.lte, so Postgres read them as midnight UTC: the whole
+// end date was excluded, plus the evening before it in Alaska (midnight UTC is
+// 4pm AKDT). The newest records were the ones dropped.
+//
+// Now a bare date means an Alaska calendar day. The range runs from local
+// midnight on the start date to local midnight AFTER the end date, end
+// exclusive. AKDT/AKST is resolved per date, so DST changeovers are correct.
+const EXPORT_TZ = 'America/Anchorage';
+const BARE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Minutes the zone is offset from UTC at a given instant (AKDT = -480).
+function tzOffsetMinutes(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone, hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(date);
+  const v = {};
+  for (const p of parts) v[p.type] = p.value;
+  const asUtc = Date.UTC(+v.year, +v.month - 1, +v.day, +v.hour, +v.minute, +v.second);
+  return Math.round((asUtc - date.getTime()) / 60000);
+}
+
+// UTC instant of local midnight at the start of a YYYY-MM-DD day, or null.
+function localMidnight(ymd, dayOffset = 0) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const check = new Date(Date.UTC(y, m - 1, d));
+  if (check.toISOString().slice(0, 10) !== ymd) return null; // e.g. 2026-02-30
+  const utcMidnight = Date.UTC(y, m - 1, d + dayOffset);
+  // Probe at 09:00 UTC: always 00:00-01:00 local that day, before any 2am DST switch.
+  const probe = new Date(utcMidnight + 9 * 3600000);
+  return new Date(utcMidnight - tzOffsetMinutes(probe, EXPORT_TZ) * 60000);
+}
+
+// Returns { from, to } as ISO strings (to is exclusive), or null if invalid.
+function normalizeRange(start, end) {
+  if (typeof start !== 'string' || typeof end !== 'string') return null;
+  const from = BARE_DATE.test(start) ? localMidnight(start, 0) : new Date(start);
+  // A full timestamp end stays inclusive by stepping 1 ms past it.
+  const to = BARE_DATE.test(end)
+    ? localMidnight(end, 1)
+    : new Date(new Date(end).getTime() + 1);
+  if (!from || !to || isNaN(from.getTime()) || isNaN(to.getTime())) return null;
+  if (to.getTime() <= from.getTime()) return null;
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
 // Tables that use a non-default company column name
 const COMPANY_COLUMN_MAP = {
   'bbs_observations': 'client_company',
@@ -190,11 +240,15 @@ const COMPANY_COLUMN_MAP = {
   'risk_control_conversation': 'client_company'
 };
 
-// Tables merged into a single logical form (portal + legacy)
+// Tables merged into a single logical form.
+// The export page requests 'tha_submissions'. Live THAs are written to
+// tha_assessments (verified 2026-10-06: 117 rows in 14 days vs 0 in
+// tha_submissions), so tha_assessments is the Portal source and
+// tha_submissions is kept only for any older rows it still holds.
 const MERGE_TABLES = {
   'tha_submissions': {
     extra: ['tha_assessments'],
-    labels: { 'tha_submissions': 'Portal', 'tha_assessments': 'Legacy Jotform' }
+    labels: { 'tha_assessments': 'Portal', 'tha_submissions': 'Legacy' }
   }
 };
 
@@ -275,6 +329,7 @@ const ALLOWED_TABLES = new Set([
   'swppp_inspection',
   'synthetic_sling_inspections',
   'task_crew_audits',
+  'tha_assessments',
   'tha_submissions',
   'toolbox_meeting_assessment',
   'unit_work_permits',
@@ -288,14 +343,15 @@ const ALLOWED_TABLES = new Set([
 
 // Query one table for a company + date range, unioning one query per search term
 // (avoids PostgREST .or() comma-join fragility) and deduping by id.
-async function queryTable(table, searchTerms, start, end) {
+// `from` is inclusive, `to` is exclusive (see normalizeRange).
+async function queryTable(table, searchTerms, from, to) {
   const supabaseAdmin = getSupabaseAdmin();
   const companyCol = Object.prototype.hasOwnProperty.call(COMPANY_COLUMN_MAP, table)
     ? COMPANY_COLUMN_MAP[table] : 'company';
 
   if (!companyCol || !searchTerms || searchTerms.length === 0) {
     return await supabaseAdmin.from(table).select('*')
-      .gte('created_at', start).lte('created_at', end)
+      .gte('created_at', from).lt('created_at', to)
       .order('created_at', { ascending: false });
   }
 
@@ -304,7 +360,7 @@ async function queryTable(table, searchTerms, start, end) {
   let missingColumn = false;
   for (const term of searchTerms) {
     const { data, error } = await supabaseAdmin.from(table).select('*')
-      .gte('created_at', start).lte('created_at', end)
+      .gte('created_at', from).lt('created_at', to)
       .ilike(companyCol, `%${term}%`)
       .order('created_at', { ascending: false });
     if (error) {
@@ -370,6 +426,10 @@ export async function POST(request) {
     if (!start || !end) {
       return Response.json({ error: 'Missing date range.' }, { status: 400 });
     }
+    const range = normalizeRange(start, end);
+    if (!range) {
+      return Response.json({ error: 'Invalid date range. Start must be on or before end.' }, { status: 400 });
+    }
 
     const searchTerms = cred.searchTerms;
     const results = {};
@@ -385,7 +445,7 @@ export async function POST(request) {
       let tableError = null;
       for (const t of toQuery) {
         if (!ALLOWED_TABLES.has(t)) continue;
-        const { data, error } = await queryTable(t, searchTerms, start, end);
+        const { data, error } = await queryTable(t, searchTerms, range.from, range.to);
         if (error) {
           tableError = (tableError ? tableError + '; ' : '') + t + ': ' + error.message;
         } else if (data && data.length > 0) {
@@ -393,6 +453,9 @@ export async function POST(request) {
           const tagged = label ? data.map(row => ({ source_system: label, ...row })) : data;
           combined = combined.concat(tagged);
         }
+      }
+      if (mergeCfg) {
+        combined.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
       }
       results[primary] = { rows: combined, error: tableError };
     }
