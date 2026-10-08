@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 import { pageAllIn } from '@/lib/supabasePage'
+import { getCourseStatus } from '@/lib/courseStatus'
 
 export async function GET(request) {
   const supabaseAdmin = createClient(
@@ -60,7 +61,7 @@ export async function GET(request) {
   // Fetch course details
   const { data: courses } = await supabaseAdmin
     .from('lms_courses')
-    .select('id, title, description, pass_score, max_quiz_attempts, regulation_ref')
+    .select('id, title, description, pass_score, max_quiz_attempts, regulation_ref, refresher_frequency_months')
     .in('id', allCourseIds)
     .eq('active', true)
     .order('title')
@@ -99,8 +100,16 @@ export async function GET(request) {
     const slidesViewed = new Set(courseProgress.map(p => p.slide_id)).size
     const totalTime = courseProgress.reduce((sum, p) => sum + (p.time_spent_seconds || 0), 0)
 
+    // A completion past its refresher date no longer counts. The learner must be
+    // able to retake the course, so it is reported as 'Expired', not 'Complete'.
+    const expiry = completion
+      ? getCourseStatus(completion.completed_at, course.refresher_frequency_months)
+      : null
+    const expired = expiry?.status === 'overdue'
+
     let status = 'Not Started'
-    if (completion) status = 'Complete'
+    if (completion && !expired) status = 'Complete'
+    else if (completion && expired) status = 'Expired'
     else if (slidesViewed > 0) status = 'In Progress'
 
     return {
@@ -113,6 +122,8 @@ export async function GET(request) {
       passed: bestAttempt?.passed || false,
       status,
       completed_at: completion?.completed_at || null,
+      expires_at: expiry?.expiresAt ? expiry.expiresAt.toISOString() : null,
+      expired,
       certificate_id: completion?.certificate_id || null,
     }
   })

@@ -14,6 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { getCourseStatus } from '@/lib/courseStatus'
 
 export const dynamic = 'force-dynamic'
 
@@ -146,7 +147,7 @@ export async function POST(request) {
 
   const { data: course, error: courseErr } = await supabaseAdmin
     .from('lms_courses')
-    .select('pass_score, max_quiz_attempts, title, completion_text, regulation_ref')
+    .select('pass_score, max_quiz_attempts, title, completion_text, regulation_ref, refresher_frequency_months')
     .eq('id', course_id)
     .single()
   if (courseErr || !course) {
@@ -154,12 +155,38 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Course not found.' }, { status: 404 })
   }
 
+  // Existing completion, looked up before grading: it decides whether this
+  // attempt is a renewal of an expired course and where the attempt limit
+  // starts counting from.
+  const { data: existing, error: existingErr } = await supabaseAdmin
+    .from('lms_completions')
+    .select('id, certificate_id, completed_at')
+    .eq('user_id', lmsUser.id)
+    .eq('course_id', course_id)
+    .maybeSingle()
+  if (existingErr) {
+    console.error('[QUIZ-SUBMIT] Existing completion check error:', existingErr.message)
+    return NextResponse.json({ error: 'Failed to check course completion: ' + existingErr.message }, { status: 500 })
+  }
+  const isRenewal = !!existing &&
+    getCourseStatus(existing.completed_at, course.refresher_frequency_months).status === 'overdue'
+
   if (course.max_quiz_attempts > 0) {
-    const { count, error: countErr } = await supabaseAdmin
+    // On a renewal, only attempts made after the expired completion count,
+    // so the original training cycle cannot lock a learner out of refreshing.
+    // Rows are read (not head-counted) so the timestamp can be compared in JS
+    // whichever column the table carries; per user+course this is a few rows.
+    const { data: priorAttempts, error: countErr } = await supabaseAdmin
       .from('lms_quiz_attempts')
-      .select('id', { count: 'exact', head: true })
+      .select('*')
       .eq('user_id', lmsUser.id)
       .eq('course_id', course_id)
+    const since = isRenewal && existing.completed_at ? new Date(existing.completed_at).getTime() : null
+    const count = (priorAttempts || []).filter(a => {
+      if (since === null) return true
+      const at = a.attempted_at || a.created_at
+      return at ? new Date(at).getTime() > since : true
+    }).length
     if (countErr) {
       console.error('[QUIZ-SUBMIT] Attempt count error:', countErr.message)
       return NextResponse.json({ error: 'Failed to check attempt count: ' + countErr.message }, { status: 500 })
@@ -209,22 +236,15 @@ export async function POST(request) {
   let completionError = null
 
   if (passed) {
-    const { data: existing, error: existingErr } = await supabaseAdmin
-      .from('lms_completions')
-      .select('id, certificate_id')
-      .eq('user_id', lmsUser.id)
-      .eq('course_id', course_id)
-      .maybeSingle()
-    if (existingErr) {
-      console.error('[QUIZ-SUBMIT] Existing completion check error:', existingErr.message)
-    }
-
     const completionText = course.completion_text ||
       'Has successfully completed the ' + course.title + ' training course' +
       (course.regulation_ref ? ' in accordance with ' + course.regulation_ref : '') + '.'
 
+    // Certificate expiry follows the course refresher interval; one-time
+    // courses keep the 3-year certificate default.
     const expiresAt = new Date()
-    expiresAt.setFullYear(expiresAt.getFullYear() + 3)
+    if (course.refresher_frequency_months) expiresAt.setMonth(expiresAt.getMonth() + course.refresher_frequency_months)
+    else expiresAt.setFullYear(expiresAt.getFullYear() + 3)
 
     const certPayloadBase = {
       user_id: lmsUser.id,
@@ -240,7 +260,39 @@ export async function POST(request) {
       expires_at: expiresAt.toISOString(),
     }
 
-    if (!existing) {
+    if (isRenewal) {
+      // Expired course retaken and passed: new certificate, and the existing
+      // completion row (one per user+course) moves to today. The old
+      // certificate and quiz attempts stay on file as history.
+      const { cert, error: certErr } = await insertCertificateWithRetry(supabaseAdmin, certPayloadBase)
+
+      if (cert) {
+        const { error: renewErr } = await supabaseAdmin
+          .from('lms_completions')
+          .update({
+            completed_at: new Date().toISOString(),
+            quiz_attempt_id: attempt.id,
+            certificate_id: cert.cert_number,
+            granted_by_admin_id: null,
+            grant_note: null,
+          })
+          .eq('id', existing.id)
+        if (renewErr) {
+          completionError = renewErr.message
+          console.error(
+            '[QUIZ-SUBMIT] Completion renewal update failed AFTER cert created',
+            'completion_id=' + existing.id,
+            'cert_number=' + cert.cert_number,
+            'user_id=' + lmsUser.id,
+            'course_id=' + course_id,
+            'message=' + renewErr.message
+          )
+        }
+        certNumber = cert.cert_number
+      } else {
+        certificateError = certErr ? certErr.message : 'certificate insert returned no row'
+      }
+    } else if (!existing) {
       const { cert, error: certErr } = await insertCertificateWithRetry(supabaseAdmin, certPayloadBase)
 
       if (cert) {

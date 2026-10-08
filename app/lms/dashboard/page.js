@@ -35,6 +35,7 @@ function StatusBadge({ status }) {
   const map = {
     'Complete':    { bg: '#e8f5e9', color: '#2e7d32' },
     'In Progress': { bg: '#e3f2fd', color: '#1565c0' },
+    'Expired':     { bg: '#fee2e2', color: '#991b1b' },
     'Not Started': { bg: '#f5f5f5', color: '#999' },
   }
   const s = map[status] || { bg: '#f5f5f5', color: '#999' }
@@ -194,6 +195,12 @@ export default function LmsDashboard() {
                       <span style={S.cardStatVal}>{new Date(course.completed_at).toLocaleDateString()}</span>
                     </div>
                   )}
+                  {course.expires_at && (
+                    <div style={S.cardStat}>
+                      <span style={S.cardStatLabel}>{course.expired ? 'Expired' : 'Expires'}</span>
+                      <span style={{ ...S.cardStatVal, color: course.expired ? '#c62828' : S.cardStatVal.color }}>{new Date(course.expires_at).toLocaleDateString()}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div style={S.cardActions}>
@@ -201,7 +208,7 @@ export default function LmsDashboard() {
                   style={{ ...S.btn, background: course.status === 'Complete' ? '#e8f5e9' : '#b71c1c', color: course.status === 'Complete' ? '#2e7d32' : '#fff' }}
                   onClick={() => window.location.href = `/lms/course/${course.id}`}
                 >
-                  {course.status === 'Complete' ? '✓ Review Course' : course.status === 'In Progress' ? '▶ Resume Course' : '▶ Start Course'}
+                  {course.status === 'Complete' ? '✓ Review Course' : course.status === 'Expired' ? '↻ Retake Course' : course.status === 'In Progress' ? '▶ Resume Course' : '▶ Start Course'}
                 </button>
                 {course.certificate_id && (
                   <button style={{ ...S.btn, background: '#f5f5f5', color: '#333', marginTop: '8px' }}
