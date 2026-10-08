@@ -168,11 +168,13 @@ export async function POST(request) {
     console.error('[QUIZ-SUBMIT] Existing completion check error:', existingErr.message)
     return NextResponse.json({ error: 'Failed to check course completion: ' + existingErr.message }, { status: 500 })
   }
+  // Renewal = retaking a course that has expired or is inside its due-soon
+  // window. Keep in step with the statuses in learner/courses/route.js.
   const isRenewal = !!existing &&
-    getCourseStatus(existing.completed_at, course.refresher_frequency_months).status === 'overdue'
+    ['overdue', 'due_soon'].includes(getCourseStatus(existing.completed_at, course.refresher_frequency_months).status)
 
   if (course.max_quiz_attempts > 0) {
-    // On a renewal, only attempts made after the expired completion count,
+    // On a renewal, only attempts made after the previous completion count,
     // so the original training cycle cannot lock a learner out of refreshing.
     // Rows are read (not head-counted) so the timestamp can be compared in JS
     // whichever column the table carries; per user+course this is a few rows.
@@ -261,7 +263,7 @@ export async function POST(request) {
     }
 
     if (isRenewal) {
-      // Expired course retaken and passed: new certificate, and the existing
+      // Expired or due-soon course retaken and passed: new certificate, and the existing
       // completion row (one per user+course) moves to today. The old
       // certificate and quiz attempts stay on file as history.
       const { cert, error: certErr } = await insertCertificateWithRetry(supabaseAdmin, certPayloadBase)

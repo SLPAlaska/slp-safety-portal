@@ -333,10 +333,11 @@ export default function CoursePlayer() {
         setCertificateId(course.certificate_id)
       }
 
-      // Resume from last viewed slide -- except on an expired-course retake,
-      // which starts over at slide 1. An expired course is not 'Complete', so
+      // Resume from last viewed slide -- except on a renewal (Expired or Due
+      // Soon), which starts over at slide 1. Neither status is 'Complete', so
       // the quiz stays open for the renewal.
-      const lastViewed = course?.status === 'Expired' ? null : slidesData.progress
+      const isRenewal = course?.status === 'Expired' || course?.status === 'Due Soon'
+      const lastViewed = isRenewal ? null : slidesData.progress
         ?.sort((a, b) => new Date(b.last_viewed) - new Date(a.last_viewed))[0]
       if (lastViewed) {
         const idx = loadedSlides.findIndex(s => s.id === lastViewed.slide_id)

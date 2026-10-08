@@ -102,14 +102,19 @@ export async function GET(request) {
 
     // A completion past its refresher date no longer counts. The learner must be
     // able to retake the course, so it is reported as 'Expired', not 'Complete'.
+    // Keep these rules in step with isRenewal in learner/quiz/route.js.
     const expiry = completion
       ? getCourseStatus(completion.completed_at, course.refresher_frequency_months)
       : null
     const expired = expiry?.status === 'overdue'
+    // Inside the due-soon window the training still counts, but the learner
+    // may renew early, so it is not reported as plain 'Complete'.
+    const dueSoon = expiry?.status === 'due_soon'
 
     let status = 'Not Started'
-    if (completion && !expired) status = 'Complete'
-    else if (completion && expired) status = 'Expired'
+    if (completion && expired) status = 'Expired'
+    else if (completion && dueSoon) status = 'Due Soon'
+    else if (completion) status = 'Complete'
     else if (slidesViewed > 0) status = 'In Progress'
 
     return {
@@ -124,6 +129,7 @@ export async function GET(request) {
       completed_at: completion?.completed_at || null,
       expires_at: expiry?.expiresAt ? expiry.expiresAt.toISOString() : null,
       expired,
+      due_soon: dueSoon,
       certificate_id: completion?.certificate_id || null,
     }
   })

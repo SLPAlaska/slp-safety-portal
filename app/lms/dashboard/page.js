@@ -36,6 +36,7 @@ function StatusBadge({ status }) {
     'Complete':    { bg: '#e8f5e9', color: '#2e7d32' },
     'In Progress': { bg: '#e3f2fd', color: '#1565c0' },
     'Expired':     { bg: '#fee2e2', color: '#991b1b' },
+    'Due Soon':    { bg: '#fef9c3', color: '#854d0e' },
     'Not Started': { bg: '#f5f5f5', color: '#999' },
   }
   const s = map[status] || { bg: '#f5f5f5', color: '#999' }
@@ -87,7 +88,8 @@ export default function LmsDashboard() {
     </div>
   )
 
-  const completedCount = courses.filter(c => c.status === 'Complete').length
+  // Due Soon training is still current, so it counts as completed.
+  const completedCount = courses.filter(c => c.status === 'Complete' || c.status === 'Due Soon').length
   const inProgressCount = courses.filter(c => c.status === 'In Progress').length
   const totalTime = courses.reduce((sum, c) => sum + (c.total_time_seconds || 0), 0)
 
@@ -198,17 +200,17 @@ export default function LmsDashboard() {
                   {course.expires_at && (
                     <div style={S.cardStat}>
                       <span style={S.cardStatLabel}>{course.expired ? 'Expired' : 'Expires'}</span>
-                      <span style={{ ...S.cardStatVal, color: course.expired ? '#c62828' : S.cardStatVal.color }}>{new Date(course.expires_at).toLocaleDateString()}</span>
+                      <span style={{ ...S.cardStatVal, color: course.expired ? '#c62828' : course.due_soon ? '#854d0e' : S.cardStatVal.color }}>{new Date(course.expires_at).toLocaleDateString()}</span>
                     </div>
                   )}
                 </div>
               </div>
               <div style={S.cardActions}>
                 <button
-                  style={{ ...S.btn, background: course.status === 'Complete' ? '#e8f5e9' : '#b71c1c', color: course.status === 'Complete' ? '#2e7d32' : '#fff' }}
+                  style={{ ...S.btn, background: course.status === 'Complete' ? '#e8f5e9' : course.status === 'Due Soon' ? '#f59e0b' : '#b71c1c', color: course.status === 'Complete' ? '#2e7d32' : '#fff' }}
                   onClick={() => window.location.href = `/lms/course/${course.id}`}
                 >
-                  {course.status === 'Complete' ? '✓ Review Course' : course.status === 'Expired' ? '↻ Retake Course' : course.status === 'In Progress' ? '▶ Resume Course' : '▶ Start Course'}
+                  {course.status === 'Complete' ? '✓ Review Course' : course.status === 'Expired' ? '↻ Retake Course' : course.status === 'Due Soon' ? '↻ Renew Early' : course.status === 'In Progress' ? '▶ Resume Course' : '▶ Start Course'}
                 </button>
                 {course.certificate_id && (
                   <button style={{ ...S.btn, background: '#f5f5f5', color: '#333', marginTop: '8px' }}
