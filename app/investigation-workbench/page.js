@@ -230,7 +230,15 @@ export default function InvestigationWorkbench({ params }) {
   }
 
   async function updateStatus(newStatus) {
-    await supabase.from('incidents').update({ status: newStatus, updated_by_email: userEmail }).eq('id', incidentId);
+    const { error } = await supabase.from('incidents').update({ status: newStatus, updated_by_email: userEmail }).eq('id', incidentId);
+    if (error) {
+      // Approved / Closed are refused by the database until the spelling &
+      // grammar check passes on the current report text (inv_incidents_text_gate).
+      alert(/TEXT_GATE/.test(error.message || '')
+        ? 'Blocked: spelling & grammar must pass before an investigation can be ' + newStatus + '. Open it in the Investigation Workbench (Close It Out) to run the check and fix the flagged items.'
+        : 'Failed to update status: ' + error.message);
+      return;
+    }
     setIncident({ ...incident, status: newStatus });
     alert('Status updated to: ' + newStatus);
   }
