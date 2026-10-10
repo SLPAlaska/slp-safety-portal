@@ -1,5 +1,6 @@
 'use client';
 import { COMPANIES } from '@/lib/companies'
+import { HAZARD_TYPES, WORK_SETTINGS } from '@/lib/investigationGuide'
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
@@ -505,6 +506,9 @@ export default function IncidentReportForm() {
     
     // Classification
     incident_types: [],
+    // Interview Guide (per-company flag): hazard / mechanism + where
+    hazard_types: [],
+    work_setting: '',
     
     // Injury Details
     injury_occurred: '',
@@ -598,6 +602,29 @@ export default function IncidentReportForm() {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftId, setDraftId] = useState(null); // tracks if we're editing an existing draft
   const [incidentCode, setIncidentCode] = useState(null); // claim ticket for server-validated updates
+  // Interview Guide flag for the picked company (inv_guide_enabled RPC; default off).
+  const [guideOn, setGuideOn] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const co = formData.company_name;
+    if (!co) { setGuideOn(false); return; }
+    (async () => {
+      try {
+        const { data } = await supabase.rpc('inv_guide_enabled', { p_company: co });
+        if (alive) setGuideOn(data === true);
+      } catch {
+        if (alive) setGuideOn(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [formData.company_name]);
+
+  const handleHazardTypeChange = (code) => {
+    setFormData(prev => {
+      const cur = prev.hazard_types || [];
+      return { ...prev, hazard_types: cur.includes(code) ? cur.filter(c => c !== code) : [...cur, code] };
+    });
+  };
 
   // Updates incidents via the code-validated server route when we hold a
   // ticket (field flow); falls back to a direct authenticated update (staff).
@@ -781,6 +808,8 @@ export default function IncidentReportForm() {
         potential_safety_severity: data.potential_safety_severity || '',
         high_energy_present: data.high_energy_present ? 'Yes' : data.high_energy_present === false ? 'No' : '',
         energy_types: data.energy_types || [],
+        hazard_types: data.hazard_types || [],
+        work_setting: data.work_setting || '',
         energy_release_occurred: data.energy_release_occurred ? 'Yes' : data.energy_release_occurred === false ? 'No' : '',
         direct_control_status: data.direct_control_status || '',
         decs_present: data.decs_present || '',
@@ -999,6 +1028,10 @@ export default function IncidentReportForm() {
         detailed_description: formData.detailed_description || null,
         incident_types: formData.incident_types,
         incident_types_text: formData.incident_types.join(', '),
+        ...(guideOn ? {
+          hazard_types: (formData.hazard_types || []).length > 0 ? formData.hazard_types : null,
+          work_setting: formData.work_setting || null,
+        } : {}),
         injury_occurred: formData.injury_occurred === 'Yes',
         injured_person_name: formData.injured_person_name || null,
         injured_person_company: formData.injured_person_company || null,
@@ -1324,6 +1357,8 @@ export default function IncidentReportForm() {
                     brief_description: '',
                     detailed_description: '',
                     incident_types: [],
+                    hazard_types: [],
+                    work_setting: '',
                     injury_occurred: '',
                     injured_person_name: '',
                     injured_person_company: '',
@@ -1602,6 +1637,60 @@ export default function IncidentReportForm() {
                 ))}
               </div>
             </div>
+
+            {guideOn && (
+              <div style={styles.formGroup} data-testid="guide-field-report">
+                <label style={styles.label}>
+                  What kind of hazard?
+                  <span style={{ fontWeight: 'normal', color: '#64748b', marginLeft: '8px' }}>
+                    (Tap all that apply — this loads the right investigation questions)
+                  </span>
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {HAZARD_TYPES.map(h => {
+                    const on = (formData.hazard_types || []).includes(h.code);
+                    return (
+                      <button
+                        key={h.code}
+                        type="button"
+                        onClick={() => handleHazardTypeChange(h.code)}
+                        aria-pressed={on}
+                        style={{
+                          minHeight: '48px', padding: '10px 14px', borderRadius: '999px', cursor: 'pointer',
+                          border: on ? '2px solid #1e3a5f' : '2px solid #cbd5e1',
+                          background: on ? '#1e3a5f' : '#ffffff', color: on ? '#ffffff' : '#0f172a',
+                          fontSize: '15px', fontWeight: 600,
+                        }}
+                      >
+                        <span aria-hidden="true">{h.icon}</span> {h.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <label style={{ ...styles.label, marginTop: '14px' }}>Where?</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {WORK_SETTINGS.map(w => {
+                    const on = formData.work_setting === w;
+                    return (
+                      <button
+                        key={w}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, work_setting: prev.work_setting === w ? '' : w }))}
+                        aria-pressed={on}
+                        style={{
+                          minHeight: '48px', padding: '10px 16px', borderRadius: '999px', cursor: 'pointer',
+                          border: on ? '2px solid #1e3a5f' : '2px solid #cbd5e1',
+                          background: on ? '#1e3a5f' : '#ffffff', color: on ? '#ffffff' : '#0f172a',
+                          fontSize: '15px', fontWeight: 600,
+                        }}
+                      >
+                        {w}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div style={styles.formGroup}>
               <label style={styles.label}>

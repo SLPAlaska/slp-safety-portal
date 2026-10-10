@@ -8,7 +8,8 @@
     "start": "next start",
     "check:companies": "node scripts/check-companies.mjs",
     "sweep:secrets": "node scripts/sweep-secrets.mjs",
-    "check:audit-mobile": "node scripts/check-audit-mobile.mjs"
+    "check:audit-mobile": "node scripts/check-audit-mobile.mjs",
+    "check:inv-guide": "node scripts/check-inv-guide.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

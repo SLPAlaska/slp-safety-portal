@@ -10,6 +10,9 @@ import {
   MIN_PASSWORD_LENGTH,
   NOT_AUTHORIZED_MESSAGE,
 } from '@/lib/investigatorAuth';
+import { isSuperAdmin } from '@/lib/superAdmins';
+import InterviewGuide, { loadGuideStatus } from '@/components/InterviewGuide';
+import { CAUSE_CATEGORIES, WEAK_CA_PATTERN, closeoutReview, isWeakCA } from '@/lib/investigationGuide';
 
 // =====================================================================
 // AnthroSafe Investigation Workbench v2
@@ -104,6 +107,9 @@ export default function InvestigationWorkbench() {
   const [saving, setSaving] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  // Interview Guide (P0): per-company flag; super admins can preview with ?guide=preview.
+  const [guideEnabled, setGuideEnabled] = useState(false);
+  const [guidePreview, setGuidePreview] = useState(false);
 
   // -------- Auth --------
   // A real Supabase session, not a remembered email, and a role rather than an
@@ -213,6 +219,19 @@ export default function InvestigationWorkbench() {
       const incR = await supabase.from('incidents').select('*').eq('id', incidentId).single();
       if (incR.error) throw incR.error;
       setIncident(incR.data);
+
+      // Interview Guide flag for this incident's company (default off).
+      try {
+        const fr = await supabase.rpc('inv_guide_enabled', { p_company: incR.data.company_name || '' });
+        const on = fr.data === true;
+        const preview = !on && typeof window !== 'undefined'
+          && new URLSearchParams(window.location.search).get('guide') === 'preview'
+          && isSuperAdmin(userEmail);
+        setGuideEnabled(on || preview);
+        setGuidePreview(preview);
+      } catch (e) {
+        console.warn('[Workbench] guide flag:', e?.message || e);
+      }
 
       const fkText = incR.data.incident_id;  // INC-2026-0051 (used by legacy tables)
       const fkUuid = incR.data.id;            // UUID (used by rca_factors)
@@ -377,6 +396,9 @@ export default function InvestigationWorkbench() {
               fkText={incident.incident_id}
               userEmail={userEmail}
               onIncidentChange={queueIncidentSave}
+              guideEnabled={guideEnabled}
+              guidePreview={guidePreview}
+              onIncidentPatched={patch => setIncident(prev => ({ ...prev, ...patch }))}
               onComplete={() => markStageComplete(3)}
             />
           )}
@@ -391,6 +413,7 @@ export default function InvestigationWorkbench() {
               fkText={incident.incident_id}
               fkUuid={incident.id}
               userEmail={userEmail}
+              guideEnabled={guideEnabled}
               pdfGenerating={pdfGenerating}
               onGeneratePDF={handleGeneratePDF}
               onIncidentChange={queueIncidentSave}
@@ -684,7 +707,7 @@ function Stage2({ timeline, fkText, incidentDate, userEmail, onReload, onComplet
 // =====================================================================
 // STAGE 3 - Why It Happened (adaptive: Local Review / 5-Why / RCA)
 // =====================================================================
-function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, localReview, setLocalReview, legacyRcaText, incidentId, fkText, userEmail, onIncidentChange, onComplete }) {
+function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, localReview, setLocalReview, legacyRcaText, incidentId, fkText, userEmail, onIncidentChange, guideEnabled, guidePreview, onIncidentPatched, onComplete }) {
   const type = (incident.investigation_type || '').toLowerCase();
   const isLocal  = type.includes('local');
   const is5Why   = !isLocal && (type.includes('5') || type.includes('why'));
@@ -701,6 +724,15 @@ function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, loca
                     'Identify which of the ten contributing factor categories played a role.'
         }
       />
+
+      {guideEnabled && guidePreview && (
+        <div style={{ fontSize: 12, color: '#92400e', background: C.amber, border: `1px solid ${C.warning}`, borderRadius: 8, padding: '8px 12px', marginBottom: 12 }}>
+          Super-admin preview: the Interview Guide is not switched on for {incident.company_name || 'this company'} yet. Answers you enter here are saved.
+        </div>
+      )}
+      {guideEnabled && (
+        <InterviewGuide supabase={supabase} incident={incident} userEmail={userEmail} onIncidentPatched={onIncidentPatched} />
+      )}
 
       {legacyRcaText && (
         <Card title="Legacy Notes (read-only)" toneAccent={C.warning}>
@@ -923,8 +955,41 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
   const [gateBusy, setGateBusy] = useState(false);
+  // Close-out review (Interview Guide P0): warns and asks for a reason, never hard-blocks.
+  const [closeGate, setCloseGate] = useState(null);
+
+  async function runCloseoutGate(target, proceed) {
+    if (!guideEnabled) return proceed();
+    setGateBusy(true);
+    const guide = await loadGuideStatus(supabase, incident);
+    setGateBusy(false);
+    const review = closeoutReview({ guide, correctiveActions, targetStatus: target });
+    if (review.issues.length === 0) return proceed();
+    setCloseGate({ ...review, target, proceed, missing: (guide?.missing || []).slice(0, 12) });
+  }
+
+  async function overrideCloseoutGate(reason) {
+    const gate = closeGate;
+    if (gate.weakOnly) {
+      const { error } = await supabase.from('incidents').update({ weak_control_justification: reason }).eq('id', incident.id);
+      if (error) alert('Could not save the justification on the incident: ' + error.message);
+    }
+    const { error: logErr } = await supabase.from('investigation_activity_log').insert({
+      incident_id: incident.id,
+      incident_id_text: incident.incident_id,
+      action: 'Close-out review overridden',
+      action_category: 'closeout_gate',
+      entity_type: 'incident',
+      entity_id: incident.id,
+      user_email: userEmail,
+      details: { target: gate.target, issues: gate.issues.map(i => i.key), reason },
+    });
+    if (logErr) alert('Note: the override reason could not be logged (' + logErr.message + '). Continuing.');
+    setCloseGate(null);
+    gate.proceed();
+  }
   const [gateIssues, setGateIssues] = useState(null); // null = modal closed
   // Set when the review ran but could not cover everything. The spell-check is
   // an aid, not a gate on safety work, so this warns and never blocks approval.
@@ -971,10 +1036,15 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
   }
 
   async function handleStatusChange(next) {
+    if (next === 'Closed') return runCloseoutGate('Closed', () => onIncidentChange({ status: next }));
     if (next !== 'Approved') {
       onIncidentChange({ status: next });
       return;
     }
+    return runCloseoutGate('Approved', runApproval);
+  }
+
+  async function runApproval() {
     // The spelling review runs before Approved, but it FAILS OPEN: if the
     // service errors or times out, the reviewer is warned and the approval
     // still goes through. A copy-editing aid must never be the thing standing
@@ -1097,7 +1167,16 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
         </div>
       </Card>
 
-      <StageFooter complete={incident.stage_4_complete} onComplete={onComplete} nextLabel="Mark Investigation Complete" />
+      <StageFooter complete={incident.stage_4_complete} onComplete={() => runCloseoutGate('Complete', onComplete)} nextLabel="Mark Investigation Complete" />
+
+      {closeGate && (
+        <CloseoutGateModal
+          gate={closeGate}
+          initialReason={closeGate.weakOnly ? (incident.weak_control_justification || '') : ''}
+          onCancel={() => setCloseGate(null)}
+          onProceed={overrideCloseoutGate}
+        />
+      )}
 
       {gateIssues && (
         <SpellGateModal
@@ -1109,6 +1188,55 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
           onCancel={() => { setGateIssues(null); setGateWarning(null); }}
         />
       )}
+    </div>
+  );
+}
+
+// =====================================================================
+// Close-out review modal (module level - never define inside render)
+// =====================================================================
+function CloseoutGateModal({ gate, initialReason, onCancel, onProceed }) {
+  const [reason, setReason] = useState(initialReason || '');
+  const [busy, setBusy] = useState(false);
+  const ok = reason.trim().length >= 10;
+  const label = gate.target === 'Complete' ? 'marking this investigation complete' : `setting status to ${gate.target}`;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div role="dialog" aria-label="Close-out review" style={{ background: 'white', borderRadius: 12, maxWidth: 680, width: '100%', maxHeight: '88vh', overflowY: 'auto', padding: 20 }}>
+        <div style={{ fontSize: 17, fontWeight: 800, color: C.navy }}>Before {label}…</div>
+        <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>
+          This investigation may not be ready. You can go back and fix it, or proceed with a reason — the reason is logged.
+        </div>
+        <ul style={{ margin: '14px 0 0 18px', padding: 0, fontSize: 14, color: '#7c2d12' }}>
+          {gate.issues.map(i => <li key={i.key} style={{ marginBottom: 6 }}>{i.text}</li>)}
+        </ul>
+        {gate.missing?.length > 0 && (
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>
+            Unanswered critical questions include: {gate.missing.map(q => q.code).join(', ')}
+          </div>
+        )}
+        {gate.weakOnly && (
+          <div style={{ fontSize: 13, background: C.amber, border: `1px solid ${C.warning}`, borderRadius: 8, padding: 10, marginTop: 12, color: '#78350f' }}>
+            &quot;Employee counseled&quot; or &quot;additional training&quot; only fixes a cause that is a proven knowledge or skill gap.
+            If the real cause was missing equipment, pressure, a procedure that doesn&apos;t match the job, or a normalized shortcut,
+            add a stronger control. Otherwise explain why a stronger control isn&apos;t feasible and what knowledge/skill gap you proved.
+          </div>
+        )}
+        <div style={{ marginTop: 12 }}>
+          <Label>{gate.weakOnly ? 'Why no stronger control, and what knowledge/skill gap was proven? (required to proceed)' : 'Reason for proceeding anyway (required)'}</Label>
+          <textarea value={reason} onChange={e => setReason(e.target.value)} rows={4} style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 14, flexWrap: 'wrap' }}>
+          <button onClick={onCancel} disabled={busy} style={btnGhostDark}>Go back and fix</button>
+          <button
+            onClick={async () => { setBusy(true); await onProceed(reason.trim()); setBusy(false); }}
+            disabled={!ok || busy}
+            style={{ ...btnPrimaryDark, background: '#b45309', opacity: !ok || busy ? 0.5 : 1 }}
+          >
+            {busy ? 'Recording…' : 'Proceed — record my reason'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1342,6 +1470,8 @@ function AdditionalFields({ incident, onChange }) {
     'evidence','timeline','witnesses','corrective_actions','lessons_learned',
     'local_review','five_why','rca_analysis','tags',
     'report_pdf_url','report_pdf_id','report_generated_at',
+    // Managed by the Interview Guide panel / close-out review
+    'hazard_types','work_setting','is_repeat','weak_control_justification',
   ]);
 
   const extras = Object.entries(incident || {}).filter(([k, v]) => {
@@ -1539,6 +1669,7 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
   const [form, setForm] = useState({
     description: '', owner: '', due_date: '', status: 'Open',
     hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '',
+    cause_category: '', cause_text: '', verification_method: '', verify_by: '',
   });
   const [busy, setBusy] = useState(false);
   const [showPpeWarning, setShowPpeWarning] = useState(false);
@@ -1574,11 +1705,14 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
       hierarchy_control: form.hierarchy_of_controls,
       hierarchy_level: form.hierarchy_level,
       hierarchy_justification: form.hierarchy_justification,
+      root_cause_link: joinCause(form.cause_category, form.cause_text),
+      verification_method: form.verification_method.trim() || null,
+      verify_by: form.verify_by || null,
       created_by_email: userEmail,
     });
     setBusy(false);
     if (error) return alert('Failed: ' + error.message);
-    setForm({ description: '', owner: '', due_date: '', status: 'Open', hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '' });
+    setForm({ description: '', owner: '', due_date: '', status: 'Open', hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '', cause_category: '', cause_text: '', verification_method: '', verify_by: '' });
     setShowPpeWarning(false);
     setOpen(false);
     onAdded();
@@ -1589,6 +1723,14 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
     <div style={{ background: '#f9fafb', border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 14, marginBottom: 14 }}>
       <Label>What action will be taken? *</Label>
       <textarea rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={inputStyle} />
+      {WEAK_CA_PATTERN.test(form.description) && (
+        <div style={{ marginTop: 8, padding: 10, background: C.amber, border: `1px solid ${C.warning}`, borderRadius: 8, fontSize: 12, color: '#78350f' }}>
+          This reads like counseling, retraining or a reminder. That only fixes a <strong>proven knowledge or skill gap</strong>.
+          Can you change the equipment, tool, setup or process so the same mistake can&apos;t happen?
+        </div>
+      )}
+
+      <CauseVerifyFields form={form} setForm={setForm} />
 
       <div style={{ marginTop: 14 }}>
         <Label>Hierarchy of Controls *</Label>
@@ -1700,6 +1842,7 @@ function CorrectiveActionList({ items, onChange }) {
                 Justification: {c.hierarchy_justification}
               </div>
             )}
+            <CauseVerifyInline item={c} onChange={onChange} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
             <select value={status} onChange={e => updateStatus(c, e.target.value)} style={{ ...inputStyle, padding: '4px 6px', fontSize: 11, width: 110 }}>
@@ -1711,6 +1854,73 @@ function CorrectiveActionList({ items, onChange }) {
       </div>
     );
   });
+}
+
+function joinCause(category, text) {
+  const t = (text || '').trim();
+  if (category && t) return `${category}: ${t}`;
+  return category || t || null;
+}
+function splitCause(link) {
+  const s = link || '';
+  const cat = CAUSE_CATEGORIES.find(c => s === c || s.startsWith(c + ':'));
+  if (!cat) return { cause_category: '', cause_text: s };
+  return { cause_category: cat, cause_text: s.slice(cat.length).replace(/^:\s*/, '') };
+}
+
+function CauseVerifyFields({ form, setForm }) {
+  return (
+    <div style={{ marginTop: 14, padding: 12, background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div>
+          <Label>Which cause does this fix?</Label>
+          <select value={form.cause_category} onChange={e => setForm({ ...form, cause_category: e.target.value })} style={inputStyle}>
+            <option value="">— pick a cause —</option>
+            {CAUSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <Field label="Cause detail (optional)" value={form.cause_text} onChange={v => setForm({ ...form, cause_text: v })} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10, marginTop: 10 }}>
+        <Field label="How will we verify it works? (observation, audit, check — not 'trust me')" value={form.verification_method} onChange={v => setForm({ ...form, verification_method: v })} />
+        <Field label="Verify by" type="date" value={form.verify_by} onChange={v => setForm({ ...form, verify_by: v })} />
+      </div>
+    </div>
+  );
+}
+
+function CauseVerifyInline({ item, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(() => ({ ...splitCause(item.root_cause_link), verification_method: item.verification_method || '', verify_by: item.verify_by || '' }));
+  const [busy, setBusy] = useState(false);
+  const weak = isWeakCA(item);
+  async function save() {
+    setBusy(true);
+    const { error } = await supabase.from('investigation_corrective_actions').update({
+      root_cause_link: joinCause(form.cause_category, form.cause_text),
+      verification_method: form.verification_method.trim() || null,
+      verify_by: form.verify_by || null,
+    }).eq('id', item.id);
+    setBusy(false);
+    if (error) return alert('Failed: ' + error.message);
+    setOpen(false);
+    onChange();
+  }
+  return (
+    <div style={{ marginTop: 6, fontSize: 12, color: C.muted }}>
+      {weak && <span style={{ fontSize: 10, fontWeight: 800, color: '#92400e', background: C.amber, padding: '2px 6px', borderRadius: 3, marginRight: 6 }}>WEAK CONTROL</span>}
+      Cause: <strong style={{ color: item.root_cause_link ? C.text : C.danger }}>{item.root_cause_link || 'not linked'}</strong>
+      {' '}| Verify: <strong style={{ color: item.verification_method ? C.text : C.danger }}>{item.verification_method || 'no method'}</strong>
+      {item.verify_by ? ` by ${formatDate(item.verify_by)}` : ''}
+      {' '}<button onClick={() => setOpen(o => !o)} style={{ ...btnSmall, color: C.steel }}>{open ? 'Close' : 'Edit cause / verification'}</button>
+      {open && (
+        <div>
+          <CauseVerifyFields form={form} setForm={setForm} />
+          <button onClick={save} disabled={busy} style={{ ...btnPrimaryDark, marginTop: 8 }}>{busy ? 'Saving...' : 'Save'}</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // =====================================================================
