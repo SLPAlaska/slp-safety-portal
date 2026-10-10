@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { callReportTextGate } from '@/components/ReportTextGate';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -86,9 +87,24 @@ export default function ReportGenerator() {
     } catch(e) { console.error('loadIncidentData error:', e); }
   }
 
-  function generateReport() {
+  // Spelling & grammar HARD GATE: the final report is only generated when the
+  // server says the current text passes. Fails closed (checker down = no report).
+  async function generateReport() {
     if (!incidentData) return;
     setGenerating(true);
+    const gate = await callReportTextGate(supabase, incidentData.incident.id);
+    if (gate.status !== 'pass') {
+      setGenerating(false);
+      const issues = Array.isArray(gate.issues) ? gate.issues : [];
+      const labels = Object.fromEntries((gate.fields || []).map(f => [f.key, f.label]));
+      alert(gate.status === 'fail'
+        ? 'Report blocked: spelling & grammar must pass first.\n\n'
+          + issues.slice(0, 12).map(i => `- ${labels[i.key] || i.key}: "${i.word}" (${i.message})`).join('\n')
+          + (issues.length > 12 ? `\n...and ${issues.length - 12} more` : '')
+          + '\n\nFix them in the Investigation Workbench (Close It Out), then generate again.'
+        : 'Report blocked: the spelling & grammar check could not run.\n\n' + (gate.reason || '') + '\n\nTry again in a minute.');
+      return;
+    }
     const { incident, timeline, witnesses, localReview, fiveWhy, rca, cas, lessons } = incidentData;
     const psif = PSIF_DISPLAY[incident.psif_classification] || {};
     
@@ -229,6 +245,7 @@ ${l.key_takeaway ? `<div class="takeaway"><strong>Key Takeaway:</strong> ${l.key
 </body></html>`;
 
     const w = window.open('', '_blank');
+    if (!w) { setGenerating(false); alert('Pop-up blocked. Allow pop-ups for this site, then Generate Report again.'); return; }
     w.document.write(html);
     w.document.close();
     setGenerating(false);

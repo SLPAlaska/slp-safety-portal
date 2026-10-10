@@ -9,7 +9,8 @@
     "check:companies": "node scripts/check-companies.mjs",
     "sweep:secrets": "node scripts/sweep-secrets.mjs",
     "check:audit-mobile": "node scripts/check-audit-mobile.mjs",
-    "check:inv-guide": "node scripts/check-inv-guide.mjs"
+    "check:inv-guide": "node scripts/check-inv-guide.mjs",
+    "check:text-gate": "node scripts/check-investigation-text-gate.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

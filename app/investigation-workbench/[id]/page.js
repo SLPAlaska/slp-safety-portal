@@ -13,6 +13,7 @@ import {
 import { isSuperAdmin } from '@/lib/superAdmins';
 import InterviewGuide, { loadGuideStatus } from '@/components/InterviewGuide';
 import { CAUSE_CATEGORIES, WEAK_CA_PATTERN, closeoutReview, isWeakCA } from '@/lib/investigationGuide';
+import { ReportTextGateModal, callReportTextGate, textGateDbMessage } from '@/components/ReportTextGate';
 
 // =====================================================================
 // AnthroSafe Investigation Workbench v2
@@ -110,6 +111,9 @@ export default function InvestigationWorkbench() {
   // Interview Guide (P0): per-company flag; super admins can preview with ?guide=preview.
   const [guideEnabled, setGuideEnabled] = useState(false);
   const [guidePreview, setGuidePreview] = useState(false);
+  // Spelling & grammar HARD GATE (approve / complete / close / export).
+  const [textGate, setTextGate] = useState(null);       // { action, result, proceed } while the modal is open
+  const [textGateBusy, setTextGateBusy] = useState(false);
 
   // -------- Auth --------
   // A real Supabase session, not a remembered email, and a role rather than an
@@ -287,32 +291,72 @@ export default function InvestigationWorkbench() {
   }
 
   // -------- Autosave for the incident record --------
+  // Patches made inside the debounce window are merged, not dropped, and
+  // flushAutosave() writes them immediately — the text gate reads the report
+  // text from the database, so pending edits must land before it runs.
   const autosaveTimer = useRef(null);
+  const pendingPatch = useRef({});
+  async function writePendingPatch() {
+    const patch = pendingPatch.current;
+    pendingPatch.current = {};
+    if (Object.keys(patch).length === 0) return;
+    setSaving(true);
+    const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
+    if (error) console.error('Autosave failed:', error);
+    else setLastSavedAt(new Date());
+    setSaving(false);
+  }
   function queueIncidentSave(patch) {
     setIncident(prev => ({ ...prev, ...patch }));
+    pendingPatch.current = { ...pendingPatch.current, ...patch };
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = setTimeout(async () => {
-      setSaving(true);
-      const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
-      if (error) console.error('Autosave failed:', error);
-      else setLastSavedAt(new Date());
-      setSaving(false);
-    }, 1200);
+    autosaveTimer.current = setTimeout(writePendingPatch, 1200);
+  }
+  async function flushAutosave() {
+    if (autosaveTimer.current) { clearTimeout(autosaveTimer.current); autosaveTimer.current = null; }
+    await writePendingPatch();
   }
 
   async function markStageComplete(stage) {
     const patch = { [`stage_${stage}_complete`]: true };
+    const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
+    if (error) {
+      alert(textGateDbMessage(error) || ('Could not mark the stage complete: ' + error.message));
+      return;
+    }
     setIncident(prev => ({ ...prev, ...patch }));
-    await supabase.from('incidents').update(patch).eq('id', incidentId);
     if (stage < 4) setCurrentStage(stage + 1);
   }
 
+  // -------- Spelling & grammar HARD GATE --------
+  // Approve, Close, Mark Investigation Complete and every report export run
+  // this first. Only { status: 'pass' } proceeds; fail, checker down, or any
+  // error opens the modal and blocks. The database trigger enforces the same
+  // rule for approve/close/complete, so this is the explanation, not the lock.
+  async function requireTextGate(action, proceed) {
+    await flushAutosave();
+    setTextGateBusy(true);
+    const result = await callReportTextGate(supabase, incidentId);
+    setTextGateBusy(false);
+    if (result.status === 'pass') return proceed();
+    setTextGate({ action, result, proceed });
+  }
+
   // -------- PDF generation --------
+  function openReport() {
+    // The report page re-runs the gate itself and renders nothing until it passes.
+    const url = `/investigation-report/${incidentId}?print=1`;
+    const w = window.open(url, '_blank');
+    if (w) { try { w.opener = null; } catch { /* ignore */ } }
+    else window.location.href = url; // pop-up blocked after the async check
+  }
   async function handleGeneratePDF() {
-    // Opens the new HTML report page in a new tab with auto-print enabled.
-    // The new page handles photo compression client-side and uses window.print()
-    // to produce a beautifully-formatted PDF.
-    window.open(`/investigation-report/${incidentId}?print=1`, '_blank', 'noopener');
+    setPdfGenerating(true);
+    try {
+      await requireTextGate('open or export the final report', openReport);
+    } finally {
+      setPdfGenerating(false);
+    }
   }
 
   // ==========================================================
@@ -416,6 +460,8 @@ export default function InvestigationWorkbench() {
               guideEnabled={guideEnabled}
               pdfGenerating={pdfGenerating}
               onGeneratePDF={handleGeneratePDF}
+              requireTextGate={requireTextGate}
+              textGateBusy={textGateBusy}
               onIncidentChange={queueIncidentSave}
               onActionsReload={async () => {
                 const { data } = await supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incident.incident_id).order('due_date');
@@ -430,6 +476,22 @@ export default function InvestigationWorkbench() {
           )}
         </main>
       </div>
+
+      {textGate && (
+        <ReportTextGateModal
+          supabase={supabase}
+          incidentId={incidentId}
+          action={textGate.action}
+          result={textGate.result}
+          onCancel={() => { setTextGate(null); loadAll(); }}
+          onPass={async () => {
+            const proceed = textGate.proceed;
+            setTextGate(null);
+            await proceed();
+            loadAll(); // fixes were saved from the modal; show them
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -955,7 +1017,7 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, requireTextGate, textGateBusy, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
   const [gateBusy, setGateBusy] = useState(false);
   // Close-out review (Interview Guide P0): warns and asks for a reason, never hard-blocks.
   const [closeGate, setCloseGate] = useState(null);
@@ -990,143 +1052,23 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
     setCloseGate(null);
     gate.proceed();
   }
-  const [gateIssues, setGateIssues] = useState(null); // null = modal closed
-  // Set when the review ran but could not cover everything. The spell-check is
-  // an aid, not a gate on safety work, so this warns and never blocks approval.
-  const [gateWarning, setGateWarning] = useState(null);
 
-  function collectReportText() {
-    const items = [];
-    const push = (key, table, id, column, text, mirror) => {
-      if (id && column && text && String(text).trim()) {
-        items.push({ key, table, id, column, mirror: mirror || null, text: String(text) });
-      }
-    };
-    push('Brief Description',      'incidents', incident.id, 'brief_description',       incident.brief_description);
-    push('Detailed Description',   'incidents', incident.id, 'detailed_description',    incident.detailed_description);
-    push('Suspected Root Causes',  'incidents', incident.id, 'suspected_root_causes',   incident.suspected_root_causes);
-    push('Causal Factors',         'incidents', incident.id, 'causal_factors',          incident.causal_factors);
-    push('Initial Lessons',        'incidents', incident.id, 'lessons_learned_initial', incident.lessons_learned_initial);
-    (timeline || []).forEach((ev, i) => {
-      const col = ev.description !== undefined ? 'description' : 'event_description';
-      const mirror = (ev.description !== undefined && ev.event_description !== undefined) ? 'event_description' : null;
-      push(`Timeline Event ${i + 1}`, 'timeline_events', ev.id, col, ev.description || ev.event_description, mirror);
-    });
-    (witnesses || []).forEach((w, i) => {
-      const col = w.summary !== undefined ? 'summary' : 'statement_summary';
-      push(`Witness ${i + 1}`, 'witness_statements', w.id, col, w.summary || w.statement_summary);
-    });
-    (correctiveActions || []).forEach((c, i) => {
-      push(`Corrective Action ${i + 1}`, 'investigation_corrective_actions', c.id, 'description', c.description);
-    });
-    (lessons || []).forEach((l, i) => {
-      const titleCol = l.title !== undefined ? 'title' : 'lesson_title';
-      const descCol  = l.description !== undefined ? 'description' : 'lesson_description';
-      push(`Lesson ${i + 1} Title`,    'lessons_learned', l.id, titleCol, l.title || l.lesson_title);
-      push(`Lesson ${i + 1} Text`,     'lessons_learned', l.id, descCol,  l.description || l.lesson_description);
-      push(`Lesson ${i + 1} Takeaway`, 'lessons_learned', l.id, 'key_takeaway', l.key_takeaway);
-    });
-    return items;
-  }
-
-  async function approveDirect() {
-    const { error } = await supabase.from('incidents').update({ status: 'Approved' }).eq('id', incident.id);
-    if (error) return alert('Failed to set status: ' + error.message);
+  // Approve / Close: close-out review first (soft, reason logged), then the
+  // spelling & grammar HARD GATE (no override; fails closed). The database
+  // trigger refuses Approved / Closed without a passing check on the current
+  // text, so a direct update is refused too.
+  async function setStatusDirect(next) {
+    const { error } = await supabase.from('incidents').update({ status: next }).eq('id', incident.id);
+    if (error) return alert(textGateDbMessage(error) || ('Failed to set status: ' + error.message));
     window.location.reload();
   }
 
   async function handleStatusChange(next) {
-    if (next === 'Closed') return runCloseoutGate('Closed', () => onIncidentChange({ status: next }));
-    if (next !== 'Approved') {
-      onIncidentChange({ status: next });
-      return;
+    if (next === 'Approved' || next === 'Closed') {
+      const verb = next === 'Approved' ? 'approve this investigation' : 'close this investigation';
+      return runCloseoutGate(next, () => requireTextGate(verb, () => setStatusDirect(next)));
     }
-    return runCloseoutGate('Approved', runApproval);
-  }
-
-  async function runApproval() {
-    // The spelling review runs before Approved, but it FAILS OPEN: if the
-    // service errors or times out, the reviewer is warned and the approval
-    // still goes through. A copy-editing aid must never be the thing standing
-    // between a finished investigation and its approval.
-    setGateBusy(true);
-    setGateWarning(null);
-
-    const items = collectReportText();
-    if (items.length === 0) { setGateBusy(false); return approveDirect(); }
-
-    let payload = null;
-    let failure = null;
-    try {
-      // The route verifies this token server-side before it will spend the
-      // platform's Anthropic key. If it is missing or stale the route answers
-      // 401, which lands in the fail-open path below — a broken session warns
-      // the reviewer, it does not trap a finished investigation.
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/spellcheck', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
-        body: JSON.stringify({ items: items.map(({ key, text }) => ({ key, text })) }),
-      });
-      payload = await res.json().catch(() => null);
-      if (!res.ok || !payload || !Array.isArray(payload.results)) {
-        failure = payload?.error?.message || `The spelling review service returned ${res.status}.`;
-      }
-    } catch (err) {
-      failure = err?.message || 'The spelling review service could not be reached.';
-    }
-
-    setGateBusy(false);
-
-    if (failure) {
-      alert(
-        'Spelling & grammar review could not run:\n\n' + failure +
-        '\n\nApproving anyway — please proofread the report manually.'
-      );
-      return approveDirect();
-    }
-
-    const byKey = Object.fromEntries(payload.results.map(r => [r.key, r]));
-    // Only a field the model actually returned can be called clean or corrected.
-    const issues = items
-      .map(it => ({ ...it, corrected: byKey[it.key]?.corrected ?? it.text }))
-      .filter(it => byKey[it.key] && it.corrected.trim() !== it.text.trim());
-
-    const skipped = Array.isArray(payload.unchecked) ? payload.unchecked.length : 0;
-    const warning = skipped > 0
-      ? `${skipped} of ${items.length} field${items.length === 1 ? '' : 's'} could not be reviewed`
-        + (payload.warnings?.length ? ` (${payload.warnings.join('; ')})` : '')
-        + '. Please proofread those by hand.'
-      : null;
-
-    if (issues.length === 0) {
-      alert(warning
-        ? 'Spelling review finished with gaps:\n\n' + warning + '\n\nApproving.'
-        : 'Spell check passed — no issues found. Approving.');
-      return approveDirect();
-    }
-
-    setGateWarning(warning);
-    setGateIssues(issues);
-  }
-
-  async function applyAndApprove() {
-    setGateBusy(true);
-    try {
-      for (const it of gateIssues) {
-        const patch = { [it.column]: it.corrected };
-        if (it.mirror) patch[it.mirror] = it.corrected;
-        const { error } = await supabase.from(it.table).update(patch).eq('id', it.id);
-        if (error) throw new Error(`${it.key}: ${error.message}`);
-      }
-      await approveDirect();
-    } catch (err) {
-      setGateBusy(false);
-      alert('Failed to apply corrections: ' + err.message);
-    }
+    onIncidentChange({ status: next });
   }
 
   return (
@@ -1149,25 +1091,26 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
           <select
             value={incident.status || 'First Draft'}
             onChange={e => handleStatusChange(e.target.value)}
-            disabled={gateBusy}
+            disabled={gateBusy || textGateBusy}
             style={{ ...inputStyle, width: 'auto', flex: 'none' }}
           >
             {STATUS_FLOW.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          {gateBusy && <span style={{ fontSize: 12, color: C.muted }}>Running spelling &amp; grammar review…</span>}
+          {(gateBusy || textGateBusy) && <span style={{ fontSize: 12, color: C.muted }}>Running spelling &amp; grammar check…</span>}
         </div>
         <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>
-          Setting status to <strong>Approved</strong> runs an automatic spelling &amp; grammar review of all report text first.
+          <strong>Spelling &amp; grammar must pass</strong> before this investigation can be Approved, Closed or marked complete,
+          and before the final report can be opened or exported. Drafts and saves are never blocked.
         </div>
-        <button onClick={onGeneratePDF} disabled={pdfGenerating} style={{ ...btnPrimaryDark, fontSize: 15 }}>
-          {pdfGenerating ? 'Opening report...' : 'Open Printable Report (PDF)'}
+        <button onClick={onGeneratePDF} disabled={pdfGenerating || textGateBusy} style={{ ...btnPrimaryDark, fontSize: 15 }}>
+          {pdfGenerating ? 'Checking spelling & grammar…' : 'Open Printable Report (PDF)'}
         </button>
         <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>
           Opens a beautifully-formatted report in a new tab. Photos are auto-compressed and the print dialog opens automatically — choose "Save as PDF" as the destination to download.
         </div>
       </Card>
 
-      <StageFooter complete={incident.stage_4_complete} onComplete={() => runCloseoutGate('Complete', onComplete)} nextLabel="Mark Investigation Complete" />
+      <StageFooter complete={incident.stage_4_complete} onComplete={() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', onComplete))} nextLabel="Mark Investigation Complete" />
 
       {closeGate && (
         <CloseoutGateModal
@@ -1178,16 +1121,6 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
         />
       )}
 
-      {gateIssues && (
-        <SpellGateModal
-          issues={gateIssues}
-          warning={gateWarning}
-          busy={gateBusy}
-          onApply={applyAndApprove}
-          onOverride={() => { setGateIssues(null); setGateWarning(null); approveDirect(); }}
-          onCancel={() => { setGateIssues(null); setGateWarning(null); }}
-        />
-      )}
     </div>
   );
 }
@@ -1234,62 +1167,6 @@ function CloseoutGateModal({ gate, initialReason, onCancel, onProceed }) {
             style={{ ...btnPrimaryDark, background: '#b45309', opacity: !ok || busy ? 0.5 : 1 }}
           >
             {busy ? 'Recording…' : 'Proceed — record my reason'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// =====================================================================
-// Spell-check gate modal (module level - never define inside render)
-// =====================================================================
-function SpellGateModal({ issues, warning, busy, onApply, onOverride, onCancel }) {
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-    }}>
-      <div style={{ background: 'white', borderRadius: 12, maxWidth: 780, width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>
-            Spelling &amp; Grammar Review — {issues.length} field{issues.length === 1 ? '' : 's'} need attention
-          </div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-            This report cannot be Approved until the issues below are corrected or explicitly overridden.
-          </div>
-        </div>
-        {warning && (
-          <div style={{
-            margin: '12px 20px 0', padding: '8px 10px', borderRadius: 6,
-            background: '#fffbeb', border: '1px solid #fde68a',
-            fontSize: 12, color: '#78350f',
-          }}>
-            <strong>Partial review.</strong> {warning}
-          </div>
-        )}
-        <div style={{ padding: '12px 20px', overflowY: 'auto', flex: 1 }}>
-          {issues.map(it => (
-            <div key={it.key} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #f3f4f6' }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#111827', marginBottom: 6 }}>{it.key}</div>
-              <div style={{ fontSize: 12, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 10px', color: '#7f1d1d', whiteSpace: 'pre-wrap', marginBottom: 6 }}>
-                {it.text}
-              </div>
-              <div style={{ fontSize: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '8px 10px', color: '#14532d', whiteSpace: 'pre-wrap' }}>
-                {it.corrected}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ padding: '14px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <button onClick={onCancel} disabled={busy} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #d1d5db', background: 'white', fontSize: 13, cursor: 'pointer' }}>
-            Cancel — keep editing
-          </button>
-          <button onClick={onOverride} disabled={busy} style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #f59e0b', background: '#fffbeb', color: '#92400e', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            Approve As-Is (override)
-          </button>
-          <button onClick={onApply} disabled={busy} style={{ padding: '10px 16px', borderRadius: 8, border: 'none', background: '#16a34a', color: 'white', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>
-            {busy ? 'Applying…' : 'Apply Corrections & Approve'}
           </button>
         </div>
       </div>

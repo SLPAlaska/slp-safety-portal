@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { callReportTextGate } from '@/components/ReportTextGate';
 
 // =====================================================================
 // AnthroSafe Investigation Report - HTML-to-PDF via window.print()
@@ -105,6 +106,9 @@ export default function InvestigationReport() {
   const [loading, setLoading] = useState(true);
   const [photosReady, setPhotosReady] = useState(false);
   const [error, setError] = useState('');
+  // Spelling & grammar HARD GATE: nothing of the report renders (so nothing can
+  // be printed or saved as PDF) until the server says the current text passes.
+  const [gate, setGate] = useState(null);
 
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [incidentId]);
 
@@ -116,6 +120,13 @@ export default function InvestigationReport() {
   async function loadAll() {
     setLoading(true);
     setError('');
+    setGate(null);
+    const g = await callReportTextGate(supabase, incidentId);
+    if (g.status !== 'pass') {
+      setGate(g);
+      setLoading(false);
+      return;
+    }
     try {
       const incR = await supabase.from('incidents').select('*').eq('id', incidentId).single();
       if (incR.error) throw incR.error;
@@ -177,7 +188,10 @@ export default function InvestigationReport() {
   }
 
   if (loading) {
-    return <FullScreenMessage text="Loading investigation report..." />;
+    return <FullScreenMessage text="Checking spelling & grammar, then loading the report..." />;
+  }
+  if (gate) {
+    return <TextGateBlocked gate={gate} incidentId={incidentId} onRetry={loadAll} />;
   }
   if (error) {
     return <FullScreenMessage text={error} tone="danger" />;
@@ -300,6 +314,43 @@ export default function InvestigationReport() {
         </div>
       </div>
     </>
+  );
+}
+
+// =====================================================================
+// Spelling & grammar gate: blocked screen (no report content is rendered)
+// =====================================================================
+function TextGateBlocked({ gate, incidentId, onRetry }) {
+  const issues = Array.isArray(gate.issues) ? gate.issues : [];
+  const labels = Object.fromEntries((gate.fields || []).map(f => [f.key, f.label]));
+  const failed = gate.status === 'fail';
+  return (
+    <div style={{ minHeight: '100vh', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ background: 'white', borderRadius: 12, maxWidth: 720, width: '100%', padding: 22, boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#b91c1c' }}>
+          {failed ? 'Report blocked: spelling & grammar must pass' : 'Report blocked: the spelling & grammar check could not run'}
+        </div>
+        <div style={{ fontSize: 14, color: '#374151', marginTop: 8 }}>
+          {failed
+            ? `The final investigation report cannot be opened, printed or exported until it is clean. ${issues.length} issue${issues.length === 1 ? '' : 's'} found.`
+            : (gate.reason || 'The checker did not answer.') + ' The report stays locked until the check passes.'}
+        </div>
+        {failed && (
+          <ul style={{ margin: '12px 0 0 18px', padding: 0, fontSize: 13, color: '#7c2d12', maxHeight: '45vh', overflowY: 'auto' }}>
+            {issues.slice(0, 40).map((i, n) => (
+              <li key={n} style={{ marginBottom: 6 }}>
+                <strong>{labels[i.key] || i.key}:</strong> “{i.word}” — {i.message}
+                {i.replacements?.length ? <span style={{ color: '#166534' }}> (try “{i.replacements[0]}”)</span> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+          <a href={`/investigation-workbench/${incidentId}`} style={{ ...btnPrimary, textDecoration: 'none', background: '#1e3a5f' }}>Fix in the Workbench</a>
+          <button onClick={onRetry} style={{ ...btnPrimary, background: '#16a34a' }}>Check again</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
