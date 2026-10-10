@@ -517,7 +517,127 @@ export default function ClientExport() {
     });
   };
 
+  // Letter-size report layout: one record per page, details grid, narrative blocks, signature lines.
+  // Used for narrative forms (currently Witness Statement) instead of the wide table printer.
+  const printReportPDF = (formName, data) => {
+    if (!data || data.length === 0) return;
+    const win = window.open('', '_blank');
+    if (!win) { alert('Pop-up blocked. Allow pop-ups for this site to print.'); return; }
+
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const LONG_KEY = /what_witnessed|statement_summary|statement_verbatim|summary|comments|notes|description|narrative/i;
+    const ACK_KEY = /acknowledg|witness_signed/i;
+    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const LABELS = {
+      what_witnessed: 'Statement (What Was Witnessed)',
+      job_title: 'Job Title',
+      other_witnesses: 'Other Witnesses Present',
+      other_witness_names: 'Other Witness Names',
+      created_at: 'Submitted',
+      report_type: 'Report Type',
+    };
+    const label = (k) => LABELS[k] || formatHeader(k);
+    const fmt = (v) => {
+      if (v === null || v === undefined || v === '') return '';
+      if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+      if (Array.isArray(v)) return v.join(', ');
+      if (typeof v === 'object') return JSON.stringify(v);
+      const s = String(v);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const p = s.split('-'); return p[1] + '/' + p[2] + '/' + p[0]; }
+      if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+        const d = new Date(s);
+        return isNaN(d) ? s : d.toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+      }
+      if (/^\d{2}:\d{2}(:\d{2})?$/.test(s)) { const t = s.split(':'); const h = +t[0]; return ((h % 12) || 12) + ':' + t[1] + (h < 12 ? ' AM' : ' PM'); }
+      return s;
+    };
+    const title = String(formName || 'Report').replace(/s\s*$/i, '');
+
+    let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>';
+    html += '@page{size:letter;margin:0.6in 0.6in 0.7in;}';
+    html += '*{box-sizing:border-box;}';
+    html += 'body{font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:10.5pt;margin:0;background:#fff;}';
+    html += '.report{max-width:7.3in;margin:0 auto 30px;break-after:page;page-break-after:always;}';
+    html += '.report:last-of-type{break-after:auto;page-break-after:auto;}';
+    html += '.hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1e3a5f;padding-bottom:8px;margin-bottom:6px;}';
+    html += '.hdr-left{display:flex;align-items:center;gap:12px;}';
+    html += '.hdr-left img{height:48px;}';
+    html += '.brand{font-size:8.5pt;letter-spacing:2px;color:#b91c1c;font-weight:bold;}';
+    html += 'h1{margin:2px 0 0;font-size:20pt;color:#1e3a5f;}';
+    html += '.ref{text-align:right;font-size:9pt;color:#475569;}';
+    html += '.refid{font-size:12pt;font-weight:bold;color:#1e3a5f;}';
+    html += '.sec{background:#1e3a5f;color:#fff;font-size:9pt;font-weight:bold;letter-spacing:1px;text-transform:uppercase;padding:5px 8px;margin-top:14px;break-after:avoid;page-break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
+    html += 'table{width:100%;border-collapse:collapse;table-layout:fixed;}';
+    html += '.grid th,.grid td{border:1px solid #cbd5e1;padding:5px 7px;vertical-align:top;text-align:left;word-wrap:break-word;}';
+    html += '.grid th{width:18%;background:#f1f5f9;font-size:8.5pt;color:#334155;-webkit-print-color-adjust:exact;print-color-adjust:exact;}';
+    html += '.grid td{width:32%;}';
+    html += '.narr{border:1px solid #cbd5e1;border-top:none;padding:10px 12px;white-space:pre-wrap;line-height:1.5;}';
+    html += '.ack{border:1px solid #cbd5e1;border-top:none;padding:10px 12px;font-size:9.5pt;}';
+    html += '.sig{break-inside:avoid;page-break-inside:avoid;}';
+    html += '.sig td{padding:34px 10px 0;vertical-align:bottom;}';
+    html += '.line{border-top:1px solid #1f2937;font-size:8pt;color:#475569;padding-top:3px;}';
+    html += '.foot{margin-top:18px;border-top:1px solid #cbd5e1;padding-top:6px;font-size:8pt;color:#64748b;display:flex;justify-content:space-between;}';
+    html += '.no-print{text-align:center;margin:15px 0;}';
+    html += '@media print{.no-print{display:none;}}';
+    html += '</style></head><body>';
+
+    html += '<div class="no-print"><button onclick="window.print()" style="background:#1e3a5f;color:#fff;border:none;padding:10px 30px;border-radius:6px;font-size:12pt;cursor:pointer;">Print / Save PDF</button></div>';
+
+    data.forEach((row, i) => {
+      const refId = row.statement_id || (row.witness_number ? 'Witness #' + row.witness_number : '');
+      const shortFields = [];
+      const longFields = [];
+      let ackVal = null;
+
+      Object.keys(row).forEach((k) => {
+        const raw = row[k];
+        if (k === 'id' || (/_id$/.test(k) && UUID.test(String(raw)))) return;
+        if (k === 'statement_id') return;
+        if (ACK_KEY.test(k)) { ackVal = raw; return; }
+        const v = fmt(raw);
+        if (v === '') return;
+        if (LONG_KEY.test(k) || v.length > 90 || v.indexOf('\n') >= 0) longFields.push([k, v]);
+        else shortFields.push([k, v]);
+      });
+
+      html += '<section class="report">';
+      html += '<div class="hdr"><div class="hdr-left"><img src="/Logo.png" alt="SLP Alaska" onerror="this.style.display=\'none\'"><div><div class="brand">SLP ALASKA, LLC</div><h1>' + esc(title) + '</h1></div></div>';
+      html += '<div class="ref">' + (refId ? '<div class="refid">' + esc(refId) + '</div>' : '') + '<div>Record ' + (i + 1) + ' of ' + data.length + '</div></div></div>';
+
+      if (shortFields.length) {
+        html += '<div class="sec">Statement Details</div><table class="grid">';
+        for (let j = 0; j < shortFields.length; j += 2) {
+          const a = shortFields[j];
+          const b = shortFields[j + 1];
+          html += '<tr><th>' + esc(label(a[0])) + '</th><td>' + esc(a[1]) + '</td>';
+          html += b ? '<th>' + esc(label(b[0])) + '</th><td>' + esc(b[1]) + '</td>' : '<th></th><td></td>';
+          html += '</tr>';
+        }
+        html += '</table>';
+      }
+
+      longFields.forEach((f) => {
+        html += '<div class="sec">' + esc(label(f[0])) + '</div><div class="narr">' + esc(f[1]) + '</div>';
+      });
+
+      html += '<div class="sig"><div class="sec">Acknowledgment and Signatures</div>';
+      html += '<div class="ack">' + (ackVal && ackVal !== 'false'
+        ? 'The witness acknowledged electronically that this statement is true and accurate to the best of their knowledge.'
+        : 'No electronic acknowledgment was recorded for this statement.') + '</div>';
+      html += '<table><tr><td style="width:62%"><div class="line">Witness Signature</div></td><td><div class="line">Date</div></td></tr>';
+      html += '<tr><td><div class="line">Received By (Name / Title)</div></td><td><div class="line">Date</div></td></tr></table></div>';
+
+      html += '<div class="foot"><span>AnthroSafe\u2122 Field Driven Safety \u00A9 2026 SLP Alaska, LLC</span><span>Printed ' + new Date().toLocaleDateString() + '</span></div>';
+      html += '</section>';
+    });
+
+    html += '</body></html>';
+    win.document.write(html);
+    win.document.close();
+  };
+
   const printPDF = (formName, data) => {
+    if (/witness/i.test(formName || '')) return printReportPDF(formName, data);
     if (!data || data.length === 0) return;
     const headers = getVisibleHeaders(data);
     const win = window.open('', '_blank');
@@ -642,7 +762,7 @@ export default function ClientExport() {
               <input style={s.input} type="text" placeholder="Company Code" value={companyCode} onChange={(e) => setCompanyCode(e.target.value)} />
               <input style={s.input} type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
               {error && <div style={s.error}>{error}</div>}
-              <button type="submit" style={s.btnPrimary} disabled={verifying}>{verifying ? 'Signing in…' : 'Sign In'}</button>
+              <button type="submit" style={s.btnPrimary} disabled={verifying}>{verifying ? 'Signing in...' : 'Sign In'}</button>
             </form>
             <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '11px', color: '#9ca3af' }}>Contact SLP Alaska for access credentials</p>
           </div>
