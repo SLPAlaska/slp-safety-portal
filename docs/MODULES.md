@@ -52,3 +52,17 @@ update public.ca_nag_settings set escalation_cc = '{someone@example.com}' where 
 ```
 
 Cadence: day 0, day 7, day 14, daily for the last 7 days before due, daily while overdue (investigation lead cc'd). Only closing the action stops it. Every send is in `public.ca_nag_log`. See SQL 2026-10-11-50.
+
+## SAIL action-item nags (database switch, not a build switch)
+
+Loud SAIL reminders run from Supabase (cron `sail-loud-nags` → Edge Function `send-sail-nags`), switched in the database:
+
+```sql
+update public.sail_nag_settings set enabled = false where id = 1;   -- stop all SAIL nags
+update public.sail_nag_settings set mode = 'dry_run' where id = 1;  -- log who would get what, send nothing
+update public.sail_nag_settings set escalation_cc = '{someone@example.com}' where id = 1; -- extra cc on overdue
+```
+
+Cadence: day 0, day 7, day 14, daily for the last 7 days before the target date, daily while overdue. Only status Closed stops it.
+Demo/mock rows (e.g. Demo Energy Co) are never nagged. Every send is in `public.sail_nag_log`. This replaced the old one-shot
+`sail-assignment-email` webhook (trigger disabled, not dropped). See SQL 2026-10-11-52.
