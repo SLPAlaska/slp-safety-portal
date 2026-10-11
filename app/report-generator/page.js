@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { callReportTextGate } from '@/components/ReportTextGate';
+import { loadQualityGate } from '@/components/QualityGate';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -107,6 +108,13 @@ export default function ReportGenerator() {
     }
     const { incident, timeline, witnesses, localReview, fiveWhy, rca, cas, lessons } = incidentData;
     const psif = PSIF_DISPLAY[incident.psif_classification] || {};
+    // Quality gate (SQL 54): not green and not Approved/Closed -> DRAFT watermark on every page.
+    const qg = await loadQualityGate(supabase, incident.id);
+    const isDraft = !['Approved', 'Closed'].includes(incident.status) && qg.applies !== false && qg.status !== 'pass';
+    const draftHtml = isDraft
+      ? '<div style="position:fixed;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:50"><div style="transform:rotate(-35deg);font-size:88px;font-weight:900;letter-spacing:6px;color:rgba(185,28,28,0.16);white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact">DRAFT — NOT APPROVED</div></div>'
+        + '<div style="background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca;padding:8px;text-align:center;font-weight:bold">DRAFT (not for distribution): this investigation has not met the SLP quality standard yet.</div>'
+      : '';
     
     const html = `<!DOCTYPE html><html><head><title>Investigation Report - ${incident.incident_id}</title>
 <style>
@@ -130,6 +138,7 @@ h2{color:#1e3a8a;font-size:14pt;margin-top:25px}h3{color:#475569;font-size:12pt;
 table{width:100%;border-collapse:collapse;margin:15px 0}th{background:#1e3a8a;color:white;padding:10px;text-align:left;font-size:10pt}
 td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:10pt}.page-break{page-break-before:always}
 </style></head><body>
+${draftHtml}
 <div class="cover">
 <div class="cover-title">INCIDENT INVESTIGATION REPORT</div>
 <div class="cover-subtitle">${selectedTemplate === 'executive' ? 'Executive Summary' : selectedTemplate === 'client' ? 'Client Report' : 'Detailed Investigation'}</div>
@@ -249,7 +258,7 @@ ${l.key_takeaway ? `<div class="takeaway"><strong>Key Takeaway:</strong> ${l.key
     w.document.write(html);
     w.document.close();
     setGenerating(false);
-    alert('Report generated! Use Print (Ctrl+P) to save as PDF.');
+    alert(isDraft ? 'DRAFT report generated (watermarked, not for distribution). Finish the Quality Checklist in the workbench for the final report.' : 'Report generated! Use Print (Ctrl+P) to save as PDF.');
   }
 
   function handleLogin(e) {

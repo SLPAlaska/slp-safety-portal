@@ -109,6 +109,18 @@ export function banksFor(incident, { cultureForced = false } = {}) {
   return banks;
 }
 
+/** Bank holding the triggered system-cause prompts (SQL 53, quality gates). */
+export const SYSTEM_CAUSE_BANK = 'system_cause';
+
+/** Insert the system-cause bank after the hazard banks (before culture / root cause). */
+export function withSystemBank(banks, on) {
+  if (!on || banks.includes(SYSTEM_CAUSE_BANK)) return banks;
+  const i = banks.findIndex(b => b === 'culture' || b === 'rootcause');
+  const out = [...banks];
+  out.splice(i < 0 ? out.length : i, 0, SYSTEM_CAUSE_BANK);
+  return out;
+}
+
 /** Suggest hazard banks from what the field report already captured. */
 export function suggestHazards(incident) {
   if (!incident) return [];

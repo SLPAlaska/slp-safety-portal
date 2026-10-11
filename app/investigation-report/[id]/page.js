@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { callReportTextGate } from '@/components/ReportTextGate';
+import { loadQualityGate, DraftWatermark } from '@/components/QualityGate';
 import { OSHA1904_LABELS, isRecordable } from '@/lib/osha1904';
 
 // =====================================================================
@@ -110,6 +111,9 @@ export default function InvestigationReport() {
   // Spelling & grammar HARD GATE: nothing of the report renders (so nothing can
   // be printed or saved as PDF) until the server says the current text passes.
   const [gate, setGate] = useState(null);
+  // Quality gate (SQL 54): until the checklist is green (or the investigation is
+  // Approved/Closed) the client report renders as a watermarked DRAFT only.
+  const [draft, setDraft] = useState(null); // null | { reason, open }
 
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [incidentId]);
 
@@ -132,6 +136,12 @@ export default function InvestigationReport() {
       const incR = await supabase.from('incidents').select('*').eq('id', incidentId).single();
       if (incR.error) throw incR.error;
       setIncident(incR.data);
+      const qg = await loadQualityGate(supabase, incidentId);
+      const approved = ['Approved', 'Closed'].includes(incR.data.status);
+      if (!approved && qg.applies !== false && qg.status !== 'pass') {
+        const open = (qg.items || []).filter(i => i.level === 'block' || i.level === 'warn').map(i => i.key);
+        setDraft({ reason: qg.status === 'error' ? 'quality check unavailable' : `${open.length} quality item(s) open`, open });
+      } else setDraft(null);
 
       const fkText = incR.data.incident_id;
       const fkUuid = incR.data.id;
@@ -241,11 +251,18 @@ export default function InvestigationReport() {
         <button
           onClick={() => window.print()}
           disabled={!photosReady}
-          style={{ ...btnPrimary, opacity: photosReady ? 1 : 0.6, fontSize: 14, padding: '10px 18px' }}
+          style={{ ...btnPrimary, opacity: photosReady ? 1 : 0.6, fontSize: 14, padding: '10px 18px', ...(draft ? { background: '#b91c1c' } : {}) }}
         >
-          <I.Download size={16} /> Save as PDF
+          <I.Download size={16} /> {draft ? 'Draft PDF (not for distribution)' : 'Save as PDF'}
         </button>
       </div>
+      {draft && (
+        <div className="no-print" style={{ background: '#fef2f2', color: '#7f1d1d', borderBottom: '1px solid #fecaca', padding: '8px 16px', fontSize: 13, textAlign: 'center' }}>
+          <strong>DRAFT, NOT APPROVED.</strong> This investigation does not meet the SLP standard yet ({draft.reason}{draft.open?.length ? ': ' + draft.open.join(', ') : ''}).
+          Every page prints with a DRAFT watermark. Finish the Quality Checklist in the workbench for the final report.
+        </div>
+      )}
+      {draft && <DraftWatermark />}
 
       <div style={reportContainerStyle}>
         <ReportHeader incident={incident} />
