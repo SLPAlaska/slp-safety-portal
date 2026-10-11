@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { isDaAdmin } from '@/lib/daAdmins'
+import { filterCategories, isPathEnabled } from '@/lib/modules'
 
 // Shared, lock-free auth client. Portal pages each build their own Supabase
 // client and brawl over the browser auth lock; this one reuses AdminGate's
@@ -300,10 +301,16 @@ export default function SafetyPortal() {
   // Absence is presentation, not protection: /api/da re-checks the same list
   // server-side, so someone who knows the URL is refused there rather than
   // shown a page that half works.
-  const categories = daAdmin
-    ? [...FORM_CATEGORIES.slice(0, PSA_INDEX + 1), DA_CATEGORY,
-       ...FORM_CATEGORIES.slice(PSA_INDEX + 1)]
-    : FORM_CATEGORIES
+  // Module switches (config/portal.json) hide links and tiles for modules that
+  // are off. With every module on, filterCategories returns the list unchanged.
+  const visibleCategories = filterCategories(FORM_CATEGORIES)
+  const visiblePsaIndex = visibleCategories.findIndex(c => c.isPSA)
+  const showDa = daAdmin && isPathEnabled(DA_CATEGORY.forms[0].href)
+  const daAt = visiblePsaIndex >= 0 ? visiblePsaIndex + 1 : Math.min(PSA_INDEX + 1, visibleCategories.length)
+  const categories = showDa
+    ? [...visibleCategories.slice(0, daAt), DA_CATEGORY,
+       ...visibleCategories.slice(daAt)]
+    : visibleCategories
 
   const totalForms = categories.reduce((sum, category) => sum + category.forms.length, 0)
 
@@ -595,7 +602,7 @@ export default function SafetyPortal() {
               <div className="stat-label">Forms</div>
             </div>
             <div className="stat-item">
-              <div className="stat-number">{FORM_CATEGORIES.length}</div>
+              <div className="stat-number">{visibleCategories.length}</div>
               <div className="stat-label">Categories</div>
             </div>
           </div>

@@ -1,0 +1,6 @@
+{
+  "_comment": "Per-deployment settings. modules.switches: set a module id to false to turn it off. Ids are listed in config/modules.json. Empty means every module is on.",
+  "modules": {
+    "switches": {}
+  }
+}

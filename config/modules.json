@@ -1,0 +1,315 @@
+{
+  "_comment": "Module manifest for the portal. Every module is ON unless config/portal.json sets modules.switches.<id> to false, or the build env NEXT_PUBLIC_DISABLED_MODULES lists it (comma separated). A module that is off: its home-page links and tiles are hidden and its pages and API routes answer 404. Turning a module off also turns off modules that depend on it. Paths not listed here are never blocked.",
+  "modules": [
+    {
+      "id": "core",
+      "label": "Core (home page and shared services)",
+      "required": true,
+      "routes": [
+        "/"
+      ],
+      "apiRoutes": [
+        "/api/lms",
+        "/api/spellcheck",
+        "/api/closeout",
+        "/api/field-data"
+      ],
+      "note": "Always on. The shared APIs here back sign-in and SafeSubmit for every form, so they are never switched off."
+    },
+    {
+      "id": "lms",
+      "label": "Online Training Portal (LMS)",
+      "routes": [
+        "/lms",
+        "/admin"
+      ],
+      "note": "Pages only. /api/lms stays in core because sign-in and admin tools share it."
+    },
+    {
+      "id": "lms-competency",
+      "label": "LMS competency programs",
+      "dependencies": [
+        "lms"
+      ],
+      "routes": [
+        "/lms/competency"
+      ],
+      "apiRoutes": [
+        "/api/competency"
+      ]
+    },
+    {
+      "id": "game",
+      "label": "Crew game",
+      "dependencies": [
+        "lms"
+      ],
+      "routes": [
+        "/game"
+      ],
+      "apiRoutes": [
+        "/api/game"
+      ]
+    },
+    {
+      "id": "practicals",
+      "label": "Practical evaluations (aerial lift, crane, excavator, forklift, loader)",
+      "routes": [
+        "/aerial-lift-practical",
+        "/crane-boom-truck-practical",
+        "/excavator-practical",
+        "/forklift-practical",
+        "/loader-practical"
+      ]
+    },
+    {
+      "id": "field-forms",
+      "label": "Field forms and audits",
+      "routes": [
+        "/bbs-form",
+        "/cold-weather-form",
+        "/dropped-object-audit",
+        "/e-line-safety-audit",
+        "/ehs-field-evaluation",
+        "/field-environmental-audit",
+        "/flammable-storage-audit",
+        "/fluid-transfer",
+        "/good-catch",
+        "/hazard-id",
+        "/journey-management",
+        "/location-audit-report",
+        "/manage-by-walk-around",
+        "/phase-condition-risk-assessment",
+        "/pressure-crosscheck",
+        "/risk-control-conversation",
+        "/slickline-safety-audit",
+        "/stop-take-5",
+        "/surface-condition-audit",
+        "/swppp-inspection",
+        "/task-crew-audit",
+        "/toolbox-meeting-assessment",
+        "/welding-fab-shop-audit",
+        "/welding-grinding-audit"
+      ]
+    },
+    {
+      "id": "camp",
+      "label": "Camp inspections",
+      "routes": [
+        "/camp-corrective-actions",
+        "/camp-inspection",
+        "/camp-inspection-dashboard",
+        "/camp-inspection-report"
+      ]
+    },
+    {
+      "id": "inspections",
+      "label": "Inspections (monthly, equipment, seasonal, PPE)",
+      "routes": [
+        "/beam-clamp-inspection",
+        "/chain-hoist-inspection",
+        "/emergency-drill-evaluation",
+        "/eyewash-station-inspection",
+        "/harness-inspection",
+        "/fire-extinguisher-inspection",
+        "/first-aid-kit-inspection",
+        "/ladder-inspection",
+        "/lanyard-srl-inspection",
+        "/aed-inspection",
+        "/plate-clamp-inspection",
+        "/shackle-inspection",
+        "/synthetic-sling-inspection",
+        "/wire-rope-inspection",
+        "/heavy-equipment-inspection",
+        "/crane-inspection",
+        "/forklift-inspection",
+        "/vehicle-inspection",
+        "/spill-kit-inspection",
+        "/weekly-tank-inspection",
+        "/ppe-inspection"
+      ]
+    },
+    {
+      "id": "daily-forms",
+      "label": "Daily forms (THA/JSA, scaffold, competent person)",
+      "routes": [
+        "/tha-jsa",
+        "/scaffold-inspection-form",
+        "/competent-person-form"
+      ]
+    },
+    {
+      "id": "permits",
+      "label": "Permits",
+      "routes": [
+        "/confined-space-entry",
+        "/energized-electrical-work",
+        "/energy-isolation",
+        "/excavation-trenching",
+        "/hot-work",
+        "/opening-blinding",
+        "/unit-work"
+      ]
+    },
+    {
+      "id": "lsr-audits",
+      "label": "Lifesaving Rules audits",
+      "routes": [
+        "/lsr-confined-space-audit",
+        "/lsr-driving-audit",
+        "/lsr-energy-isolation-audit",
+        "/lsr-fall-protection-audit",
+        "/lsr-lifting-operations-audit",
+        "/lsr-line-of-fire-audit",
+        "/lsr-work-permits-audit"
+      ]
+    },
+    {
+      "id": "plans",
+      "label": "Critical lift and fall protection plans",
+      "routes": [
+        "/critical-lift-plan",
+        "/fall-protection-plan"
+      ]
+    },
+    {
+      "id": "moc",
+      "label": "Management of Change",
+      "routes": [
+        "/management-of-change"
+      ]
+    },
+    {
+      "id": "sse",
+      "label": "Short Service Employee evaluation",
+      "routes": [
+        "/sse-evaluation"
+      ]
+    },
+    {
+      "id": "hse-log",
+      "label": "HSE and Manager Daily Activity Log",
+      "routes": [
+        "/daily-activity-log"
+      ]
+    },
+    {
+      "id": "safety-meetings",
+      "label": "Safety meetings",
+      "routes": [
+        "/safety-meeting"
+      ]
+    },
+    {
+      "id": "incidents",
+      "label": "Incidents and investigations",
+      "routes": [
+        "/incident-report",
+        "/property-damage-report",
+        "/witness-statement",
+        "/investigation-dashboard",
+        "/investigation-workbench",
+        "/investigation-report",
+        "/corrective-actions",
+        "/lessons-learned"
+      ],
+      "apiRoutes": [
+        "/api/investigation-text-gate"
+      ]
+    },
+    {
+      "id": "analytics",
+      "label": "Predictive Safety Analytics",
+      "dependencies": [
+        "incidents"
+      ],
+      "routes": [
+        "/investigation-analytics",
+        "/similar-incidents",
+        "/quality-score",
+        "/logic-tree",
+        "/action-calendar",
+        "/report-generator",
+        "/notifications"
+      ]
+    },
+    {
+      "id": "truecost",
+      "label": "TrueCost calculator",
+      "dependencies": [
+        "incidents"
+      ],
+      "routes": [
+        "/truecost"
+      ]
+    },
+    {
+      "id": "sail",
+      "label": "SAIL log",
+      "routes": [
+        "/sail-log-entry",
+        "/sail-management",
+        "/sail-sync"
+      ],
+      "apiRoutes": [
+        "/api/sail"
+      ]
+    },
+    {
+      "id": "field-tools",
+      "label": "Field tools (weather globe, dropped object calculator)",
+      "routes": [
+        "/weather",
+        "/drops-calculator"
+      ]
+    },
+    {
+      "id": "ash-book",
+      "label": "ASH Book",
+      "routes": [
+        "/2026-ASH-Book.pdf"
+      ],
+      "note": "Static PDF: switching off hides the home tile; the file itself is still served."
+    },
+    {
+      "id": "client-export",
+      "label": "Client data export and client reports",
+      "routes": [
+        "/client-export",
+        "/client-reports"
+      ],
+      "apiRoutes": [
+        "/api/client-export"
+      ]
+    },
+    {
+      "id": "da-testing",
+      "label": "Drug and Alcohol testing console",
+      "routes": [
+        "/da-testing"
+      ],
+      "apiRoutes": [
+        "/api/da"
+      ]
+    },
+    {
+      "id": "survey",
+      "label": "Surveys",
+      "routes": [
+        "/survey",
+        "/survey-results"
+      ]
+    },
+    {
+      "id": "demo",
+      "label": "Sales demo hub",
+      "routes": [
+        "/demo"
+      ],
+      "apiRoutes": [
+        "/api/demo-reset",
+        "/api/demo-training"
+      ]
+    }
+  ]
+}
