@@ -132,7 +132,7 @@ const CRITICAL = [
   /\bsomeone fell\b/, /\bfrostbit/, /\bhypotherm/, /\bburned\b/, /\bhelp me\b/, /\burgent\b/, /\bemergency\b/,
   /\bstop work\b/, /\bunsafe\b/, /\brollover\b/, /\bcrash(ed)?\b/, /\bwreck\b/,
 ]
-const NOT_CRITICAL = /\b(extinguisher|drill|eyewash|inspection|evaluation|audit|form|permit|plan|training|course|aed|kit|quiz)\b/
+const NOT_CRITICAL = /\b(extinguisher|drill|eyewash|inspection|evaluation|audit|form|permit|plan|training|course|aed|kit|quiz|trigger)\b/
 
 export function isCritical(query) {
   const q = normalize(query)

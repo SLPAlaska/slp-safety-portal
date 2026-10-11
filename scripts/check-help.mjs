@@ -148,7 +148,7 @@ for (const [q, ...want] of SAMPLES) {
 
 // STOP WORK banner.
 for (const q of ['someone got hurt', 'man down', 'h2s alarm going off', 'there is a fire', 'gas leak', 'not breathing', 'he fell off the ladder', 'emergency', 'diesel spilling now', 'truck rollover']) ok(isCritical(q), `"${q}" should raise STOP WORK`)
-for (const q of ['fire extinguisher inspection', 'emergency drill evaluation', 'how do i do a tha', 'line of fire audit', 'fire watch', 'hot work permit', 'eyewash', 'sling', 'aed inspection', 'certificate']) ok(!isCritical(q), `"${q}" should NOT raise STOP WORK`)
+for (const q of ['fire extinguisher inspection', 'emergency drill evaluation', 'how do i do a tha', 'line of fire audit', 'fire watch', 'hot work permit', 'eyewash', 'sling', 'aed inspection', 'certificate', 'stop work trigger', 'what goes in we stop the job if trigger']) ok(!isCritical(q), `"${q}" should NOT raise STOP WORK`)
 
 // Context answers.
 ok(forPage(bank, '/hot-work').some((e) => e.id === 'form:/hot-work'), 'help from /hot-work shows the hot work answer')
