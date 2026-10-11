@@ -115,14 +115,8 @@ export default function AEDInspection() {
     setSubmitting(true);
 
     try {
-      // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
-      }
+      // Photos go through SafeSubmit (uploaded now, or kept on the phone with
+      // the form when there is no signal and sent with it later).
 
       const sanitized = {
         ...formData,
@@ -131,11 +125,10 @@ export default function AEDInspection() {
         adult_pads_expiration:    formData.adult_pads_expiration    || null,
         pediatric_pads_expiration:formData.pediatric_pads_expiration|| null,
         last_service_date:        formData.last_service_date        || null,
-        next_service_due:         formData.next_service_due         || null,
-        photo_urls:               photoUrls.length > 0 ? photoUrls : null
+        next_service_due:         formData.next_service_due         || null
       };
 
-      const { error } = await safeInsert('aed_inspections', [sanitized]);
+      const { error } = await safeInsert('aed_inspections', [sanitized], undefined, { photoRef });
 
       if (error) throw error;
       setSubmitted(true);

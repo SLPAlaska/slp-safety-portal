@@ -58,18 +58,6 @@ export default function LocationAuditForm() {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadPhotos = async () => {
-    const uploadedUrls = [];
-    for (const photo of photos) {
-      const fileName = `location-audit/${Date.now()}-${photo.name}`;
-      const { error } = await supabase.storage.from('safety-photos').upload(fileName, photo);
-      if (!error) {
-        const { data: { publicUrl } } = supabase.storage.from('safety-photos').getPublicUrl(fileName);
-        uploadedUrls.push(publicUrl);
-      }
-    }
-    return uploadedUrls;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,18 +65,15 @@ export default function LocationAuditForm() {
     setSubmitStatus(null);
 
     try {
-      let photoUrls = [];
-      if (photos.length > 0) {
-        photoUrls = await uploadPhotos();
-      }
+      // Photos go through SafeSubmit: uploaded now, or kept on the phone with
+      // the form when there is no signal and sent with it later.
 
       const submitData = {};
       for (const [key, value] of Object.entries(formData)) {
         submitData[key] = value === '' ? null : value;
       }
-      submitData.photo_urls = photoUrls.length > 0 ? photoUrls : null;
 
-      const { error } = await safeInsert('location_audit_reports', [submitData]);
+      const { error } = await safeInsert('location_audit_reports', [submitData], undefined, { photos, photoPrefix: 'location-audit' });
 
       if (error) throw error;
 

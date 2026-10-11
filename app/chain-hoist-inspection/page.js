@@ -124,22 +124,15 @@ export default function ChainHoistInspection() {
     setSubmitting(true);
 
     try {
-      // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
-      }
+      // Photos go through SafeSubmit (uploaded now, or kept on the phone with
+      // the form when there is no signal and sent with it later).
 
       const sanitized = {
         ...formData,
-        next_inspection_due: formData.next_inspection_due || null,
-        photo_urls: photoUrls.length > 0 ? photoUrls : null
+        next_inspection_due: formData.next_inspection_due || null
       };
 
-      const { error } = await safeInsert('chain_hoist_inspections', [sanitized]);
+      const { error } = await safeInsert('chain_hoist_inspections', [sanitized], undefined, { photoRef });
 
       if (error) throw error;
       setSubmitted(true);

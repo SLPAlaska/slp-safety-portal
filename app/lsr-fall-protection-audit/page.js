@@ -71,19 +71,12 @@ export default function LSRFallProtectionAudit() {
     setSubmitting(true);
 
     try {
-      // Generate a unique submission ID for photo storage path
-      const submissionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-      // Upload photos if any were staged
-      let photoUrls = [];
-      if (photoRef.current && photoRef.current.hasPhotos()) {
-        photoUrls = await photoRef.current.uploadAll(submissionId);
-      }
+      // Photos go through SafeSubmit (uploaded now, or kept on the phone with
+      // the form when there is no signal and sent with it later).
 
       const { error } = await safeInsert('lsr_fall_protection_audits', [{
-          ...formData,
-          photo_urls: photoUrls.length > 0 ? photoUrls : null
-        }]);
+          ...formData
+        }], undefined, { photoRef });
 
       if (error) throw error;
       setSubmitted(true);

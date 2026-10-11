@@ -67,20 +67,6 @@ export default function FlammableStorageAuditForm() {
     setPhotos(photos.filter(p => p.id !== id))
   }
 
-  const uploadPhoto = async (photo) => {
-    try {
-      const fileExt = photo.file.name.split('.').pop()
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-      const filePath = `flammable-storage/${fileName}`
-      const { error } = await supabase.storage.from('safety-photos').upload(filePath, photo.file)
-      if (error) throw error
-      const { data: urlData } = supabase.storage.from('safety-photos').getPublicUrl(filePath)
-      return urlData.publicUrl
-    } catch (error) {
-      console.error('Photo upload error:', error)
-      return null
-    }
-  }
 
   const calculateScores = () => {
     const calcSection = (fields) => {
@@ -118,12 +104,8 @@ export default function FlammableStorageAuditForm() {
       const calculatedScores = calculateScores()
       setScores(calculatedScores)
       
-      setStatus('Uploading photos...')
-      const photoUrls = []
-      for (const photo of photos) {
-        const url = await uploadPhoto(photo)
-        if (url) photoUrls.push(url)
-      }
+      // Photos go through SafeSubmit: uploaded now, or kept on the phone with
+      // the form when there is no signal and sent with it later.
       const generatedAuditId = `FSA-${new Date().toLocaleDateString('en-CA').replace(/-/g, '')}-${Date.now().toString().slice(-4)}`
       setAuditId(generatedAuditId)
       // Convert empty strings to null for all question fields
@@ -137,7 +119,6 @@ export default function FlammableStorageAuditForm() {
       const dataToSubmit = {
         ...cleanedFormData,
         findings: findings.length > 0 ? findings : null,
-        photo_urls: photoUrls.length > 0 ? photoUrls : null,
         labeling_score: calculatedScores.labeling,
         cabinet_score: calculatedScores.cabinet,
         storage_score: calculatedScores.storage,
@@ -152,7 +133,7 @@ export default function FlammableStorageAuditForm() {
 
       setStatus('Submitting to database...')
 
-      const { error } = await safeInsert('flammable_storage_audits', [dataToSubmit])
+      const { error } = await safeInsert('flammable_storage_audits', [dataToSubmit], undefined, { photos: photos.map(p => p.file), photoPrefix: 'flammable-storage' })
       
       if (error) {
         console.error('Supabase error:', error)

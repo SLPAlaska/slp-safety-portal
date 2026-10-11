@@ -12,7 +12,7 @@ const supabase = createClient(
  * Target: ~800KB max, 1920px max dimension, JPEG quality 0.7
  * This turns 3-5MB phone photos into ~300-800KB uploads
  */
-async function compressImage(file) {
+export async function compressImage(file) {
   // Skip if already small enough (under 500KB)
   if (file.size < 500 * 1024) return file;
 
@@ -122,6 +122,9 @@ const MultiPhotoUpload = forwardRef(function MultiPhotoUpload({ formType, maxPho
       setUploadError(null);
       const urls = [];
       let failedCount = 0;
+      // Compressed copies of the photos that did not upload, so SafeSubmit can
+      // keep them on the phone with the form if the form itself ends up queued.
+      const failedFiles = [];
 
       for (let i = 0; i < photos.length; i++) {
         const photo = photos[i];
@@ -146,6 +149,7 @@ const MultiPhotoUpload = forwardRef(function MultiPhotoUpload({ formType, maxPho
           if (!result.success) {
             console.warn(`Photo upload failed for ${photo.name} after 3 retries: ${result.error?.message}`);
             failedCount++;
+            failedFiles.push(compressed);
             continue;
           }
 
@@ -154,6 +158,7 @@ const MultiPhotoUpload = forwardRef(function MultiPhotoUpload({ formType, maxPho
         } catch (err) {
           console.warn(`Photo upload error for ${photo.name}: ${err.message}`);
           failedCount++;
+          failedFiles.push(photo);
           continue;
         }
       }
@@ -167,7 +172,17 @@ const MultiPhotoUpload = forwardRef(function MultiPhotoUpload({ formType, maxPho
       }
 
       setUploading(false);
-      return { urls, failedCount };
+      return { urls, failedCount, failedFiles };
+    },
+    // No signal: hand SafeSubmit the (compressed) photo files so they can be
+    // kept on the phone with the form and uploaded when signal returns.
+    // Compression is local (canvas), so it works with no signal.
+    async getFiles() {
+      const out = [];
+      for (const photo of photos) {
+        try { out.push(await compressImage(photo)); } catch (e) { out.push(photo); }
+      }
+      return out;
     },
     reset() { setPhotos([]); setUploadError(null); setUploadProgress(''); },
     hasPhotos() { return photos.length > 0; }

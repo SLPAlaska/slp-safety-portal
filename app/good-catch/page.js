@@ -125,18 +125,6 @@ export default function GoodCatchNearMissForm() {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadPhotos = async () => {
-    const uploadedUrls = [];
-    for (const photo of photos) {
-      const fileName = `good-catch/${Date.now()}-${photo.name}`;
-      const { data, error } = await supabase.storage.from('safety-photos').upload(fileName, photo);
-      if (!error) {
-        const { data: { publicUrl } } = supabase.storage.from('safety-photos').getPublicUrl(fileName);
-        uploadedUrls.push(publicUrl);
-      }
-    }
-    return uploadedUrls;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -144,10 +132,8 @@ export default function GoodCatchNearMissForm() {
     setSubmitStatus(null);
 
     try {
-      let photoUrls = [];
-      if (photos.length > 0) {
-        photoUrls = await uploadPhotos();
-      }
+      // Photos go through SafeSubmit: uploaded now, or kept on the phone with
+      // the form when there is no signal and sent with it later.
 
       const submitData = {
         reporter_name: formData.reporter_name || null,
@@ -166,10 +152,9 @@ export default function GoodCatchNearMissForm() {
         immediate_actions: formData.immediate_actions || null,
         recommended_actions: formData.recommended_actions || null,
         additional_notes: formData.additional_notes || null,
-        photo_urls: photoUrls.length > 0 ? photoUrls : null
       };
 
-      const { error } = await safeInsert('good_catch_near_miss', [submitData], 'good-catch');
+      const { error } = await safeInsert('good_catch_near_miss', [submitData], 'good-catch', { photos, photoPrefix: 'good-catch' });
 
       if (error) throw error;
 
