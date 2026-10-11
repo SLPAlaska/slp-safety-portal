@@ -1,5 +1,6 @@
 import './globals.css'
 import HelpLauncher from '@/components/HelpLauncher'
+import OfflineSync from '@/components/OfflineSync'
 
 export const metadata = {
   title: 'SLP Safety Portal',
@@ -19,7 +20,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#1e3a5f" />
         <link rel="apple-touch-icon" href="/Logo.png" />
       </head>
-      <body>{children}<HelpLauncher /></body>
+      <body>{children}<OfflineSync /><HelpLauncher /></body>
     </html>
   )
 }
