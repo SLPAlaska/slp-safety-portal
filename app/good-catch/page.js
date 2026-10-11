@@ -104,7 +104,7 @@ export default function GoodCatchNearMissForm() {
       case 'PSIF-Critical':
         return { bg: '#fee2e2', border: '#dc2626', badgeBg: '#dc2626', text: 'High energy release with NO controls. Requires immediate escalation.' };
       case 'PSIF-High':
-        return { bg: '#ffedd5', border: '#ea580c', badgeBg: '#ea580c', text: 'High energy release with only alternative controls. Direct controls needed.' };
+        return { bg: '#ffedd5', border: '#3b6ea5', badgeBg: '#3b6ea5', text: 'High energy release with only alternative controls. Direct controls needed.' };
       case 'PSIF-Elevated':
         return { bg: '#fef3c7', border: '#f59e0b', badgeBg: '#f59e0b', text: 'High energy present without direct controls. Good catch - controls need improvement.' };
       case 'STKY-Controlled':
@@ -190,7 +190,7 @@ export default function GoodCatchNearMissForm() {
 
   const styles = {
     container: { maxWidth: '800px', margin: '0 auto', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-    header: { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', padding: '30px', textAlign: 'center' },
+    header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '30px', textAlign: 'center' },
     headerTitle: { margin: '0', fontSize: '26px', fontWeight: '700' },
     headerSubtitle: { margin: '10px 0 0', opacity: '0.9', fontSize: '14px' },
     badge: { display: 'inline-block', background: '#fff', color: '#059669', padding: '5px 15px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', marginTop: '10px' },
@@ -209,8 +209,8 @@ export default function GoodCatchNearMissForm() {
     photoUpload: { border: '2px dashed #d1d5db', borderRadius: '8px', padding: '30px', textAlign: 'center', cursor: 'pointer' },
     photoPreview: { display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' },
     photoThumb: { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' },
-    submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '600', cursor: 'pointer', marginTop: '20px' },
-    successMessage: { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', padding: '30px', borderRadius: '8px', textAlign: 'center', marginTop: '20px' },
+    submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '600', cursor: 'pointer', marginTop: '20px' },
+    successMessage: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '30px', borderRadius: '8px', textAlign: 'center', marginTop: '20px' },
     footer: { textAlign: 'center', padding: '20px 10px', marginTop: '30px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b', background: 'linear-gradient(to bottom, #f8fafc, #ffffff)' }
   };
 
@@ -296,7 +296,7 @@ export default function GoodCatchNearMissForm() {
               </div>
             </div>
 
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>📝 Observation Details</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>📝 Observation Details</div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Description of Observation <span style={{ color: '#dc2626' }}>*</span></label>
               <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Describe what you observed in detail..." required style={styles.textarea} />
@@ -376,7 +376,7 @@ export default function GoodCatchNearMissForm() {
               </div>
             )}
 
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#7c3aed' }}>🔧 Actions & Recommendations</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>🔧 Actions & Recommendations</div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Immediate Actions Taken</label>
               <textarea name="immediate_actions" value={formData.immediate_actions} onChange={handleChange} placeholder="What actions were taken immediately to address the situation?" style={styles.textarea} />

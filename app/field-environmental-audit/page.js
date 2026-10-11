@@ -113,7 +113,7 @@ export default function FieldEnvironmentalAuditForm() {
 
   const styles = {
     container: { maxWidth: '900px', margin: '0 auto', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-    header: { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', padding: '25px', textAlign: 'center' },
+    header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '25px', textAlign: 'center' },
     formContent: { padding: '25px' },
     sectionHeader: { padding: '10px 18px', margin: '20px -25px 15px', fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' },
     row: { display: 'flex', gap: '15px', flexWrap: 'wrap' },
@@ -128,8 +128,8 @@ export default function FieldEnvironmentalAuditForm() {
     auditQuestion: { background: '#f3f4f6', borderRadius: '8px', padding: '15px', marginBottom: '12px' },
     infoBox: { background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: '6px', padding: '12px', marginBottom: '15px', fontSize: '12px', color: '#047857' },
     photoUpload: { border: '2px dashed #d1d5db', borderRadius: '8px', padding: '25px', textAlign: 'center', cursor: 'pointer' },
-    submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '15px' },
-    successMessage: { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', padding: '25px', borderRadius: '8px', textAlign: 'center', marginTop: '15px' },
+    submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '15px' },
+    successMessage: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '25px', borderRadius: '8px', textAlign: 'center', marginTop: '15px' },
     footer: { textAlign: 'center', padding: '20px 10px', marginTop: '30px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b' }
   };
 
@@ -198,7 +198,7 @@ export default function FieldEnvironmentalAuditForm() {
               </div>
             </div>
 
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>📍 Location Information</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>📍 Location Information</div>
             <div style={styles.row}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Company <span style={{ color: '#dc2626' }}>*</span></label>
@@ -252,7 +252,7 @@ export default function FieldEnvironmentalAuditForm() {
               <textarea name="additional_notes" value={formData.additional_notes} onChange={handleChange} placeholder="Any other observations or comments..." style={styles.textarea} />
             </div>
 
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#7c3aed' }}>📷 Photo Documentation</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>📷 Photo Documentation</div>
             <div style={styles.fullWidth}>
               <label style={styles.label}>Photos (Optional)</label>
               <div style={styles.photoUpload}>

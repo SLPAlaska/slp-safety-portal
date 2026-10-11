@@ -38,7 +38,7 @@ export default function HelpLauncher() {
         display: 'flex', alignItems: 'center', gap: 6,
         background: '#1e3a5f', color: '#fff', textDecoration: 'none',
         padding: '9px 13px', borderRadius: 999, fontWeight: 700, fontSize: 14,
-        boxShadow: '0 3px 12px rgba(0,0,0,0.35)', border: '2px solid #fbbf24', opacity: 0.92,
+        boxShadow: '0 3px 12px rgba(0,0,0,0.35)', border: '2px solid #bfdbfe', opacity: 0.92,
       }}
     >
       <span aria-hidden="true">❓</span> Help

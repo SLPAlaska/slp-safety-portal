@@ -171,7 +171,7 @@ export default function EmergencyDrillEvaluation() {
 
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -180,7 +180,7 @@ export default function EmergencyDrillEvaluation() {
             <button
               onClick={resetForm}
               style={{
-                background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+                background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 padding: '12px 30px',
@@ -198,7 +198,7 @@ export default function EmergencyDrillEvaluation() {
     );
   }
 
-  const EVAL_COLORS = { Yes: '#059669', No: '#dc2626', 'Needs Improvement': '#ea580c', 'N/A': '#6b7280' };
+  const EVAL_COLORS = { Yes: '#059669', No: '#dc2626', 'Needs Improvement': '#3b6ea5', 'N/A': '#6b7280' };
 
   const EvalRow = ({ label, name, required = true }) => (
     <AnswerRow label={label} labelStyle={{ fontSize: '14px' }} style={{ padding: '12px', borderBottom: '1px solid #f3f4f6' }}>
@@ -249,7 +249,7 @@ export default function EmergencyDrillEvaluation() {
 
         <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', marginBottom: '15px' }} />
             <h1 style={{ margin: '0', fontSize: '26px', fontWeight: '700' }}>Emergency Drill Evaluation</h1>
             <p style={{ margin: '10px 0 0', opacity: '0.9', fontSize: '14px' }}>Comprehensive Assessment of Emergency Response Readiness</p>
@@ -326,7 +326,7 @@ export default function EmergencyDrillEvaluation() {
             </div>
 
             {/* Timing */}
-            <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
               ⏱️ Drill Timing
             </div>
 
@@ -399,7 +399,7 @@ export default function EmergencyDrillEvaluation() {
             ]} />
 
             {/* Emergency Response Team */}
-            <div style={{ background: '#7c3aed', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
               👷 Emergency Response Team (ERT)
             </div>
 
@@ -412,7 +412,7 @@ export default function EmergencyDrillEvaluation() {
             </div>
 
             {/* Emergency Equipment & Facilities */}
-            <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px' }}>
               🧯 Emergency Equipment & Facilities
             </div>
 
@@ -455,7 +455,7 @@ export default function EmergencyDrillEvaluation() {
                   { value: 'Excellent', label: '⭐ Excellent', bg: 'rgba(5,150,105,0.1)', border: '#059669' },
                   { value: 'Good', label: '👍 Good', bg: 'rgba(101,163,13,0.1)', border: '#65a30d' },
                   { value: 'Satisfactory', label: '✓ Satisfactory', bg: 'rgba(245,158,11,0.1)', border: '#f59e0b' },
-                  { value: 'Needs Improvement', label: '⚠️ Needs Improvement', bg: 'rgba(249,115,22,0.1)', border: '#f97316' },
+                  { value: 'Needs Improvement', label: '⚠️ Needs Improvement', bg: 'rgba(249,115,22,0.1)', border: '#3b6ea5' },
                   { value: 'Unsatisfactory', label: '❌ Unsatisfactory', bg: 'rgba(220,38,38,0.1)', border: '#dc2626' }
                 ].map(opt => (
                   <label key={opt.value} style={{
@@ -510,7 +510,7 @@ export default function EmergencyDrillEvaluation() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: submitting ? '#d1d5db' : 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+                background: submitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',

@@ -98,7 +98,7 @@ export default function EHSFieldEvaluationForm() {
             <th style={{ textAlign: 'center', padding: '10px 5px', fontSize: '12px', color: '#059669' }}>Excellent</th>
             <th style={{ textAlign: 'center', padding: '10px 5px', fontSize: '12px', color: '#65a30d' }}>Good</th>
             <th style={{ textAlign: 'center', padding: '10px 5px', fontSize: '12px', color: '#f59e0b' }}>OK</th>
-            <th style={{ textAlign: 'center', padding: '10px 5px', fontSize: '12px', color: '#f97316' }}>Needs Improvement</th>
+            <th style={{ textAlign: 'center', padding: '10px 5px', fontSize: '12px', color: '#3b6ea5' }}>Needs Improvement</th>
             <th style={{ textAlign: 'center', padding: '10px 5px', fontSize: '12px', color: '#dc2626' }}>Poor</th>
           </tr>
         </thead>
@@ -123,7 +123,7 @@ export default function EHSFieldEvaluationForm() {
       <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         
-        <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <img src="/Logo.png" alt="SLP Alaska Logo" style={{ maxWidth: '180px', height: 'auto', marginBottom: '15px', display: 'block', margin: '0 auto 15px auto' }} />
           <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 700 }}>EHS Field Evaluation</h1>
           <p style={{ margin: '10px 0 0', opacity: 0.9, fontSize: '14px' }}>Environment, Health & Safety Field Assessment</p>
@@ -184,7 +184,7 @@ export default function EHSFieldEvaluationForm() {
             
             <RatingTable />
 
-            <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>✅ Compliance Checks</div>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>✅ Compliance Checks</div>
             
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
               <thead>
@@ -275,7 +275,7 @@ export default function EHSFieldEvaluationForm() {
             {/* Photo Documentation */}
             <MultiPhotoUpload ref={photoRef} formType="ehs-field-evaluation" />
 
-            <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
+            <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
               {isSubmitting ? 'Submitting...' : 'Submit EHS Field Evaluation'}
             </button>
 

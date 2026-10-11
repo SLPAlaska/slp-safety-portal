@@ -292,7 +292,7 @@ export default function WeeklyTankInspection() {
         </div>
 
         {/* Tank Farm Identification */}
-        <div style={{ ...styles.sectionHeader, background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)' }}>Tank Farm Identification</div>
+        <div style={{ ...styles.sectionHeader, background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)' }}>Tank Farm Identification</div>
         <div style={styles.fieldGroup}>
           <label style={styles.label}>Tank Farm ID / Name *</label>
           <input style={styles.input} value={formData.tank_farm_id} onChange={(e) => handleChange('tank_farm_id', e.target.value)} placeholder="e.g., Tank Farm Alpha, TF-01" />
@@ -380,7 +380,7 @@ export default function WeeklyTankInspection() {
         ))}
 
         {/* Water Drainage Section */}
-        <div style={{ ...styles.sectionHeader, background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)' }}>
+        <div style={{ ...styles.sectionHeader, background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)' }}>
           Water Drainage Record
           <span style={{ float: 'right', fontSize: '11px', opacity: 0.85, fontWeight: '400' }}>18 AAC 75.075(d)</span>
         </div>
@@ -450,7 +450,7 @@ export default function WeeklyTankInspection() {
         </div>
 
         {/* Photo Upload */}
-        <div style={{ ...styles.sectionHeader, background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)' }}>Photo Documentation</div>
+        <div style={{ ...styles.sectionHeader, background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)' }}>Photo Documentation</div>
         <div style={styles.fieldGroup}>
           <label style={styles.label}>Attach Photos (deficiencies, conditions, repairs)</label>
           <input type="file" accept="image/*" multiple onChange={handlePhotoChange} style={styles.input} />
@@ -490,20 +490,20 @@ export default function WeeklyTankInspection() {
 }
 
 const styles = {
-  container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)', padding: '0 0 40px 0' },
+  container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '0 0 40px 0' },
   backBtn: { display: 'inline-block', padding: '10px 16px', color: 'white', textDecoration: 'none', fontSize: '14px', opacity: 0.9 },
   header: { textAlign: 'center', padding: '20px 20px 24px', color: 'white' },
   logoContainer: { width: '80px', height: '80px', background: 'white', borderRadius: '16px', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' },
   logo: { maxWidth: '60px', maxHeight: '60px' },
   badge: { display: 'inline-block', padding: '6px 16px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '13px', fontWeight: '600', letterSpacing: '1px' },
   card: { maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' },
-  sectionHeader: { background: 'linear-gradient(135deg, #991b1b 0%, #b91c1c 100%)', color: 'white', padding: '12px 16px', borderRadius: '8px', fontSize: '15px', fontWeight: '600', marginTop: '24px', marginBottom: '16px' },
+  sectionHeader: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 16px', borderRadius: '8px', fontSize: '15px', fontWeight: '600', marginTop: '24px', marginBottom: '16px' },
   fieldGroup: { marginBottom: '16px' },
   label: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' },
   input: { width: '100%', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none' },
   row: { display: 'flex', gap: '12px', marginBottom: '16px' },
   halfField: { flex: 1 },
-  submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.5px' },
+  submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.5px' },
   successScreen: { maxWidth: '500px', margin: '80px auto', background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' },
   footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.7)', fontSize: '12px' },
 };

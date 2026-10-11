@@ -13,7 +13,7 @@ function StatusBadge({ status }) {
   const map = {
     'Complete':    { bg: '#e8f5e9', color: '#2e7d32' },
     'In Progress': { bg: '#e3f2fd', color: '#1565c0' },
-    'Not Started': { bg: '#ffebee', color: '#b71c1c' },
+    'Not Started': { bg: '#ffebee', color: '#1e3a5f' },
   }
   const s = map[status] || { bg: '#f5f5f5', color: '#999' }
   return <span style={{ background: s.bg, color: s.color, padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', whiteSpace: 'nowrap' }}>{status}</span>
@@ -29,7 +29,7 @@ function TopNav({ onSignOut }) {
       <div style={S.topNavRight}>
         <a href="/lms/company-dashboard" style={S.navBtn}>🏢 Company Dashboard</a>
         <a href="/lms/dashboard" style={S.navBtn}>📚 My Training</a>
-        <button style={{ ...S.navBtn, background: '#b71c1c', border: 'none', cursor: 'pointer' }} onClick={onSignOut}>Sign Out</button>
+        <button style={{ ...S.navBtn, background: '#1e3a5f', border: 'none', cursor: 'pointer' }} onClick={onSignOut}>Sign Out</button>
       </div>
     </div>
   )
@@ -363,7 +363,7 @@ export default function CompanyDashboard() {
     const complete = employees.reduce((s, e) => s + e.courses.filter(c => c.status === 'Complete').length, 0)
     return total > 0 ? Math.round((complete/total)*100) : 0
   })()
-  const rateColor = overallRate >= 80 ? '#2e7d32' : overallRate >= 50 ? '#e65100' : '#b71c1c'
+  const rateColor = overallRate >= 80 ? '#2e7d32' : overallRate >= 50 ? '#3b6ea5' : '#1e3a5f'
 
   if (loading) return (
     <div style={S.loadPage}>
@@ -392,7 +392,7 @@ export default function CompanyDashboard() {
             <div style={S.statLabel}>Fully Compliant</div>
           </div>
           <div style={S.statCard}>
-            <div style={{ ...S.statNum, color: '#b71c1c' }}>{atRisk}</div>
+            <div style={{ ...S.statNum, color: '#1e3a5f' }}>{atRisk}</div>
             <div style={S.statLabel}>At Risk</div>
           </div>
           <div style={S.statCard}>
@@ -439,7 +439,7 @@ export default function CompanyDashboard() {
               const isSelected = selectedEmployees.includes(emp.id)
               const allComplete = emp.courses.length > 0 && emp.courses.every(c => c.status === 'Complete')
               const hasAtRisk = emp.courses.some(c => c.status === 'Not Started' && c.is_required)
-              const cardBorder = hasAtRisk ? '#b71c1c' : allComplete ? '#2e7d32' : '#e0e0e0'
+              const cardBorder = hasAtRisk ? '#1e3a5f' : allComplete ? '#2e7d32' : '#e0e0e0'
 
               return (
                 <div key={emp.id} style={{ ...S.card, borderTop: `3px solid ${cardBorder}`, outline: isSelected ? '2px solid #1565c0' : 'none' }}>
@@ -469,7 +469,7 @@ export default function CompanyDashboard() {
                       </span>
                       <button style={S.editBtn} onClick={() => setEditingEmployee(emp)}>Edit</button>
                       {emp.active
-                        ? <button style={{ background: '#ffebee', color: '#b71c1c', border: 'none', borderRadius: '5px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }} onClick={() => handleDeactivate(emp)}>Deactivate</button>
+                        ? <button style={{ background: '#ffebee', color: '#1e3a5f', border: 'none', borderRadius: '5px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }} onClick={() => handleDeactivate(emp)}>Deactivate</button>
                         : <button style={{ background: '#e8f5e9', color: '#2e7d32', border: 'none', borderRadius: '5px', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', fontWeight: '600' }} onClick={() => handleReactivate(emp)}>Reactivate</button>
                       }
                     </div>
@@ -608,7 +608,7 @@ const S = {
   matrixBtn: { background: '#fbbf24', color: '#1a1a2e', border: 'none', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', alignSelf: 'flex-end' },
   searchRow: { display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' },
   search: { flex: 1, minWidth: '200px', padding: '10px 16px', borderRadius: '20px', border: 'none', fontSize: '13px', outline: 'none' },
-  btnPrimary: { background: '#b71c1c', color: '#fff', border: 'none', borderRadius: '7px', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' },
+  btnPrimary: { background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '7px', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' },
   btnSecondary: { background: 'rgba(255,255,255,0.12)', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '7px', padding: '7px 12px', fontSize: '12px', cursor: 'pointer' },
   empty: { textAlign: 'center', padding: '60px' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '14px' },
@@ -625,11 +625,11 @@ const S = {
   courseRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' },
   courseInfo: { display: 'flex', alignItems: 'center', gap: '5px', flex: 1, minWidth: 0 },
   courseTitle: { fontSize: '12px', color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  reqTag: { background: '#fff3e0', color: '#e65100', padding: '1px 5px', borderRadius: '8px', fontSize: '9px', fontWeight: '700', flexShrink: 0 },
+  reqTag: { background: '#fff3e0', color: '#3b6ea5', padding: '1px 5px', borderRadius: '8px', fontSize: '9px', fontWeight: '700', flexShrink: 0 },
   removeBtn: { background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '12px', padding: '0 2px' },
   assignRow: { display: 'flex', gap: '6px', padding: '8px 14px', borderTop: '1px solid #f0f0f0', background: '#f9f9fb' },
   assignSelect: { flex: 1, padding: '6px 8px', borderRadius: '5px', border: '1px solid #ddd', fontSize: '12px', outline: 'none' },
-  assignBtn: { background: '#b71c1c', color: '#fff', border: 'none', borderRadius: '5px', padding: '6px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
+  assignBtn: { background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '5px', padding: '6px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' },
   modal: { background: '#fff', borderRadius: '12px', padding: '28px', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
@@ -638,7 +638,7 @@ const S = {
   label: { fontSize: '12px', fontWeight: '600', color: '#444' },
   input: { padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', outline: 'none' },
   resetSection: { border: '1px solid #eee', borderRadius: '8px', padding: '12px 14px', background: '#fafafa', display: 'flex', flexDirection: 'column', gap: '8px' },
-  resetBtn: { background: '#fff3e0', color: '#e65100', border: '1px solid #ffe0b2', borderRadius: '6px', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
+  resetBtn: { background: '#fff3e0', color: '#3b6ea5', border: '1px solid #ffe0b2', borderRadius: '6px', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 },
   resetOk: { background: '#e8f5e9', border: '1px solid #c8e6c9', color: '#2e7d32', borderRadius: '6px', padding: '8px 12px', fontSize: '12px' },
   resetErr: { background: '#fff0f0', border: '1px solid #ffcdd2', color: '#c62828', borderRadius: '6px', padding: '8px 12px', fontSize: '12px' },
   footer: { textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.4)', fontSize: '11px' },

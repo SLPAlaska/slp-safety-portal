@@ -145,8 +145,8 @@ export default function LSRDrivingAudit() {
         baseStyle.borderColor = '#f59e0b';
         baseStyle.background = '#fffbeb';
       } else {
-        baseStyle.borderColor = '#0d9488';
-        baseStyle.background = '#f0fdfa';
+        baseStyle.borderColor = '#2d5a87';
+        baseStyle.background = '#e0eaf5';
       }
     }
     
@@ -156,7 +156,7 @@ export default function LSRDrivingAudit() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -188,7 +188,7 @@ export default function LSRDrivingAudit() {
             <button
               onClick={resetForm}
               style={{
-                background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+                background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 padding: '12px 30px',
@@ -237,17 +237,17 @@ export default function LSRDrivingAudit() {
   return (
     <div style={{ minHeight: '100vh', background: '#f3f4f6', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <a href="https://portal.slpalaska.com" style={{ color: '#0d9488', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
+        <a href="https://portal.slpalaska.com" style={{ color: '#2d5a87', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
         </a>
 
         <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)', color: 'white', padding: '25px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '25px', textAlign: 'center' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '160px', marginBottom: '10px' }} />
             <h1 style={{ margin: '0', fontSize: '24px' }}>LSR-Driving Audit</h1>
             <p style={{ margin: '8px 0 0', opacity: 0.9, fontSize: '13px' }}>Life Saving Rules - Driving Safety Verification</p>
-            <div style={{ display: 'inline-block', background: 'white', color: '#0d9488', padding: '4px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: '600', marginTop: '8px' }}>
+            <div style={{ display: 'inline-block', background: 'white', color: '#2d5a87', padding: '4px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: '600', marginTop: '8px' }}>
               🚗 DRIVING SAFETY AUDIT
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function LSRDrivingAudit() {
           {/* Form Content */}
           <form onSubmit={handleSubmit} style={{ padding: '25px' }}>
             {/* Auditor Information */}
-            <div style={{ background: '#0d9488', color: 'white', padding: '10px 18px', margin: '0 -25px 15px', fontWeight: '600', fontSize: '14px' }}>
+            <div style={{ background: '#2d5a87', color: 'white', padding: '10px 18px', margin: '0 -25px 15px', fontWeight: '600', fontSize: '14px' }}>
               👤 Auditor Information
             </div>
             
@@ -306,18 +306,18 @@ export default function LSRDrivingAudit() {
             </div>
 
             {/* Journey Management */}
-            <div style={{ background: '#ea580c', color: 'white', padding: '10px 18px', margin: '20px -25px 15px', fontWeight: '600', fontSize: '14px' }}>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '10px 18px', margin: '20px -25px 15px', fontWeight: '600', fontSize: '14px' }}>
               🗺️ Journey Management
             </div>
             
-            <div style={{ background: '#ccfbf1', border: '1px solid #5eead4', borderRadius: '6px', padding: '12px', marginBottom: '15px', fontSize: '12px', color: '#0f766e' }}>
+            <div style={{ background: '#e0eaf5', border: '1px solid #e0eaf5', borderRadius: '6px', padding: '12px', marginBottom: '15px', fontSize: '12px', color: '#1e3a5f' }}>
               <strong>ASH Book Reference:</strong> All drivers must have an approved Journey Management Plan for travel outside of established work areas.
             </div>
             
             <AuditQuestion label="Journey Management Process in use?" name="journey_management" />
 
             {/* Radio Communication */}
-            <div style={{ background: '#0891b2', color: 'white', padding: '10px 18px', margin: '20px -25px 15px', fontWeight: '600', fontSize: '14px' }}>
+            <div style={{ background: '#2d5a87', color: 'white', padding: '10px 18px', margin: '20px -25px 15px', fontWeight: '600', fontSize: '14px' }}>
               📻 Radio Communication
             </div>
             
@@ -406,7 +406,7 @@ export default function LSRDrivingAudit() {
               style={{
                 width: '100%',
                 padding: '14px',
-                background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+                background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',

@@ -168,5 +168,5 @@ export const RESPONSE_COLORS = {
   'Non-Compliant': { bg: '#FEE2E2', text: '#991B1B', border: '#EF4444' },
   'N/A':           { bg: '#F3F4F6', text: '#374151', border: '#9CA3AF' },
   'Needs Action':  { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
-  'Not Verified':  { bg: '#E0E7FF', text: '#3730A3', border: '#6366F1' }
+  'Not Verified':  { bg: '#E0E7FF', text: '#2d5a87', border: '#e0eaf5' }
 };

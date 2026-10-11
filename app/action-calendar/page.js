@@ -13,7 +13,7 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const HIERARCHY_COLORS = {
-  1: '#166534', 2: '#15803d', 3: '#eab308', 4: '#f97316', 5: '#dc2626'
+  1: '#166534', 2: '#15803d', 3: '#eab308', 4: '#3b6ea5', 5: '#dc2626'
 };
 
 const STATUS_COLORS = {
@@ -27,7 +27,7 @@ const STATUS_COLORS = {
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1400px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', padding: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
@@ -50,7 +50,7 @@ const styles = {
   input: { width: '100%', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' },
   select: { padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white', minWidth: '160px' },
   actionBtn: { padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
   modalContent: { background: 'white', borderRadius: '16px', padding: '25px', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflow: 'auto' },
@@ -61,7 +61,7 @@ const styles = {
   legendItem: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' },
   legendColor: { width: '12px', height: '12px', borderRadius: '3px' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   badge: { display: 'inline-block', padding: '3px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '600' }
 };
 
@@ -369,7 +369,7 @@ export default function ActionCalendar() {
               <span>Corrective Action</span>
             </div>
             <div style={styles.legendItem}>
-              <div style={{ ...styles.legendColor, background: '#8b5cf6' }} />
+              <div style={{ ...styles.legendColor, background: '#e0eaf5' }} />
               <span>Investigation Deadline</span>
             </div>
             <div style={styles.legendItem}>
@@ -410,7 +410,7 @@ export default function ActionCalendar() {
                   {dayInvestigations.slice(0, maxDisplay).map(inv => (
                     <div
                       key={`inv-${inv.id}`}
-                      style={{ ...styles.actionChip, background: '#ede9fe', borderColor: '#8b5cf6', color: '#5b21b6' }}
+                      style={{ ...styles.actionChip, background: '#e0eaf5', borderColor: '#e0eaf5', color: '#2d5a87' }}
                       title={`${inv.incident_id} - Investigation Deadline`}
                     >
                       🔍 {inv.incident_id}
@@ -466,17 +466,17 @@ export default function ActionCalendar() {
                   key={i}
                   style={{
                     padding: '15px',
-                    background: item.isInvestigation ? '#ede9fe' : item.isOverdue ? '#fee2e2' : '#f8fafc',
+                    background: item.isInvestigation ? '#e0eaf5' : item.isOverdue ? '#fee2e2' : '#f8fafc',
                     borderRadius: '8px',
                     marginBottom: '10px',
-                    border: `2px solid ${item.isInvestigation ? '#8b5cf6' : item.isOverdue ? '#dc2626' : '#e2e8f0'}`
+                    border: `2px solid ${item.isInvestigation ? '#e0eaf5' : item.isOverdue ? '#dc2626' : '#e2e8f0'}`
                   }}
                 >
                   {item.isInvestigation ? (
                     <>
                       <div style={{ fontWeight: '700', marginBottom: '5px' }}>🔍 {item.incident_id}</div>
                       <div style={{ fontSize: '13px', color: '#64748b' }}>{item.company_name}</div>
-                      <div style={{ fontSize: '12px', color: '#8b5cf6' }}>Investigation Deadline</div>
+                      <div style={{ fontSize: '12px', color: '#e0eaf5' }}>Investigation Deadline</div>
                     </>
                   ) : (
                     <>

@@ -19,7 +19,7 @@ const SYNC_STATUS = {
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1200px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
@@ -34,7 +34,7 @@ const styles = {
   input: { width: '100%', padding: '12px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '15px', boxSizing: 'border-box' },
   select: { padding: '10px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white', minWidth: '160px' },
   actionBtn: { padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   successBtn: { background: '#22c55e', color: 'white' },
   warningBtn: { background: '#f59e0b', color: 'white' },
@@ -47,7 +47,7 @@ const styles = {
   warningBox: { background: '#fef3c7', border: '2px solid #f59e0b', borderRadius: '8px', padding: '15px', marginBottom: '20px' },
   successBox: { background: '#dcfce7', border: '2px solid #22c55e', borderRadius: '8px', padding: '15px', marginBottom: '20px' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   checkbox: { width: '20px', height: '20px', cursor: 'pointer' },
   logEntry: { padding: '10px 15px', background: '#f8fafc', borderRadius: '6px', marginBottom: '8px', fontSize: '13px', borderLeft: '4px solid #1e3a8a' }
 };
@@ -358,8 +358,8 @@ export default function SAILLogSync() {
               <div style={{ ...styles.statNumber, color: '#f59e0b' }}>{stats.pending}</div>
               <div style={styles.statLabel}>Pending Sync</div>
             </div>
-            <div style={{ ...styles.statCard, borderColor: '#8b5cf6' }}>
-              <div style={{ ...styles.statNumber, color: '#8b5cf6' }}>{sailLog.length}</div>
+            <div style={{ ...styles.statCard, borderColor: '#e0eaf5' }}>
+              <div style={{ ...styles.statNumber, color: '#e0eaf5' }}>{sailLog.length}</div>
               <div style={styles.statLabel}>SAIL Log Entries</div>
             </div>
           </div>

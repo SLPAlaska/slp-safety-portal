@@ -131,7 +131,7 @@ export default function ColdWeatherAssessment() {
       <style jsx global>{`
         .form-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
           padding: 20px;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -162,7 +162,7 @@ export default function ColdWeatherAssessment() {
         }
         
         .form-header {
-          background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
           color: white;
           padding: 30px;
           text-align: center;
@@ -298,7 +298,7 @@ export default function ColdWeatherAssessment() {
           padding: 15px;
           background: white;
           border-radius: 8px;
-          border-left: 4px solid #ea580c;
+          border-left: 4px solid #3b6ea5;
         }
         
         .message {
@@ -324,7 +324,7 @@ export default function ColdWeatherAssessment() {
         .submit-btn {
           width: 100%;
           padding: 16px;
-          background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
           color: white;
           border: none;
           border-radius: 8px;

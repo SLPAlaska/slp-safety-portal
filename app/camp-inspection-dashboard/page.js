@@ -118,7 +118,7 @@ export default function CampInspectionDashboard() {
         {/* Stat tiles */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 14 }}>
           <Stat label="Total" value={stats.total} bg="#fff" color="#1e3a5f" />
-          <Stat label="In Progress" value={stats.inProgress} bg="#E0E7FF" color="#3730A3" />
+          <Stat label="In Progress" value={stats.inProgress} bg="#E0E7FF" color="#2d5a87" />
           <Stat label="Submitted" value={stats.submitted} bg="#D1FAE5" color="#065F46" />
           <Stat label="GO" value={stats.go} bg="#D1FAE5" color="#065F46" />
           <Stat label="Conditional" value={stats.conditional} bg="#FEF3C7" color="#92400E" />
@@ -199,7 +199,7 @@ export default function CampInspectionDashboard() {
 
 function InspectionCard({ insp, caInfo }) {
   const statusColors = {
-    'in-progress': { bg: '#E0E7FF', color: '#3730A3', label: 'In Progress' },
+    'in-progress': { bg: '#E0E7FF', color: '#2d5a87', label: 'In Progress' },
     'submitted':   { bg: '#D1FAE5', color: '#065F46', label: 'Submitted'   },
     'approved':    { bg: '#A7F3D0', color: '#064E3B', label: 'Approved'    },
     'closed':      { bg: '#E5E7EB', color: '#374151', label: 'Closed'      }

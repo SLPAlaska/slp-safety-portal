@@ -12,7 +12,7 @@ const SLP_DOMAIN = '@slpalaska.com';
 // Node types with colors
 const NODE_TYPES = {
   event: { label: 'Event', color: '#1e3a8a', bg: '#dbeafe', description: 'What happened' },
-  condition: { label: 'Condition', color: '#7c3aed', bg: '#ede9fe', description: 'State that existed' },
+  condition: { label: 'Condition', color: '#3b6ea5', bg: '#e0eaf5', description: 'State that existed' },
   action: { label: 'Action', color: '#059669', bg: '#d1fae5', description: 'What someone did/didn\'t do' },
   root_cause: { label: 'Root Cause', color: '#dc2626', bg: '#fee2e2', description: 'Fundamental cause' },
   contributing: { label: 'Contributing Factor', color: '#f59e0b', bg: '#fef3c7', description: 'Factor that contributed' }
@@ -21,7 +21,7 @@ const NODE_TYPES = {
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1400px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
@@ -33,7 +33,7 @@ const styles = {
   select: { padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white', minWidth: '180px' },
   textarea: { width: '100%', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' },
   actionBtn: { padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   outlineBtn: { background: 'white', color: '#1e3a8a', border: '2px solid #1e3a8a' },
   dangerBtn: { background: '#dc2626', color: 'white' },
@@ -45,7 +45,7 @@ const styles = {
   formGroup: { marginBottom: '15px' },
   label: { display: 'block', marginBottom: '6px', fontWeight: '600', color: '#1e293b', fontSize: '13px' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   legend: { display: 'flex', gap: '15px', flexWrap: 'wrap', padding: '10px 20px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' },
   legendItem: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' },
   legendColor: { width: '16px', height: '16px', borderRadius: '4px' }

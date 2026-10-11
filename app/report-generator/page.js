@@ -15,14 +15,14 @@ const REPORT_TEMPLATES = [
   { id: 'client', name: 'Client Deliverable', description: 'Professional report for client', pages: '3-5' },
   { id: 'regulatory', name: 'Regulatory Submission', description: 'Format for OSHA/regulatory reporting', pages: '2-4' }
 ];
-const SEVERITY_COLORS = { 'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626', 'E': '#F97316', 'F': '#EAB308', 'G': '#22C55E' };
-const PSIF_DISPLAY = { 'SIF-Actual': { bg: '#1f2937', text: '#fff' }, 'PSIF-Critical': { bg: '#dc2626', text: '#fff' }, 'PSIF-High': { bg: '#ea580c', text: '#fff' }, 'PSIF-Elevated': { bg: '#eab308', text: '#000' }, 'STKY-Controlled': { bg: '#22c55e', text: '#fff' }, 'Non-STKY': { bg: '#3b82f6', text: '#fff' } };
-const HIERARCHY_COLORS = { 1: '#166534', 2: '#15803d', 3: '#eab308', 4: '#f97316', 5: '#dc2626' };
+const SEVERITY_COLORS = { 'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626', 'E': '#3b6ea5', 'F': '#EAB308', 'G': '#22C55E' };
+const PSIF_DISPLAY = { 'SIF-Actual': { bg: '#1f2937', text: '#fff' }, 'PSIF-Critical': { bg: '#dc2626', text: '#fff' }, 'PSIF-High': { bg: '#3b6ea5', text: '#fff' }, 'PSIF-Elevated': { bg: '#eab308', text: '#000' }, 'STKY-Controlled': { bg: '#22c55e', text: '#fff' }, 'Non-STKY': { bg: '#3b82f6', text: '#fff' } };
+const HIERARCHY_COLORS = { 1: '#166534', 2: '#15803d', 3: '#eab308', 4: '#3b6ea5', 5: '#dc2626' };
 
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1000px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
   loginCard: { background: '#fff', borderRadius: '16px', padding: '40px', maxWidth: '450px', margin: '50px auto', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', textAlign: 'center' },
@@ -32,11 +32,11 @@ const styles = {
   input: { width: '100%', padding: '12px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '15px', boxSizing: 'border-box' },
   select: { width: '100%', padding: '12px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '15px', background: 'white' },
   actionBtn: { padding: '12px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   checkbox: { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', cursor: 'pointer' },
   formGroup: { marginBottom: '20px' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }
 };
 
 function isSLPTeam(email) { return email && email.toLowerCase().endsWith(SLP_DOMAIN); }

@@ -17,20 +17,20 @@ const COLORS = {
   success: '#22c55e',
   warning: '#f59e0b',
   danger: '#dc2626',
-  purple: '#7c3aed',
-  teal: '#0d9488',
-  chart: ['#991b1b', '#1e3a8a', '#22c55e', '#f59e0b', '#7c3aed', '#0d9488', '#dc2626', '#6366f1', '#ec4899', '#14b8a6']
+  purple: '#3b6ea5',
+  teal: '#2d5a87',
+  chart: ['#991b1b', '#1e3a8a', '#22c55e', '#f59e0b', '#3b6ea5', '#2d5a87', '#dc2626', '#e0eaf5', '#ec4899', '#2d5a87']
 };
 
 const SEVERITY_COLORS = {
   'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626',
-  'E': '#F97316', 'F': '#EAB308', 'G': '#22C55E'
+  'E': '#3b6ea5', 'F': '#EAB308', 'G': '#22C55E'
 };
 
 const PSIF_COLORS = {
   'SIF-Actual': '#1f2937',
   'PSIF-Critical': '#dc2626',
-  'PSIF-High': '#ea580c',
+  'PSIF-High': '#3b6ea5',
   'PSIF-Elevated': '#eab308',
   'STKY-Controlled': '#22c55e',
   'Non-STKY': '#3b82f6'
@@ -45,7 +45,7 @@ const ROOT_CAUSE_CATEGORIES = [
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1400px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
   headerContent: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
@@ -68,7 +68,7 @@ const styles = {
   select: { padding: '10px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', minWidth: '160px' },
   input: { width: '100%', padding: '12px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '15px', boxSizing: 'border-box' },
   actionBtn: { padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
   th: { background: '#1e3a8a', color: 'white', padding: '12px 15px', textAlign: 'left', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase' },
@@ -78,7 +78,7 @@ const styles = {
   barTrack: { flex: 1, height: '24px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '8px', color: 'white', fontSize: '12px', fontWeight: '600', transition: 'width 0.5s ease' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   badge: { display: 'inline-block', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '600' },
   heatmapCell: { padding: '8px', textAlign: 'center', borderRadius: '4px', fontSize: '14px', fontWeight: '600' },
   insightCard: { background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', border: '2px solid #f59e0b', borderRadius: '12px', padding: '20px', marginBottom: '15px' },
@@ -378,7 +378,7 @@ export default function InvestigationAnalytics() {
       { label: '1-Elimination', value: hocCounts[1], color: '#166534' },
       { label: '2-Substitution', value: hocCounts[2], color: '#15803d' },
       { label: '3-Engineering', value: hocCounts[3], color: '#eab308' },
-      { label: '4-Administrative', value: hocCounts[4], color: '#f97316' },
+      { label: '4-Administrative', value: hocCounts[4], color: '#3b6ea5' },
       { label: '5-PPE', value: hocCounts[5], color: '#dc2626' }
     ];
 
@@ -554,7 +554,7 @@ export default function InvestigationAnalytics() {
           {alerts.length > 0 && (
             <div style={{ marginBottom: '25px' }}>
               {alerts.map((alert, i) => (
-                <div key={i} style={alert.type === 'critical' ? { ...styles.alertCard, background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)', border: '2px solid #000' } : styles.alertCard}>
+                <div key={i} style={alert.type === 'critical' ? { ...styles.alertCard, background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', border: '2px solid #000' } : styles.alertCard}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '24px' }}>{alert.type === 'critical' ? '⚫' : '🚨'}</span>
                     <div>

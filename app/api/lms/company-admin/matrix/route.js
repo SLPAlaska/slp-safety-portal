@@ -232,7 +232,7 @@ export async function POST(request) {
     { label: 'EMPLOYEES ASSESSED', value: String(employees.length), color: COLORS.slpBlue, bg: hexToRgb('#e8edf5') },
     { label: 'FULLY COMPLIANT', value: String(fullyCompliant), color: COLORS.complete, bg: COLORS.completeBg },
     { label: 'AT RISK', value: String(atRisk), color: COLORS.notStarted, bg: hexToRgb('#ffebee') },
-    { label: 'COURSES TRACKED', value: String(courseIds.length), color: hexToRgb('#4a148c'), bg: hexToRgb('#f3e5f5') },
+    { label: 'COURSES TRACKED', value: String(courseIds.length), color: hexToRgb('#2d5a87'), bg: hexToRgb('#e0eaf5') },
   ]
 
   statBoxes.forEach((box, i) => {

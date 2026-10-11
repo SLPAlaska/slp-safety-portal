@@ -164,9 +164,9 @@ export default function AdminGate({ children, area }) {
     h: { margin: '0 0 6px', fontSize: '22px', color: '#1a1a2e' },
     sub: { margin: '0 0 24px', fontSize: '13px', color: '#64748b' },
     input: { width: '100%', padding: '12px 14px', fontSize: '15px', border: '1px solid #cbd5e1', borderRadius: '8px', marginBottom: '12px', boxSizing: 'border-box' },
-    btn: { width: '100%', padding: '12px', fontSize: '15px', fontWeight: 'bold', color: '#fff', background: '#ea580c', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+    btn: { width: '100%', padding: '12px', fontSize: '15px', fontWeight: 'bold', color: '#fff', background: '#3b6ea5', border: 'none', borderRadius: '8px', cursor: 'pointer' },
     note: { fontSize: '12px', color: '#94a3b8', marginTop: '18px' },
-    link: { background: 'none', border: 'none', color: '#ea580c', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', marginTop: '10px' }
+    link: { background: 'none', border: 'none', color: '#3b6ea5', cursor: 'pointer', fontSize: '13px', textDecoration: 'underline', marginTop: '10px' }
   };
 
   return (

@@ -35,20 +35,20 @@ const HIERARCHY_OF_CONTROLS = [
   { level: 1, name: 'Elimination', description: 'Physically remove the hazard', color: '#166534' },
   { level: 2, name: 'Substitution', description: 'Replace with less hazardous', color: '#15803d' },
   { level: 3, name: 'Engineering Controls', description: 'Isolate people from hazard', color: '#eab308' },
-  { level: 4, name: 'Administrative Controls', description: 'Change how people work', color: '#f97316' },
+  { level: 4, name: 'Administrative Controls', description: 'Change how people work', color: '#3b6ea5' },
   { level: 5, name: 'PPE', description: 'Protect the worker', color: '#dc2626' }
 ];
 
 const PSIF_DISPLAY = {
   'SIF-Actual': { bg: '#1f2937', text: '#fff', icon: '⚫' },
   'PSIF-Critical': { bg: '#dc2626', text: '#fff', icon: '🔴' },
-  'PSIF-High': { bg: '#ea580c', text: '#fff', icon: '🟠' },
+  'PSIF-High': { bg: '#3b6ea5', text: '#fff', icon: '🟠' },
   'PSIF-Elevated': { bg: '#eab308', text: '#000', icon: '🟡' },
   'STKY-Controlled': { bg: '#22c55e', text: '#fff', icon: '🟢' },
   'Non-STKY': { bg: '#3b82f6', text: '#fff', icon: '🔵' }
 };
 
-const SEVERITY_COLORS = { 'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626', 'E': '#F97316', 'F': '#EAB308', 'G': '#22C55E' };
+const SEVERITY_COLORS = { 'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626', 'E': '#3b6ea5', 'F': '#EAB308', 'G': '#22C55E' };
 
 const TABS = [
   { id: 'overview', label: '📋 Overview' },
@@ -64,7 +64,7 @@ const TABS = [
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1200px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '20px 25px', color: 'white' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
   tabNav: { display: 'flex', borderBottom: '2px solid #e2e8f0', overflowX: 'auto', background: '#f8fafc' },
   tab: { padding: '15px 20px', cursor: 'pointer', fontWeight: '600', fontSize: '14px', color: '#64748b', borderBottom: '3px solid transparent', whiteSpace: 'nowrap' },
@@ -81,7 +81,7 @@ const styles = {
   infoBox: { background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '15px', marginBottom: '20px', fontSize: '14px', color: '#0369a1' },
   warningBox: { background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '8px', padding: '15px', marginBottom: '20px', color: '#92400e' },
   actionBtn: { padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   outlineBtn: { background: 'white', color: '#1e3a8a', border: '2px solid #1e3a8a' },
   badge: { display: 'inline-block', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
@@ -94,7 +94,7 @@ const styles = {
   witnessCard: { border: '2px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '15px', background: '#fafafa' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
   loginCard: { background: '#fff', borderRadius: '16px', padding: '40px', maxWidth: '450px', margin: '50px auto', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', textAlign: 'center' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }
 };
 
 function isSLPTeam(email) { return email && email.toLowerCase().endsWith(SLP_DOMAIN); }

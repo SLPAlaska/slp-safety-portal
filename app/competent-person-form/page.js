@@ -152,7 +152,7 @@ export default function CompetentPersonForm() {
         .back-link:hover { background: #1e40af; }
         .cp-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); padding: 0; overflow: hidden; border: 4px solid #1e3a8a; }
         
-        .cp-header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-bottom: 6px solid #1e3a8a; }
+        .cp-header { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 30px; text-align: center; border-bottom: 6px solid #1e3a8a; }
         .cp-header img { max-height: 80px; margin-bottom: 15px; }
         .cp-header h1 { color: white; margin: 0 0 10px 0; font-size: 28px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
         .cp-header .subtitle { color: #fecaca; font-size: 16px; font-weight: 600; }
@@ -201,7 +201,7 @@ export default function CompetentPersonForm() {
         .auth-option .icon { font-size: 28px; margin-bottom: 8px; }
         .auth-option .title { font-weight: 700; font-size: 16px; }
         
-        .submit-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; border: 3px solid #1e3a8a; }
+        .submit-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; border: 3px solid #1e3a8a; }
         .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(185, 28, 28, 0.4); }
         .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; border-color: #6b7280; }
         

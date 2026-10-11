@@ -23,7 +23,7 @@ const RESP_COLORS = {
   'Non-Compliant': { bg: '#FEE2E2', color: '#991B1B', border: '#EF4444' },
   'N/A':           { bg: '#F3F4F6', color: '#374151', border: '#9CA3AF' },
   'Needs Action':  { bg: '#FEF3C7', color: '#92400E', border: '#F59E0B' },
-  'Not Verified':  { bg: '#E0E7FF', color: '#3730A3', border: '#6366F1' }
+  'Not Verified':  { bg: '#E0E7FF', color: '#2d5a87', border: '#e0eaf5' }
 };
 
 export default function CampInspectionReport() {
@@ -167,7 +167,7 @@ export default function CampInspectionReport() {
           <Counter label="Non-Compliant" value={insp.non_compliant_count || 0} bg="#FEE2E2" color="#991B1B" />
           <Counter label="Needs Action" value={insp.needs_action_count || 0} bg="#FEF3C7" color="#92400E" />
           <Counter label="N/A" value={insp.na_count || 0} bg="#F3F4F6" color="#374151" />
-          <Counter label="Not Verified" value={insp.not_verified_count || 0} bg="#E0E7FF" color="#3730A3" />
+          <Counter label="Not Verified" value={insp.not_verified_count || 0} bg="#E0E7FF" color="#2d5a87" />
           <Counter label="Critical" value={insp.critical_findings_count || 0} bg="#FEE2E2" color="#991B1B" />
           <Counter label="Compliance" value={`${insp.compliance_percent != null ? insp.compliance_percent : 0}%`} bg="#fff" color="#1e3a5f" />
         </div>

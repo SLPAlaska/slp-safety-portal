@@ -586,7 +586,7 @@ export default function StopTake5Page() {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     padding: '20px',
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif"
   },
@@ -610,7 +610,7 @@ const styles = {
     borderRadius: '8px'
   },
   header: {
-  background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+  background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
   color: 'white',
   padding: '30px',
   textAlign: 'center',
@@ -667,7 +667,7 @@ const styles = {
     flexWrap: 'wrap'
   },
   stopStep: {
-    background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
     color: 'white',
     padding: '12px 20px',
     borderRadius: '10px',
@@ -698,16 +698,16 @@ const styles = {
     fontSize: '1rem'
   },
   sectionHeaderBlue: {
-    background: 'linear-gradient(135deg, #1e3a8a, #1e40af)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderRed: {
-    background: 'linear-gradient(135deg, #b91c1c, #dc2626)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderOrange: {
-    background: 'linear-gradient(135deg, #d97706, #ea580c)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderGreen: {
-    background: 'linear-gradient(135deg, #059669, #047857)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionBody: {
     padding: '20px',
@@ -949,7 +949,7 @@ const styles = {
   submitBtn: {
     width: '100%',
     padding: '16px 32px',
-    background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
     color: 'white',
     border: 'none',
     borderRadius: '10px',

@@ -923,7 +923,7 @@ function QuizBuilderTab() {
           <div style={{display:'flex',gap:'12px',marginBottom:'16px',flexWrap:'wrap'}}>
             <div style={QB.statBox}><div style={QB.statNum}>{questions.length}</div><div style={QB.statLbl}>Total Questions</div></div>
             <div style={QB.statBox}><div style={{...QB.statNum,color:'#1565c0'}}>{manualCount}</div><div style={QB.statLbl}>Always Include</div></div>
-            <div style={{...QB.statBox,background:'#f3e5f5'}}><div style={{...QB.statNum,color:'#7b1fa2'}}>{aiCount}</div><div style={QB.statLbl}>AI Bank (Random)</div></div>
+            <div style={{...QB.statBox,background:'#e0eaf5'}}><div style={{...QB.statNum,color:'#2d5a87'}}>{aiCount}</div><div style={QB.statLbl}>AI Bank (Random)</div></div>
           </div>
 
           <div style={S.tabHeader}>
@@ -950,7 +950,7 @@ function QuizBuilderTab() {
                   <td style={{...S.td,width:'56px',textAlign:'center'}}><span style={QB.correctBadge}>{q.correct_answer}</span></td>
                   <td style={{...S.td,width:'90px'}}>
                     {q.is_ai_generated
-                      ? <button style={{...S.btnSmall,fontSize:'10px',padding:'3px 7px',background:q.always_include?'#e8f5e9':'#f3e5f5',color:q.always_include?'#2e7d32':'#7b1fa2'}} onClick={()=>toggleAlwaysInclude(q)}>
+                      ? <button style={{...S.btnSmall,fontSize:'10px',padding:'3px 7px',background:q.always_include?'#e8f5e9':'#e0eaf5',color:q.always_include?'#2e7d32':'#2d5a87'}} onClick={()=>toggleAlwaysInclude(q)}>
                           {q.always_include?'★ Fixed':'◇ Random'}
                         </button>
                       : <span style={{fontSize:'11px',fontWeight:'700',color:'#1565c0'}}>★ Manual</span>
@@ -1442,10 +1442,10 @@ const S = {
   pageHeader: {display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'24px'},
   pageTitle: {fontSize:'26px',fontWeight:'700',color:'#1a1a2e',margin:'0 0 4px'},
   pageSubtitle: {fontSize:'14px',color:'#666',margin:0},
-  backLink: {fontSize:'13px',color:'#b71c1c',textDecoration:'none',fontWeight:'600',marginTop:'4px'},
+  backLink: {fontSize:'13px',color:'#1e3a5f',textDecoration:'none',fontWeight:'600',marginTop:'4px'},
   tabBar: {display:'flex',gap:'4px',marginBottom:'24px',borderBottom:'2px solid #ddd',flexWrap:'wrap'},
   tabBtn: {padding:'10px 16px',border:'none',background:'transparent',cursor:'pointer',fontSize:'13px',fontWeight:'600',color:'#666',borderBottom:'2px solid transparent',marginBottom:'-2px'},
-  tabBtnActive: {color:'#b71c1c',borderBottom:'2px solid #b71c1c'},
+  tabBtnActive: {color:'#1e3a5f',borderBottom:'2px solid #1e3a5f'},
   tabContent: {background:'#fff',borderRadius:'10px',padding:'28px',boxShadow:'0 2px 12px rgba(0,0,0,0.07)'},
   tabHeader: {display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'},
   tabTitle: {fontSize:'18px',fontWeight:'700',color:'#1a1a2e',margin:0},
@@ -1458,10 +1458,10 @@ const S = {
   badgeGray: {background:'#f5f5f5',color:'#999',padding:'3px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:'700'},
   badgeBlue: {background:'#e3f2fd',color:'#1565c0',padding:'3px 10px',borderRadius:'20px',fontSize:'12px',fontWeight:'700'},
   code: {background:'#f5f5f5',padding:'2px 6px',borderRadius:'4px',fontSize:'12px',fontFamily:'monospace'},
-  btnPrimary: {background:'#b71c1c',color:'#fff',border:'none',borderRadius:'8px',padding:'10px 18px',fontSize:'14px',fontWeight:'700',cursor:'pointer'},
+  btnPrimary: {background:'#1e3a5f',color:'#fff',border:'none',borderRadius:'8px',padding:'10px 18px',fontSize:'14px',fontWeight:'700',cursor:'pointer'},
   btnSmall: {background:'#e3f2fd',color:'#1565c0',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'600',cursor:'pointer'},
-  btnSmallRed: {background:'#ffebee',color:'#b71c1c',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'600',cursor:'pointer'},
-  btnSmallDanger: {background:'#b71c1c',color:'#fff',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'700',cursor:'pointer'},
+  btnSmallRed: {background:'#ffebee',color:'#1e3a5f',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'600',cursor:'pointer'},
+  btnSmallDanger: {background:'#1e3a5f',color:'#fff',border:'none',borderRadius:'6px',padding:'5px 12px',fontSize:'12px',fontWeight:'700',cursor:'pointer'},
   overlay: {position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:'24px'},
   modal: {background:'#fff',borderRadius:'12px',padding:'32px',width:'100%',maxWidth:'520px',maxHeight:'85vh',overflowY:'auto',display:'flex',flexDirection:'column',gap:'16px'},
   modalHeader: {display:'flex',justifyContent:'space-between',alignItems:'center'},
@@ -1787,7 +1787,7 @@ function RevokeCreditTab() {
       <div style={S.tabHeader}>
         <h2 style={S.tabTitle}>Revoke Course Credit</h2>
       </div>
-      <div style={{ ...S.infoBox, background: '#fff3e0', border: '1px solid #ffe0b2', color: '#b71c1c' }}>
+      <div style={{ ...S.infoBox, background: '#fff3e0', border: '1px solid #ffe0b2', color: '#1e3a5f' }}>
         <strong>Destructive action.</strong> Revoking deletes completions, certificates, quiz attempts,
         and progress for the selected employees — they drop back to "Not Started" but are <strong>not</strong> deleted
         and keep their logins and course assignments. Always run <strong>Preview</strong> first. This cannot be undone.
@@ -1883,7 +1883,7 @@ function RevokeCreditTab() {
               {saving ? 'Working…' : 'Preview'}
             </button>
             <button
-              style={{ ...S.btnPrimary, background: '#b71c1c' }}
+              style={{ ...S.btnPrimary, background: '#1e3a5f' }}
               onClick={handleRevoke}
               disabled={saving || selectedUserIds.length === 0 || (courseScope === 'selected' && courseIds.length === 0)}
             >

@@ -8,7 +8,7 @@ export const metadata = {
 }
 
 export const viewport = {
-  themeColor: '#ea580c',
+  themeColor: '#1e3a5f',
 }
 
 export default function RootLayout({ children }) {
@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#ea580c" />
+        <meta name="theme-color" content="#1e3a5f" />
         <link rel="apple-touch-icon" href="/Logo.png" />
       </head>
       <body>{children}<HelpLauncher /></body>

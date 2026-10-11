@@ -28,7 +28,7 @@ const LESSON_CATEGORIES = [
 const PSIF_DISPLAY = {
   'SIF-Actual': { bg: '#1f2937', text: '#fff', icon: '⚫' },
   'PSIF-Critical': { bg: '#dc2626', text: '#fff', icon: '🔴' },
-  'PSIF-High': { bg: '#ea580c', text: '#fff', icon: '🟠' },
+  'PSIF-High': { bg: '#3b6ea5', text: '#fff', icon: '🟠' },
   'PSIF-Elevated': { bg: '#eab308', text: '#000', icon: '🟡' },
   'STKY-Controlled': { bg: '#22c55e', text: '#fff', icon: '🟢' },
   'Non-STKY': { bg: '#3b82f6', text: '#fff', icon: '🔵' }
@@ -36,13 +36,13 @@ const PSIF_DISPLAY = {
 
 const SEVERITY_COLORS = {
   'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626',
-  'E': '#F97316', 'F': '#EAB308', 'G': '#22C55E'
+  'E': '#3b6ea5', 'F': '#EAB308', 'G': '#22C55E'
 };
 
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1200px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
@@ -60,7 +60,7 @@ const styles = {
   lessonCard: { border: '2px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '15px', background: '#fffbeb', borderColor: '#fcd34d' },
   badge: { display: 'inline-block', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' },
   actionBtn: { padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   successBtn: { background: '#059669', color: 'white' },
   outlineBtn: { background: 'white', color: '#1e3a8a', border: '2px solid #1e3a8a' },
@@ -69,7 +69,7 @@ const styles = {
   modalContent: { background: 'white', borderRadius: '16px', padding: '30px', maxWidth: '800px', width: '95%', maxHeight: '90vh', overflow: 'auto' },
   modalHeader: { fontSize: '20px', fontWeight: '700', color: '#1e293b', marginBottom: '20px' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   bulletinPreview: { border: '2px solid #1e3a8a', borderRadius: '12px', padding: '30px', background: 'white', fontFamily: 'Georgia, serif' },
   bulletinHeader: { textAlign: 'center', borderBottom: '3px solid #991b1b', paddingBottom: '20px', marginBottom: '20px' },
   bulletinSection: { marginBottom: '20px' },
@@ -486,8 +486,8 @@ export default function LessonsLearnedBulletins() {
               <div style={{ ...styles.statNumber, color: '#f59e0b' }}>{stats.pending}</div>
               <div style={styles.statLabel}>Pending</div>
             </div>
-            <div style={{ ...styles.statCard, borderColor: '#8b5cf6' }}>
-              <div style={{ ...styles.statNumber, color: '#8b5cf6' }}>{stats.categories}</div>
+            <div style={{ ...styles.statCard, borderColor: '#e0eaf5' }}>
+              <div style={{ ...styles.statNumber, color: '#e0eaf5' }}>{stats.categories}</div>
               <div style={styles.statLabel}>Categories</div>
             </div>
           </div>
@@ -604,7 +604,7 @@ export default function LessonsLearnedBulletins() {
                               </span>
                             )}
                             {lesson.lesson_category && (
-                              <span style={{ ...styles.badge, background: '#e0e7ff', color: '#3730a3' }}>
+                              <span style={{ ...styles.badge, background: '#e0e7ff', color: '#2d5a87' }}>
                                 {lesson.lesson_category}
                               </span>
                             )}

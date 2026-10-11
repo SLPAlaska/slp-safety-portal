@@ -65,7 +65,8 @@ export function makeGate(manifest, switches = {}, disabledEnv = '') {
     if (!anyOff) return categories
     const out = []
     for (const c of categories) {
-      const forms = (c.forms || []).filter((f) => isPathEnabled(f.href))
+      // External links (another site) carry their module id explicitly.
+      const forms = (c.forms || []).filter((f) => (f.module ? isEnabled(f.module) : true) && isPathEnabled(f.href))
       if (!forms.length) continue
       out.push(forms.length === c.forms.length ? c : { ...c, forms })
     }

@@ -29,7 +29,9 @@ function Answer({ entry, open, onToggle }) {
           {entry.links && entry.links.length > 0 && (
             <div style={S.linkRow}>
               {entry.links.map(([label, href]) => (
-                /^(tel|mailto):/.test(href) || href.endsWith('.pdf')
+                /^https?:/.test(href)
+                  ? <a key={href} href={href} target="_blank" rel="noopener noreferrer" style={S.goBtn}>{label} ↗</a>
+                  : /^(tel|mailto):/.test(href) || href.endsWith('.pdf')
                   ? <a key={href} href={href} style={S.goBtn}>{label} →</a>
                   : <Link key={href} href={href} style={S.goBtn}>{label} →</Link>
               ))}
@@ -121,7 +123,7 @@ export default function HelpDesk() {
           <div style={{ marginTop: 14 }}>
             {results.length ? list(results.map((r) => r.entry), 'r') : (
               <div style={S.none}>
-                <b>No answer for that yet.</b> Try fewer or different words (“THA”, “sling”, “password”), browse the topics below, or call SLP Alaska at <a href={SLP_PHONE_TEL} style={{ color: '#ea580c', fontWeight: 700 }}>{SLP_PHONE}</a>.
+                <b>No answer for that yet.</b> Try fewer or different words (“THA”, “sling”, “password”), browse the topics below, or call SLP Alaska at <a href={SLP_PHONE_TEL} style={{ color: '#3b6ea5', fontWeight: 700 }}>{SLP_PHONE}</a>.
               </div>
             )}
           </div>
@@ -168,7 +170,7 @@ export default function HelpDesk() {
         )}
 
         <div style={S.foot}>
-          Still stuck? Ask your supervisor or call SLP Alaska: <a href={SLP_PHONE_TEL} style={{ color: '#fbbf24', fontWeight: 700 }}>{SLP_PHONE}</a>
+          Still stuck? Ask your supervisor or call SLP Alaska: <a href={SLP_PHONE_TEL} style={{ color: '#bfdbfe', fontWeight: 700 }}>{SLP_PHONE}</a>
           <div style={{ marginTop: 6, opacity: 0.7 }}>{bank.length} answers on this device. Nothing you type here is sent anywhere.</div>
           <div style={{ marginTop: 8, opacity: 0.8 }}>AnthroSafe™ Field Driven Safety © 2026 SLP Alaska, LLC</div>
         </div>
@@ -193,13 +195,13 @@ const S = {
   cardHead: { width: '100%', display: 'flex', gap: 10, alignItems: 'center', padding: '14px 16px', background: 'none', border: 'none', fontSize: 15, fontWeight: 600, color: '#1e3a5f', cursor: 'pointer', minHeight: 48 },
   cardBody: { padding: '0 16px 14px', color: '#1f2937', fontSize: 15, lineHeight: 1.5 },
   linkRow: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  goBtn: { display: 'inline-block', background: '#ea580c', color: '#fff', padding: '10px 14px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 14 },
+  goBtn: { display: 'inline-block', background: '#3b6ea5', color: '#fff', padding: '10px 14px', borderRadius: 10, textDecoration: 'none', fontWeight: 700, fontSize: 14 },
   none: { background: '#fff', borderRadius: 12, padding: 16, fontSize: 15, color: '#1f2937' },
   quickGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 },
   quick: { display: 'flex', alignItems: 'center', gap: 8, background: '#fff', color: '#1e3a5f', padding: '12px', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14, minHeight: 48 },
-  quickPinned: { background: '#fee2e2', color: '#991b1b' },
+  quickPinned: { borderLeft: '5px solid #b91c1c' },
   topicGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 },
   topic: { display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.95)', color: '#1e3a5f', border: 'none', borderRadius: 12, padding: '12px', fontWeight: 600, fontSize: 14, cursor: 'pointer', textAlign: 'left', minHeight: 48 },
-  topicOn: { background: '#ea580c', color: '#fff' },
+  topicOn: { background: '#3b6ea5', color: '#fff' },
   foot: { marginTop: 26, textAlign: 'center', color: 'rgba(255,255,255,0.9)', fontSize: 13 },
 }

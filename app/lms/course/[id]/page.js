@@ -128,7 +128,7 @@ function QuizPanel({ courseId, token, passScore, onPass, onReviewSlide }) {
       <p style={{ fontWeight: '600', color: '#c62828' }}>Unable to load the quiz</p>
       <p style={{ color: '#666', fontSize: '14px' }}>{loadError}</p>
       <button
-        style={{ marginTop: '16px', background: '#b71c1c', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
+        style={{ marginTop: '16px', background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '15px', fontWeight: '600', cursor: 'pointer' }}
         onClick={() => setRetryCount(c => c + 1)}
       >
         Try Again
@@ -607,7 +607,7 @@ export default function CoursePlayer() {
                 onClick={() => handleThumbnailClick(idx)}
                 style={{
                   ...P.thumb,
-                  border: isCurrent ? '2px solid #b71c1c' : isViewed ? '2px solid #2e7d32' : '2px solid transparent',
+                  border: isCurrent ? '2px solid #1e3a5f' : isViewed ? '2px solid #2e7d32' : '2px solid transparent',
                   opacity: isCurrent ? 1 : 0.75,
                 }}
               >
@@ -624,7 +624,7 @@ export default function CoursePlayer() {
             onClick={() => { setQuizMounted(true); setShowQuiz(true) }}
             style={{
               ...P.thumb,
-              border: showQuiz ? '2px solid #b71c1c' : passed ? '2px solid #2e7d32' : '2px solid #ddd',
+              border: showQuiz ? '2px solid #1e3a5f' : passed ? '2px solid #2e7d32' : '2px solid #ddd',
               background: '#f5f5f5',
             }}
           >
@@ -720,7 +720,7 @@ export default function CoursePlayer() {
                 )}
 
                 {!narrating && !canAdvance && currentSlide?.speaker_notes && (
-                  <button style={{ ...P.skipBtn, background: '#b71c1c' }} onClick={() => narrateSlide(currentSlide, speechRate)}>
+                  <button style={{ ...P.skipBtn, background: '#1e3a5f' }} onClick={() => narrateSlide(currentSlide, speechRate)}>
                     Play Narration
                   </button>
                 )}
@@ -742,7 +742,7 @@ export default function CoursePlayer() {
                 <button
                   style={{
                     ...P.navBtn,
-                    background: canAdvance ? '#b71c1c' : '#ccc',
+                    background: canAdvance ? '#1e3a5f' : '#ccc',
                     color: '#fff',
                     cursor: canAdvance ? 'pointer' : 'not-allowed',
                   }}
@@ -767,7 +767,7 @@ const Q = {
   title: { fontSize: '22px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 4px' },
   subtitle: { fontSize: '14px', color: '#666', margin: 0 },
   center: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' },
-  spinner: { width: '40px', height: '40px', border: '4px solid #ddd', borderTop: '4px solid #b71c1c', borderRadius: '50%', animation: 'spin 1s linear infinite' },
+  spinner: { width: '40px', height: '40px', border: '4px solid #ddd', borderTop: '4px solid #1e3a5f', borderRadius: '50%', animation: 'spin 1s linear infinite' },
   empty: { textAlign: 'center', padding: '60px', color: '#666' },
   resultBanner: { display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderRadius: '12px', border: '1px solid', marginBottom: '24px' },
   questions: { display: 'flex', flexDirection: 'column', gap: '20px' },
@@ -780,7 +780,7 @@ const Q = {
   option: { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '8px', border: '1px solid', fontSize: '14px', textAlign: 'left', width: '100%', transition: 'all 0.15s' },
   optKey: { fontWeight: '700', color: '#555', minWidth: '20px' },
   error: { background: '#fff0f0', border: '1px solid #ffcdd2', color: '#c62828', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', margin: '16px 0' },
-  submitBtn: { width: '100%', background: '#b71c1c', color: '#fff', border: 'none', borderRadius: '10px', padding: '14px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '24px' },
+  submitBtn: { width: '100%', background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '10px', padding: '14px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '24px' },
   retryBtn: { width: '100%', background: '#e3f2fd', color: '#1565c0', border: 'none', borderRadius: '10px', padding: '14px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '12px' },
 }
 
@@ -794,7 +794,7 @@ const P = {
   topCenter: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' },
   slideCounter: { color: '#fff', fontSize: '13px', fontWeight: '600' },
   progressBar: { width: '100%', maxWidth: '300px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', overflow: 'hidden' },
-  progressFill: { height: '100%', background: '#b71c1c', transition: 'width 0.4s ease' },
+  progressFill: { height: '100%', background: '#1e3a5f', transition: 'width 0.4s ease' },
   topRight: { display: 'flex', alignItems: 'center', gap: '8px' },
   rateSelect: { background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' },
   iconBtn: { background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer', fontSize: '16px' },
@@ -818,5 +818,5 @@ const P = {
   waitMsg: { color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontWeight: '600' },
   quizWrap: { flex: 1, overflowY: 'auto', background: '#f5f5f5' },
   passCard: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '40px', textAlign: 'center' },
-  certBtn: { background: '#b71c1c', color: '#fff', border: 'none', borderRadius: '10px', padding: '14px 28px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', width: '100%', maxWidth: '300px' },
+  certBtn: { background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '10px', padding: '14px 28px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', width: '100%', maxWidth: '300px' },
 }

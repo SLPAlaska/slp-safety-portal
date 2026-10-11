@@ -163,10 +163,10 @@ export default function FluidTransferAuditForm() {
 
   const styles = {
     container: { maxWidth: '900px', margin: '0 auto', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-    header: { background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)', color: '#fff', padding: '30px', textAlign: 'center' },
+    header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '30px', textAlign: 'center' },
     headerTitle: { margin: '0', fontSize: '26px', fontWeight: '700' },
     headerSubtitle: { margin: '10px 0 0', opacity: '0.9', fontSize: '14px' },
-    badge: { display: 'inline-block', background: '#fff', color: '#0891b2', padding: '5px 15px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', marginTop: '10px' },
+    badge: { display: 'inline-block', background: '#fff', color: '#2d5a87', padding: '5px 15px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', marginTop: '10px' },
     formContent: { padding: '30px' },
     sectionHeader: { padding: '12px 20px', margin: '25px -30px 20px', fontWeight: '600', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '10px', color: '#fff' },
     row: { display: 'flex', gap: '20px', flexWrap: 'wrap' },
@@ -175,12 +175,12 @@ export default function FluidTransferAuditForm() {
     input: { width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' },
     select: { width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box', backgroundColor: '#fff' },
     textarea: { width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
-    infoBox: { background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: '8px', padding: '15px', marginBottom: '20px', fontSize: '13px', color: '#0e7490' },
+    infoBox: { background: '#e0eaf5', border: '1px solid #e0eaf5', borderRadius: '8px', padding: '15px', marginBottom: '20px', fontSize: '13px', color: '#2d5a87' },
     photoUpload: { border: '2px dashed #d1d5db', borderRadius: '8px', padding: '30px', textAlign: 'center', cursor: 'pointer' },
     photoPreview: { display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' },
     photoThumb: { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' },
-    submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '600', cursor: 'pointer', marginTop: '20px' },
-    successMessage: { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', padding: '30px', borderRadius: '8px', textAlign: 'center', marginTop: '20px' },
+    submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '600', cursor: 'pointer', marginTop: '20px' },
+    successMessage: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '30px', borderRadius: '8px', textAlign: 'center', marginTop: '20px' },
     footer: { textAlign: 'center', padding: '20px 10px', marginTop: '30px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b', background: 'linear-gradient(to bottom, #f8fafc, #ffffff)' }
   };
 
@@ -223,7 +223,7 @@ return (
         <div style={styles.formContent}>
           <form onSubmit={handleSubmit}>
             {/* Audit Information */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#0891b2', marginTop: '0' }}>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#2d5a87', marginTop: '0' }}>
               📋 Audit Information
             </div>
 
@@ -285,7 +285,7 @@ return (
             </div>
 
             {/* Equipment & Lines */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>
               🔧 Equipment & Lines
             </div>
 
@@ -334,7 +334,7 @@ return (
             </div>
 
             {/* Photo Documentation */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#0891b2' }}>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#2d5a87' }}>
               📷 Photo Documentation
             </div>
 

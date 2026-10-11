@@ -78,7 +78,7 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
       <button
         onClick={() => setIsOpen(true)}
         style={{
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
           color: 'white',
           border: 'none',
           padding: '12px 24px',
@@ -191,7 +191,7 @@ export default function AddToSailLog({ sourceForm, prefillData = {}, sourceId = 
         style={{
           width: '100%',
           padding: '12px',
-          background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
           color: 'white',
           border: 'none',
           borderRadius: '8px',

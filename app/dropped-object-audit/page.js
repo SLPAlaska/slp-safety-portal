@@ -69,7 +69,7 @@ export default function DroppedObjectAuditForm() {
 
   const styles = {
     container: { maxWidth: '700px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' },
-    header: { background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '30px', textAlign: 'center' },
+    header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' },
     formContent: { padding: '30px' },
     sectionHeader: { background: '#1e3a8a', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' },
     infoBox: { background: '#fef3c7', borderLeft: '4px solid #f59e0b', padding: '15px', marginBottom: '20px', borderRadius: '0 8px 8px 0' },
@@ -81,7 +81,7 @@ export default function DroppedObjectAuditForm() {
     textarea: { width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
     radioGroup: { display: 'flex', gap: '15px', flexWrap: 'wrap' },
     radioOption: { display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', border: '2px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', flex: '1', minWidth: '120px', justifyContent: 'center' },
-    submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: 'pointer', marginTop: '20px' },
+    submitBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: 'pointer', marginTop: '20px' },
     footer: { textAlign: 'center', padding: '20px 10px', marginTop: '30px', fontSize: '11px', color: '#64748b' }
   }
 
@@ -139,7 +139,7 @@ export default function DroppedObjectAuditForm() {
               <input type="text" name="specific_location" value={formData.specific_location} onChange={handleChange} placeholder="e.g., Module A, Platform Level 3, Pipe Rack Section 5" required style={styles.input} />
             </div>
 
-            <div style={{ ...styles.sectionHeader, background: '#ea580c' }}>⚠️ Dropped Object Hazard</div>
+            <div style={{ ...styles.sectionHeader, background: '#3b6ea5' }}>⚠️ Dropped Object Hazard</div>
 
             <div style={styles.formGroup}>
               <label style={styles.label}>Potential Dropped Object Identified <span style={{ color: '#dc2626' }}>*</span></label>
@@ -175,7 +175,7 @@ export default function DroppedObjectAuditForm() {
 
             <MultiPhotoUpload ref={photoRef} formType="dropped-object-audit" />
 
-            <button type="submit" style={{ ...styles.submitBtn, background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', cursor: isSubmitting ? 'not-allowed' : 'pointer' }} disabled={isSubmitting}>
+            <button type="submit" style={{ ...styles.submitBtn, background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', cursor: isSubmitting ? 'not-allowed' : 'pointer' }} disabled={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Submit Dropped Object Audit'}
             </button>
 

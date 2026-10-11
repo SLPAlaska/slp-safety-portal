@@ -31,7 +31,7 @@ const CONFIG = {
   },
   sections: [
     {
-      title: 'Identification & Markings', icon: '\u{1F3F7}\uFE0F', color: '#0891b2',
+      title: 'Identification & Markings', icon: '\u{1F3F7}\uFE0F', color: '#2d5a87',
       note: { tone: 'info', text: 'Missing or illegible capacity markings, operating markings, or product safety labels require removal from service.' },
       items: [
         { name: 'markings_legible', label: 'Capacity & Grip Range Markings Legible' },
@@ -51,7 +51,7 @@ const CONFIG = {
       ]
     },
     {
-      title: 'Gripping Surfaces', icon: '\u{1F9F2}', color: '#7c3aed',
+      title: 'Gripping Surfaces', icon: '\u{1F9F2}', color: '#3b6ea5',
       note: { tone: 'critical', text: 'Worn, chipped, or clogged teeth let the plate slip out of the clamp. Check against the manufacturer wear limits.' },
       items: [
         { name: 'gripping_teeth', label: 'Cam & Pad Teeth Sharp, Not Worn, Chipped or Clogged' },
@@ -60,7 +60,7 @@ const CONFIG = {
       ]
     },
     {
-      title: 'Mechanism & Locking', icon: '\u{1F527}', color: '#ea580c',
+      title: 'Mechanism & Locking', icon: '\u{1F527}', color: '#3b6ea5',
       items: [
         { name: 'cam_condition', label: 'Cam Not Broken, Worn or Loose' },
         { name: 'pins_condition', label: 'Pins Not Bent, Worn or Distorted' },
@@ -156,8 +156,8 @@ const fieldGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minm
 const itemGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' };
 const sectionStyle = (color) => ({ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: `4px solid ${color}` });
 const headingStyle = (color) => ({ fontSize: '18px', fontWeight: '700', color, marginBottom: '15px' });
-const pageBg = { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #b91c1c 100%)', padding: '20px' };
-const primaryBtn = { background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' };
+const pageBg = { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', padding: '20px' };
+const primaryBtn = { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' };
 
 const note = (tone, text) => {
   const s = NOTE_STYLES[tone];
@@ -345,7 +345,7 @@ export default function ClampInspection() {
 
         <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '30px 20px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px 20px', textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
               <div style={{ background: 'white', borderRadius: '16px', padding: '15px 25px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
                 <img src="/Logo.png" alt="SLP Alaska" style={{ height: '90px', width: 'auto' }} />

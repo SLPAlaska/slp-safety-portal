@@ -248,7 +248,7 @@ export default function ScaffoldInspectionForm() {
       overflow: 'hidden'
     },
     header: {
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)',
+      background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
       color: 'white',
       padding: '30px',
       textAlign: 'center',
@@ -520,7 +520,7 @@ export default function ScaffoldInspectionForm() {
 
   if (isSuccess) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
@@ -548,7 +548,7 @@ export default function ScaffoldInspectionForm() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
       <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
       
       <div style={styles.container}>

@@ -43,13 +43,13 @@ const INDIRECT_COST_CATEGORIES = [
 
 const SEVERITY_COLORS = {
   'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626',
-  'E': '#F97316', 'F': '#EAB308', 'G': '#22C55E'
+  'E': '#3b6ea5', 'F': '#EAB308', 'G': '#22C55E'
 };
 
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1200px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
@@ -70,19 +70,19 @@ const styles = {
   currencyInput: { width: '120px', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', textAlign: 'right' },
   select: { width: '100%', padding: '12px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '15px', background: 'white' },
   actionBtn: { padding: '12px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   successBtn: { background: '#22c55e', color: 'white' },
   formGroup: { marginBottom: '20px' },
   label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b', fontSize: '14px' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', marginBottom: '25px' },
   statCard: { background: '#f8fafc', borderRadius: '12px', padding: '20px', textAlign: 'center', border: '2px solid #e2e8f0' },
   statNumber: { fontSize: '28px', fontWeight: '700', marginBottom: '5px' },
   statLabel: { fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '600' },
   breakdownBar: { height: '30px', borderRadius: '8px', overflow: 'hidden', display: 'flex', marginBottom: '15px' },
-  roiCard: { background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', borderRadius: '12px', padding: '25px', color: 'white', marginTop: '25px' },
+  roiCard: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '12px', padding: '25px', color: 'white', marginTop: '25px' },
   roiTitle: { fontSize: '14px', opacity: 0.9, marginBottom: '5px' },
   roiValue: { fontSize: '36px', fontWeight: '700' },
   infoBox: { background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '15px', marginBottom: '20px', fontSize: '14px', color: '#0369a1' },
@@ -383,7 +383,7 @@ export default function TrueCostCalculator() {
                   <div style={styles.statLabel}>Avg Cost per Incident</div>
                 </div>
                 <div style={styles.statCard}>
-                  <div style={{ ...styles.statNumber, color: '#7c3aed' }}>{aggregateStats.incidentCount}</div>
+                  <div style={{ ...styles.statNumber, color: '#3b6ea5' }}>{aggregateStats.incidentCount}</div>
                   <div style={styles.statLabel}>Incidents Costed</div>
                 </div>
                 <div style={{ ...styles.statCard, borderColor: '#22c55e' }}>

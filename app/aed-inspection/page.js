@@ -204,7 +204,7 @@ export default function AEDInspection() {
 
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #b91c1c 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -213,7 +213,7 @@ export default function AEDInspection() {
             <button
               onClick={resetForm}
               style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 padding: '12px 30px',
@@ -265,7 +265,7 @@ export default function AEDInspection() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #b91c1c 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
@@ -273,7 +273,7 @@ export default function AEDInspection() {
 
         <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', overflow: 'hidden' }}>
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '30px 20px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px 20px', textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
               <div style={{ background: 'white', borderRadius: '16px', padding: '15px 25px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
                 <img src="/Logo.png" alt="SLP Alaska" style={{ height: '90px', width: 'auto' }} />
@@ -426,8 +426,8 @@ export default function AEDInspection() {
             </div>
 
             {/* Electrode Pads */}
-            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: '4px solid #7c3aed' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#7c3aed', marginBottom: '15px' }}>
+            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: '4px solid #3b6ea5' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#3b6ea5', marginBottom: '15px' }}>
                 🩹 Electrode Pads
               </h3>
               <div style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', border: '2px solid #f59e0b', borderRadius: '8px', padding: '12px 15px', marginBottom: '15px' }}>
@@ -455,8 +455,8 @@ export default function AEDInspection() {
             </div>
 
             {/* Rescue Supplies */}
-            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: '4px solid #0891b2' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0891b2', marginBottom: '15px' }}>
+            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: '4px solid #2d5a87' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#2d5a87', marginBottom: '15px' }}>
                 🧰 Rescue Supplies & Accessories
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px' }}>
@@ -471,8 +471,8 @@ export default function AEDInspection() {
             </div>
 
             {/* Cabinet Condition */}
-            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: '4px solid #6366f1' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#6366f1', marginBottom: '15px' }}>
+            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px', borderLeft: '4px solid #e0eaf5' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#e0eaf5', marginBottom: '15px' }}>
                 🗄️ Cabinet / Housing Condition
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '12px', marginBottom: '15px' }}>
@@ -588,7 +588,7 @@ export default function AEDInspection() {
             <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button type="submit" disabled={submitting}
                 style={{
-                  background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                  background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                   color: 'white',
                   border: 'none',
                   padding: '12px 30px',

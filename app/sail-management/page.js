@@ -221,7 +221,7 @@ export default function SAILManagement() {
   const s = {
     container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
     wrapper: { maxWidth: '1500px', margin: '0 auto' },
-    header: { background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+    header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
     card: { background: 'white', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
     statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '25px' },
     statCard: { background: '#f8fafc', borderRadius: '12px', padding: '16px', textAlign: 'center', border: '2px solid #e2e8f0' },

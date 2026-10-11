@@ -400,7 +400,7 @@ export default function SurfaceConditionAuditPage() {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #0891b2 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     padding: '20px',
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif"
   },
@@ -424,7 +424,7 @@ const styles = {
     borderRadius: '8px'
   },
   header: {
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #0891b2 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     color: 'white',
     padding: '30px',
     textAlign: 'center',
@@ -447,13 +447,13 @@ const styles = {
   badge: {
     display: 'inline-block',
     background: 'white',
-    color: '#0891b2',
+    color: '#2d5a87',
     padding: '6px 16px',
     borderRadius: '20px',
     fontWeight: '700',
     fontSize: '0.85rem',
     marginBottom: '15px',
-    border: '3px solid #0891b2',
+    border: '3px solid #2d5a87',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
   },
   title: {
@@ -483,19 +483,19 @@ const styles = {
     fontSize: '1rem'
   },
   sectionHeaderBlue: {
-    background: 'linear-gradient(135deg, #1e3a8a, #1e40af)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderCyan: {
-    background: 'linear-gradient(135deg, #0891b2, #0e7490)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderSlate: {
-    background: 'linear-gradient(135deg, #475569, #334155)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderOrange: {
-    background: 'linear-gradient(135deg, #d97706, #ea580c)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderGreen: {
-    background: 'linear-gradient(135deg, #059669, #047857)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionBody: {
     padding: '20px',
@@ -609,7 +609,7 @@ const styles = {
   submitBtn: {
     width: '100%',
     padding: '16px 32px',
-    background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
     color: 'white',
     border: 'none',
     borderRadius: '10px',

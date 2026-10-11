@@ -195,7 +195,7 @@ export default function WeldingFabShopAudit() {
       overflow: 'hidden'
     },
     header: {
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #f97316 100%)',
+      background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
       color: 'white',
       padding: '30px',
       textAlign: 'center',
@@ -218,13 +218,13 @@ export default function WeldingFabShopAudit() {
     badge: {
       display: 'inline-block',
       background: 'white',
-      color: '#f97316',
+      color: '#3b6ea5',
       padding: '6px 16px',
       borderRadius: '20px',
       fontWeight: '700',
       fontSize: '0.85rem',
       marginBottom: '15px',
-      border: '3px solid #f97316',
+      border: '3px solid #3b6ea5',
       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
     },
     title: {
@@ -247,49 +247,49 @@ export default function WeldingFabShopAudit() {
       overflow: 'hidden'
     },
     sectionHeaderBlue: {
-      background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '10px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderOrange: {
-      background: 'linear-gradient(135deg, #f97316, #ea580c)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '10px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderRed: {
-      background: 'linear-gradient(135deg, #b91c1c, #dc2626)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '10px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderGreen: {
-      background: 'linear-gradient(135deg, #059669, #047857)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '10px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderSlate: {
-      background: 'linear-gradient(135deg, #475569, #334155)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '10px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderPurple: {
-      background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '10px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderCyan: {
-      background: 'linear-gradient(135deg, #0891b2, #0e7490)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '10px 18px',
       fontWeight: '600',
@@ -368,7 +368,7 @@ export default function WeldingFabShopAudit() {
     submitBtn: {
       width: '100%',
       padding: '14px 28px',
-      background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       border: 'none',
       borderRadius: '10px',
@@ -470,7 +470,7 @@ export default function WeldingFabShopAudit() {
 
   if (isSuccess) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #f97316 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
@@ -498,7 +498,7 @@ export default function WeldingFabShopAudit() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #f97316 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }

@@ -16,7 +16,7 @@ const WMO_ICON={0:"\u2600\uFE0F",1:"\uD83C\uDF24",2:"\u26C5",3:"\u2601\uFE0F",45
 const ASH_BOOK_PHASES={
   NORMAL:{label:"Normal Operations",color:"#22c55e",bg:"rgba(34,197,94,0.12)",border:"#22c55e",icon:"\u2705",travel:"Unrestricted travel. Standard operations.",outdoor:"Normal outdoor work permitted. Standard PPE required.",equipment:"Standard equipment operation per manufacturer specs."},
   PHASE_I:{label:"Phase I \u2014 Caution",color:"#eab308",bg:"rgba(234,179,8,0.12)",border:"#eab308",icon:"\u26A0\uFE0F",travel:"Reduced Visibility. Travel with EXTREME CAUTION. Reduce speed. Radios & lights must be operating. Arctic gear REQUIRED.",outdoor:"Outdoor work with caution. Safety time out/THA if wind chill in 5-min frostbite zone. Arctic gear required Oct 1\u2013May 1.",equipment:"Temp < -35\u00B0F (-20\u00B0F manlifts/scissor lifts): Evaluate need, exposure, failure potential before crane/equipment ops."},
-  PHASE_II:{label:"Phase II \u2014 Restricted",color:"#f97316",bg:"rgba(249,115,22,0.12)",border:"#f97316",icon:"\uD83D\uDFE0",travel:"CONVOY ONLY. Two+ vehicles required. Radio comm between vehicles REQUIRED.",outdoor:"Limit outdoor work. THA REQUIRED for all outside tasks. Suspend all regulated confined space work.",equipment:"Wind > 40 mph: Safety time out/THA to determine priority. Systematic equipment review required."},
+  PHASE_II:{label:"Phase II \u2014 Restricted",color:"#3b6ea5",bg:"rgba(249,115,22,0.12)",border:"#3b6ea5",icon:"\uD83D\uDFE0",travel:"CONVOY ONLY. Two+ vehicles required. Radio comm between vehicles REQUIRED.",outdoor:"Limit outdoor work. THA REQUIRED for all outside tasks. Suspend all regulated confined space work.",equipment:"Wind > 40 mph: Safety time out/THA to determine priority. Systematic equipment review required."},
   PHASE_III:{label:"Phase III \u2014 CLOSED",color:"#ef4444",bg:"rgba(239,68,68,0.12)",border:"#ef4444",icon:"\uD83D\uDD34",travel:"CRITICAL/EMERGENCY TRAVEL ONLY. Heavy equipment convoy ONLY. Do NOT leave vehicle.",outdoor:"CEASE all non-emergency outdoor work. Personnel to designated shelter. Emergency teams only.",equipment:"SUSPEND all non-essential equipment ops. Emergency only with supervisor auth."},
 };
 
@@ -56,8 +56,8 @@ async function searchLocations(query){try{const res=await fetch(`https://geocodi
 async function reverseGeocode(lat,lon){try{const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&accept-language=en`,{headers:{"User-Agent":"SLPAlaskaSafetyPortal/7.0"}});if(!res.ok)return null;const data=await res.json();const a=data.address;const city=a?.city||a?.town||a?.village||a?.municipality||a?.county||"";const state=a?.state||"";const country=a?.country||"";if(city)return state?`${city}, ${state}`:`${city}, ${country}`;if(state)return`${state}, ${country}`;return country||null;}catch{return null;}}
 
 // ─── UI COMPONENTS ───
-function MetricBox({label,value,sub,alert:isA,icon}){return(<div style={{padding:"10px 12px",borderRadius:"8px",background:isA?"rgba(239,68,68,0.1)":"rgba(255,255,255,0.04)",border:`1px solid ${isA?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.06)"}`}}><div style={{fontSize:"10px",color:"#8892a4",textTransform:"uppercase",letterSpacing:"0.05em",display:"flex",alignItems:"center",gap:"4px"}}>{icon&&<span style={{fontSize:"12px"}}>{icon}</span>}{label}</div><div style={{fontSize:"18px",fontWeight:800,color:isA?"#ef4444":"#fff",marginTop:"2px"}}>{value}</div>{sub&&<div style={{fontSize:"10px",color:isA?"#f97316":"#8892a4",marginTop:"2px"}}>{sub}</div>}</div>);}
-function ThresholdRow({label,value,thresholds,alert:isA}){return(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:"6px",background:isA?"rgba(249,115,22,0.08)":"rgba(255,255,255,0.03)",border:`1px solid ${isA?"rgba(249,115,22,0.2)":"rgba(255,255,255,0.04)"}`,gap:"8px"}}><div><div style={{fontSize:"11px",fontWeight:600,color:isA?"#f97316":"#e2e8f0"}}>{label}: {value}</div><div style={{fontSize:"9px",color:"#64748b"}}>{thresholds}</div></div>{isA&&<span style={{fontSize:"14px"}}>{"\u26A0\uFE0F"}</span>}</div>);}
+function MetricBox({label,value,sub,alert:isA,icon}){return(<div style={{padding:"10px 12px",borderRadius:"8px",background:isA?"rgba(239,68,68,0.1)":"rgba(255,255,255,0.04)",border:`1px solid ${isA?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.06)"}`}}><div style={{fontSize:"10px",color:"#8892a4",textTransform:"uppercase",letterSpacing:"0.05em",display:"flex",alignItems:"center",gap:"4px"}}>{icon&&<span style={{fontSize:"12px"}}>{icon}</span>}{label}</div><div style={{fontSize:"18px",fontWeight:800,color:isA?"#ef4444":"#fff",marginTop:"2px"}}>{value}</div>{sub&&<div style={{fontSize:"10px",color:isA?"#3b6ea5":"#8892a4",marginTop:"2px"}}>{sub}</div>}</div>);}
+function ThresholdRow({label,value,thresholds,alert:isA}){return(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:"6px",background:isA?"rgba(249,115,22,0.08)":"rgba(255,255,255,0.03)",border:`1px solid ${isA?"rgba(249,115,22,0.2)":"rgba(255,255,255,0.04)"}`,gap:"8px"}}><div><div style={{fontSize:"11px",fontWeight:600,color:isA?"#3b6ea5":"#e2e8f0"}}>{label}: {value}</div><div style={{fontSize:"9px",color:"#64748b"}}>{thresholds}</div></div>{isA&&<span style={{fontSize:"14px"}}>{"\u26A0\uFE0F"}</span>}</div>);}
 function windDirLabel(deg){if(deg==null)return"";const d=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];return d[Math.round(deg/22.5)%16];}
 function dayName(s){const d=new Date(s+"T12:00:00"),t=new Date(),tm=new Date(t);tm.setDate(t.getDate()+1);if(d.toDateString()===t.toDateString())return"Today";if(d.toDateString()===tm.toDateString())return"Tomorrow";return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
 
@@ -108,7 +108,7 @@ function LeafletMap({ onMapClick, selectedLat, selectedLon, mapRef }){
 
       // AK location markers
       AK_LOCS.forEach(l=>{
-        const circle=L.circleMarker([l.lat,l.lon],{radius:5,fillColor:l.ns?"#f97316":"#4a9eff",color:"rgba(255,255,255,0.4)",weight:1,fillOpacity:0.85});
+        const circle=L.circleMarker([l.lat,l.lon],{radius:5,fillColor:l.ns?"#3b6ea5":"#4a9eff",color:"rgba(255,255,255,0.4)",weight:1,fillOpacity:0.85});
         circle.bindTooltip(l.name,{direction:"top",offset:[0,-6],className:"ak-tooltip"});
         circle.on("click",(e)=>{L.DomEvent.stopPropagation(e);onMapClick(l.lat,l.lon,l.name);});
         circle.addTo(map);
@@ -182,7 +182,7 @@ export default function WeatherPage(){
   },[]);
 
   return(
-    <div style={{background:"linear-gradient(145deg,#080f1e 0%,#0c1a2e 50%,#080f1e 100%)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.06)",overflow:"hidden",fontFamily:"'Segoe UI',system-ui,sans-serif",color:"#e2e8f0",width:"100%",maxWidth:"1100px",margin:"0 auto"}}>
+    <div style={{background:"linear-gradient(145deg,#1e3a5f 0%,#264b73 50%,#2d5a87 100%)",borderRadius:"16px",border:"1px solid rgba(255,255,255,0.06)",overflow:"hidden",fontFamily:"'Segoe UI',system-ui,sans-serif",color:"#e2e8f0",width:"100%",maxWidth:"1100px",margin:"0 auto"}}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @media(max-width:800px){.wp-main{flex-direction:column!important}.wp-map{flex:none!important;height:380px!important;width:100%!important}.wp-panel{border-left:none!important;border-top:1px solid rgba(255,255,255,0.06)!important}}
@@ -282,7 +282,7 @@ export default function WeatherPage(){
               </div>)}
             {loading&&(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"160px",gap:"10px",color:"#4a9eff"}}>
               <div style={{width:"18px",height:"18px",border:"2px solid rgba(74,158,255,0.3)",borderTop:"2px solid #4a9eff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}} />Fetching weather...</div>)}
-            {error&&!loading&&!weather&&(<div style={{padding:"16px"}}><div style={{color:"#f97316",fontSize:"13px",fontWeight:600}}>{"\u26A0\uFE0F"} {error}</div></div>)}
+            {error&&!loading&&!weather&&(<div style={{padding:"16px"}}><div style={{color:"#3b6ea5",fontSize:"13px",fontWeight:600}}>{"\u26A0\uFE0F"} {error}</div></div>)}
 
             {weather&&!loading&&(
               <div>
@@ -323,7 +323,7 @@ export default function WeatherPage(){
                 {tab==="ash"&&isAlaska&&(
                   <div style={{padding:"10px 14px"}}>
                     <div style={{fontSize:"11px",color:"#4a9eff",fontWeight:600}}>{"\uD83D\uDCCD"} {loc.name}</div>
-                    <div style={{fontSize:"10px",color:"#475569",marginBottom:"10px"}}>ASH Book 2026 {"\u2022"} Foul Weather Contingency (pp. 56-57){akLoc?.ns&&<span style={{marginLeft:"6px",padding:"1px 6px",borderRadius:"8px",background:"rgba(249,115,22,0.15)",color:"#f97316",fontSize:"9px",fontWeight:600}}>NORTH SLOPE</span>}</div>
+                    <div style={{fontSize:"10px",color:"#475569",marginBottom:"10px"}}>ASH Book 2026 {"\u2022"} Foul Weather Contingency (pp. 56-57){akLoc?.ns&&<span style={{marginLeft:"6px",padding:"1px 6px",borderRadius:"8px",background:"rgba(249,115,22,0.15)",color:"#3b6ea5",fontSize:"9px",fontWeight:600}}>NORTH SLOPE</span>}</div>
                     {pd&&(<div style={{padding:"12px",borderRadius:"10px",background:pd.bg,border:`1px solid ${pd.border}`,marginBottom:"10px"}}>
                       <div style={{fontSize:"15px",fontWeight:800,color:pd.color,marginBottom:"8px"}}>{pd.icon} {pd.label}</div>
                       {[["\uD83D\uDE97 Travel",pd.travel],["\uD83C\uDFD7\uFE0F Outdoor Work",pd.outdoor],["\u2699\uFE0F Equipment",pd.equipment]].map(([l,t])=>(<div key={l} style={{marginBottom:"6px"}}><div style={{fontSize:"10px",fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.04em",marginBottom:"2px"}}>{l}</div><div style={{fontSize:"11px",color:"#e2e8f0",lineHeight:1.5}}>{t}</div></div>))}

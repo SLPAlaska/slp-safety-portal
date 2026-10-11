@@ -30,7 +30,7 @@ export default function CertificatePage() {
   if (notFound) return (
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100vh',fontFamily:'Arial,sans-serif'}}>
       <div style={{fontSize:'48px',marginBottom:'16px'}}>?</div>
-      <h2 style={{color:'#b71c1c'}}>Certificate Not Found</h2>
+      <h2 style={{color:'#1e3a5f'}}>Certificate Not Found</h2>
       <p style={{color:'#666'}}>Certificate ID: {certId}</p>
       <p style={{color:'#999',fontSize:'13px'}}>This certificate may not exist or the link may be incorrect.</p>
     </div>
@@ -59,7 +59,7 @@ export default function CertificatePage() {
       {/* Toolbar */}
       <div className="no-print" style={{display:'flex',justifyContent:'center',gap:'12px',padding:'16px',background:'#555'}}>
         <button onClick={() => window.print()}
-          style={{background:'#b71c1c',color:'#fff',border:'none',borderRadius:'8px',padding:'10px 28px',fontSize:'14px',fontWeight:'700',cursor:'pointer'}}>
+          style={{background:'#1e3a5f',color:'#fff',border:'none',borderRadius:'8px',padding:'10px 28px',fontSize:'14px',fontWeight:'700',cursor:'pointer'}}>
           Print / Save PDF
         </button>
         <button onClick={() => window.history.back()}
@@ -82,18 +82,18 @@ export default function CertificatePage() {
 
           {/* === BORDER SYSTEM === */}
           {/* Outer red border */}
-          <div style={{position:'absolute',inset:0,border:'12px solid #b71c1c',pointerEvents:'none',zIndex:10}} />
+          <div style={{position:'absolute',inset:0,border:'12px solid #1e3a5f',pointerEvents:'none',zIndex:10}} />
           {/* White gap */}
           <div style={{position:'absolute',inset:'12px',border:'4px solid #fff',pointerEvents:'none',zIndex:10}} />
           {/* Inner red line */}
-          <div style={{position:'absolute',inset:'16px',border:'2px solid #b71c1c',pointerEvents:'none',zIndex:10}} />
+          <div style={{position:'absolute',inset:'16px',border:'2px solid #1e3a5f',pointerEvents:'none',zIndex:10}} />
 
           {/* Dashed vertical strips inside outer border */}
           <div style={{position:'absolute',top:'16px',bottom:'16px',left:'2px',width:'10px',
-            backgroundImage:'repeating-linear-gradient(to bottom, #b71c1c 0px, #b71c1c 10px, transparent 10px, transparent 18px)',
+            backgroundImage:'repeating-linear-gradient(to bottom, #1e3a5f 0px, #2d5a87 10px, transparent 10px, transparent 18px)',
             pointerEvents:'none',zIndex:10}} />
           <div style={{position:'absolute',top:'16px',bottom:'16px',right:'2px',width:'10px',
-            backgroundImage:'repeating-linear-gradient(to bottom, #b71c1c 0px, #b71c1c 10px, transparent 10px, transparent 18px)',
+            backgroundImage:'repeating-linear-gradient(to bottom, #1e3a5f 0px, #2d5a87 10px, transparent 10px, transparent 18px)',
             pointerEvents:'none',zIndex:10}} />
 
           {/* === CONTENT === */}
@@ -105,7 +105,7 @@ export default function CertificatePage() {
             </div>
 
             {/* Red rule under title */}
-            <div style={{width:'360px',height:'2px',background:'#b71c1c',marginBottom:'14px'}} />
+            <div style={{width:'360px',height:'2px',background:'#1e3a5f',marginBottom:'14px'}} />
 
             {/* Verifies that */}
             <div style={{fontFamily:'Arial,Helvetica,sans-serif',fontSize:'12px',fontWeight:'700',letterSpacing:'0.18em',color:'#444',marginBottom:'6px',textTransform:'uppercase'}}>

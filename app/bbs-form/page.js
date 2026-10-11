@@ -154,7 +154,7 @@ export default function BBSObservationForm() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #991b1b 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -212,7 +212,7 @@ export default function BBSObservationForm() {
             <button
               onClick={resetForm}
               style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #991b1b 100%)',
+                background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 padding: '12px 30px',
@@ -241,7 +241,7 @@ export default function BBSObservationForm() {
       <style jsx global>{`
         .bbs-form-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #1e3a8a 0%, #991b1b 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
           padding: 20px;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -347,7 +347,7 @@ export default function BBSObservationForm() {
         }
         
         .section-header.red {
-          background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
         }
         
         .type-options {
@@ -475,7 +475,7 @@ export default function BBSObservationForm() {
         .submit-btn {
           width: 100%;
           padding: 16px;
-          background: linear-gradient(135deg, #1e3a8a 0%, #991b1b 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
           color: white;
           border: none;
           border-radius: 8px;
