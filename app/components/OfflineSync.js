@@ -5,17 +5,20 @@
 // Mounted once in the root layout so it runs on every page. Starts the
 // SafeSubmit flush (online / focus / visibility / timer / page load) and shows
 // a bar at the top of the screen while anything is waiting:
-//   amber  "N form(s) saved on this phone - NOT sent yet"
-//   blue   "Sending N saved form(s)..."
+//   amber  "N form(s) (+ M photos) saved on this phone - NOT sent yet"
+//   blue   "Sending N saved form(s) (+ M photos)..."
 //   green  "N saved form(s) sent" (a few seconds, then gone)
-// The bar never says "sent" until the server has accepted the row.
+// The bar never says "sent" until the server has accepted the row; photos
+// queued with a form go up first and the form is only "sent" once it is in
+// with their links.
 import { useEffect, useState } from 'react'
-import { initOfflineSync, processOfflineQueue, getOfflineQueueCount, OFFLINE_QUEUE_EVENT } from '@/components/SafeSubmit'
+import { initOfflineSync, processOfflineQueue, getOfflineQueueCount, getOfflineQueuePhotoCount, OFFLINE_QUEUE_EVENT } from '@/components/SafeSubmit'
 
 const BAR_ID = 'slp-offline-bar'
 
 export default function OfflineSync() {
   const [count, setCount] = useState(0)
+  const [photoCount, setPhotoCount] = useState(0)
   const [sending, setSending] = useState(false)
   const [online, setOnline] = useState(true)
   const [done, setDone] = useState(null) // { sent, review }
@@ -25,11 +28,13 @@ export default function OfflineSync() {
 
   useEffect(() => {
     setCount(getOfflineQueueCount())
+    setPhotoCount(getOfflineQueuePhotoCount())
     setOnline(navigator.onLine !== false)
     let doneTimer = null
     const onQueue = (e) => {
       const d = (e && e.detail) || {}
       setCount(typeof d.count === 'number' ? d.count : getOfflineQueueCount())
+      setPhotoCount(typeof d.photos === 'number' ? d.photos : getOfflineQueuePhotoCount())
       if (typeof d.sending === 'boolean') setSending(d.sending)
       const r = d.result
       if (r && (r.processed || r.toBackup)) {
@@ -40,7 +45,7 @@ export default function OfflineSync() {
       if (d.queued) { setDone(null); setJustQueued(true) }
       if (d.count === 0) setJustQueued(false)
     }
-    const onStorage = (e) => { if (e.key === null || e.key === 'offline_submission_queue') setCount(getOfflineQueueCount()) }
+    const onStorage = (e) => { if (e.key === null || e.key === 'offline_submission_queue') { setCount(getOfflineQueueCount()); setPhotoCount(getOfflineQueuePhotoCount()) } }
     const onNet = () => setOnline(navigator.onLine !== false)
     window.addEventListener(OFFLINE_QUEUE_EVENT, onQueue)
     window.addEventListener('storage', onStorage)
@@ -73,14 +78,15 @@ export default function OfflineSync() {
   if (!visible) return null
 
   const plural = (n) => (n === 1 ? 'form' : 'forms')
+  const withPhotos = photoCount > 0 ? ` + ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : ''
   let bg = '#92400e', border = '#f59e0b', text
   if (count > 0 && sending) {
     bg = '#1e3a5f'; border = '#93c5fd'
-    text = `Sending ${count} saved ${plural(count)}… keep this page open.`
+    text = `Sending ${count} saved ${plural(count)}${withPhotos}… keep this page open.`
   } else if (count > 0 && justQueued) {
-    text = `No signal: the form you just submitted was NOT sent. It is saved on this phone${count > 1 ? ` (${count} waiting)` : ''} and sends automatically when you have signal. Do not clear browser data.`
+    text = `No signal: the form you just submitted was NOT sent. It is saved on this phone${photoCount > 0 ? ` with its photos` : ''}${count > 1 || photoCount > 0 ? ` (${count} ${plural(count)}${withPhotos} waiting)` : ''} and sends automatically when you have signal. Do not clear browser data.`
   } else if (count > 0) {
-    text = `${count} ${plural(count)} saved on this phone — NOT sent yet. ${online ? 'Will keep trying.' : 'Sends automatically when you have signal.'} Do not clear browser data.`
+    text = `${count} ${plural(count)}${withPhotos} saved on this phone — NOT sent yet. ${online ? 'Will keep trying.' : 'Sends automatically when you have signal.'} Do not clear browser data.`
   } else {
     bg = '#166534'; border = '#86efac'
     const parts = []
