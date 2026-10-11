@@ -10,6 +10,6 @@ body {
 
 /* Help Desk launcher (app/components/HelpLauncher.js) never prints. */
 @media print {
-  .slp-help-launcher { display: none !important; }
+  .slp-help-launcher, .slp-back-btn { display: none !important; }
   .slp-offline-bar { display: none !important; }
 }
