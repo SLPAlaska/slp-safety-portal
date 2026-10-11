@@ -10,12 +10,27 @@
 //
 // Designed to produce a PDF <= 10 MB so the file emails cleanly.
 //
-// DEPLOY:
-//   supabase functions deploy generate-investigation-pdf --no-verify-jwt
+// AUTH (locked down 2026-10-11):
+//   The public anon / site key alone is NOT enough. The caller must send a
+//   signed-in user's access token, and that user must carry
+//   app_metadata.role === 'investigator' (same rule as app/lib/investigatorAuth.js
+//   and /api/investigation-text-gate). app_metadata is service-role-writable
+//   only, so the role cannot be self-granted.
+//     no / anon / invalid / expired token -> 401
+//     signed in but not an investigator   -> 403
 //
-// CALL FROM BROWSER:
+// SPELLING & GRAMMAR GATE (PR #2):
+//   This is an export path, so it honours the same gate as the printable
+//   report: the stored passed_hash must match the hash of the CURRENT report
+//   text (public.inv_report_text_gate). Otherwise -> 409, no PDF.
+//
+// DEPLOY (keep JWT verification ON; the in-function check is the real gate):
+//   supabase functions deploy generate-investigation-pdf
+//
+// CALL FROM BROWSER (signed-in investigator):
 //   POST {SUPABASE_URL}/functions/v1/generate-investigation-pdf
-//   Headers: Authorization: Bearer {SUPABASE_ANON_KEY}
+//   Headers: Authorization: Bearer {session.access_token}
+//            apikey: {SUPABASE_ANON_KEY}
 //   Body:    { "incident_id": "<uuid>" }
 //   Returns: application/pdf (binary download)
 // =====================================================================
@@ -50,6 +65,8 @@ const WARNING   = rgb(1.000, 0.549, 0.102);  // #FF8C1A
 const DANGER    = rgb(0.843, 0.098, 0.098);  // same as RED
 const AMBER_BG  = rgb(0.996, 0.953, 0.780);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -81,14 +98,45 @@ async function fetchLogoBytes(): Promise<{ bytes: Uint8Array; isPng: boolean } |
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
-  try {
-    const { incident_id } = await req.json();
-    if (!incident_id) return jsonErr("incident_id is required", 400);
+  if (req.method !== "POST") return jsonErr("Method not allowed", 405);
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !serviceKey) return jsonErr("Server not configured", 503);
+
+    const supabase = createClient(url, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // --- Auth: signed-in investigator only (fail closed) -----------------
+    const authHeader = req.headers.get("authorization") || "";
+    const token = /^Bearer\s+/i.test(authHeader) ? authHeader.replace(/^Bearer\s+/i, "").trim() : "";
+    if (!token) return jsonErr("Sign in to generate the investigation PDF.", 401);
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    const user = authData?.user;
+    if (authError || !user) return jsonErr("Sign in to generate the investigation PDF.", 401);
+    if (user.app_metadata?.role !== "investigator") {
+      return jsonErr("This account is not authorized for investigations.", 403);
+    }
+
+    let body: any;
+    try { body = await req.json(); } catch { return jsonErr("Request body was not valid JSON.", 400); }
+    const incident_id = String(body?.incident_id || "");
+    if (!UUID_RE.test(incident_id)) return jsonErr("incident_id is required (uuid)", 400);
+
+    // --- Spelling & grammar gate (same rule as the printable report) -----
+    const { data: gate, error: gateErr } = await supabase.rpc("inv_report_text_gate", { p_incident: incident_id });
+    if (gateErr) return jsonErr("Could not verify the spelling & grammar check. Try again shortly.", 503);
+    if (!gate) return jsonErr("Incident not found", 404);
+    const passed = gate?.state?.passed_hash;
+    if (!passed || passed !== gate.hash) {
+      return jsonErr(
+        "TEXT_GATE: The spelling & grammar check has not passed for the current report text. " +
+        "Run it in the Investigation Workbench (Close It Out), then export again.",
+        409,
+      );
+    }
 
     // Phase 1: load incident first to get both ID forms
     const incidentR = await supabase.from("incidents").select("*").eq("id", incident_id).single();
@@ -194,7 +242,7 @@ Deno.serve(async (req: Request) => {
     });
   } catch (err) {
     console.error("PDF generation error:", err);
-    return jsonErr(String((err as any)?.message || err), 500);
+    return jsonErr("PDF generation failed.", 500);
   }
 });
 
