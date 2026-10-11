@@ -8,10 +8,19 @@
 //   - UPDATE where status changed TO 'Submitted' (draft conversion)
 // Plain draft saves and later workflow updates never email.
 //
-// Secrets required (set via Supabase web UI -> Edge Functions -> Secrets):
-//   RESEND_API_KEY          (already exists for send-weekly-reports)
-//   INCIDENT_ALERT_SECRET   (new - must match the x-incident-alert-secret
-//                            header configured on the webhook)
+// Auth (October 2026): the x-incident-alert-secret header is verified against
+// Supabase Vault ('incident_alert_shared_secret') through the service_role-only
+// RPC public.incident_alert_secret_matches(). The trigger reads the same Vault
+// entry, so nothing secret lives in the trigger definition or in this file.
+// Rotate with: select public.rotate_incident_alert_secret();  (as service_role)
+// The old INCIDENT_ALERT_SECRET env value is no longer accepted.
+//
+// Secrets required:
+//   RESEND_API_KEY              (already exists for send-weekly-reports)
+//   SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY  (injected by the platform)
+//
+// Safe test: an authorized POST with {"dry_run": true} returns
+// {authorized:true, dry_run:true} and sends nothing.
 //
 // Deploy: npx supabase functions deploy send-incident-alert --no-verify-jwt --project-ref iypezirwdlqpptjpeeyf
 
@@ -202,15 +211,45 @@ function buildEmail(inc: Record<string, unknown>): { subject: string; html: stri
 }
 
 // ============================================================================
+// Auth helper
+// ============================================================================
+
+async function secretMatches(provided: string | null): Promise<boolean> {
+  if (!provided || provided.length < 20) return false;
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return false;
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/incident_alert_secret_matches`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_provided: provided }),
+    });
+    if (!r.ok) {
+      console.error("secret check rpc failed:", r.status);
+      return false;
+    }
+    return (await r.json()) === true;
+  } catch (e) {
+    console.error("secret check error:", String(e));
+    return false;
+  }
+}
+
+// ============================================================================
 // Handler
 // ============================================================================
 
 serve(async (req: Request) => {
   try {
-    // Shared-secret check (webhook must send this header)
-    const secret = Deno.env.get("INCIDENT_ALERT_SECRET");
+    // Shared-secret check (webhook must send this header), verified against
+    // Vault. Fails closed on any error.
     const provided = req.headers.get("x-incident-alert-secret");
-    if (!secret || provided !== secret) {
+    if (!(await secretMatches(provided))) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
@@ -218,6 +257,13 @@ serve(async (req: Request) => {
     }
 
     const payload = await req.json();
+
+    if (payload?.dry_run === true) {
+      return new Response(
+        JSON.stringify({ authorized: true, dry_run: true, sent: false }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
     const record = payload.record;
     const oldRecord = payload.old_record;
     const eventType = payload.type; // "INSERT" or "UPDATE"
