@@ -2,7 +2,7 @@
 import { COMPANIES } from '@/lib/companies'
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeInsert, safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
+import { safeCloseout, makeRecordKey, submitPackage, stableUuid, newClientSubmissionId, processOfflineQueue, getOfflineQueueCount, OFFLINE_PACKAGE_DONE_EVENT } from '@/components/SafeSubmit';
 import {
   CAMP_QUESTIONS,
   SECTIONS,
@@ -78,6 +78,52 @@ export default function CampInspection() {
   const [gettingGps, setGettingGps] = useState(false);
 
   const saveTimers = useRef({}); // {[qid]: timeoutId}
+  // Latest responses for timers (a timer set in one render must save the
+  // answer as it is when it fires, not as it was when it was set).
+  const responsesRef = useRef(responses);
+  responsesRef.current = responses;
+  // What the server last accepted per question (JSON of the saved row), so
+  // Submit re-sends only what did not get in (e.g. answered with no signal).
+  const savedOk = useRef({});
+  const photosCleared = useRef({});
+  // Photos taken with no signal: kept on this phone with their question and
+  // sent by the offline queue. {[qid]: [{ batch, previews: [objectURL] }]}
+  const [pendingPhotos, setPendingPhotos] = useState({});
+  // Started / submitted with no signal: saved on this phone, NOT sent yet.
+  const [startQueued, setStartQueued] = useState(false);
+  const [submitQueued, setSubmitQueued] = useState(false);
+
+  // The offline queue sent something that belongs to this inspection.
+  useEffect(() => {
+    const onDone = (e) => {
+      const d = (e && e.detail) || {};
+      if (d.form_type !== 'camp-inspection' || !d.ref || d.ref.inspectionId !== inspectionId) return;
+      if (d.ref.kind === 'start') setStartQueued(false);
+      if (d.ref.kind === 'submit') setSubmitQueued(false);
+      if (d.ref.kind === 'photos' && d.ref.qid) {
+        const qid = d.ref.qid;
+        const urls = (d.urls && d.urls.photos) || [];
+        setPendingPhotos(prev => {
+          const list = (prev[qid] || []).filter(b => {
+            if (b.batch === d.ref.batch) { b.previews.forEach(u => { try { URL.revokeObjectURL(u); } catch (x) {} }); return false; }
+            return true;
+          });
+          return { ...prev, [qid]: list };
+        });
+        if (urls.length) {
+          photosCleared.current[qid] = false;
+          setResponses(prev => {
+            const cur = prev[qid] || { photo_urls: [] };
+            const have = cur.photo_urls || [];
+            return { ...prev, [qid]: { ...cur, photo_urls: [...have, ...urls.filter(u => !have.includes(u))] } };
+          });
+          scheduleSave(qid);
+        }
+      }
+    };
+    window.addEventListener(OFFLINE_PACKAGE_DONE_EVENT, onDone);
+    return () => window.removeEventListener(OFFLINE_PACKAGE_DONE_EVENT, onDone);
+  });
 
   // -------------------------------------------------------------------------
   // Derived counters
@@ -152,28 +198,41 @@ export default function CampInspection() {
 
     setStarting(true);
     try {
-      const { data, error } = await supabase
-        .from('camp_inspections')
-        .insert([{
-          inspector_name: meta.inspector_name.trim(),
-          inspector_email: meta.inspector_email.trim() || null,
-          company: meta.company,
-          camp_name: meta.camp_name.trim(),
-          location: meta.location || null,
-          inspection_date: meta.inspection_date,
-          inspection_type: meta.inspection_type,
-          weather_conditions: meta.weather_conditions.trim() || null,
-          gps_lat: meta.gps_lat,
-          gps_lng: meta.gps_lng,
-          general_notes: meta.general_notes.trim() || null,
-          status: 'in-progress',
-          total_questions: CAMP_QUESTIONS.length
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      const code=makeRecordKey();await registerRecordKey('camp_inspections',data.id,code);setInspectionCode(code);
-      setInspectionId(data.id);
+      // The inspection id and its claim code are made on the phone, so the
+      // inspection can start with no signal (kept on this phone and sent by
+      // the offline queue) and no read-back of the new row is needed.
+      const newId = newClientSubmissionId();
+      const code = makeRecordKey();
+      const res = await submitPackage({
+        formType: 'camp-inspection', label: 'Camp inspection (start)', table: 'camp_inspections',
+        ref: { kind: 'start', inspectionId: newId },
+        steps: [
+          {
+            kind: 'insert', table: 'camp_inspections', dupKeys: ['camp_inspections_pkey'],
+            row: {
+              id: newId,
+              inspector_name: meta.inspector_name.trim(),
+              inspector_email: meta.inspector_email.trim() || null,
+              company: meta.company,
+              camp_name: meta.camp_name.trim(),
+              location: meta.location || null,
+              inspection_date: meta.inspection_date,
+              inspection_type: meta.inspection_type,
+              weather_conditions: meta.weather_conditions.trim() || null,
+              gps_lat: meta.gps_lat,
+              gps_lng: meta.gps_lng,
+              general_notes: meta.general_notes.trim() || null,
+              status: 'in-progress',
+              total_questions: CAMP_QUESTIONS.length
+            }
+          },
+          { kind: 'insert', table: 'record_keys', row: { table_name: 'camp_inspections', record_id: newId, code }, dupKeys: ['record_keys_pkey'] }
+        ]
+      });
+      if (!res.ok) throw (res.error || new Error('Could not start inspection.'));
+      setInspectionCode(code);
+      setInspectionId(newId);
+      setStartQueued(!!res.queued);
       setStep('section');
       setCurrentSection(1);
       window.scrollTo(0, 0);
@@ -194,24 +253,35 @@ export default function CampInspection() {
     saveTimers.current[qid] = setTimeout(() => { saveResponse(qid); }, 700);
   }
 
+  function responseRow(qid) {
+    const q = CAMP_QUESTIONS.find(x => x.id === qid);
+    const r = responsesRef.current[qid] || {};
+    return {
+      inspection_id: inspectionId,
+      question_id: q.id,
+      section: q.section,
+      section_order: q.sectionOrder,
+      subsection: q.subsection,
+      question_text: q.questionText,
+      criticality: q.criticality,
+      response: r.response || null,
+      comment: r.comment || null,
+      // No photos in this screen's list: leave the server's list alone (a
+      // photo saved on this phone may have just been merged in by the
+      // offline queue). Only clear it when the last photo was removed here.
+      ...(r.photo_urls && r.photo_urls.length
+        ? { photo_urls: r.photo_urls }
+        : (photosCleared.current[qid] ? { photo_urls: null } : {}))
+    };
+  }
+
   async function saveResponse(qid) {
     if (!inspectionId) return;
-    const q = CAMP_QUESTIONS.find(x => x.id === qid);
-    const r = responses[qid] || {};
+    const row = responseRow(qid);
     try {
-      const { error } = await safeCloseout('camp_inspection_responses', inspectionId, inspectionCode, {
-          inspection_id: inspectionId,
-          question_id: q.id,
-          section: q.section,
-          section_order: q.sectionOrder,
-          subsection: q.subsection,
-          question_text: q.questionText,
-          criticality: q.criticality,
-          response: r.response || null,
-          comment: r.comment || null,
-          photo_urls: r.photo_urls && r.photo_urls.length ? r.photo_urls : null
-        }, inspectionId, 'upsert');
+      const { error } = await safeCloseout('camp_inspection_responses', inspectionId, inspectionCode, row, inspectionId, 'upsert');
       if (error) throw error;
+      savedOk.current[qid] = JSON.stringify(row);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(s => s === 'saved' ? 'idle' : s), 1500);
     } catch (e) {
@@ -230,21 +300,37 @@ export default function CampInspection() {
   // -------------------------------------------------------------------------
   async function handlePhotoUpload(qid, fileList) {
     if (!inspectionId || !fileList || !fileList.length) return;
+    const files = Array.from(fileList);
+    const q = CAMP_QUESTIONS.find(x => x.id === qid);
+    const batch = `${Date.now()}`;
     setUploading(u => ({ ...u, [qid]: true }));
     try {
-      const existing = (responses[qid] && responses[qid].photo_urls) || [];
-      const newUrls = [...existing];
-      for (const file of Array.from(fileList)) {
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const path = `camp-inspection/${inspectionId}/${qid}/${Date.now()}-${safeName}`;
-        const { error: upErr } = await supabase.storage.from('safety-photos').upload(path, file, {
-          cacheControl: '3600', upsert: false, contentType: file.type
-        });
-        if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from('safety-photos').getPublicUrl(path);
-        newUrls.push(pub.publicUrl);
+      // Anything saved on this phone earlier (e.g. the start) goes first.
+      if (getOfflineQueueCount() > 0 && navigator.onLine !== false) { try { await processOfflineQueue(); } catch (x) {} }
+      // Photos go up with the question they belong to. No signal: they stay
+      // on this phone with it and the offline queue sends them (photo list is
+      // merged on the server, never replaced, so nothing already there is lost).
+      const res = await submitPackage({
+        formType: 'camp-inspection', label: `Camp inspection photo (${qid})`, table: 'camp_inspection_responses',
+        ref: { kind: 'photos', inspectionId, qid, batch },
+        groups: [{ name: 'photos', files, bucket: 'safety-photos', prefix: 'camp-inspection', folder: `${inspectionId}/${qid}`, fileBase: batch, compress: true }],
+        steps: [
+          { kind: 'upload', group: 'photos' },
+          {
+            kind: 'closeout', table: 'camp_inspection_responses', recordId: inspectionId, code: inspectionCode, codeId: inspectionId, mode: 'merge',
+            updates: { inspection_id: inspectionId, question_id: q.id, section: q.section, section_order: q.sectionOrder, subsection: q.subsection, question_text: q.questionText, criticality: q.criticality, photo_urls: { $urls: 'photos' } }
+          }
+        ]
+      });
+      if (!res.ok) throw (res.error || new Error('Photo save failed'));
+      if (res.queued) {
+        setPendingPhotos(prev => ({ ...prev, [qid]: [...(prev[qid] || []), { batch, previews: files.map(f => URL.createObjectURL(f)) }] }));
+      } else {
+        const urls = (res.urls && res.urls.photos) || [];
+        const existing = (responsesRef.current[qid] && responsesRef.current[qid].photo_urls) || [];
+        if (urls.length) { photosCleared.current[qid] = false; updateResponse(qid, { photo_urls: [...existing, ...urls.filter(u => !existing.includes(u))] }); }
+        if (urls.length < files.length) alert(`${files.length - urls.length} photo(s) could not be uploaded (refused by storage). SLP has been told.`);
       }
-      updateResponse(qid, { photo_urls: newUrls });
     } catch (e) {
       alert('Photo upload failed: ' + e.message);
     } finally {
@@ -254,7 +340,9 @@ export default function CampInspection() {
 
   function removePhoto(qid, url) {
     const cur = (responses[qid] && responses[qid].photo_urls) || [];
-    updateResponse(qid, { photo_urls: cur.filter(u => u !== url) });
+    const left = cur.filter(u => u !== url);
+    photosCleared.current[qid] = left.length === 0;
+    updateResponse(qid, { photo_urls: left });
   }
 
   // -------------------------------------------------------------------------
@@ -265,13 +353,11 @@ export default function CampInspection() {
     setErrorMsg('');
     setSubmitting(true);
     try {
-      // Make sure any pending autosaves finish
-      const pending = Object.keys(saveTimers.current);
-      for (const qid of pending) {
-        if (saveTimers.current[qid]) {
-          clearTimeout(saveTimers.current[qid]);
-          await saveResponse(qid);
-        }
+      // Anything saved on this phone earlier (start, photos) goes first.
+      if (getOfflineQueueCount() > 0 && navigator.onLine !== false) { try { await processOfflineQueue(); } catch (x) {} }
+      // Stop pending autosaves; Submit sends whatever the server does not have yet.
+      for (const qid of Object.keys(saveTimers.current)) {
+        if (saveTimers.current[qid]) { clearTimeout(saveTimers.current[qid]); saveTimers.current[qid] = null; }
       }
 
       const total = CAMP_QUESTIONS.length;
@@ -279,8 +365,21 @@ export default function CampInspection() {
         ? +(((counters.compliant + counters.na) / counters.answered) * 100).toFixed(2)
         : 0;
 
-      // Update parent inspection
-      const { error: updErr } = await safeCloseout('camp_inspections', inspectionId, inspectionCode, {
+      const steps = [];
+      // 1) Answers the server does not have yet (answered with no signal, or
+      //    the last autosave did not get in). Merge: photo lists never shrink.
+      for (const q of CAMP_QUESTIONS) {
+        const r = responses[q.id];
+        if (!r || (!r.response && !r.comment && !(r.photo_urls && r.photo_urls.length))) continue;
+        const row = responseRow(q.id);
+        if (savedOk.current[q.id] === JSON.stringify(row)) continue;
+        steps.push({ kind: 'closeout', table: 'camp_inspection_responses', recordId: inspectionId, code: inspectionCode, codeId: inspectionId, mode: 'merge', updates: row });
+      }
+
+      // 2) Finalize the inspection
+      steps.push({
+        kind: 'closeout', table: 'camp_inspections', recordId: inspectionId, code: inspectionCode,
+        updates: {
           status: 'submitted',
           submitted_at: new Date().toISOString(),
           submitted_by_email: meta.inspector_email || null,
@@ -295,42 +394,48 @@ export default function CampInspection() {
           not_verified_count: counters.not_verified,
           critical_findings_count: counters.critical_findings,
           compliance_percent: compliancePercent
-        });
-      if (updErr) throw updErr;
+        }
+      });
 
-      // Spawn corrective actions for non-compliant + needs-action items
-      const caRows = [];
-      for (const q of CAMP_QUESTIONS) {
+      // 3) Corrective actions for non-compliant + needs-action items. Each has
+      //    a fixed id (inspection + question), so a re-send never doubles it.
+      const caQs = CAMP_QUESTIONS.filter(q => {
         const r = responses[q.id];
-        if (!r || !r.response) continue;
-        if (r.response === 'Non-Compliant' || r.response === 'Needs Action') {
-          caRows.push({
-            inspection_id: inspectionId,
-            company: meta.company,
-            camp_name: meta.camp_name.trim(),
-            question_id: q.id,
-            section: q.section,
-            subsection: q.subsection,
-            finding: (r.comment && r.comment.trim()) || q.questionText,
-            criticality: q.criticality,
-            risk_rank: criticalityToRiskRank(q.criticality),
-            due_date: defaultDueDate(q.criticality),
-            status: 'open'
+        return r && (r.response === 'Non-Compliant' || r.response === 'Needs Action');
+      });
+      if (caQs.length) {
+        // response_id links each CA to its answer (looked up on the server).
+        steps.push({ kind: 'field_data', sid: 'resp-ids', optional: true, view: 'camp_responses', params: { inspection: inspectionId, code: inspectionCode }, capture: 'respRows' });
+        for (const q of caQs) {
+          const r = responses[q.id];
+          steps.push({
+            kind: 'insert', table: 'camp_corrective_actions',
+            row: {
+              inspection_id: inspectionId,
+              company: meta.company,
+              camp_name: meta.camp_name.trim(),
+              question_id: q.id,
+              section: q.section,
+              subsection: q.subsection,
+              finding: (r.comment && r.comment.trim()) || q.questionText,
+              criticality: q.criticality,
+              risk_rank: criticalityToRiskRank(q.criticality),
+              due_date: defaultDueDate(q.criticality),
+              status: 'open',
+              response_id: { $lookup: ['respRows', 'question_id', q.id, 'id'] },
+              client_submission_id: stableUuid(`camp-ca:${inspectionId}:${q.id}`)
+            }
           });
         }
       }
 
-      if (caRows.length) {
-        // Attach response_id to each CA where possible (need fresh response IDs)
-        const { rows: respRows } = await fieldData('camp_responses', { inspection: inspectionId, code: inspectionCode });
-        const idMap = {};
-        (respRows || []).forEach(r => { idMap[r.question_id] = r.id; });
-        caRows.forEach(c => { c.response_id = idMap[c.question_id] || null; });
+      const res = await submitPackage({
+        formType: 'camp-inspection', label: 'Camp inspection (submit)', table: 'camp_inspections',
+        ref: { kind: 'submit', inspectionId }, steps
+      });
+      if (!res.ok) throw (res.error || new Error('Submit failed'));
 
-        const { error: caErr } = await safeInsert('camp_corrective_actions', caRows, 'camp-inspection');
-        if (caErr) throw caErr;
-      }
-
+      setSubmitQueued(!!res.queued);
       setStep('complete');
       window.scrollTo(0, 0);
     } catch (e) {
@@ -371,6 +476,8 @@ export default function CampInspection() {
             handlePhotoUpload={handlePhotoUpload}
             removePhoto={removePhoto}
             uploading={uploading}
+            pendingPhotos={pendingPhotos}
+            startQueued={startQueued}
             saveStatus={saveStatus}
             setSaveStatus={setSaveStatus}
             sectionProgress={sectionProgress}
@@ -391,6 +498,11 @@ export default function CampInspection() {
           />
         )}
 
+        {step === 'complete' && submitQueued && (
+          <div role="status" data-testid="camp-submit-saved-on-phone" style={{ background: '#FEF3C7', border: '2px solid #F59E0B', color: '#92400E', borderRadius: 8, padding: 14, marginBottom: 12, fontSize: 15, fontWeight: 700 }}>
+            📵 No signal: this inspection (answers, photos and corrective actions) is saved on this phone and NOT sent yet. It sends by itself when you have signal — watch the bar at the top. Do not clear browser data.
+          </div>
+        )}
         {step === 'complete' && (
           <CompleteScreen
             inspectionId={inspectionId}
@@ -511,7 +623,7 @@ function HeaderForm({ meta, setMeta, handleStart, starting, captureGps, gettingG
 // ============================================================================
 // Step 2: Section wizard (one section at a time)
 // ============================================================================
-function SectionWizard({ inspectionId, inspectionCode, meta, setMeta, currentSection, setCurrentSection, responses, updateResponse, handlePhotoUpload, removePhoto, uploading, saveStatus, setSaveStatus, sectionProgress, counters, onGoToReview }) {
+function SectionWizard({ inspectionId, inspectionCode, meta, setMeta, currentSection, setCurrentSection, responses, updateResponse, handlePhotoUpload, removePhoto, uploading, pendingPhotos, startQueued, saveStatus, setSaveStatus, sectionProgress, counters, onGoToReview }) {
   const section = SECTIONS.find(s => s.order === currentSection);
   const questions = CAMP_QUESTIONS.filter(q => q.sectionOrder === currentSection);
   const sp = sectionProgress[currentSection];
@@ -536,6 +648,11 @@ function SectionWizard({ inspectionId, inspectionCode, meta, setMeta, currentSec
         meta={meta}
       />
 
+      {startQueued && (
+        <div role="status" data-testid="camp-start-saved-on-phone" style={{ background: '#FEF3C7', border: '2px solid #F59E0B', color: '#92400E', borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
+          📵 No signal: this inspection was started on this phone and is NOT on the server yet. Keep going; answers and photos stay on this phone and send when you have signal. Do not clear browser data.
+        </div>
+      )}
       <div style={cardStyle()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <SectionTitle text={`Section ${currentSection} of ${SECTIONS.length}`} />
@@ -567,6 +684,7 @@ function SectionWizard({ inspectionId, inspectionCode, meta, setMeta, currentSec
               handlePhotoUpload={handlePhotoUpload}
               removePhoto={removePhoto}
               uploading={!!uploading[q.id]}
+              pending={((pendingPhotos || {})[q.id] || []).flatMap(b => b.previews)}
             />
           ))
         )}
@@ -688,7 +806,7 @@ function SectionNav({ currentSection, setCurrentSection, sectionProgress }) {
 // ============================================================================
 // Single question card
 // ============================================================================
-function QuestionCard({ q, r, updateResponse, handlePhotoUpload, removePhoto, uploading }) {
+function QuestionCard({ q, r, updateResponse, handlePhotoUpload, removePhoto, uploading, pending = [] }) {
   const critColors = CRITICALITY_COLORS[q.criticality] || CRITICALITY_COLORS.Standard;
   const respColors = r.response ? RESPONSE_COLORS[r.response] : null;
   const photoUrls = r.photo_urls || [];
@@ -753,10 +871,23 @@ function QuestionCard({ q, r, updateResponse, handlePhotoUpload, removePhoto, up
             onChange={e => { handlePhotoUpload(q.id, e.target.files); e.target.value = ''; }} />
         </label>
         {uploading && <span style={{ fontSize: 12, color: '#6B7280' }}>Uploading…</span>}
-        {requiresPhoto && photoUrls.length === 0 && (
+        {requiresPhoto && photoUrls.length === 0 && pending.length === 0 && (
           <span style={{ fontSize: 11, color: '#B45309', fontWeight: 600 }}>📌 Photo recommended for this response</span>
         )}
       </div>
+
+      {pending.length > 0 && (
+        <div data-testid="camp-photos-on-phone" style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>📵 {pending.length} photo(s) saved on this phone — NOT sent yet. They send by themselves when you have signal.</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+            {pending.map((url, i) => (
+              <div key={i} style={{ width: 80, height: 80, borderRadius: 4, overflow: 'hidden', border: '2px dashed #F59E0B' }}>
+                <img src={url} alt={`photo on phone ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {photoUrls.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>

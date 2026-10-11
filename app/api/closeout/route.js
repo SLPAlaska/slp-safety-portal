@@ -61,7 +61,9 @@ const ALLOW = {
     cols: ['inspection_id', 'question_id', 'section', 'section_order', 'subsection', 'question_text', 'criticality', 'response', 'comment', 'photo_urls'],
     codeTable: 'camp_inspections',
     mode: 'upsert',
-    onConflict: 'inspection_id,question_id'
+    onConflict: 'inspection_id,question_id',
+    // mode 'merge' (offline re-send): photo_urls are unioned, never replaced.
+    mergeArray: 'photo_urls'
   },
   tha_assessments: {
     idCol: 'tha_number',
@@ -129,7 +131,27 @@ export async function POST(req) {
     // 3) Apply
     let updErr = null;
     let updatedRow = null;
-    if (cfg.mode === 'upsert' && mode === 'upsert') {
+    if (cfg.mode === 'upsert' && mode === 'merge' && cfg.mergeArray) {
+      // Saved-on-phone re-send (offline queue): never removes anything.
+      // Existing row: set the fields sent, but the photo list is the UNION of
+      // what the server has and what the phone sends. No row yet: insert it.
+      clean[cfg.idCol] = id; // pin to the code-validated record
+      const keyCols = cfg.onConflict.split(',');
+      let sel = admin.from(table).select(['id', cfg.mergeArray].join(','));
+      for (const k of keyCols) sel = sel.eq(k, clean[k]);
+      const { data: existing, error: selErr } = await sel.maybeSingle();
+      if (selErr) return Response.json({ error: selErr.message }, { status: 500 });
+      const sent = Array.isArray(clean[cfg.mergeArray]) ? clean[cfg.mergeArray] : [];
+      if (existing) {
+        const have = Array.isArray(existing[cfg.mergeArray]) ? existing[cfg.mergeArray] : [];
+        const merged = [...have, ...sent.filter((u) => !have.includes(u))];
+        const patch = { ...clean, [cfg.mergeArray]: merged.length ? merged : null };
+        for (const k of keyCols) delete patch[k];
+        ({ error: updErr } = await admin.from(table).update(patch).eq('id', existing.id));
+      } else {
+        ({ error: updErr } = await admin.from(table).upsert([{ ...clean, [cfg.mergeArray]: sent.length ? sent : null }], { onConflict: cfg.onConflict }));
+      }
+    } else if (cfg.mode === 'upsert' && mode === 'upsert') {
       clean[cfg.idCol] = id; // pin to the code-validated record
       ({ error: updErr } = await admin.from(table).upsert([clean], { onConflict: cfg.onConflict }));
     } else {

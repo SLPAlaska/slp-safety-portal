@@ -1,9 +1,9 @@
 'use client';
 import { COMPANIES } from '@/lib/companies'
 import { HAZARD_TYPES, WORK_SETTINGS } from '@/lib/investigationGuide'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { safeCloseout, makeRecordKey, registerRecordKey, fieldData } from '@/components/SafeSubmit';
+import { safeCloseout, makeRecordKey, registerRecordKey, fieldData, submitPackage, stableUuid, newClientSubmissionId, OFFLINE_PACKAGE_DONE_EVENT } from '@/components/SafeSubmit';
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -602,6 +602,24 @@ export default function IncidentReportForm() {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftId, setDraftId] = useState(null); // tracks if we're editing an existing draft
   const [incidentCode, setIncidentCode] = useState(null); // claim ticket for server-validated updates
+  // Saved on this phone with no signal (offline queue), NOT sent yet.
+  const [incidentQueued, setIncidentQueued] = useState(false);
+  const [queuedFileCount, setQueuedFileCount] = useState(0);
+  // Phone-made ids for the report being filled in. Kept across retries of the
+  // same report so a retry can never create a second incident.
+  const pendingIncRef = useRef(null);
+  useEffect(() => {
+    // A report saved on this phone was just sent by the offline queue.
+    const onDone = (e) => {
+      const d = (e && e.detail) || {};
+      if (d.form_type !== 'incident-report' || !d.ref || !d.ref.incident_uuid) return;
+      if (d.ref.incident_uuid !== createdIncidentUUID) return;
+      setIncidentQueued(false);
+      if (d.ctx && d.ctx.incident_id) setCreatedIncidentId(d.ctx.incident_id);
+    };
+    window.addEventListener(OFFLINE_PACKAGE_DONE_EVENT, onDone);
+    return () => window.removeEventListener(OFFLINE_PACKAGE_DONE_EVENT, onDone);
+  }, [createdIncidentUUID]);
   // Interview Guide flag for the picked company (inv_guide_enabled RPC; default off).
   const [guideOn, setGuideOn] = useState(false);
   useEffect(() => {
@@ -1105,152 +1123,102 @@ export default function IncidentReportForm() {
         risk_ranking: formData.risk_ranking || null
       };
 
-      // Insert or update (if converting from draft)
-      let data;
+      // One package: incident, close-out code, photos + JSA/permit files,
+      // evidence rows, first timeline event, first witness note, counts,
+      // activity log. Sent now with signal; with no signal (or if it drops
+      // halfway) the rest is kept on this phone WITH the photos and sent by
+      // the offline queue (same steps, same phone-made ids, so nothing is
+      // ever doubled). The incident id is made on the phone so no read-back
+      // of the new row is needed.
+      if (!pendingIncRef.current) {
+        pendingIncRef.current = { id: newClientSubmissionId(), cid: newClientSubmissionId(), code: makeRecordKey() };
+      }
+      const pend = pendingIncRef.current;
+      const fk = draftId || pend.id;
+      const key = draftId ? incidentCode : pend.code;
+      const reporter = formData.reported_by_email || null;
+      const steps = [];
+
       if (draftId) {
-        // Update existing draft to Submitted
-        const { row: updated, error } = await updIncident(draftId, incidentData);
-        if (error) throw error;
-        data = updated || { id: draftId, incident_id: 'INC' };
+        // Converting a saved draft to Submitted.
+        steps.push(key
+          ? { kind: 'closeout', table: 'incidents', recordId: draftId, code: key, updates: incidentData, capture: { incident_id: 'incident_id' } }
+          : { kind: 'update', table: 'incidents', recordId: draftId, updates: incidentData, capture: { incident_id: 'incident_id' } });
       } else {
-        // New insert
-        const { data: inserted, error } = await supabase
-          .from('incidents')
-          .insert([incidentData])
-          .select()
-          .single();
-        if (error) throw error;
-        data = inserted;
-        const freshCode = makeRecordKey();
-        await registerRecordKey('incidents', data.id, freshCode);
-        setIncidentCode(freshCode);
-        data._code = freshCode;
+        steps.push({ kind: 'insert', table: 'incidents', row: { ...incidentData, id: pend.id, client_submission_id: pend.cid }, dupKeys: ['incidents_pkey'] });
+        steps.push({ kind: 'insert', sid: 'key', table: 'record_keys', optional: true, row: { table_name: 'incidents', record_id: pend.id, code: pend.code }, dupKeys: ['record_keys_pkey'] });
       }
 
-      // Upload photos if any
-      if (photos.length > 0 && data) {
-        for (let i = 0; i < photos.length; i++) {
-          const photo = photos[i];
-          const fileExt = photo.name.split('.').pop();
-          const fileName = `${data.incident_id}_${i + 1}.${fileExt}`;
-          const filePath = `incidents/${data.id}/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('evidence')
-            .upload(filePath, photo);
-
-          if (!uploadError) {
-            // Get public URL
-            const { data: urlData } = supabase.storage
-              .from('evidence')
-              .getPublicUrl(filePath);
-
-            // Insert evidence record
-            await supabase
-              .from('investigation_evidence')
-              .insert({
-                incident_id: data.id,
-                evidence_number: i + 1,
-                evidence_type: 'Photo',
-                evidence_category: 'Incident Scene',
-                file_name: fileName,
-                file_url: urlData.publicUrl,
-                description: `Photo ${i + 1} from initial report`,
-                uploaded_by_email: formData.reported_by_email,
-                source: 'initial_report'
-              });
-          }
-        }
-
-        // Update evidence count
-        await updIncident(data.id, { evidence_count: photos.length + jsaFiles.length }, data._code);
-      }
-
-      // Upload JSA/Permit files if any
-      if (jsaFiles.length > 0 && data) {
-        for (let i = 0; i < jsaFiles.length; i++) {
-          const file = jsaFiles[i];
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${data.incident_id}_jsa_${i + 1}.${fileExt}`;
-          const filePath = `incidents/${data.id}/${fileName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('evidence')
-            .upload(filePath, file);
-
-          if (!uploadError) {
-            const { data: urlData } = supabase.storage
-              .from('evidence')
-              .getPublicUrl(filePath);
-
-            await supabase
-              .from('investigation_evidence')
-              .insert({
-                incident_id: data.id,
-                evidence_number: photos.length + i + 1,
-                evidence_type: 'Document',
-                evidence_category: 'Documentation',
-                file_name: fileName,
-                file_url: urlData.publicUrl,
-                description: `JSA/Permit document ${i + 1} from initial report`,
-                uploaded_by_email: formData.reported_by_email,
-                source: 'initial_report'
-              });
-          }
-        }
-
-        // Update evidence count with JSA files
-        await updIncident(data.id, { evidence_count: photos.length + jsaFiles.length }, data._code);
-      }
-
-      // Log activity
-      await supabase
-        .from('investigation_activity_log')
-        .insert({
-          incident_id: data.id,
-          incident_id_text: data.incident_id,
-          action: 'Incident reported',
-          action_category: 'create',
-          user_email: formData.reported_by_email,
-          details: {
-            investigation_type: investigationType.type,
-            psif_classification: psifClassification,
-            safety_severity: formData.safety_severity
-          }
+      if (photos.length > 0) steps.push({ kind: 'upload', group: 'photos' });
+      if (jsaFiles.length > 0) steps.push({ kind: 'upload', group: 'jsa' });
+      if (photos.length > 0) {
+        steps.push({
+          kind: 'insert_each', sid: 'evidence-photos', group: 'photos', table: 'investigation_evidence', optional: true, nameField: 'file_name',
+          ids: photos.map((_, i) => stableUuid(`incident-evidence:${fk}:photo:${i}`)),
+          row: { incident_id: fk, evidence_number: { $n: 0 }, evidence_type: 'Photo', evidence_category: 'Incident Scene', file_url: { $url: true }, description: 'Photo {n} from initial report', uploaded_by_email: reporter, source: 'initial_report' }
         });
+      }
+      if (jsaFiles.length > 0) {
+        steps.push({
+          kind: 'insert_each', sid: 'evidence-jsa', group: 'jsa', table: 'investigation_evidence', optional: true, nameField: 'file_name',
+          ids: jsaFiles.map((_, i) => stableUuid(`incident-evidence:${fk}:jsa:${i}`)),
+          row: { incident_id: fk, evidence_number: { $n: photos.length }, evidence_type: 'Document', evidence_category: 'Documentation', file_url: { $url: true }, description: 'JSA/Permit document {n} from initial report', uploaded_by_email: reporter, source: 'initial_report' }
+        });
+      }
 
       // Auto-create initial timeline event from incident date/time/description
-      try {
-        await supabase.from('timeline_events').insert({
-          incident_id: data.id,
-          sequence_number: 1,
-          event_date: formData.incident_date,
-          event_time: formData.incident_time || null,
+      steps.push({
+        kind: 'insert', sid: 'tl', table: 'timeline_events', optional: true,
+        row: {
+          incident_id: fk, sequence_number: 1, event_date: formData.incident_date, event_time: formData.incident_time || null,
           event_description: formData.brief_description || formData.detailed_description || 'Incident occurred',
-          critical: isSIF || isSIFP,
-          created_by_email: formData.reported_by_email
-        });
-        await updIncident(data.id, { timeline_event_count: 1, timeline_developed: true }, data._code);
-      } catch (tlErr) { console.warn('Timeline auto-create:', tlErr); }
-
+          critical: isSIF || isSIFP, created_by_email: reporter, client_submission_id: stableUuid(`incident-timeline:${fk}:1`)
+        }
+      });
       // Auto-create initial witness statement if witness info was provided
       if (formData.witness_statement_summary) {
-        try {
-          await supabase.from('witness_statements').insert({
-            incident_id: data.id,
-            witness_number: 1,
-            witness_name: 'Initial Report',
-            position_role: 'Field Reporter',
-            company: formData.company_name || null,
-            statement_summary: formData.witness_statement_summary,
-            created_by_email: formData.reported_by_email
-          });
-          await updIncident(data.id, { witness_count: 1 }, data._code);
-        } catch (wErr) { console.warn('Witness auto-create:', wErr); }
+        steps.push({
+          kind: 'insert', sid: 'ws', table: 'witness_statements', optional: true,
+          row: {
+            incident_id: fk, witness_number: 1, witness_name: 'Initial Report', position_role: 'Field Reporter',
+            company: formData.company_name || null, statement_summary: formData.witness_statement_summary,
+            created_by_email: reporter, client_submission_id: stableUuid(`incident-witness:${fk}:1`)
+          }
+        });
       }
+      // Counts on the incident (only what actually went in) + learn the INC number.
+      const counts = { updated_at: new Date().toISOString(), timeline_event_count: { $ifOk: ['tl', 1] }, timeline_developed: { $ifOk: ['tl', true] } };
+      if (photos.length + jsaFiles.length > 0) counts.evidence_count = { $count: ['photos', 'jsa'] };
+      if (formData.witness_statement_summary) counts.witness_count = { $ifOk: ['ws', 1] };
+      steps.push(key
+        ? { kind: 'closeout', sid: 'counts', table: 'incidents', recordId: fk, code: key, updates: counts, capture: { incident_id: 'incident_id' }, optional: true }
+        : { kind: 'update', sid: 'counts', table: 'incidents', recordId: fk, updates: counts, capture: { incident_id: 'incident_id' }, optional: true });
+      // Log activity
+      steps.push({
+        kind: 'insert', sid: 'log', table: 'investigation_activity_log', optional: true,
+        row: {
+          incident_id: fk, incident_id_text: { $ctx: 'incident_id' }, action: 'Incident reported', action_category: 'create', user_email: reporter,
+          details: { investigation_type: investigationType.type, psif_classification: psifClassification, safety_severity: formData.safety_severity },
+          client_submission_id: stableUuid(`incident-log:${fk}:reported`)
+        }
+      });
 
-      setCreatedIncidentId(data.incident_id);
-      setCreatedIncidentUUID(data.id);
+      const res = await submitPackage({
+        formType: 'incident-report', label: 'Incident Report', table: 'incidents', steps, ref: { incident_uuid: fk },
+        groups: [
+          // Evidence photos are kept full quality (no phone compression).
+          { name: 'photos', files: photos, bucket: 'evidence', prefix: 'incidents', folder: fk, fileBase: 'photo', compress: false },
+          { name: 'jsa', files: jsaFiles, bucket: 'evidence', prefix: 'incidents', folder: fk, fileBase: 'jsa', compress: false }
+        ]
+      });
+      if (!res.ok) throw (res.error || new Error('Submit failed. Please try again.'));
+
+      if (!draftId) setIncidentCode(pend.code);
+      pendingIncRef.current = null;
+      setIncidentQueued(!!res.queued);
+      setQueuedFileCount(res.queued ? photos.length + jsaFiles.length : 0);
+      setCreatedIncidentId((res.ctx && res.ctx.incident_id) || '');
+      setCreatedIncidentUUID(fk);
       setShowSuccess(true);
       setSubmitStatus('success');
 
@@ -1297,14 +1265,22 @@ export default function IncidentReportForm() {
           
           <div style={styles.header}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
-            <div style={styles.headerTitle}>✅ Incident Reported Successfully</div>
+            <div style={styles.headerTitle}>{incidentQueued ? '📵 Incident Report Saved on This Phone' : '✅ Incident Reported Successfully'}</div>
           </div>
           <div style={styles.card}>
             <div style={styles.successBox}>
-              <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
-              <h2 style={{ color: '#166534', marginBottom: '10px' }}>Incident Report Submitted</h2>
+              {incidentQueued ? (
+                <div role="status" data-testid="incident-saved-on-phone" style={{ background: '#fef3c7', border: '2px solid #f59e0b', color: '#92400e', borderRadius: '10px', padding: '16px', marginBottom: '20px', textAlign: 'left', fontSize: '15px', fontWeight: '700', lineHeight: 1.4 }}>
+                  📵 No signal: this report{queuedFileCount ? ` and its ${queuedFileCount} photo(s)/file(s)` : ''} is saved on this phone and NOT sent yet. It sends by itself when you have signal (watch the bar at the top). Keep this page or phone handy and do not clear browser data. If someone is hurt, call it in now — do not wait for the form.
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
+                  <h2 style={{ color: '#166534', marginBottom: '10px' }}>Incident Report Submitted</h2>
+                </>
+              )}
               <p style={{ fontSize: '24px', fontWeight: '700', color: '#991b1b', marginBottom: '20px' }}>
-                {createdIncidentId}
+                {createdIncidentId || (incidentQueued ? 'INC number is given when it sends' : 'Submitted')}
               </p>
               
               
@@ -1334,14 +1310,14 @@ export default function IncidentReportForm() {
                 )}
               </div>
 
-              <button 
+              {!incidentQueued && <button 
                 onClick={() => {
                   window.location.href = `/investigation-workbench/${createdIncidentUUID}`;
                 }}
                 style={{ ...styles.submitBtn, background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', marginBottom: '15px' }}
               >
                 🔍 Open Investigation Workbench
-              </button>
+              </button>}
 
               <button 
                 onClick={() => {
@@ -1418,6 +1394,9 @@ export default function IncidentReportForm() {
                   });
                   setPhotos([]);
                   setJsaFiles([]);
+                  setIncidentQueued(false);
+                  setQueuedFileCount(0);
+                  pendingIncRef.current = null;
                 }}
                 style={styles.submitBtn}
               >
