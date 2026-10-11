@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AUDIENCES, FACT_STATUSES, HAZARD_TYPES, WORK_SETTINGS,
   activeProbes, banksFor, cultureTriggers, guideProgress, isAnswered, suggestHazards,
+  SYSTEM_CAUSE_BANK, withSystemBank,
 } from '@/lib/investigationGuide';
 
 const C = {
@@ -51,7 +52,17 @@ export function isCultureForced(incidentId) {
   try { return localStorage.getItem(cultureKey(incidentId)) === '1'; } catch { return false; }
 }
 
-async function fetchQuestions(supabase, banks) {
+// System-cause prompts (SQL 53) live in the 'system_cause' bank; only the ones
+// this incident triggers are shown (public.inv_triggered_prompts decides).
+async function fetchTriggered(supabase, incidentUuid) {
+  try {
+    const { data, error } = await supabase.rpc('inv_triggered_prompts', { p_incident: incidentUuid });
+    if (error) return [];
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
+async function fetchQuestions(supabase, banks, sysCodes = []) {
   const { data, error } = await supabase
     .from('inv_question_bank')
     .select('id, code, bank, audience, stage, prompt, help, answer_type, options, is_critical, is_dig_deeper, is_confidential, sort')
@@ -60,7 +71,9 @@ async function fetchQuestions(supabase, banks) {
     .order('sort');
   if (error) throw error;
   const order = Object.fromEntries(banks.map((b, i) => [b, i]));
-  return (data || []).sort((a, b) => (order[a.bank] - order[b.bank]) || (a.sort - b.sort));
+  return (data || [])
+    .filter(q => q.bank !== SYSTEM_CAUSE_BANK || sysCodes.includes(q.code))
+    .sort((a, b) => (order[a.bank] - order[b.bank]) || (a.sort - b.sort));
 }
 
 async function fetchResponses(supabase, incidentUuid) {
@@ -79,8 +92,9 @@ async function fetchResponses(supabase, incidentUuid) {
  */
 export async function loadGuideStatus(supabase, incident) {
   try {
-    const banks = banksFor(incident, { cultureForced: isCultureForced(incident.id) });
-    const [questions, rows] = await Promise.all([fetchQuestions(supabase, banks), fetchResponses(supabase, incident.id)]);
+    const sysCodes = await fetchTriggered(supabase, incident.id);
+    const banks = withSystemBank(banksFor(incident, { cultureForced: isCultureForced(incident.id) }), sysCodes.length > 0);
+    const [questions, rows] = await Promise.all([fetchQuestions(supabase, banks, sysCodes), fetchResponses(supabase, incident.id)]);
     const byCode = {};
     let conf = 0;
     rows.forEach(r => { if (r.is_confidential) conf++; else byCode[r.question_code] = r; });
@@ -96,8 +110,19 @@ export async function loadGuideStatus(supabase, incident) {
 export default function InterviewGuide({ supabase, incident, userEmail, onIncidentPatched }) {
   const incidentId = incident.id;
   const [cultureForced, setCultureForced] = useState(() => isCultureForced(incidentId));
-  const banks = useMemo(() => banksFor(incident, { cultureForced }), [incident, cultureForced]);
-  const bankKey = banks.join(',');
+  const [sysCodes, setSysCodes] = useState([]);
+  const sysKey = sysCodes.join(',');
+  const banks = useMemo(() => withSystemBank(banksFor(incident, { cultureForced }), sysCodes.length > 0), [incident, cultureForced, sysKey]);
+  const bankKey = banks.join(',') + '|' + sysKey;
+  const refreshTimer = useRef(null);
+  const refreshTriggered = useCallback(() => {
+    clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(async () => {
+      const codes = await fetchTriggered(supabase, incidentId);
+      setSysCodes(prev => (prev.join(',') === codes.join(',') ? prev : codes));
+    }, 1200);
+  }, [supabase, incidentId]);
+  useEffect(() => { refreshTriggered(); return () => clearTimeout(refreshTimer.current); }, [refreshTriggered, (incident.hazard_types || []).join(',')]);
 
   const [bankMeta, setBankMeta] = useState({});
   const [questions, setQuestions] = useState([]);
@@ -125,7 +150,7 @@ export default function InterviewGuide({ supabase, incident, userEmail, onIncide
       try {
         const [{ data: bm }, qs, rows] = await Promise.all([
           supabase.from('inv_question_banks').select('code, label, kind, preferred_ca, sort'),
-          fetchQuestions(supabase, banks),
+          fetchQuestions(supabase, banks, sysCodes),
           fetchResponses(supabase, incidentId),
         ]);
         if (!alive) return;
@@ -210,6 +235,7 @@ export default function InterviewGuide({ supabase, incident, userEmail, onIncide
       if (pending[code]) { delete pending[code]; writePending(incidentId, pending); }
       setPendingCount(Object.keys(pending).length);
       setSaveState(s => ({ ...s, [code]: 'saved' }));
+      refreshTriggered();
     } catch (e) {
       const pending = readPending(incidentId);
       pending[code] = { ...payload, ...(row.id ? { id: row.id } : {}) };
@@ -219,7 +245,7 @@ export default function InterviewGuide({ supabase, incident, userEmail, onIncide
       const msg = e?.message || String(e);
       setSaveState(s => ({ ...s, [code]: offline || /fetch|network/i.test(msg) ? 'local' : `error:${msg}` }));
     }
-  }, [supabase, incidentId, userEmail]);
+  }, [supabase, incidentId, userEmail, refreshTriggered]);
 
   const flushPending = useCallback(async () => {
     const pending = readPending(incidentId);

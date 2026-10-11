@@ -24,6 +24,12 @@
 //   report: the stored passed_hash must match the hash of the CURRENT report
 //   text (public.inv_report_text_gate). Otherwise -> 409, no PDF.
 //
+// QUALITY GATE (SQL 53-55, Oct 11 2026):
+//   Client-facing conclusions export. Unless public.inv_quality_gate() is green
+//   (or the investigation is Approved/Closed) every page is stamped
+//   "DRAFT - NOT APPROVED" and the file name starts with DRAFT-. If the gate
+//   cannot be read, the PDF is a DRAFT (fails closed).
+//
 // DEPLOY (keep JWT verification ON; the in-function check is the real gate):
 //   supabase functions deploy generate-investigation-pdf
 //
@@ -36,7 +42,7 @@
 // =====================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, StandardFonts, rgb, degrees, PDFFont, PDFPage } from "https://esm.sh/pdf-lib@1.17.1";
 import { Image } from "https://deno.land/x/imagescript@1.2.17/mod.ts";
 
 // ---------------------------------------------------------------------
@@ -145,6 +151,11 @@ Deno.serve(async (req: Request) => {
     const fkText = incident.incident_id;  // INC-2026-0051 (legacy tables)
     const fkUuid = incident.id;            // UUID (rca_factors)
 
+    // --- Quality gate: not green -> watermarked DRAFT only ----------------
+    const { data: qg, error: qgErr } = await supabase.rpc("inv_quality_gate", { p_incident: incident_id });
+    const approved = ["Approved", "Closed"].includes(String(incident.status || ""));
+    const isDraft = !approved && (qgErr || !qg || (qg.applies !== false && qg.status !== "pass"));
+
     // Phase 2: parallel load with correct foreign key form per table
     const [
       timelineR, witnessR, evidenceR, rcaR,
@@ -225,13 +236,25 @@ Deno.serve(async (req: Request) => {
 
     drawFooters(pdf, fonts, logoImage);
 
+    if (isDraft) {
+      for (const pg of pdf.getPages()) {
+        pg.drawText("DRAFT - NOT APPROVED", {
+          x: 95, y: 210, size: 58, font: fonts.bold,
+          color: rgb(0.725, 0.11, 0.11), opacity: 0.16, rotate: degrees(35),
+        });
+        pg.drawText("Draft (not for distribution): quality checklist not complete", {
+          x: MARGIN, y: PAGE_H - 22, size: 8, font: fonts.bold, color: rgb(0.725, 0.11, 0.11),
+        });
+      }
+    }
+
     // Stamp pdf_last_generated_at
     await supabase.from("incidents")
       .update({ pdf_last_generated_at: new Date().toISOString() })
       .eq("id", incident_id);
 
     const bytes = await pdf.save();
-    const filename = `Investigation-${(incident.incident_id || incident_id).toString().replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
+    const filename = `${isDraft ? "DRAFT-" : ""}Investigation-${(incident.incident_id || incident_id).toString().replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
 
     return new Response(bytes, {
       headers: {

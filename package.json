@@ -16,7 +16,8 @@
     "check:offline": "node scripts/check-offline-sync.mjs",
     "check:tha-scoring": "node scripts/check-tha-scoring.mjs",
     "check:tha-close": "node scripts/check-tha-close.mjs",
-    "check:osha1904": "node scripts/check-osha1904.mjs"
+    "check:osha1904": "node scripts/check-osha1904.mjs",
+    "check:quality-gate": "node scripts/check-quality-gate.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

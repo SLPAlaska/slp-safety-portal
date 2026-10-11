@@ -16,6 +16,7 @@ import { CAUSE_CATEGORIES, WEAK_CA_PATTERN, closeoutReview, isWeakCA } from '@/l
 import { ReportTextGateModal, callReportTextGate, textGateDbMessage } from '@/components/ReportTextGate';
 import Osha1904Classification, { osha1904Value } from '@/components/Osha1904Classification';
 import { validateOsha1904 } from '@/lib/osha1904';
+import { QualityChecklist, QualityGateModal, loadQualityGate, qualityGateDbMessage, parseFix } from '@/components/QualityGate';
 
 // =====================================================================
 // AnthroSafe Investigation Workbench v2
@@ -116,6 +117,12 @@ export default function InvestigationWorkbench() {
   // Spelling & grammar HARD GATE (approve / complete / close / export).
   const [textGate, setTextGate] = useState(null);       // { action, result, proceed } while the modal is open
   const [textGateBusy, setTextGateBusy] = useState(false);
+  // Investigation Quality Gates (SQL 53-55): checklist + modal on refusal.
+  const [qualityGate, setQualityGate] = useState(null);
+  const [qgBusy, setQgBusy] = useState(false);
+  const [qgModal, setQgModal] = useState(null);           // { action, proceed }
+  const [caPrefill, setCaPrefill] = useState(null);       // { text, n }
+  const [bankHints, setBankHints] = useState([]);         // [{code,label,preferred_ca}]
 
   // -------- Auth --------
   // A real Supabase session, not a remembered email, and a role rather than an
@@ -278,6 +285,14 @@ export default function InvestigationWorkbench() {
       setCorrectiveActions(caR.data || []);
       setLessons(lessR.data || []);
 
+      // Preferred-CA hints for the hazard banks on this incident (shown beside the CA form).
+      const hz = Array.isArray(incR.data.hazard_types) ? incR.data.hazard_types : [];
+      if (hz.length) {
+        supabase.from('inv_question_banks').select('code, label, preferred_ca').in('code', [...hz, 'system_cause'])
+          .then(({ data }) => setBankHints((data || []).filter(b => b.preferred_ca)));
+      } else setBankHints([]);
+      refreshQualityGate();
+
       // Resume at first incomplete stage
       const d = incR.data;
       if (!d.stage_1_complete) setCurrentStage(1);
@@ -292,6 +307,11 @@ export default function InvestigationWorkbench() {
     }
   }
 
+  useEffect(() => {
+    if (incident) refreshQualityGate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStage]);
+
   // -------- Autosave for the incident record --------
   // Patches made inside the debounce window are merged, not dropped, and
   // flushAutosave() writes them immediately — the text gate reads the report
@@ -303,7 +323,22 @@ export default function InvestigationWorkbench() {
     pendingPatch.current = {};
     if (Object.keys(patch).length === 0) return;
     setSaving(true);
-    const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
+    let { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
+    // A status move refused by the quality gate must not take the other edits
+    // in this autosave down with it: save them without the status, then explain.
+    if (error && 'status' in patch && /QUALITY_GATE|TEXT_GATE/.test(error.message || '')) {
+      const refused = error;
+      const { status: _drop, ...rest } = patch;
+      error = null;
+      if (Object.keys(rest).length) {
+        const r2 = await supabase.from('incidents').update(rest).eq('id', incidentId);
+        error = r2.error;
+      }
+      const { data: cur } = await supabase.from('incidents').select('status').eq('id', incidentId).single();
+      if (cur) setIncident(prev => ({ ...prev, status: cur.status }));
+      alert(qualityGateDbMessage(refused) || textGateDbMessage(refused) || refused.message);
+      refreshQualityGate();
+    }
     if (error) console.error('Autosave failed:', error);
     else setLastSavedAt(new Date());
     setSaving(false);
@@ -323,7 +358,8 @@ export default function InvestigationWorkbench() {
     const patch = { [`stage_${stage}_complete`]: true };
     const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
     if (error) {
-      alert(textGateDbMessage(error) || ('Could not mark the stage complete: ' + error.message));
+      alert(qualityGateDbMessage(error) || textGateDbMessage(error) || ('Could not mark the stage complete: ' + error.message));
+      refreshQualityGate();
       return;
     }
     setIncident(prev => ({ ...prev, ...patch }));
@@ -343,6 +379,68 @@ export default function InvestigationWorkbench() {
     if (result.status === 'pass') return proceed();
     setTextGate({ action, result, proceed });
   }
+
+  // -------- Investigation Quality Gates --------
+  // The database decides (inv_quality_gate_eval); this shows the checklist and
+  // stops a refused move early with an explanation. The incidents trigger is the lock.
+  async function refreshQualityGate() {
+    setQgBusy(true);
+    const g = await loadQualityGate(supabase, incidentId);
+    setQualityGate(g);
+    setQgBusy(false);
+    return g;
+  }
+  async function requireQualityGate(action, proceed) {
+    await flushAutosave();
+    const g = await refreshQualityGate();
+    if (g && g.applies === false) return proceed();
+    if (g && g.status === 'pass') return proceed();
+    setQgModal({ action, proceed });
+  }
+  function jumpTo(fix) {
+    const { stage, target } = parseFix(fix);
+    if (stage) setCurrentStage(stage);
+    const ids = target === 'qg-osha' ? ['osha-1904'] : target ? [target] : [];
+    let tries = 0;
+    const tick = () => {
+      const el = ids.map(id => document.getElementById(id)).find(Boolean);
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.style.outline = '3px solid #f59e0b'; setTimeout(() => { el.style.outline = ''; }, 2500); return; }
+      if (++tries < 25) setTimeout(tick, 200);
+    };
+    if (typeof document !== 'undefined') setTimeout(tick, 100);
+  }
+  async function gateAck(key, reason) {
+    const { data, error } = await supabase.rpc('inv_gate_ack', { p_incident: incidentId, p_key: key, p_reason: reason });
+    if (error) return alert(qualityGateDbMessage(error) || error.message);
+    setQualityGate(data);
+  }
+  async function gateOverride(key, reason) {
+    const { data, error } = await supabase.rpc('inv_gate_override', { p_incident: incidentId, p_key: key, p_reason: reason });
+    if (error) return alert(qualityGateDbMessage(error) || error.message);
+    setQualityGate(data);
+  }
+  async function gateRevoke(key) {
+    if (!confirm('Remove your override on ' + key + '?')) return;
+    const { data, error } = await supabase.rpc('inv_gate_override_revoke', { p_incident: incidentId, p_key: key });
+    if (error) return alert(qualityGateDbMessage(error) || error.message);
+    setQualityGate(data);
+  }
+  async function gateHoldLessons() {
+    const { error } = await supabase.rpc('inv_hold_lessons', { p_incident: incidentId });
+    if (error) return alert(error.message);
+    const { data } = await supabase.from('lessons_learned').select('*').eq('incident_id', incidentId).order('created_at');
+    setLessons(data || []);
+    refreshQualityGate();
+  }
+  function createCaFromAnswer(text) {
+    setCaPrefill({ text, n: Date.now() });
+    jumpTo('stage:4:ca');
+  }
+  const gateHandlers = {
+    userEmail, busy: qgBusy, onReload: refreshQualityGate, onJump: jumpTo,
+    onAck: gateAck, onOverride: gateOverride, onRevoke: gateRevoke,
+    onHoldLessons: gateHoldLessons, onCreateCA: createCaFromAnswer,
+  };
 
   // -------- PDF generation --------
   function openReport() {
@@ -393,6 +491,9 @@ export default function InvestigationWorkbench() {
         />
 
         <main>
+          {qualityGate && qualityGate.applies !== false && (
+            <QualityChecklist gate={qualityGate} {...gateHandlers} />
+          )}
           {currentStage === 1 && (
             <Stage1
               incident={incident}
@@ -411,6 +512,7 @@ export default function InvestigationWorkbench() {
                 setWitnesses(data || []);
               }}
               onComplete={() => markStageComplete(1)}
+              onAfterSave={refreshQualityGate}
             />
           )}
 
@@ -464,20 +566,36 @@ export default function InvestigationWorkbench() {
               onGeneratePDF={handleGeneratePDF}
               requireTextGate={requireTextGate}
               textGateBusy={textGateBusy}
+              requireQualityGate={requireQualityGate}
+              qualityApplies={!!qualityGate && qualityGate.applies !== false}
+              caPrefill={caPrefill}
+              bankHints={bankHints}
               onIncidentChange={queueIncidentSave}
               onActionsReload={async () => {
                 const { data } = await supabase.from('investigation_corrective_actions').select('*').eq('incident_id', incident.incident_id).order('due_date');
                 setCorrectiveActions(data || []);
+                refreshQualityGate();
               }}
               onLessonsReload={async () => {
                 const { data } = await supabase.from('lessons_learned').select('*').eq('incident_id', incident.id).order('created_at');
                 setLessons(data || []);
+                refreshQualityGate();
               }}
               onComplete={() => markStageComplete(4)}
             />
           )}
         </main>
       </div>
+
+      {qgModal && qualityGate && (
+        <QualityGateModal
+          gate={qualityGate}
+          action={qgModal.action}
+          {...gateHandlers}
+          onClose={() => setQgModal(null)}
+          onContinue={() => { const p = qgModal.proceed; setQgModal(null); p(); }}
+        />
+      )}
 
       {textGate && (
         <ReportTextGateModal
@@ -575,7 +693,7 @@ function Stepper({ stages, current, incident, onJump }) {
 // =====================================================================
 // STAGE 1 - Setup & Evidence
 // =====================================================================
-function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete }) {
+function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete, onAfterSave }) {
   return (
     <div>
       <StageHeader stage={1} title="Setup & Evidence" subtitle="Confirm the scope of this investigation, then gather photos and witness statements." />
@@ -625,14 +743,29 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, 
         </div>
       </Card>
 
+      <div id="qg-setup">
+        <Card title="People on this investigation (required before approval)" toneAccent={C.navy}>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 10 }}>
+            Full names, first and last. The team lead is the second set of eyes on this report.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <Field label="Team lead name *"  value={incident.team_leader_name}  onChange={v => onIncidentChange({ team_leader_name: v })} />
+            <Field label="Team lead email *" value={incident.team_leader_email} onChange={v => onIncidentChange({ team_leader_email: v.trim() })} />
+            <Field label="Person involved (full name) *" value={incident.injured_person_name} onChange={v => onIncidentChange({ injured_person_name: v })} />
+            <Field label="Person involved: position" value={incident.injured_person_position} onChange={v => onIncidentChange({ injured_person_position: v })} />
+          </div>
+        </Card>
+      </div>
+
       <AdditionalFields incident={incident} onChange={onIncidentChange} />
 
+      <div id="qg-evidence" />
       <Card title={`Evidence (${evidence.length + (Array.isArray(incident.photo_urls) ? incident.photo_urls.length : 0)})`}>
         <EvidenceUploader
           incidentId={incidentId}
           fkText={fkText}
           userEmail={userEmail}
-          onUploaded={onEvidenceReload}
+          onUploaded={async () => { await onEvidenceReload(); onAfterSave?.(); }}
         />
         <EvidenceList
           items={evidence}
@@ -641,9 +774,10 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, 
         />
       </Card>
 
+      <div id="qg-witness" />
       <Card title={`Witnesses (${witnesses.length})`}>
-        <WitnessAdd fkText={fkText} userEmail={userEmail} onAdded={onWitnessesReload} />
-        <WitnessList items={witnesses} onChange={onWitnessesReload} />
+        <WitnessAdd fkText={fkText} userEmail={userEmail} onAdded={async () => { await onWitnessesReload(); onAfterSave?.(); }} />
+        <WitnessList items={witnesses} onChange={async () => { await onWitnessesReload(); onAfterSave?.(); }} />
       </Card>
 
       <StageFooter
@@ -795,7 +929,7 @@ function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, loca
         </div>
       )}
       {guideEnabled && (
-        <InterviewGuide supabase={supabase} incident={incident} userEmail={userEmail} onIncidentPatched={onIncidentPatched} />
+        <div id="qg-guide"><InterviewGuide supabase={supabase} incident={incident} userEmail={userEmail} onIncidentPatched={onIncidentPatched} /></div>
       )}
 
       {legacyRcaText && (
@@ -1019,13 +1153,14 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, requireTextGate, textGateBusy, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, requireTextGate, textGateBusy, requireQualityGate, qualityApplies, caPrefill, bankHints, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
   const [gateBusy, setGateBusy] = useState(false);
   // Close-out review (Interview Guide P0): warns and asks for a reason, never hard-blocks.
   const [closeGate, setCloseGate] = useState(null);
 
   async function runCloseoutGate(target, proceed) {
-    if (!guideEnabled) return proceed();
+    // The hard Quality Checklist supersedes this soft review where it applies.
+    if (!guideEnabled || qualityApplies) return proceed();
     setGateBusy(true);
     const guide = await loadGuideStatus(supabase, incident);
     setGateBusy(false);
@@ -1061,7 +1196,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
   // text, so a direct update is refused too.
   async function setStatusDirect(next) {
     const { error } = await supabase.from('incidents').update({ status: next }).eq('id', incident.id);
-    if (error) return alert(textGateDbMessage(error) || ('Failed to set status: ' + error.message));
+    if (error) return alert(qualityGateDbMessage(error) || textGateDbMessage(error) || ('Failed to set status: ' + error.message));
     window.location.reload();
   }
 
@@ -1076,9 +1211,9 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
   }
 
   async function handleStatusChange(next) {
-    if (next === 'Approved' || next === 'Closed') {
-      const verb = next === 'Approved' ? 'approve this investigation' : 'close this investigation';
-      return require1904(() => runCloseoutGate(next, () => requireTextGate(verb, () => setStatusDirect(next))));
+    if (next === 'Approved' || next === 'Closed' || next === 'Pending Approval') {
+      const verb = next === 'Approved' ? 'approve this investigation' : next === 'Closed' ? 'close this investigation' : 'submit this investigation for approval';
+      return require1904(() => runCloseoutGate(next, () => requireTextGate(verb, () => requireQualityGate(verb, () => setStatusDirect(next)))));
     }
     onIncidentChange({ status: next });
   }
@@ -1093,16 +1228,24 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
         </Card>
       </div>
 
+      <div id="qg-ca" />
       <Card title={`Corrective Actions (${correctiveActions.length})`}>
-        <CorrectiveActionAdd fkText={fkText} userEmail={userEmail} onAdded={onActionsReload} />
+        <CorrectiveActionAdd key={caPrefill?.n || 'ca'} fkText={fkText} userEmail={userEmail} onAdded={onActionsReload} prefill={caPrefill} bankHints={bankHints} />
         <CorrectiveActionList items={correctiveActions} onChange={onActionsReload} />
       </Card>
 
+      <div id="qg-lessons" />
       <Card title={`Lessons Learned (${lessons.length})`}>
+        {qualityApplies && !['Approved', 'Closed'].includes(incident.status) && (
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 10 }}>
+            Lessons are held and publish automatically when this investigation is approved, so we never share a conclusion that might change.
+          </div>
+        )}
         <LessonAdd fkUuid={fkUuid} userEmail={userEmail} onAdded={onLessonsReload} />
         <LessonList items={lessons} onChange={onLessonsReload} />
       </Card>
 
+      <div id="qg-status" />
       <Card title="Status & Approval">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <Label>Current status:</Label>
@@ -1128,7 +1271,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
         </div>
       </Card>
 
-      <StageFooter complete={incident.stage_4_complete} onComplete={() => require1904(() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', onComplete)))} nextLabel="Mark Investigation Complete" />
+      <StageFooter complete={incident.stage_4_complete} onComplete={() => require1904(() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', () => requireQualityGate('mark this investigation complete', onComplete))))} nextLabel="Mark Investigation Complete" />
 
       {closeGate && (
         <CloseoutGateModal
@@ -1354,6 +1497,7 @@ function AdditionalFields({ incident, onChange }) {
     'brief_description','detailed_description','description',
     'safety_severity','severity_safety','safety_severity_description',
     'investigation_type',
+    'team_leader_name','team_leader_email','injured_person_name','injured_person_position',
   ]);
   // Internal tracking / handled-elsewhere fields - never show
   const HIDDEN = new Set([
@@ -1552,6 +1696,7 @@ function WitnessList({ items, onChange }) {
             <div style={{ fontSize: 12, marginTop: 8, color: C.muted, whiteSpace: 'pre-wrap' }}><em>Notes:</em> {w.additional_comments}</div>
           )}
           {w.acknowledgment && <div style={{ fontSize: 11, color: C.success, marginTop: 6 }}>✓ Acknowledged</div>}
+          <WitnessEdit item={w} onChange={onChange} />
         </div>
         <button onClick={() => remove(w.id)} style={{ ...btnSmall, color: C.danger }}>Delete</button>
       </div>
@@ -1560,13 +1705,54 @@ function WitnessList({ items, onChange }) {
   });
 }
 
+// Fix a witness row in place (e.g. the field report's "Initial Report" placeholder).
+function WitnessEdit({ item, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState(() => ({
+    name: item.name || (item.witness_name === 'Initial Report' ? '' : (item.witness_name || '')),
+    position: item.position || (item.position_role === 'Field Reporter' ? '' : (item.position_role || '')),
+    summary: item.summary || item.statement_summary || '',
+  }));
+  async function save() {
+    if (form.name.trim().split(/\s+/).length < 2) return alert('Use the witness\'s full name (first and last).');
+    setBusy(true);
+    const { error } = await supabase.from('witness_statements').update({
+      name: form.name.trim(), witness_name: form.name.trim(),
+      position: form.position.trim() || null, position_role: form.position.trim() || null,
+      summary: form.summary.trim() || null, statement_summary: form.summary.trim() || null,
+    }).eq('id', item.id);
+    setBusy(false);
+    if (error) return alert('Failed: ' + error.message);
+    setOpen(false);
+    onChange();
+  }
+  if (!open) return <button onClick={() => setOpen(true)} style={{ ...btnSmall, color: C.steel, marginTop: 6 }}>Edit name / statement</button>;
+  return (
+    <div style={{ marginTop: 8, padding: 10, background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <Field label="Full name *" value={form.name} onChange={v => setForm({ ...form, name: v })} />
+        <Field label="Position" value={form.position} onChange={v => setForm({ ...form, position: v })} />
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Label>Statement (2-3 lines in their words, or &quot;present, did not see&quot;)</Label>
+        <textarea rows={3} value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} style={inputStyle} />
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <button onClick={save} disabled={busy} style={btnPrimaryDark}>{busy ? 'Saving...' : 'Save'}</button>
+        <button onClick={() => setOpen(false)} style={btnGhostDark}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 // =====================================================================
 // Corrective Actions
 // =====================================================================
-function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
-  const [open, setOpen] = useState(false);
+function CorrectiveActionAdd({ fkText, userEmail, onAdded, prefill, bankHints = [] }) {
+  const [open, setOpen] = useState(!!prefill);
   const [form, setForm] = useState({
-    description: '', owner: '', due_date: '', status: 'Open',
+    description: prefill?.text || '', owner: '', owner_email: '', due_date: '', status: 'Open',
     hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '',
     cause_category: '', cause_text: '', verification_method: '', verify_by: '',
   });
@@ -1582,6 +1768,9 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
     if (!form.description || !form.owner || !form.due_date) {
       return alert('Description, owner, and due date are required.');
     }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((form.owner_email || '').trim())) {
+      return alert("Owner email is required: the person who will actually do this. It is how they get reminded.");
+    }
     if (!form.hierarchy_of_controls) {
       return alert('Please select a hierarchy of controls level.');
     }
@@ -1595,7 +1784,7 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
       action_description: form.description,
       owner: form.owner,
       action_owner_name: form.owner,
-      action_owner_email: userEmail,
+      action_owner_email: form.owner_email.trim().toLowerCase(),
       due_date: form.due_date,
       target_date: form.due_date,
       status: form.status,
@@ -1611,7 +1800,7 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
     });
     setBusy(false);
     if (error) return alert('Failed: ' + error.message);
-    setForm({ description: '', owner: '', due_date: '', status: 'Open', hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '', cause_category: '', cause_text: '', verification_method: '', verify_by: '' });
+    setForm({ description: '', owner: '', owner_email: '', due_date: '', status: 'Open', hierarchy_of_controls: '', hierarchy_level: null, hierarchy_justification: '', cause_category: '', cause_text: '', verification_method: '', verify_by: '' });
     setShowPpeWarning(false);
     setOpen(false);
     onAdded();
@@ -1633,6 +1822,11 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
 
       <div style={{ marginTop: 14 }}>
         <Label>Hierarchy of Controls *</Label>
+        {bankHints.length > 0 && (
+          <div style={{ fontSize: 12, color: '#1e3a5f', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: 8, marginBottom: 8 }}>
+            {bankHints.map(b => <div key={b.code}><strong>{b.label}:</strong> {b.preferred_ca}</div>)}
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
           {HIERARCHY_OF_CONTROLS.map(h => {
             const selected = form.hierarchy_level === h.level;
@@ -1685,7 +1879,7 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10, marginTop: 14 }}>
-        <Field label="Owner *"    value={form.owner}    onChange={v => setForm({ ...form, owner: v })} />
+        <Field label="Owner (name / role) *" value={form.owner} onChange={v => setForm({ ...form, owner: v })} />
         <Field label="Due Date *" type="date" value={form.due_date} onChange={v => setForm({ ...form, due_date: v })} />
         <div>
           <Label>Status</Label>
@@ -1693,6 +1887,10 @@ function CorrectiveActionAdd({ fkText, userEmail, onAdded }) {
             {['Open', 'In Progress', 'Complete', 'Verified'].map(s => <option key={s}>{s}</option>)}
           </select>
         </div>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <Field label="Owner email * (the person who will do it, not the investigator unless you own it)" value={form.owner_email} onChange={v => setForm({ ...form, owner_email: v })} />
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
@@ -1790,15 +1988,23 @@ function CauseVerifyFields({ form, setForm }) {
 
 function CauseVerifyInline({ item, onChange }) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(() => ({ ...splitCause(item.root_cause_link), verification_method: item.verification_method || '', verify_by: item.verify_by || '' }));
+  const [form, setForm] = useState(() => ({
+    ...splitCause(item.root_cause_link), verification_method: item.verification_method || '', verify_by: item.verify_by || '',
+    owner: item.owner || item.action_owner_name || '', owner_email: item.action_owner_email || '', due_date: item.due_date || item.target_date || '',
+  }));
   const [busy, setBusy] = useState(false);
   const weak = isWeakCA(item);
   async function save() {
     setBusy(true);
+    const email = (form.owner_email || '').trim().toLowerCase();
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setBusy(false); return alert('Owner email does not look like an email address.'); }
     const { error } = await supabase.from('investigation_corrective_actions').update({
       root_cause_link: joinCause(form.cause_category, form.cause_text),
       verification_method: form.verification_method.trim() || null,
       verify_by: form.verify_by || null,
+      ...(form.owner.trim() ? { owner: form.owner.trim(), action_owner_name: form.owner.trim() } : {}),
+      ...(email ? { action_owner_email: email } : {}),
+      ...(form.due_date ? { due_date: form.due_date, target_date: form.due_date } : {}),
     }).eq('id', item.id);
     setBusy(false);
     if (error) return alert('Failed: ' + error.message);
@@ -1811,9 +2017,15 @@ function CauseVerifyInline({ item, onChange }) {
       Cause: <strong style={{ color: item.root_cause_link ? C.text : C.danger }}>{item.root_cause_link || 'not linked'}</strong>
       {' '}| Verify: <strong style={{ color: item.verification_method ? C.text : C.danger }}>{item.verification_method || 'no method'}</strong>
       {item.verify_by ? ` by ${formatDate(item.verify_by)}` : ''}
-      {' '}<button onClick={() => setOpen(o => !o)} style={{ ...btnSmall, color: C.steel }}>{open ? 'Close' : 'Edit cause / verification'}</button>
+      {' '}| Owner email: <strong style={{ color: item.action_owner_email ? C.text : C.danger }}>{item.action_owner_email || 'none'}</strong>
+      {' '}<button onClick={() => setOpen(o => !o)} style={{ ...btnSmall, color: C.steel }}>{open ? 'Close' : 'Edit owner / dates / cause / verification'}</button>
       {open && (
         <div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 10 }}>
+            <Field label="Owner (name / role)" value={form.owner} onChange={v => setForm({ ...form, owner: v })} />
+            <Field label="Owner email" value={form.owner_email} onChange={v => setForm({ ...form, owner_email: v })} />
+            <Field label="Due date" type="date" value={form.due_date} onChange={v => setForm({ ...form, due_date: v })} />
+          </div>
           <CauseVerifyFields form={form} setForm={setForm} />
           <button onClick={save} disabled={busy} style={{ ...btnPrimaryDark, marginTop: 8 }}>{busy ? 'Saving...' : 'Save'}</button>
         </div>
@@ -1883,7 +2095,11 @@ function LessonList({ items, onChange }) {
     <div key={l.id} style={{ border: `1px solid ${C.borderL}`, borderRadius: 8, padding: 12, marginBottom: 10, background: '#fafafa' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>{title}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: C.navy }}>
+            {title}
+            {l.held_for_approval && <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 800, color: '#92400e', background: C.amber, padding: '2px 6px', borderRadius: 3 }}>HELD UNTIL APPROVAL</span>}
+            {!l.held_for_approval && l.is_published === false && <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 800, color: C.muted, background: '#f3f4f6', padding: '2px 6px', borderRadius: 3 }}>NOT PUBLISHED</span>}
+          </div>
           {description && <div style={{ fontSize: 13, marginTop: 6, whiteSpace: 'pre-wrap' }}>{description}</div>}
           {l.key_takeaway && (
             <div style={{ fontSize: 12, marginTop: 8, padding: 8, background: C.amber, borderRadius: 4, borderLeft: `3px solid ${C.warning}` }}>
