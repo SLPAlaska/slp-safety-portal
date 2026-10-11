@@ -66,9 +66,32 @@ export function newClientSubmissionId() {
 }
 
 /** The server already has this exact submission (same client_submission_id). */
-export function isSameSubmissionDuplicate(err) {
+export function isSameSubmissionDuplicate(err, extraKeys) {
   if (!err || String(err.code) !== '23505') return false;
-  return new RegExp(CLIENT_ID_COLUMN).test(`${err.message || ''} ${err.details || ''}`);
+  const txt = `${err.message || ''} ${err.details || ''}`;
+  if (new RegExp(CLIENT_ID_COLUMN).test(txt)) return true;
+  // A phone-made primary key (incidents.id, camp_inspections.id) or the
+  // record_keys (table, record) key: the server already has THIS record.
+  return Array.isArray(extraKeys) && extraKeys.some(k => k && txt.includes(k));
+}
+
+/**
+ * A stable UUID made from a string, so the same thing (photo 2 of incident X,
+ * the corrective action for question Q of camp inspection Y) gets the same
+ * client_submission_id on every try, even after a page-level retry.
+ */
+export function stableUuid(str) {
+  const s = String(str || '');
+  // Four independent 32-bit FNV-1a passes with different seeds -> 128 bits.
+  const seeds = [0x811c9dc5, 0x01000193, 0x5bd1e995, 0x27d4eb2f];
+  const words = seeds.map(seed => {
+    let h = seed >>> 0;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; h ^= h >>> 13; }
+    return h >>> 0;
+  });
+  const h = words.map(w => w.toString(16).padStart(8, '0')).join('');
+  const v = (parseInt(h[16], 16) & 0x3) | 0x8;
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${v.toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
 // A table without the column (one added later and not yet migrated) must
@@ -90,7 +113,7 @@ function withoutClientId(row) {
  * Returns { error, duplicate }. duplicate=true means "the server already had
  * it" and counts as success.
  */
-async function insertOnce(table, row, { timeoutMs } = {}) {
+async function insertOnce(table, row, { timeoutMs, dupKeys } = {}) {
   const send = async (r) => {
     let q = supabase.from(table).insert([r]);
     if (timeoutMs && typeof AbortSignal !== 'undefined' && AbortSignal.timeout) q = q.abortSignal(AbortSignal.timeout(timeoutMs));
@@ -103,7 +126,7 @@ async function insertOnce(table, row, { timeoutMs } = {}) {
     tablesWithoutClientId.add(table);
     error = await send(withoutClientId(r));
   }
-  if (error && isSameSubmissionDuplicate(error)) return { error: null, duplicate: true };
+  if (error && isSameSubmissionDuplicate(error, dupKeys)) return { error: null, duplicate: true };
   return { error, duplicate: false };
 }
 
@@ -164,10 +187,10 @@ function isStorageDuplicate(err) {
  * reply is refused as "already exists": the photo is there, so that is OK.
  * Returns { ok, url, network, error }.
  */
-async function uploadPhotoFile(path, file, timeoutMs = 60000) {
+async function uploadPhotoFile(path, file, timeoutMs = 60000, bucket = PHOTO_BUCKET) {
   let timer = null;
   try {
-    const upload = supabase.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
+    const upload = supabase.storage.from(bucket).upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
     const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(Object.assign(new Error('Photo upload timed out'), { name: 'TimeoutError' })), timeoutMs); });
     const { error } = await Promise.race([upload, timeout]);
     if (error && !isStorageDuplicate(error)) {
@@ -177,7 +200,7 @@ async function uploadPhotoFile(path, file, timeoutMs = 60000) {
       const transient = st >= 500 || st === 408 || st === 429;
       return { ok: false, network: transient || isNetworkError(error) || isAbort(error) || isStorageNetwork(error), error };
     }
-    const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return { ok: true, url: data.publicUrl };
   } catch (e) {
     return { ok: false, network: isNetworkError(e) || isAbort(e) || isStorageNetwork(e), error: e };
@@ -193,7 +216,24 @@ function isStorageNetwork(err) {
   return !!o && (isNetworkError(o) || isAbort(o));
 }
 
-export async function safeSubmit({ table, data, photoRef, photos, photoPrefix, formType }) {
+/**
+ * Put photo links on a row. Most forms keep them in photo_urls (text[]);
+ * a few keep one comma-joined text column (THA/JSA: photo_url).
+ */
+function applyPhotoUrls(row, column, join, urls) {
+  const col = column || 'photo_urls';
+  if (!urls || !urls.length) return row;
+  if (join) {
+    const existing = typeof row[col] === 'string' && row[col] ? row[col].split(join).filter(Boolean) : [];
+    row[col] = [...existing, ...urls.filter(u => !existing.includes(u))].join(join);
+  } else {
+    const existing = Array.isArray(row[col]) ? row[col] : [];
+    row[col] = [...existing, ...urls.filter(u => !existing.includes(u))];
+  }
+  return row;
+}
+
+export async function safeSubmit({ table, data, photoRef, photos, photoPrefix, formType, photoColumn, photoJoin }) {
   const result = {
     success: false,
     usedBackup: false,
@@ -257,9 +297,9 @@ export async function safeSubmit({ table, data, photoRef, photos, photoPrefix, f
   // Step 2: Build submission data
   let submitData = { ...data, [CLIENT_ID_COLUMN]: clientId };
   if (photoUrls && photoUrls.length > 0) {
-    submitData.photo_urls = photoUrls;
+    applyPhotoUrls(submitData, photoColumn, photoJoin, photoUrls);
   }
-  const photoQueue = { files: unsentPhotos, prefix: slugPrefix(photoPrefix || formType || table), column: 'photo_urls' };
+  const photoQueue = { files: unsentPhotos, prefix: slugPrefix(photoPrefix || formType || table), column: photoColumn || 'photo_urls', join: photoJoin || null };
 
   // Step 3: Check if we're online
   if (offline) {
@@ -476,7 +516,10 @@ function writeQueue(queue) {
 
 function countQueuedPhotos(queue) {
   let n = 0;
-  for (const i of queue) if (i && i.photos && i.photos.total) n += Math.max(0, i.photos.total - Object.keys(i.photos.uploaded || {}).length);
+  for (const i of queue) {
+    if (i && i.photos && i.photos.total) n += Math.max(0, i.photos.total - Object.keys(i.photos.uploaded || {}).length);
+    if (i && Array.isArray(i.groups)) for (const g of i.groups) n += Math.max(0, (g.total || 0) - Object.keys(g.uploaded || {}).length - (g.rejected || []).length);
+  }
   return n;
 }
 
@@ -560,6 +603,7 @@ async function queueOfflineSubmission({ table, formType, data, photos, primaryEr
         total: photosKept,
         prefix: photos.prefix || slugPrefix(formType || table),
         column: photos.column || 'photo_urls',
+        join: photos.join || null,
         // Fixed folder for this submission's photos, so a re-send that the
         // server already took is refused as "already exists", not copied.
         folder: (data && data[CLIENT_ID_COLUMN]) || id,
@@ -650,17 +694,22 @@ async function flushOnce() {
     const item = readQueue().find(i => i.id === snapItem.id);
     if (!item) continue;
 
+    if (item.kind === 'package') {
+      const r = await flushPackageItem(item);
+      if (r === 'sent') { processed++; continue; }
+      if (r === 'backup') { toBackup++; continue; }
+      failed++;
+      if (r === 'network') break;
+      continue;
+    }
+
     // Photos first, so the form goes in with its links.
     let replayData = { ...(item.data || {}) };
     let photoNote = null;
     if (item.photos && item.photos.total) {
       const pr = await flushItemPhotos(item);
       if (!pr.ok) { failed++; break; }
-      if (pr.urls.length) {
-        const col = item.photos.column || 'photo_urls';
-        const existing = Array.isArray(replayData[col]) ? replayData[col] : [];
-        replayData[col] = [...existing, ...pr.urls.filter(u => !existing.includes(u))];
-      }
+      if (pr.urls.length) applyPhotoUrls(replayData, item.photos.column, item.photos.join, pr.urls);
       if (pr.missing || pr.rejected) photoNote = `${pr.missing + pr.rejected} queued photo(s) could not be uploaded (${pr.missing} missing on phone, ${pr.rejected} refused by storage)`;
       photosSent += pr.urls.length;
     }
@@ -860,20 +909,398 @@ export async function retryEmergencySubmissions() {
  */
 export async function safeInsert(table, rows, formType, options = {}) {
   const list = Array.isArray(rows) ? rows : [rows];
+  let queued = false;
+  let photoWarning = null;
   for (let i = 0; i < list.length; i++) {
     const row = list[i];
     // Photos (options.photoRef = MultiPhotoUpload ref, options.photos = File[])
     // ride with the first row only; with no signal they are kept on the
     // phone with that row and uploaded when it re-sends.
-    const photoOpts = i === 0 ? { photoRef: options.photoRef, photos: options.photos, photoPrefix: options.photoPrefix } : {};
+    const photoOpts = i === 0 ? { photoRef: options.photoRef, photos: options.photos, photoPrefix: options.photoPrefix, photoColumn: options.photoColumn, photoJoin: options.photoJoin } : {};
     const result = await safeSubmit({ table, data: row, formType: formType || table, ...photoOpts });
-    if (result.photoWarning) console.warn(result.photoWarning);
+    if (result.photoWarning) { console.warn(result.photoWarning); if (i === 0) photoWarning = result.photoWarning; }
+    if (result.queued) queued = true;
     if (!result.success) {
       const msg = (result.error && result.error.message) ? result.error.message : (result.error || 'Submission failed. Please try again.');
       return { error: new Error(msg) };
     }
   }
-  return { error: null };
+  // queued=true: saved on this phone, NOT sent yet (it re-sends on its own).
+  return { error: null, queued, photoWarning };
+}
+
+
+// ── Packages: multi-step submissions (Incident Report, Camp, …) ─────────────
+//
+// Some forms are not one row: the Incident Report writes the incident, its
+// claim code, its photos and documents, evidence rows, a first timeline event
+// and a first witness note; the Camp inspection writes the inspection, then
+// one response per question with its photos, then corrective actions.
+//
+// A package is that list of steps, written so every step can be sent again
+// safely: rows carry phone-made ids (client_submission_id, or a phone-made
+// primary key), photos go to fixed paths, close-out updates set the same
+// values twice. The SAME runner sends it right away when there is signal and
+// later from the offline queue when there is not, so it behaves the same both
+// ways. Progress (photos up, steps done, values learned such as the INC
+// number) is saved on the phone after each step, so a dropped connection
+// halfway only re-sends what is missing.
+//
+// Step kinds:
+//   { kind:'upload', group }                         photos/files of a group
+//   { kind:'insert', table, row, dupKeys }           one row
+//   { kind:'insert_each', group, table, row, ids }   one row per uploaded file
+//   { kind:'closeout', table, recordId, code, codeId, mode, updates, capture }
+//   { kind:'update', table, recordId, idCol, updates, capture }  signed-in staff
+//   { kind:'field_data', view, params, capture }     server read (ids)
+// Any step may be optional:true (a refusal is noted + admin alert, the rest
+// still goes) and have a sid (so later values can depend on it: $ifOk).
+//
+// Values inside rows/updates/params may be:
+//   { $ctx: 'incident_id' }            a value learned by an earlier step
+//   { $count: ['photos','jsa'] }       how many files of those groups are up
+//   { $urls: 'photos' } / { $join: ['photos', ','] }
+//   { $ifOk: ['tl', value] }           value only if step 'tl' went in
+//   { $lookup: ['respRows','question_id','Q1','id'] }
+//   { $url: true } / { $n: 0 } / '…{n}…'  (insert_each: link / number)
+
+export const OFFLINE_PACKAGE_DONE_EVENT = 'slp-offline-package-done';
+const OMIT = Symbol('omit');
+const TRANSIENT_HTTP = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+class PackageNetworkError extends Error {
+  constructor(msg) { super(msg || 'No connection'); this.name = 'PackageNetworkError'; this.network = true; }
+}
+
+function groupUrls(item, name) {
+  const g = (item.groups || []).find(x => x.name === name);
+  if (!g) return [];
+  return Object.keys(g.uploaded || {}).map(Number).sort((a, b) => a - b).map(k => g.uploaded[k]);
+}
+
+function resolveValue(v, item, each) {
+  if (typeof v === 'string') {
+    return each ? v.replace(/\{n\}/g, String(each.n)) : v;
+  }
+  if (!v || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map(x => resolveValue(x, item, each)).filter(x => x !== OMIT);
+  const keys = Object.keys(v);
+  if (keys.length === 1 && keys[0][0] === '$') {
+    const k = keys[0], a = v[k];
+    if (k === '$ctx') return (item.ctx || {})[a] === undefined ? null : item.ctx[a];
+    if (k === '$count') return (Array.isArray(a) ? a : [a]).reduce((n, g) => n + groupUrls(item, g).length, 0);
+    if (k === '$urls') { const u = groupUrls(item, a); return u.length ? u : null; }
+    if (k === '$join') { const u = groupUrls(item, a[0]); return u.length ? u.join(a[1] || ',') : null; }
+    if (k === '$ifOk') return (item.failed || {})[a[0]] ? OMIT : resolveValue(a[1], item, each);
+    if (k === '$lookup') {
+      const rows = (item.ctx || {})[a[0]];
+      const hit = Array.isArray(rows) ? rows.find(r => r && String(r[a[1]]) === String(a[2])) : null;
+      return hit ? (hit[a[3]] === undefined ? null : hit[a[3]]) : null;
+    }
+    if (k === '$url') return each ? each.url : null;
+    if (k === '$n') return each ? each.n + (Number(a) || 0) : null;
+  }
+  const out = {};
+  for (const key of keys) {
+    const r = resolveValue(v[key], item, each);
+    if (r !== OMIT) out[key] = r;
+  }
+  return out;
+}
+
+async function packageFiles(item, group, memFiles) {
+  if (memFiles && Array.isArray(memFiles[group.name])) return memFiles[group.name];
+  const recs = await loadPhotos(`${item.photoKey || item.id}:${group.name}`);
+  if (!recs) return null;
+  return recs.map((rec, i) => {
+    const name = rec.name || `file-${i + 1}`;
+    return (typeof File !== 'undefined') ? new File([rec.blob], name, { type: rec.type || rec.blob.type || 'application/octet-stream' }) : rec.blob;
+  });
+}
+
+async function closeoutCall({ table, id, code, codeId, mode, updates }, timeoutMs = 30000) {
+  let res;
+  try {
+    const opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table, id, code, updates, codeId, mode })
+    };
+    if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) opts.signal = AbortSignal.timeout(timeoutMs);
+    res = await fetch('/api/closeout', opts);
+  } catch (e) {
+    throw new PackageNetworkError(e && e.message);
+  }
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (TRANSIENT_HTTP.has(res.status) && res.status !== 500) throw new PackageNetworkError(`Close-out ${res.status}`);
+    return { error: new Error(j.error || `Close-out failed (${res.status})`), row: null };
+  }
+  return { error: null, row: j.row || null };
+}
+
+/**
+ * Run one package from where it stopped. persist(item) is called after every
+ * bit of progress (no-op for an online run that has not been queued).
+ * Resolves to { ok:true } or { ok:false, network:true } or
+ * { ok:false, error, step }. Optional-step refusals are collected in
+ * item.failed and item.notes.
+ */
+async function runPackage(item, { memFiles, persist, timeoutMs = 30000 } = {}) {
+  item.ctx = item.ctx || {};
+  item.failed = item.failed || {};
+  item.notes = item.notes || [];
+  item.eachDone = item.eachDone || {};
+  const save = () => { try { persist && persist(item); } catch (e) {} };
+  const steps = item.steps || [];
+  for (let si = item.done || 0; si < steps.length; si++) {
+    const st = steps[si];
+    const label = st.sid || `${st.kind}:${st.table || st.group || st.view || si}`;
+    let err = null;
+    try {
+      if (st.kind === 'upload') {
+        const g = (item.groups || []).find(x => x.name === st.group);
+        if (g && g.total) {
+          const files = await packageFiles(item, g, memFiles);
+          g.uploaded = g.uploaded || {};
+          g.rejected = g.rejected || [];
+          if (!files) {
+            const missing = Math.max(0, g.total - Object.keys(g.uploaded).length - g.rejected.length);
+            if (missing) item.notes.push(`${missing} ${g.name} file(s) were not on the phone any more (browser data cleared?)`);
+            for (let i = 0; i < g.total; i++) if (!g.uploaded[i] && !g.rejected.includes(i)) g.rejected.push(i);
+          } else {
+            for (let i = 0; i < files.length; i++) {
+              if (g.uploaded[i] || g.rejected.includes(i)) continue;
+              let f = files[i];
+              if (g.compress && memFiles) { try { f = await compressImage(f); } catch (e) {} }
+              const base = g.fileBase ? `${g.fileBase}_${i + 1}` : `${i + 1}`;
+              const path = `${g.prefix}/${g.folder}/${base}.${fileExt(f)}`;
+              const r = await uploadPhotoFile(path, f, 60000, g.bucket || PHOTO_BUCKET);
+              if (r.ok) { g.uploaded[i] = r.url; g.names = g.names || {}; g.names[i] = path.split('/').pop(); save(); continue; }
+              if (r.network) { save(); throw new PackageNetworkError((r.error && r.error.message) || 'photo upload: no connection'); }
+              g.rejected.push(i);
+              item.notes.push(`${g.name} file ${i + 1} refused by storage: ${(r.error && r.error.message) || 'unknown'}`);
+              save();
+            }
+          }
+        }
+      } else if (st.kind === 'insert') {
+        const row = nullifyEmptyStrings(resolveValue(st.row, item));
+        const r = await insertOnce(st.table, row, { timeoutMs, dupKeys: st.dupKeys });
+        if (r.error) {
+          if (isNetworkError(r.error) || isAbort(r.error)) throw new PackageNetworkError(r.error.message);
+          err = r.error;
+        }
+      } else if (st.kind === 'insert_each') {
+        const g = (item.groups || []).find(x => x.name === st.group);
+        const done = new Set(item.eachDone[si] || []);
+        const idxs = g ? Object.keys(g.uploaded || {}).map(Number).sort((a, b) => a - b) : [];
+        let pos = 0;
+        for (const i of idxs) {
+          pos++;
+          if (done.has(i)) continue;
+          const each = { url: g.uploaded[i], n: i + 1, name: (g.names || {})[i] || '' };
+          const row = nullifyEmptyStrings(resolveValue(st.row, item, each));
+          if (Array.isArray(st.ids) && st.ids[i]) row[CLIENT_ID_COLUMN] = st.ids[i];
+          if (st.nameField) row[st.nameField] = each.name;
+          const r = await insertOnce(st.table, row, { timeoutMs, dupKeys: st.dupKeys });
+          if (r.error) {
+            if (isNetworkError(r.error) || isAbort(r.error)) throw new PackageNetworkError(r.error.message);
+            err = r.error; break;
+          }
+          done.add(i); item.eachDone[si] = [...done]; save();
+        }
+      } else if (st.kind === 'closeout') {
+        const updates = resolveValue(st.updates, item);
+        const r = await closeoutCall({ table: st.table, id: resolveValue(st.recordId, item), code: resolveValue(st.code, item), codeId: resolveValue(st.codeId, item), mode: st.mode, updates }, timeoutMs);
+        if (r.error) err = r.error;
+        else if (st.capture && r.row) for (const [k, col] of Object.entries(st.capture)) if (r.row[col] !== undefined) item.ctx[k] = r.row[col];
+      } else if (st.kind === 'update') {
+        let q = supabase.from(st.table).update(nullifyEmptyStrings(resolveValue(st.updates, item))).eq(st.idCol || 'id', resolveValue(st.recordId, item)).select();
+        if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) q = q.abortSignal(AbortSignal.timeout(timeoutMs));
+        const { data, error } = await q.maybeSingle();
+        if (error) {
+          if (isNetworkError(error) || isAbort(error)) throw new PackageNetworkError(error.message);
+          err = error;
+        } else if (st.capture && data) for (const [k, col] of Object.entries(st.capture)) if (data[col] !== undefined) item.ctx[k] = data[col];
+      } else if (st.kind === 'field_data') {
+        try {
+          const j = await fieldData(st.view, resolveValue(st.params || {}, item));
+          if (st.capture) item.ctx[st.capture] = j.rows || j.row || null;
+        } catch (e) {
+          if (isNetworkError(e) || isAbort(e)) throw new PackageNetworkError(e.message);
+          err = e;
+        }
+      }
+    } catch (e) {
+      if (e && (e.network || isNetworkError(e) || isAbort(e))) { save(); return { ok: false, network: true, error: e }; }
+      err = e;
+    }
+    if (err) {
+      if (st.optional) {
+        item.failed[label] = (err && err.message) || String(err);
+        item.notes.push(`${label}: ${(err && err.message) || err}`);
+      } else {
+        save();
+        return { ok: false, error: err, step: si };
+      }
+    }
+    item.done = si + 1;
+    save();
+  }
+  return { ok: true };
+}
+
+function finishedPackageNotice(item) {
+  try {
+    if (typeof window !== 'undefined') {
+      const urls = {};
+      for (const g of item.groups || []) urls[g.name] = groupUrls(item, g.name);
+      window.dispatchEvent(new CustomEvent(OFFLINE_PACKAGE_DONE_EVENT, { detail: { form_type: item.form_type, ref: item.ref || null, ctx: item.ctx || {}, urls, failed: item.failed || {} } }));
+    }
+  } catch (e) {}
+  if (item.notes && item.notes.length) {
+    alertAdmin({
+      form_type: item.form_type,
+      alert_type: 'package_partial',
+      error_message: `${item.notes.length} part(s) of a ${item.label || item.form_type} did not go in`,
+      target_table: item.target_table,
+      details: item.notes.join(' | ').slice(0, 1800)
+    });
+  }
+}
+
+async function savePackageFiles(item, memFiles) {
+  let kept = 0, lost = 0;
+  for (const g of item.groups || []) {
+    const files = (memFiles && memFiles[g.name]) || [];
+    if (!files.length) continue;
+    const toKeep = [];
+    for (let i = 0; i < files.length; i++) {
+      let f = files[i];
+      if (g.compress) { try { f = await compressImage(f); } catch (e) {} }
+      toKeep.push(f);
+    }
+    let n = 0;
+    try { n = await savePhotos(`${item.photoKey || item.id}:${g.name}`, toKeep); } catch (e) { n = 0; }
+    const pending = files.length - Object.keys(g.uploaded || {}).length - (g.rejected || []).length;
+    kept += Math.min(n, pending);
+    if (n < files.length) {
+      lost += files.length - n;
+      // Not on the phone: mark as refused so the rest is not held back.
+      for (let i = n; i < files.length; i++) if (!(g.uploaded || {})[i] && !(g.rejected || []).includes(i)) { g.rejected = [...(g.rejected || []), i]; }
+      item.notes = [...(item.notes || []), `${files.length - n} ${g.name} file(s) could not be stored on the phone`];
+    }
+  }
+  return { kept, lost };
+}
+
+function queuePackageItem(item) {
+  const q = readQueue();
+  const i = q.findIndex(x => x.id === item.id);
+  if (i >= 0) q[i] = item; else q.push(item);
+  writeQueue(q);
+}
+
+/**
+ * Send a multi-step package now if there is signal, otherwise (or if the
+ * connection drops halfway) keep the rest of it on the phone and send it
+ * later. Resolves to:
+ *   { ok:true, queued:false, ctx }            all in
+ *   { ok:true, queued:true, photosKept, photosLost, ctx }  saved on phone
+ *   { ok:false, error }                        server refused a required step
+ *
+ * groups: [{ name, files:[File], bucket, prefix, folder, fileBase, compress }]
+ */
+export async function submitPackage({ formType, label, table, steps, groups = [], ref = null }) {
+  const id = newQueueId();
+  const memFiles = {};
+  const item = {
+    id,
+    photoKey: id,
+    kind: 'package',
+    timestamp: new Date().toISOString(),
+    form_type: formType,
+    target_table: table || (steps.find(s => s.table) || {}).table || formType,
+    label: label || formType,
+    ref,
+    steps,
+    groups: groups.filter(g => g && Array.isArray(g.files) && g.files.length).map(g => {
+      memFiles[g.name] = g.files.filter(Boolean);
+      return { name: g.name, bucket: g.bucket || PHOTO_BUCKET, prefix: slugPrefix(g.prefix || formType), folder: g.folder || id, fileBase: g.fileBase || null, compress: g.compress !== false, total: memFiles[g.name].length, uploaded: {}, rejected: [] };
+    }),
+    done: 0,
+    ctx: {},
+    failed: {},
+    notes: [],
+    retryCount: 0
+  };
+
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (!offline) {
+    const r = await runPackage(item, { memFiles });
+    if (r.ok) { finishedPackageNotice(item); return { ok: true, queued: false, ctx: item.ctx, failed: item.failed, urls: Object.fromEntries((item.groups || []).map(g => [g.name, groupUrls(item, g.name)])) }; }
+    if (!r.network) return { ok: false, error: r.error, ctx: item.ctx, committed: (item.done || 0) > 0 };
+    item.last_error = (r.error && r.error.message) || 'no connection';
+    item.last_try = new Date().toISOString();
+  }
+
+  // No signal (or it dropped halfway): keep what is left on the phone.
+  const { kept, lost } = await savePackageFiles(item, memFiles);
+  queuePackageItem(item);
+  notifyQueue({ queued: 1, queuedPhotos: kept });
+  if (lost) {
+    alertAdmin({ form_type: formType, alert_type: 'offline_photos_not_stored', error_message: `${lost} photo(s)/file(s) could not be stored on the phone (storage full / private mode)`, target_table: item.target_table, details: 'The rest of the submission is queued on the phone and will re-send.' });
+  }
+  return { ok: true, queued: true, photosKept: kept, photosLost: lost, ctx: item.ctx };
+}
+
+/** Flush one queued package. Resolves 'sent' | 'backup' | 'network' | 'failed'. */
+async function flushPackageItem(item) {
+  const persist = (it) => {
+    const q = readQueue();
+    const i = q.findIndex(x => x.id === it.id);
+    if (i < 0) return;
+    q[i] = { ...it };
+    writeQueue(q);
+  };
+  const r = await runPackage(item, { persist, timeoutMs: 25000 });
+  const dropFiles = () => { for (const g of item.groups || []) deletePhotos(`${item.photoKey || item.id}:${g.name}`); };
+  if (r.ok) {
+    removeFromQueue(item.id);
+    dropFiles();
+    finishedPackageNotice(item);
+    return 'sent';
+  }
+  if (r.network) {
+    patchQueueItem(item.id, { last_error: (r.error && r.error.message) || 'no connection', last_try: new Date().toISOString() });
+    return 'network';
+  }
+  // The server refused a required step: park the whole package for recovery.
+  try {
+    const { error: backupErr } = await supabase.from('failed_submissions').insert([{
+      form_type: item.form_type,
+      target_table: item.target_table,
+      submission_data: { package: true, label: item.label, steps: item.steps, done: item.done, ctx: item.ctx, failed: item.failed, files: Object.fromEntries((item.groups || []).map(g => [g.name, groupUrls(item, g.name)])) },
+      error_message: `Offline retry (step ${(r.step || 0) + 1}): ${(r.error && r.error.message) || r.error}`,
+      status: 'pending',
+      created_at: item.timestamp
+    }]);
+    if (backupErr) throw backupErr;
+    removeFromQueue(item.id);
+    dropFiles();
+    alertAdmin({
+      form_type: item.form_type,
+      alert_type: 'offline_replay_rejected',
+      error_message: (r.error && r.error.message) || String(r.error),
+      target_table: item.target_table,
+      details: `Saved-on-phone ${item.label || item.form_type} from ${item.timestamp} was refused on re-send at step ${(r.step || 0) + 1}; moved to failed_submissions for recovery (photos already uploaded are linked there).`
+    });
+    return 'backup';
+  } catch (e) {
+    patchQueueItem(item.id, { retryCount: (item.retryCount || 0) + 1, last_error: (e && e.message) || String(e), last_try: new Date().toISOString() });
+    return isNetworkError(e) ? 'network' : 'failed';
+  }
 }
 
 // ── Close-out claim tickets (Step 2B) ───────────────────────────────────────
@@ -893,25 +1320,35 @@ export function makeRecordKey(len = 6) {
   return out;
 }
 
-/** Deposit the code in the record_keys vault. Call right after a successful insert. */
+/**
+ * Deposit the code in the record_keys vault. Call right after a successful
+ * insert. With no signal the code is kept on the phone (offline queue) and
+ * deposited when signal returns, right after the record it belongs to.
+ */
 export async function registerRecordKey(table, recordId, code) {
-  try {
-    const { error } = await supabase.from('record_keys').insert([{
-      table_name: table, record_id: String(recordId), code
-    }]);
-    if (error) throw error;
-    return true;
-  } catch (e) {
-    console.error('Record key registration failed:', e.message);
-    alertAdmin({
-      form_type: table,
-      alert_type: 'record_key_registration_failed',
-      error_message: e.message,
-      target_table: 'record_keys',
-      details: `record_id=${recordId} — close-out will require staff assistance`
-    });
-    return false;
+  const row = { table_name: table, record_id: String(recordId), code };
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (!offline) {
+    try {
+      const r = await insertOnce('record_keys', row, { timeoutMs: 25000, dupKeys: ['record_keys_pkey'] });
+      if (r.error) throw r.error;
+      return true;
+    } catch (e) {
+      if (!(isNetworkError(e) || isAbort(e))) {
+        console.error('Record key registration failed:', e.message);
+        alertAdmin({
+          form_type: table,
+          alert_type: 'record_key_registration_failed',
+          error_message: e.message,
+          target_table: 'record_keys',
+          details: `record_id=${recordId} — close-out will require staff assistance`
+        });
+        return false;
+      }
+    }
   }
+  await submitPackage({ formType: table, label: 'close-out code', table: 'record_keys', steps: [{ kind: 'insert', table: 'record_keys', row, dupKeys: ['record_keys_pkey'] }] });
+  return true;
 }
 
 /** Server-validated close-out. Returns { error } like a raw supabase call. */
