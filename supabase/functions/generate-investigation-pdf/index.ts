@@ -203,6 +203,7 @@ Deno.serve(async (req: Request) => {
     drawTimeline(ctx, timelineR.data || []);
     drawWitnesses(ctx, witnessR.data || []);
     drawAnalysis(ctx, incident, rcaR.data || [], fiveWhy, localReview);
+    drawOsha1904(ctx, incident);
     drawCorrectiveActions(ctx, caR.data || []);
     drawLessons(ctx, lessonsR.data || []);
 
@@ -584,6 +585,54 @@ function drawAnalysis(ctx: Ctx, incident: any, factors: any[], fiveWhy: any, loc
       ctx.y -= 22;
       paragraph(ctx, incident.root_cause_summary, { indent: 8 });
     }
+  }
+  ctx.y -= 6;
+}
+
+// 29 CFR 1904 classification (SQL 2026-10-11-51). Conclusions only: the workers'
+// compensation note is a separate determination and is never printed here.
+// Labels mirror app/lib/osha1904.js OSHA1904_CLASSIFICATIONS.
+const OSHA1904_LABELS: Record<string, string> = {
+  not_case: "Not an injury or illness case",
+  first_aid: "First Aid only",
+  bunkhouse: "Bunkhouse (remote site)",
+  personal: "Personal (non-job)",
+  other_not_recordable: "Other: not recordable",
+  recordable_mti: "OSHA Recordable: MTI (medical treatment beyond first aid)",
+  recordable_rwi: "OSHA Recordable: RWI (restricted work / job transfer)",
+  recordable_lti: "OSHA Recordable: LTI (days away from work)",
+  recordable_fatality: "OSHA Recordable: Fatality",
+};
+function winAnsi(t: string): string {
+  return String(t || "")
+    .replace(/\u2192/g, "->").replace(/\u2264/g, "<=").replace(/\u2265/g, ">=")
+    .replace(/[^\x09\x0A\x0D\x20-\xFF\u2018\u2019\u201C\u201D\u2013\u2014\u2022\u2026\u20AC\u2122]/g, "?");
+}
+function drawOsha1904(ctx: Ctx, incident: any) {
+  const cls = incident?.osha_1904_classification;
+  if (!cls) return;
+  sectionTitle(ctx, "29 CFR 1904 CLASSIFICATION");
+  const recordable = cls.startsWith("recordable_");
+  const notCase = cls === "not_case";
+  ensureSpace(ctx, 30);
+  ctx.page.drawRectangle({ x: MARGIN, y: ctx.y - 4, width: CONTENT_W, height: 18, color: recordable ? rgb(0.996, 0.886, 0.886) : notCase ? rgb(0.95, 0.95, 0.96) : rgb(0.863, 0.988, 0.906) });
+  ctx.page.drawText(recordable ? "OSHA RECORDABLE" : notCase ? "NOT AN INJURY / ILLNESS CASE" : "NOT RECORDABLE", {
+    x: MARGIN + 8, y: ctx.y, size: 10, font: ctx.fonts.bold, color: recordable ? DANGER : notCase ? MUTED : SUCCESS,
+  });
+  ctx.y -= 22;
+  row(ctx, "Classification", winAnsi(OSHA1904_LABELS[cls] || cls));
+  if (incident.osha_1904_work_related) row(ctx, "Work-related (1904.5)", incident.osha_1904_work_related === "yes" ? "Yes" : "No");
+  const basis = (incident.osha_1904_basis || []).filter(Boolean);
+  if (basis.length) row(ctx, "Regulatory basis", winAnsi(basis.map((b: string) => "29 CFR " + b).join("; ")));
+  if (incident.osha_1904_days_away) row(ctx, "Days away", String(incident.osha_1904_days_away));
+  if (incident.osha_1904_days_restricted) row(ctx, "Days restricted", String(incident.osha_1904_days_restricted));
+  if (incident.osha_1904_privacy_case) row(ctx, "Privacy case", "Yes (1904.29(b)(7))");
+  if (incident.osha_1904_justification) {
+    paragraph(ctx, "Classification justification:", { font: ctx.fonts.bold });
+    paragraph(ctx, winAnsi(incident.osha_1904_justification), { indent: 8 });
+  }
+  if (incident.osha_1904_classified_by) {
+    paragraph(ctx, winAnsi(`Classified by ${incident.osha_1904_classified_by}${incident.osha_1904_classified_at ? " on " + formatDate(incident.osha_1904_classified_at) : ""}. OSHA recordability and workers' compensation are separate determinations.`), { size: 8, color: MUTED });
   }
   ctx.y -= 6;
 }

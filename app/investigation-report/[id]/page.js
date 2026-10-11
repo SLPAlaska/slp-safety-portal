@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { callReportTextGate } from '@/components/ReportTextGate';
+import { OSHA1904_LABELS, isRecordable } from '@/lib/osha1904';
 
 // =====================================================================
 // AnthroSafe Investigation Report - HTML-to-PDF via window.print()
@@ -285,6 +286,12 @@ export default function InvestigationReport() {
           {is5Why  && <FiveWhySection      data={fiveWhy} />}
           {isRCA   && <RCASection          factors={rcaFactors} incident={incident} />}
         </Section>
+
+        {incident.osha_1904_classification && (
+          <Section icon={<I.BadgeCheck size={16} color="#fff" />} title="29 CFR 1904 Classification">
+            <Osha1904Section incident={incident} />
+          </Section>
+        )}
 
         {correctiveActions.length > 0 && (
           <Section icon={<I.CheckSquare size={16} color="#fff" />} title="Corrective Actions" count={correctiveActions.length}>
@@ -898,6 +905,44 @@ function RCASection({ factors, incident }) {
           <div style={{ fontSize: 12, lineHeight: 1.55, color: '#111827', whiteSpace: 'pre-wrap' }}>
             {incident.root_cause_summary}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =====================================================================
+// 29 CFR 1904 Classification (conclusions only; the WC note is NOT printed here)
+// =====================================================================
+function Osha1904Section({ incident }) {
+  const cls = incident.osha_1904_classification;
+  const rec = isRecordable(cls);
+  const tone = rec === true ? { bg: '#fef2f2', border: '#dc2626', text: '#991b1b', word: 'OSHA RECORDABLE' }
+    : rec === false ? { bg: '#ecfdf5', border: '#16a34a', text: '#166534', word: 'NOT RECORDABLE' }
+    : { bg: '#f3f4f6', border: '#6b7280', text: '#374151', word: 'NOT AN INJURY / ILLNESS CASE' };
+  const basis = (incident.osha_1904_basis || []).filter(Boolean);
+  return (
+    <div style={cardStyle}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: 10, background: tone.bg, border: `1.5px solid ${tone.border}`, borderRadius: 8, pageBreakInside: 'avoid' }}>
+        <span style={{ fontSize: 12, fontWeight: 900, color: tone.text, letterSpacing: 0.6 }}>{tone.word}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{OSHA1904_LABELS[cls] || cls}</span>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        {incident.osha_1904_work_related && <FieldRow label="Work-related (1904.5)" value={incident.osha_1904_work_related === 'yes' ? 'Yes' : 'No'} />}
+        {basis.length > 0 && <FieldRow label="Regulatory basis" value={basis.map(b => '29 CFR ' + b).join('; ')} />}
+        {incident.osha_1904_days_away ? <FieldRow label="Days away from work" value={String(incident.osha_1904_days_away)} /> : null}
+        {incident.osha_1904_days_restricted ? <FieldRow label="Days restricted / job transfer" value={String(incident.osha_1904_days_restricted)} /> : null}
+        {incident.osha_1904_privacy_case ? <FieldRow label="Privacy concern case" value="Yes (1904.29(b)(7))" /> : null}
+      </div>
+      {incident.osha_1904_justification && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#1e3a5f', marginBottom: 4 }}>CLASSIFICATION JUSTIFICATION</div>
+          <div style={{ fontSize: 12, lineHeight: 1.55, color: '#111827', whiteSpace: 'pre-wrap' }}>{incident.osha_1904_justification}</div>
+        </div>
+      )}
+      {(incident.osha_1904_classified_by || incident.osha_1904_classified_at) && (
+        <div style={{ marginTop: 8, fontSize: 11, color: '#6b7280' }}>
+          Classified by {incident.osha_1904_classified_by || 'investigator'}{incident.osha_1904_classified_at ? ' on ' + new Date(incident.osha_1904_classified_at).toLocaleDateString('en-US', { timeZone: 'America/Anchorage' }) : ''}. OSHA recordability and workers&apos; compensation are separate determinations.
         </div>
       )}
     </div>

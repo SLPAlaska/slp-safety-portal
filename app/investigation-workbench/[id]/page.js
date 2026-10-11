@@ -14,6 +14,8 @@ import { isSuperAdmin } from '@/lib/superAdmins';
 import InterviewGuide, { loadGuideStatus } from '@/components/InterviewGuide';
 import { CAUSE_CATEGORIES, WEAK_CA_PATTERN, closeoutReview, isWeakCA } from '@/lib/investigationGuide';
 import { ReportTextGateModal, callReportTextGate, textGateDbMessage } from '@/components/ReportTextGate';
+import Osha1904Classification, { osha1904Value } from '@/components/Osha1904Classification';
+import { validateOsha1904 } from '@/lib/osha1904';
 
 // =====================================================================
 // AnthroSafe Investigation Workbench v2
@@ -1063,10 +1065,20 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
     window.location.reload();
   }
 
+  // 29 CFR 1904 classification justification must be complete before Approve /
+  // Close / Mark Complete. The database refuses Approved/Closed on injury cases
+  // without it too (SQL 2026-10-11-51).
+  function require1904(proceed) {
+    const r = validateOsha1904(osha1904Value(incident), { injuryCase: !!incident.injury_occurred });
+    if (r.ok) return proceed();
+    alert('29 CFR 1904 classification is not complete:\n\n• ' + r.issues.join('\n• ') + '\n\nFinish the "29 CFR 1904 Injury / Illness Classification" card at the top of this stage.');
+    if (typeof document !== 'undefined') document.getElementById('osha-1904')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   async function handleStatusChange(next) {
     if (next === 'Approved' || next === 'Closed') {
       const verb = next === 'Approved' ? 'approve this investigation' : 'close this investigation';
-      return runCloseoutGate(next, () => requireTextGate(verb, () => setStatusDirect(next)));
+      return require1904(() => runCloseoutGate(next, () => requireTextGate(verb, () => setStatusDirect(next))));
     }
     onIncidentChange({ status: next });
   }
@@ -1074,6 +1086,12 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
   return (
     <div>
       <StageHeader stage={4} title="Close It Out" subtitle="Define corrective actions using the hierarchy of controls, capture lessons learned, then approve and download the PDF." />
+
+      <div id="osha-1904">
+        <Card title="29 CFR 1904 Injury / Illness Classification" toneAccent={C.steel}>
+          <Osha1904Classification incident={incident} userEmail={userEmail} onIncidentChange={onIncidentChange} />
+        </Card>
+      </div>
 
       <Card title={`Corrective Actions (${correctiveActions.length})`}>
         <CorrectiveActionAdd fkText={fkText} userEmail={userEmail} onAdded={onActionsReload} />
@@ -1110,7 +1128,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
         </div>
       </Card>
 
-      <StageFooter complete={incident.stage_4_complete} onComplete={() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', onComplete))} nextLabel="Mark Investigation Complete" />
+      <StageFooter complete={incident.stage_4_complete} onComplete={() => require1904(() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', onComplete)))} nextLabel="Mark Investigation Complete" />
 
       {closeGate && (
         <CloseoutGateModal
@@ -1349,6 +1367,10 @@ function AdditionalFields({ incident, onChange }) {
     'report_pdf_url','report_pdf_id','report_generated_at',
     // Managed by the Interview Guide panel / close-out review
     'hazard_types','work_setting','is_repeat','weak_control_justification',
+    // Managed by the 29 CFR 1904 classification card (stage 4)
+    'osha_1904_classification','osha_1904_work_related','osha_1904_basis','osha_1904_justification',
+    'osha_1904_days_away','osha_1904_days_restricted','osha_1904_privacy_case','osha_1904_wc_note',
+    'osha_1904_classified_by','osha_1904_classified_at',
   ]);
 
   const extras = Object.entries(incident || {}).filter(([k, v]) => {
