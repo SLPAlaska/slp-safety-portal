@@ -377,10 +377,19 @@ export default function SafetyPortal() {
           padding: 25px 0;
         }
         
-        .logo {
-          max-width: 200px;
+        .logo-wrap {
+          display: inline-block;
+          background: rgba(255,255,255,0.96);
+          border-radius: 16px;
+          padding: 10px 14px;
           margin-bottom: 15px;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+          box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+        }
+        .logo {
+          display: block;
+          max-width: 200px;
+          height: auto;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
         
         h1 {
@@ -640,7 +649,9 @@ export default function SafetyPortal() {
 
       <div className="container">
         <div className="header">
-          <img src="/Logo.png" alt="SLP Alaska Logo" className="logo" />
+          <div className="logo-wrap">
+            <img src="/AnthroSafe_Logo.PNG" alt="AnthroSafe" className="logo" />
+          </div>
           <h1>SLP Safety Portal</h1>
           <p className="subtitle">Safety • Leadership • Performance</p>
           <p className="tagline">"Safety isn't expensive, it's PRICELESS!"</p>

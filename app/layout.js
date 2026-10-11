@@ -1,5 +1,6 @@
 import './globals.css'
 import HelpLauncher from '@/components/HelpLauncher'
+import BackButton from '@/components/BackButton'
 import OfflineSync from '@/components/OfflineSync'
 
 export const metadata = {
@@ -18,9 +19,9 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1e3a5f" />
-        <link rel="apple-touch-icon" href="/Logo.png" />
+        <link rel="apple-touch-icon" href="/AnthroSafe_Logo.PNG" />
       </head>
-      <body>{children}<OfflineSync /><HelpLauncher /></body>
+      <body>{children}<OfflineSync /><HelpLauncher /><BackButton /></body>
     </html>
   )
 }
