@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { namedPeople, findNamedCloser, missingAar, notNamedMessage, AAR_REQUIRED_MESSAGE, THA_CLOSE_RULE_VERSION } from '../../lib/thaCloser.js';
 
 /**
  * /api/closeout — server-validated close-out for no-login field workflows.
@@ -10,6 +11,11 @@ import { createClient } from '@supabase/supabase-js';
  *
  * Runs with the service role (bypasses RLS), so anonymous UPDATE policies
  * can be removed from these tables once each form is migrated.
+ *
+ * THA close-out (since 11 Oct 2026) does NOT use a code: only a person named
+ * on that THA (crew lead or crew sign-on) can close it, and only with the
+ * after-action review answered. See closeTha() and app/lib/thaCloser.js.
+ * The 48-hour auto-close (pg_cron job tha-auto-close-stale) is unchanged.
  */
 
 const ALLOW = {
@@ -75,6 +81,15 @@ export async function POST(req) {
     if (!cfg) {
       return Response.json({ error: 'Unsupported table.' }, { status: 400 });
     }
+
+    // THA: named-person close, no code. The only code-validated THA write left
+    // is the creator's own "last modified" stamp after adding steps/crew.
+    const thaCodeBump = table === 'tha_assessments' && code && updates && typeof updates === 'object' &&
+      Object.keys(updates).length > 0 && Object.keys(updates).every((k) => k === 'last_modified');
+    if (table === 'tha_assessments' && !thaCodeBump) {
+      return closeTha(id, updates);
+    }
+
     if (!id || !code || !updates || typeof updates !== 'object') {
       return Response.json({ error: 'Missing id, code, or updates.' }, { status: 400 });
     }
@@ -130,4 +145,62 @@ export async function POST(req) {
   } catch (e) {
     return Response.json({ error: e?.message || 'Unexpected error.' }, { status: 500 });
   }
+}
+
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://iypezirwdlqpptjpeeyf.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+/**
+ * Close a THA. Allowed only when updates.closed_by matches a person named on
+ * that THA (tha_assessments.crew_lead or tha_crew_signoff.crew_member_name)
+ * and the three after-action questions are answered. closed_by is stored as
+ * the name exactly as it appears on the THA.
+ */
+async function closeTha(thaNumber, updates) {
+  if (!thaNumber || !updates || typeof updates !== 'object') {
+    return Response.json({ error: 'Missing THA number or close-out answers.' }, { status: 400 });
+  }
+  const closer = String(updates.closed_by || '').trim();
+  if (!closer) {
+    return Response.json({ error: 'Tap your name (you must be named on this THA to close it).', reason: 'closer_missing' }, { status: 400 });
+  }
+  const admin = adminClient();
+  const { data: tha, error: e1 } = await admin.from('tha_assessments')
+    .select('tha_number, status, crew_lead, company, closed_by, closed_at')
+    .eq('tha_number', thaNumber).maybeSingle();
+  if (e1) return Response.json({ error: 'THA lookup failed: ' + e1.message }, { status: 500 });
+  if (!tha) return Response.json({ error: 'THA ' + thaNumber + ' was not found. Check the number or pick it from the open list.', reason: 'not_found' }, { status: 404 });
+  if (tha.status !== 'Open') {
+    return Response.json({ error: thaNumber + ' is already closed' + (tha.closed_by ? ' (' + tha.closed_by + ')' : '') + '.', reason: 'already_closed' }, { status: 409 });
+  }
+  const { data: crew, error: e2 } = await admin.from('tha_crew_signoff')
+    .select('crew_member_name').eq('tha_number', thaNumber);
+  if (e2) return Response.json({ error: 'Crew lookup failed: ' + e2.message }, { status: 500 });
+
+  const person = findNamedCloser(closer, namedPeople(tha, crew));
+  if (!person) {
+    return Response.json({ error: notNamedMessage(thaNumber), reason: 'not_named' }, { status: 403 });
+  }
+  if (missingAar(updates).length) {
+    return Response.json({ error: AAR_REQUIRED_MESSAGE, reason: 'aar_missing', missing: missingAar(updates) }, { status: 400 });
+  }
+
+  const cols = ALLOW.tha_assessments.cols;
+  const clean = {};
+  for (const k of Object.keys(updates)) if (cols.includes(k)) clean[k] = updates[k];
+  clean.status = 'Closed';
+  clean.closed_by = person.name;
+  clean.closed_at = new Date().toISOString();
+  clean.last_modified = clean.closed_at;
+
+  // .eq('status','Open') so a close racing the 48-hour auto-close cannot overwrite it.
+  const { data: row, error: e3 } = await admin.from('tha_assessments')
+    .update(clean).eq('tha_number', thaNumber).eq('status', 'Open').select('tha_number, status, closed_by, closed_at').maybeSingle();
+  if (e3) return Response.json({ error: e3.message }, { status: 500 });
+  if (!row) return Response.json({ error: thaNumber + ' was closed by someone else a moment ago.', reason: 'already_closed' }, { status: 409 });
+  return Response.json({ ok: true, row, closed_by: person.name, rule: THA_CLOSE_RULE_VERSION });
 }
