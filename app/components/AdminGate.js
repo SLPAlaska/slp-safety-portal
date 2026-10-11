@@ -45,6 +45,13 @@ const supabase = (typeof globalThis !== 'undefined' && globalThis.__slpAuthClien
  */
 const COMPANY_ADMIN_AREAS = new Set(['sail']);
 
+// Areas open to ANY signed-in person, because their data endpoint returns only
+// what that person may see (proven by the magic-link sign-in to that email).
+// 'corrective-actions': /api/corrective-actions shows a client only the CAs
+// they own (and, for a company admin, their own company's) — see
+// app/lib/caAccess.js. This is where the CA nag email sends action owners.
+const SIGNED_IN_AREAS = new Set(['corrective-actions']);
+
 export default function AdminGate({ children, area }) {
   const [status, setStatus] = useState('loading'); // loading | signedout | unauthorized | ready
   const [userEmail, setUserEmail] = useState('');
@@ -105,6 +112,8 @@ export default function AdminGate({ children, area }) {
         return;
       }
       if (data) { setStatusSafe('ready'); return; }
+
+      if (SIGNED_IN_AREAS.has(area)) { setStatusSafe('ready'); return; }
 
       // Not SLP staff. A company admin may still enter an area whose data is
       // scoped server-side. The role is read from lms_users — the same single
@@ -172,7 +181,7 @@ export default function AdminGate({ children, area }) {
   return (
     <div style={S.wrap}>
       <div style={S.card}>
-        <h2 style={S.h}>Management Access</h2>
+        <h2 style={S.h}>{area === 'corrective-actions' ? 'Corrective Actions' : 'Management Access'}</h2>
         {status === 'loading' && <p style={S.sub}>Checking access…</p>}
 
         {status === 'signedout' && (sent ? (

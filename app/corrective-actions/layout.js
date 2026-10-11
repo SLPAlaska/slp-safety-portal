@@ -2,7 +2,8 @@
 import AdminGate from '@/components/AdminGate';
 
 // Route-level gate: wraps every page in this folder (and subfolders) with
-// magic-link staff authentication. The page code itself is untouched.
+// magic-link authentication. Any signed-in person gets in; the data is
+// scoped server-side by /api/corrective-actions (app/lib/caAccess.js).
 export default function GatedLayout({ children }) {
-  return <AdminGate>{children}</AdminGate>;
+  return <AdminGate area="corrective-actions">{children}</AdminGate>;
 }
