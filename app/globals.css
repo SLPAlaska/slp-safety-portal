@@ -7,3 +7,8 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+/* Help Desk launcher (app/components/HelpLauncher.js) never prints. */
+@media print {
+  .slp-help-launcher { display: none !important; }
+}
