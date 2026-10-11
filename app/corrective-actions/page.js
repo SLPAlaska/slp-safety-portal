@@ -1,13 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  'https://iypezirwdlqpptjpeeyf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5cGV6aXJ3ZGxxcHB0anBlZXlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2Nzg3NzYsImV4cCI6MjA4NDI1NDc3Nn0.rfTN8fi9rd6o5rX-scAg9I1BbC-UjM8WoWEXDbrYJD4'
-);
-
-const SLP_DOMAIN = '@slpalaska.com';
+// /corrective-actions — where the CA nag email sends action owners.
+//
+// Reads and writes ONLY through /api/corrective-actions, which scopes rows to
+// the signed-in person (app/lib/caAccess.js): SLP staff see everything; a
+// client sees the CAs they own, and a company admin sees their own company's.
+// Sign-in is the AdminGate magic link in ./layout.js. The old "type any email"
+// login and direct anon-key table reads were removed: RLS returned nothing to
+// clients, and the saves wrote columns that do not exist.
+import { useState, useEffect, useCallback } from 'react';
+import { authFetch } from '@/lib/authFetch';
 
 const HIERARCHY_OF_CONTROLS = [
   { level: 1, name: 'Elimination', color: '#166534' },
@@ -16,8 +17,8 @@ const HIERARCHY_OF_CONTROLS = [
   { level: 4, name: 'Administrative Controls', color: '#3b6ea5' },
   { level: 5, name: 'PPE', color: '#dc2626' }
 ];
-
-const STATUS_OPTIONS = ['Open', 'In Progress', 'Completed', 'Verified', 'Overdue'];
+const CLOSED = ['completed', 'complete', 'verified', 'verified effective', 'closed', 'cancelled', 'canceled', 'void'];
+const isClosed = (s) => CLOSED.includes(String(s || '').toLowerCase());
 
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
@@ -57,301 +58,117 @@ const styles = {
   label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b', fontSize: '14px' }
 };
 
-function isSLPTeam(email) { return email && email.toLowerCase().endsWith(SLP_DOMAIN); }
-function formatDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'; }
-
-function getDeadlineStatus(targetDate, status) {
-  if (!targetDate || status === 'Completed' || status === 'Verified') return { isOverdue: false, text: '' };
+function formatDate(d) { return d ? new Date(String(d).length === 10 ? d + 'T12:00:00' : d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'; }
+function dueOf(ca) { return ca.target_date || ca.due_date || null; }
+function getDeadlineStatus(due, status) {
+  if (!due || isClosed(status)) return { isOverdue: false, text: '' };
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const target = new Date(targetDate);
-  const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+  const target = new Date(due + 'T00:00:00');
+  const diffDays = Math.round((target - today) / 86400000);
   if (diffDays < 0) return { isOverdue: true, text: `${Math.abs(diffDays)} days overdue`, color: '#dc2626' };
   if (diffDays <= 7) return { isOverdue: false, text: `${diffDays} days left`, color: '#f59e0b' };
   return { isOverdue: false, text: `${diffDays} days left`, color: '#22c55e' };
 }
 
 export default function CorrectiveActionsTracker() {
-  const [userEmail, setUserEmail] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSLP, setIsSLP] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginError, setLoginError] = useState('');
+  const [rows, setRows] = useState([]);
+  const [scope, setScope] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [actions, setActions] = useState([]);
-  const [stats, setStats] = useState({ total: 0, open: 0, inProgress: 0, completed: 0, overdue: 0 });
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [loadError, setLoadError] = useState('');
+  const [statusFilter, setStatusFilter] = useState('open');
   const [companyFilter, setCompanyFilter] = useState('all');
-  const [companies, setCompanies] = useState([]);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [selectedCA, setSelectedCA] = useState(null);
-  const [updateData, setUpdateData] = useState({ action_status: '', percent_complete: 0, completion_notes: '' });
+  const [updateData, setUpdateData] = useState({ action_status: '', notes: '' });
+  const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [flash, setFlash] = useState('');
 
-  useEffect(() => {
-    const saved = localStorage.getItem('slp_ca_user_email');
-    if (saved) {
-      setUserEmail(saved.toLowerCase());
-      setIsAuthenticated(true);
-      setIsSLP(isSLPTeam(saved));
-    }
+  const fetchActions = useCallback(async () => {
+    setLoading(true); setLoadError('');
+    try {
+      const res = await authFetch('/api/corrective-actions');
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Could not load (${res.status})`);
+      setRows(j.rows || []); setScope(j.scope || null);
+    } catch (e) { setLoadError(e.message || 'Could not load corrective actions.'); }
     setLoading(false);
   }, []);
+  useEffect(() => { fetchActions(); }, [fetchActions]);
 
-  useEffect(() => {
-    if (isAuthenticated) fetchActions();
-  }, [isAuthenticated, statusFilter, companyFilter]);
-
-  async function fetchActions() {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from('investigation_corrective_actions')
-        .select(`
-          *,
-          incidents (
-            incident_id,
-            brief_description,
-            incident_date,
-            company_name,
-            location_name
-          )
-        `)
-        .order('target_date', { ascending: true });
-
-      // If not SLP team, only show their assigned actions
-      if (!isSLP) {
-        query = query.eq('action_owner_email', userEmail);
-      }
-
-      // Apply filters
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'Overdue') {
-          query = query.lt('target_date', new Date().toLocaleDateString('en-CA'))
-            .not('action_status', 'in', '("Completed","Verified")');
-        } else {
-          query = query.eq('action_status', statusFilter);
-        }
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      let filtered = data || [];
-      
-      // Company filter (SLP only)
-      if (isSLP && companyFilter !== 'all') {
-        filtered = filtered.filter(ca => ca.incidents?.company_name === companyFilter);
-      }
-
-      // Mark overdue items
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      filtered = filtered.map(ca => ({
-        ...ca,
-        isOverdue: ca.target_date && new Date(ca.target_date) < today && 
-                   !['Completed', 'Verified'].includes(ca.action_status)
-      }));
-
-      setActions(filtered);
-      calculateStats(data || []);
-
-      // Get unique companies for filter (SLP only)
-      if (isSLP) {
-        const uniqueCompanies = [...new Set((data || []).map(ca => ca.incidents?.company_name).filter(Boolean))];
-        setCompanies(uniqueCompanies.sort());
-      }
-    } catch (e) {
-      console.error('Error fetching actions:', e);
-    }
-    setLoading(false);
-  }
-
-  function calculateStats(data) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    setStats({
-      total: data.length,
-      open: data.filter(a => a.action_status === 'Open').length,
-      inProgress: data.filter(a => a.action_status === 'In Progress').length,
-      completed: data.filter(a => ['Completed', 'Verified'].includes(a.action_status)).length,
-      overdue: data.filter(a => a.target_date && new Date(a.target_date) < today && 
-               !['Completed', 'Verified'].includes(a.action_status)).length
-    });
-  }
-
-  function handleLogin(e) {
-    e.preventDefault();
-    if (!loginEmail) { setLoginError('Please enter your email'); return; }
-    const email = loginEmail.toLowerCase().trim();
-    localStorage.setItem('slp_ca_user_email', email);
-    setUserEmail(email);
-    setIsAuthenticated(true);
-    setIsSLP(isSLPTeam(email));
-    setLoginError('');
-  }
-
-  function handleLogout() {
-    localStorage.removeItem('slp_ca_user_email');
-    setUserEmail('');
-    setIsAuthenticated(false);
-    setIsSLP(false);
-  }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const withFlags = rows.map(ca => ({ ...ca, isOverdue: getDeadlineStatus(dueOf(ca), ca.effective_status).isOverdue }));
+  const companies = [...new Set(withFlags.map(ca => ca.incident?.company_name).filter(Boolean))].sort();
+  const visible = withFlags.filter(ca => {
+    if (companyFilter !== 'all' && ca.incident?.company_name !== companyFilter) return false;
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'open') return !isClosed(ca.effective_status);
+    if (statusFilter === 'Overdue') return ca.isOverdue;
+    return ca.effective_status === statusFilter;
+  });
+  const stats = {
+    total: withFlags.length,
+    open: withFlags.filter(a => !isClosed(a.effective_status) && a.effective_status !== 'In Progress').length,
+    inProgress: withFlags.filter(a => a.effective_status === 'In Progress').length,
+    completed: withFlags.filter(a => isClosed(a.effective_status)).length,
+    overdue: withFlags.filter(a => a.isOverdue).length,
+  };
 
   function openUpdateModal(ca) {
-    setSelectedCA(ca);
-    setUpdateData({
-      action_status: ca.action_status || 'Open',
-      percent_complete: ca.percent_complete || 0,
-      completion_notes: ca.completion_notes || ''
-    });
-    setShowUpdateModal(true);
+    setSelectedCA(ca); setSaveError('');
+    const statuses = scope?.statuses || [];
+    setUpdateData({ action_status: statuses.includes(ca.effective_status) ? ca.effective_status : 'Completed', notes: '' });
   }
 
   async function saveUpdate() {
     if (!selectedCA) return;
-    setSaving(true);
+    setSaving(true); setSaveError('');
     try {
-      const updates = {
-        action_status: updateData.action_status,
-        percent_complete: updateData.percent_complete,
-        completion_notes: updateData.completion_notes,
-        updated_at: new Date().toISOString()
-      };
-
-      // If marking complete, add completion date
-      if (updateData.action_status === 'Completed' && selectedCA.action_status !== 'Completed') {
-        updates.completed_date = new Date().toLocaleDateString('en-CA');
-        updates.completed_by_email = userEmail;
-      }
-
-      // Auto-set percent to 100 if completed
-      if (updateData.action_status === 'Completed' || updateData.action_status === 'Verified') {
-        updates.percent_complete = 100;
-      }
-
-      const { error } = await supabase
-        .from('investigation_corrective_actions')
-        .update(updates)
-        .eq('id', selectedCA.id);
-
-      if (error) throw error;
-
-      // Log activity
-      await supabase.from('investigation_activity_log').insert({
-        incident_id: selectedCA.incident_id,
-        action: `CA-${selectedCA.action_number} updated to ${updateData.action_status}`,
-        action_category: 'update',
-        user_email: userEmail,
-        entity_type: 'corrective_action',
-        entity_id: selectedCA.id,
-        details: updates
+      const res = await authFetch('/api/corrective-actions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: selectedCA.id, action_status: updateData.action_status, notes: updateData.notes }),
       });
-
-      setShowUpdateModal(false);
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Save failed (${res.status})`);
+      setSelectedCA(null);
+      setFlash(`CA-${selectedCA.action_number ?? selectedCA.id} set to ${updateData.action_status}.` + (isClosed(updateData.action_status) ? ' Reminder emails for it stop.' : ''));
       fetchActions();
-      alert('Action updated successfully!');
-    } catch (e) {
-      alert('Error updating: ' + e.message);
-    }
+    } catch (e) { setSaveError(e.message || 'Save failed.'); }
     setSaving(false);
   }
 
-  // Login Screen
-  if (!isAuthenticated) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.wrapper}>
-          <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
-          
-          <div style={styles.loginCard}>
-            <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', margin: '0 auto 25px', display: 'block' }} />
-            <h1 style={{ color: '#1e293b', marginBottom: '10px', fontSize: '24px' }}>Corrective Actions</h1>
-            <p style={{ color: '#64748b', marginBottom: '30px' }}>Enter your email to view your assigned actions</p>
-            
-            <form onSubmit={handleLogin}>
-              <input
-                type="email"
-                placeholder="your.email@company.com"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                style={styles.input}
-              />
-              {loginError && <p style={{ color: '#dc2626', fontSize: '14px', marginBottom: '15px' }}>{loginError}</p>}
-              <button type="submit" style={styles.submitBtn}>View My Actions</button>
-            </form>
-            
-            <p style={{ color: '#94a3b8', fontSize: '12px', marginTop: '25px' }}>
-              SLP team members see all actions. Others see only their assigned actions.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const subtitle = !scope ? '' : scope.all_companies ? 'All Investigation Corrective Actions (SLP staff)'
+    : scope.company_admin ? `${scope.company_name || 'Your company'} corrective actions + any assigned to ${scope.email}`
+    : `Actions assigned to ${scope.email}`;
 
-  // Main Tracker
   return (
     <div style={styles.container}>
       <div style={styles.wrapper}>
-        <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
-        
+        <a href="/" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
         <div style={styles.header}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-            <div>
-              <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '150px', marginBottom: '10px' }} />
-              <div style={styles.headerTitle}>✅ Corrective Actions Tracker</div>
-              <div style={styles.headerSubtitle}>
-                {isSLP ? 'All Investigation Corrective Actions' : `Actions assigned to ${userEmail}`}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '14px', opacity: 0.9 }}>{userEmail}</div>
-              <div style={{ fontSize: '12px', opacity: 0.8 }}>{isSLP ? 'SLP Team - Full Access' : 'Action Owner'}</div>
-              <button onClick={handleLogout} style={{ ...styles.actionBtn, background: 'rgba(255,255,255,0.2)', color: 'white', marginTop: '10px', padding: '8px 16px' }}>
-                Sign Out
-              </button>
-            </div>
-          </div>
+          <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '150px', marginBottom: '10px' }} />
+          <div style={styles.headerTitle}>✅ Corrective Actions</div>
+          <div style={styles.headerSubtitle}>{subtitle}</div>
         </div>
-
         <div style={styles.card}>
-          {/* Stats */}
+          {flash && <div role="status" style={{ background: '#dcfce7', border: '2px solid #16a34a', color: '#14532d', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontWeight: 600 }}>{flash}</div>}
           <div style={styles.statsRow}>
-            <div style={styles.statCard}>
-              <div style={{ ...styles.statNumber, color: '#1e3a8a' }}>{stats.total}</div>
-              <div style={styles.statLabel}>Total Actions</div>
-            </div>
-            <div style={{ ...styles.statCard, borderColor: '#f59e0b' }}>
-              <div style={{ ...styles.statNumber, color: '#f59e0b' }}>{stats.open}</div>
-              <div style={styles.statLabel}>Open</div>
-            </div>
-            <div style={{ ...styles.statCard, borderColor: '#3b82f6' }}>
-              <div style={{ ...styles.statNumber, color: '#3b82f6' }}>{stats.inProgress}</div>
-              <div style={styles.statLabel}>In Progress</div>
-            </div>
-            <div style={{ ...styles.statCard, borderColor: '#22c55e' }}>
-              <div style={{ ...styles.statNumber, color: '#22c55e' }}>{stats.completed}</div>
-              <div style={styles.statLabel}>Completed</div>
-            </div>
-            <div style={{ ...styles.statCard, borderColor: '#dc2626' }}>
-              <div style={{ ...styles.statNumber, color: '#dc2626' }}>{stats.overdue}</div>
-              <div style={styles.statLabel}>Overdue</div>
-            </div>
+            {[['Total', stats.total, '#1e3a8a', '#e2e8f0'], ['Open', stats.open, '#f59e0b', '#f59e0b'], ['In Progress', stats.inProgress, '#3b82f6', '#3b82f6'], ['Closed', stats.completed, '#22c55e', '#22c55e'], ['Overdue', stats.overdue, '#dc2626', '#dc2626']].map(([l, n, c, b]) => (
+              <div key={l} style={{ ...styles.statCard, borderColor: b }}><div style={{ ...styles.statNumber, color: c }}>{n}</div><div style={styles.statLabel}>{l}</div></div>
+            ))}
           </div>
-
-          {/* Filters */}
           <div style={styles.filterRow}>
             <div style={styles.filterGroup}>
               <span style={styles.filterLabel}>Status</span>
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={styles.select}>
-                <option value="all">All Statuses</option>
-                <option value="Open">Open</option>
+                <option value="open">Still open</option>
+                <option value="all">All</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
                 <option value="Verified">Verified</option>
                 <option value="Overdue">Overdue</option>
               </select>
             </div>
-            
-            {isSLP && (
+            {companies.length > 1 && (
               <div style={styles.filterGroup}>
                 <span style={styles.filterLabel}>Company</span>
                 <select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} style={styles.select}>
@@ -360,168 +177,96 @@ export default function CorrectiveActionsTracker() {
                 </select>
               </div>
             )}
-            
             <div style={{ ...styles.filterGroup, marginLeft: 'auto' }}>
               <span style={styles.filterLabel}>&nbsp;</span>
-              <button onClick={fetchActions} style={{ ...styles.actionBtn, ...styles.secondaryBtn }}>
-                🔄 Refresh
-              </button>
+              <button onClick={fetchActions} style={{ ...styles.actionBtn, ...styles.secondaryBtn }}>🔄 Refresh</button>
             </div>
           </div>
 
-          {/* Actions List */}
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
-              <p>Loading...</p>
-            </div>
-          ) : actions.length === 0 ? (
+          {loadError ? (
+            <div role="alert" style={{ background: '#fef2f2', border: '2px solid #b91c1c', color: '#7f1d1d', padding: '14px', borderRadius: '8px', fontWeight: 600 }}>{loadError}</div>
+          ) : loading ? (
+            <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}><p>Loading...</p></div>
+          ) : visible.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
               <div style={{ fontSize: '48px', marginBottom: '15px' }}>✅</div>
-              <p>{isSLP ? 'No corrective actions found' : 'No actions assigned to you'}</p>
+              <p>{rows.length === 0 ? `No corrective actions are assigned to ${scope?.email || 'you'}.` : 'Nothing matches this filter.'}</p>
             </div>
-          ) : (
-            actions.map(ca => {
-              const deadline = getDeadlineStatus(ca.target_date, ca.action_status);
-              const controlLevel = parseInt(ca.hierarchy_control?.charAt(0)) || 5;
-              const controlColor = HIERARCHY_OF_CONTROLS.find(h => h.level === controlLevel)?.color || '#64748b';
-              
-              return (
-                <div 
-                  key={ca.id} 
-                  style={{ 
-                    ...styles.caCard, 
-                    ...(ca.isOverdue ? styles.caCardOverdue : {})
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: '700', fontSize: '16px' }}>CA-{ca.action_number}</span>
-                        <span style={{ ...styles.badge, background: controlColor, color: 'white' }}>
-                          {ca.hierarchy_control}
-                        </span>
-                        <span style={{ 
-                          ...styles.badge, 
-                          background: ca.action_status === 'Completed' || ca.action_status === 'Verified' ? '#dcfce7' : 
-                                     ca.action_status === 'In Progress' ? '#dbeafe' : 
-                                     ca.isOverdue ? '#fef2f2' : '#fef3c7',
-                          color: ca.action_status === 'Completed' || ca.action_status === 'Verified' ? '#166534' : 
-                                ca.action_status === 'In Progress' ? '#1e40af' : 
-                                ca.isOverdue ? '#991b1b' : '#92400e'
-                        }}>
-                          {ca.isOverdue ? '⚠️ Overdue' : ca.action_status}
-                        </span>
+          ) : visible.map(ca => {
+            const deadline = getDeadlineStatus(dueOf(ca), ca.effective_status);
+            const controlLevel = parseInt(String(ca.hierarchy_control || '').charAt(0)) || 5;
+            const controlColor = HIERARCHY_OF_CONTROLS.find(h => h.level === controlLevel)?.color || '#64748b';
+            const closed = isClosed(ca.effective_status);
+            return (
+              <div key={ca.id} data-testid="ca-card" style={{ ...styles.caCard, ...(ca.isOverdue ? styles.caCardOverdue : {}) }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: '700', fontSize: '16px' }}>CA-{ca.action_number ?? ca.id}</span>
+                      {ca.hierarchy_control && <span style={{ ...styles.badge, background: controlColor, color: 'white' }}>{ca.hierarchy_control}</span>}
+                      <span style={{ ...styles.badge, background: closed ? '#dcfce7' : ca.effective_status === 'In Progress' ? '#dbeafe' : ca.isOverdue ? '#fef2f2' : '#fef3c7', color: closed ? '#166534' : ca.effective_status === 'In Progress' ? '#1e40af' : ca.isOverdue ? '#991b1b' : '#92400e' }}>
+                        {ca.isOverdue ? '⚠️ Overdue' : ca.effective_status}
+                      </span>
+                    </div>
+                    {ca.incident && (
+                      <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '5px' }}>
+                        {scope?.all_companies
+                          ? <a href={`/investigation-workbench/${ca.incident.id}`} style={{ color: '#1e3a8a', textDecoration: 'none' }}>{ca.incident.incident_id}</a>
+                          : <strong>{ca.incident.incident_id}</strong>}
+                        {' • '}{ca.incident.company_name}{ca.incident.location_name ? ' • ' + ca.incident.location_name : ''}{ca.incident.incident_date ? ' • ' + formatDate(ca.incident.incident_date) : ''}
+                        {ca.incident.brief_description && <div style={{ marginTop: '4px', color: '#334155' }}>{String(ca.incident.brief_description).replace(/^Brief Description:\s*/i, '')}</div>}
                       </div>
-                      {isSLP && ca.incidents && (
-                        <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '5px' }}>
-                          <a href={`/investigation-workbench/${ca.incident_id}`} style={{ color: '#1e3a8a', textDecoration: 'none' }}>
-                            {ca.incidents.incident_id}
-                          </a>
-                          {' • '}{ca.incidents.company_name} • {ca.incidents.location_name}
-                        </div>
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => openUpdateModal(ca)} 
-                      style={{ ...styles.actionBtn, ...styles.primaryBtn }}
-                    >
-                      Update Status
+                    )}
+                  </div>
+                  {!(closed && !scope?.all_companies && ca.effective_status !== 'Completed') && (
+                    <button onClick={() => openUpdateModal(ca)} style={{ ...styles.actionBtn, ...(closed ? styles.outlineBtn : styles.successBtn) }}>
+                      {closed ? 'Update' : 'Close / Update'}
                     </button>
-                  </div>
-
-                  <p style={{ margin: '0 0 15px', fontSize: '15px' }}>{ca.action_description}</p>
-
-                  <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: '#64748b', flexWrap: 'wrap' }}>
-                    <span>👤 {ca.action_owner_name || 'Unassigned'}</span>
-                    <span>📧 {ca.action_owner_email || '-'}</span>
-                    <span style={{ color: deadline.color, fontWeight: deadline.isOverdue ? '700' : '400' }}>
-                      📅 Due: {formatDate(ca.target_date)} {deadline.text && `(${deadline.text})`}
-                    </span>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div style={{ marginTop: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', marginBottom: '5px' }}>
-                      <span>Progress</span>
-                      <span>{ca.percent_complete || 0}%</span>
-                    </div>
-                    <div style={styles.progressBar}>
-                      <div style={{ ...styles.progressFill, width: `${ca.percent_complete || 0}%` }} />
-                    </div>
-                  </div>
-
-                  {ca.completion_notes && (
-                    <div style={{ marginTop: '15px', padding: '10px 15px', background: '#f8fafc', borderRadius: '8px', fontSize: '14px' }}>
-                      <strong style={{ fontSize: '12px', color: '#64748b' }}>NOTES:</strong>
-                      <p style={{ margin: '5px 0 0' }}>{ca.completion_notes}</p>
-                    </div>
                   )}
                 </div>
-              );
-            })
-          )}
+                <p style={{ margin: '0 0 15px', fontSize: '15px', whiteSpace: 'pre-wrap' }}>{ca.action_description || ca.description}</p>
+                <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: '#64748b', flexWrap: 'wrap' }}>
+                  <span>👤 {ca.action_owner_name || 'Unassigned'}</span>
+                  <span>📧 {ca.action_owner_email || '-'}</span>
+                  <span style={{ color: deadline.color, fontWeight: deadline.isOverdue ? '700' : '400' }}>📅 Due: {formatDate(dueOf(ca))} {deadline.text && `(${deadline.text})`}</span>
+                </div>
+                {ca.completion_notes && (
+                  <div style={{ marginTop: '15px', padding: '10px 15px', background: '#f8fafc', borderRadius: '8px', fontSize: '14px' }}>
+                    <strong style={{ fontSize: '12px', color: '#64748b' }}>CLOSE-OUT NOTES:</strong>
+                    <p style={{ margin: '5px 0 0', whiteSpace: 'pre-wrap' }}>{ca.completion_notes}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        <div style={styles.footer}>
-          <span style={{ fontWeight: '500' }}>AnthroSafe™ Field Driven Safety</span> | © 2026 SLP Alaska, LLC
-        </div>
+        <div style={styles.footer}><span style={{ fontWeight: '500' }}>AnthroSafe™ Field Driven Safety</span> | © 2026 SLP Alaska, LLC</div>
       </div>
 
-      {/* Update Modal */}
-      {showUpdateModal && selectedCA && (
-        <div style={styles.modal} onClick={() => setShowUpdateModal(false)}>
+      {selectedCA && (
+        <div style={styles.modal} onClick={() => setSelectedCA(null)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>Update Corrective Action</div>
-            
+            <div style={styles.modalHeader}>Close / Update CA-{selectedCA.action_number ?? selectedCA.id}</div>
             <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
-              <strong>CA-{selectedCA.action_number}</strong>
-              <p style={{ margin: '5px 0 0', fontSize: '14px' }}>{selectedCA.action_description}</p>
+              {selectedCA.incident && <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>{selectedCA.incident.incident_id} • {selectedCA.incident.company_name}</div>}
+              <p style={{ margin: 0, fontSize: '14px', whiteSpace: 'pre-wrap' }}>{selectedCA.action_description || selectedCA.description}</p>
             </div>
-
             <div style={styles.formGroup}>
               <label style={styles.label}>Status</label>
-              <select 
-                value={updateData.action_status} 
-                onChange={(e) => setUpdateData({ ...updateData, action_status: e.target.value })}
-                style={styles.select}
-              >
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              <select value={updateData.action_status} onChange={(e) => setUpdateData({ ...updateData, action_status: e.target.value })} style={styles.select}>
+                {(scope?.statuses || []).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
+              {updateData.action_status === 'Completed' && <p style={{ fontSize: '13px', color: '#475569', margin: '8px 0 0' }}>Completed stops the reminder emails. SLP Alaska then verifies it worked.</p>}
             </div>
-
             <div style={styles.formGroup}>
-              <label style={styles.label}>Percent Complete: {updateData.percent_complete}%</label>
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                step="5"
-                value={updateData.percent_complete}
-                onChange={(e) => setUpdateData({ ...updateData, percent_complete: parseInt(e.target.value) })}
-                style={{ width: '100%' }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b' }}>
-                <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-              </div>
+              <label style={styles.label}>What was done {updateData.action_status === 'Completed' ? '*' : '(optional)'}</label>
+              <textarea value={updateData.notes} onChange={(e) => setUpdateData({ ...updateData, notes: e.target.value })}
+                placeholder="What was changed, who did it, when, and where the proof is (photos, procedure, sign-in sheet)..." style={styles.textarea} />
             </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Notes / Comments</label>
-              <textarea 
-                value={updateData.completion_notes}
-                onChange={(e) => setUpdateData({ ...updateData, completion_notes: e.target.value })}
-                placeholder="Add notes about progress, blockers, or completion..."
-                style={styles.textarea}
-              />
-            </div>
-
+            {saveError && <div role="alert" style={{ background: '#fef2f2', border: '2px solid #b91c1c', color: '#7f1d1d', padding: '10px', borderRadius: '8px', marginBottom: '12px', fontWeight: 600 }}>{saveError}</div>}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowUpdateModal(false)} style={{ ...styles.actionBtn, ...styles.outlineBtn }}>
-                Cancel
-              </button>
-              <button onClick={saveUpdate} disabled={saving} style={{ ...styles.actionBtn, ...styles.primaryBtn, opacity: saving ? 0.6 : 1 }}>
-                {saving ? 'Saving...' : 'Save Update'}
-              </button>
+              <button onClick={() => setSelectedCA(null)} style={{ ...styles.actionBtn, ...styles.outlineBtn }}>Cancel</button>
+              <button onClick={saveUpdate} disabled={saving} style={{ ...styles.actionBtn, ...styles.primaryBtn, opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>
