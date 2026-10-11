@@ -248,7 +248,7 @@ function EmployeesTab({ token, companyId }) {
         <div style={S.statBox}><div style={S.statNum}>{users.length}</div><div style={S.statLbl}>Total</div></div>
         <div style={S.statBox}><div style={{ ...S.statNum, color: '#2e7d32' }}>{active}</div><div style={S.statLbl}>Active</div></div>
         <div style={S.statBox}><div style={{ ...S.statNum, color: '#f57c00' }}>{pending}</div><div style={S.statLbl}>Pending Login</div></div>
-        <div style={S.statBox}><div style={{ ...S.statNum, color: '#b71c1c' }}>{users.length - active}</div><div style={S.statLbl}>Inactive</div></div>
+        <div style={S.statBox}><div style={{ ...S.statNum, color: '#1e3a5f' }}>{users.length - active}</div><div style={S.statLbl}>Inactive</div></div>
       </div>
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
         <input
@@ -981,10 +981,10 @@ const S = {
   pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' },
   pageTitle: { fontSize: '26px', fontWeight: '700', color: '#1a1a2e', margin: '0 0 4px' },
   pageSubtitle: { fontSize: '14px', color: '#666', margin: 0 },
-  backLink: { fontSize: '13px', color: '#b71c1c', textDecoration: 'none', fontWeight: '600' },
+  backLink: { fontSize: '13px', color: '#1e3a5f', textDecoration: 'none', fontWeight: '600' },
   tabBar: { display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '2px solid #ddd', flexWrap: 'wrap' },
   tabBtn: { padding: '10px 16px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#666', borderBottom: '2px solid transparent', marginBottom: '-2px' },
-  tabBtnActive: { color: '#b71c1c', borderBottom: '2px solid #b71c1c' },
+  tabBtnActive: { color: '#1e3a5f', borderBottom: '2px solid #1e3a5f' },
   tabContent: { background: '#fff', borderRadius: '10px', padding: '28px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' },
   tabHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   tabTitle: { fontSize: '18px', fontWeight: '700', color: '#1a1a2e', margin: 0 },
@@ -997,9 +997,9 @@ const S = {
   badgeGray: { background: '#f5f5f5', color: '#999', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
   badgeOrange: { background: '#fff8e1', color: '#f57c00', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
   badgeBlue: { background: '#e3f2fd', color: '#1565c0', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700' },
-  btnPrimary: { background: '#b71c1c', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' },
+  btnPrimary: { background: '#1e3a5f', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' },
   btnSmall: { background: '#e3f2fd', color: '#1565c0', border: 'none', borderRadius: '6px', padding: '5px 12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' },
-  btnSmallRed: { background: '#ffebee', color: '#b71c1c', border: 'none', borderRadius: '6px', padding: '5px 12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' },
+  btnSmallRed: { background: '#ffebee', color: '#1e3a5f', border: 'none', borderRadius: '6px', padding: '5px 12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' },
   modal: { background: '#fff', borderRadius: '12px', padding: '32px', width: '100%', maxWidth: '520px', maxHeight: '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },

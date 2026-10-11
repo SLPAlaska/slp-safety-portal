@@ -164,7 +164,7 @@ export default function HazardIDForm() {
   const getPSIFStyle = () => {
     switch (formData.psif_classification) {
       case 'PSIF-Critical': return { bg: '#fee2e2', border: '#dc2626', badgeBg: '#dc2626', text: 'CRITICAL: High energy hazard with NO controls or inadequate controls' };
-      case 'PSIF-High': return { bg: '#ffedd5', border: '#ea580c', badgeBg: '#ea580c', text: 'High energy could be released - only PPE/procedures in place' };
+      case 'PSIF-High': return { bg: '#ffedd5', border: '#3b6ea5', badgeBg: '#3b6ea5', text: 'High energy could be released - only PPE/procedures in place' };
       case 'PSIF-Elevated': return { bg: '#fef3c7', border: '#f59e0b', badgeBg: '#f59e0b', text: 'High energy hazard - relying on alternative controls only' };
       case 'STKY-Controlled': return { bg: '#d1fae5', border: '#059669', badgeBg: '#059669', text: 'High energy hazard with effective direct controls' };
       case 'STKY-Pending': return { bg: '#fef3c7', border: '#f59e0b', badgeBg: '#f59e0b', text: 'High energy identified - complete assessment' };
@@ -177,7 +177,7 @@ export default function HazardIDForm() {
     const styles = {
       Low: { color: '#059669', bg: 'rgba(5, 150, 105, 0.1)', border: '#059669', icon: '🟢' },
       Medium: { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', icon: '🟡' },
-      High: { color: '#ea580c', bg: 'rgba(234, 88, 12, 0.1)', border: '#ea580c', icon: '🟠' },
+      High: { color: '#3b6ea5', bg: 'rgba(234, 88, 12, 0.1)', border: '#3b6ea5', icon: '🟠' },
       Critical: { color: '#dc2626', bg: 'rgba(220, 38, 38, 0.1)', border: '#dc2626', icon: '🔴' }
     };
     return styles[level] || { color: '#d1d5db', bg: '#fff', border: '#d1d5db', icon: '' };
@@ -188,13 +188,13 @@ export default function HazardIDForm() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
             <h2 style={{ color: '#16a34a', marginBottom: '15px', fontSize: '24px' }}>Hazard Report Submitted!</h2>
             <p style={{ color: '#6b7280', marginBottom: '25px' }}>Thank you for identifying this hazard. Your report helps keep everyone safe.</p>
-            <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}>
+            <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}>
               Submit Another Report
             </button>
           </div>
@@ -219,7 +219,7 @@ export default function HazardIDForm() {
       <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '160px', margin: '15px auto', display: 'block' }} />
           <h1 style={{ margin: '0', fontSize: '26px' }}>Hazard ID Report</h1>
@@ -268,7 +268,7 @@ export default function HazardIDForm() {
             </div>
 
             {/* Hazard Details */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>⚠️ Hazard Details</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>⚠️ Hazard Details</div>
             
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '15px', marginBottom: '20px', fontSize: '13px', color: '#991b1b' }}>
               <strong>What is a Hazard?</strong> Any condition, behavior, or situation that has the potential to cause injury, illness, damage, or environmental harm.
@@ -292,7 +292,7 @@ export default function HazardIDForm() {
             </div>
 
             {/* Threat Level */}
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#7c3aed' }}>📊 Threat Level Assessment</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>📊 Threat Level Assessment</div>
             
             <div style={styles.formGroup}>
               <label style={styles.label}>Threat Level <span style={{ color: '#dc2626' }}>*</span></label>
@@ -408,7 +408,7 @@ export default function HazardIDForm() {
             <MultiPhotoUpload ref={photoRef} formType="hazard-id" />
 
             {/* Submit */}
-            <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
+            <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
               {isSubmitting ? 'Submitting...' : 'Submit Hazard Report'}
             </button>
           </form>

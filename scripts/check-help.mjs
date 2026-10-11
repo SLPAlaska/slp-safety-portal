@@ -25,7 +25,7 @@ const gateAll = makeGate(manifest, {}, '')
 const ids = manifest.modules.map((m) => m.id)
 
 const pageExists = (p) => {
-  if (/^(tel|mailto):/.test(p)) return true
+  if (/^(tel|mailto|https?):/.test(p)) return true
   if (p === '/') return true
   if (existsSync(join(root, 'public', p))) return true
   const dir = join(root, 'app', p)
@@ -34,7 +34,7 @@ const pageExists = (p) => {
 
 // Catalog coverage.
 const catalog = new Set(FORMS.map((f) => f.href))
-const homeLinks = [...home.matchAll(/href:\s*'([^']+)'/g)].map((x) => x[1])
+const homeLinks = [...home.matchAll(/href:\s*'([^']+)'/g)].map((x) => x[1]).filter((h) => !/^https?:/.test(h))
 for (const h of homeLinks) ok(catalog.has(h), `home link ${h} has no Help Desk catalog row (app/lib/help/forms.js)`)
 const NOT_FOR_FIELD = new Set(['/', '/demo', '/investigation-report', '/sail-sync'].concat([]))
 for (const m of manifest.modules) {
@@ -131,6 +131,8 @@ const SAMPLES = [
   ['drug test', 'form:/da-testing', 'da-tile'],
   ['exclusion zone dropped object', 'drops-calc', 'form:/drops-calculator'],
   ['add employee training admin', 'company-admin-add'],
+  ['predictive safety dashboard', 'dashboards'],
+  ['leading indicators dashboard', 'dashboards', 'leading'],
   ['harnes inspecton', 'form:/harness-inspection', 'harness-check'],
   ['scafold', 'form:/scaffold-inspection-form'],
 ]

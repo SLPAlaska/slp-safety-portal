@@ -596,10 +596,10 @@ function ConfidentialCard({ q, rows, savedThisSession, draft, setDraft, busy, on
   const count = Math.max(visible, savedThisSession);
   const row = r || {};
   return (
-    <div id={`q-${q.code}`} data-code={q.code} style={{ border: '1px solid #c4b5fd', borderLeft: '4px solid #7c3aed', borderRadius: 10, padding: 14, marginTop: 10, background: '#faf5ff' }}>
-      <div style={{ fontSize: 11, color: '#5b21b6', fontWeight: 800 }}>{q.code} · PRIVATE PEER · CONFIDENTIAL</div>
+    <div id={`q-${q.code}`} data-code={q.code} style={{ border: '1px solid #e0eaf5', borderLeft: '4px solid #3b6ea5', borderRadius: 10, padding: 14, marginTop: 10, background: '#e0eaf5' }}>
+      <div style={{ fontSize: 11, color: '#2d5a87', fontWeight: 800 }}>{q.code} · PRIVATE PEER · CONFIDENTIAL</div>
       <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>{q.prompt}</div>
-      <div style={{ fontSize: 12, color: '#5b21b6', marginTop: 6 }}>
+      <div style={{ fontSize: 12, color: '#2d5a87', marginTop: 6 }}>
         Ask 3–5 people who were <strong>not</strong> involved, one at a time, in private. Record the answer with <strong>no name</strong>.
         Only the investigation lead and super admins can read these. Never use them as evidence against anyone.
       </div>
@@ -616,7 +616,7 @@ function ConfidentialCard({ q, rows, savedThisSession, draft, setDraft, busy, on
       )}
       <textarea value={draft} onChange={e => setDraft(e.target.value)} rows={3} placeholder="Their answer, in their words (no names)…" style={{ ...input, marginTop: 10 }} />
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-        <button type="button" onClick={onAdd} disabled={busy || !draft.trim()} style={{ ...primaryBtn, background: '#6d28d9', opacity: busy || !draft.trim() ? 0.6 : 1 }}>
+        <button type="button" onClick={onAdd} disabled={busy || !draft.trim()} style={{ ...primaryBtn, background: '#3b6ea5', opacity: busy || !draft.trim() ? 0.6 : 1 }}>
           {busy ? 'Saving…' : 'Save confidential answer'}
         </button>
         <label style={{ fontSize: 12, color: C.muted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -670,6 +670,6 @@ const input = {
   width: '100%', padding: '8px 10px', fontSize: 14, border: `1px solid ${C.border}`,
   borderRadius: 6, background: C.card, color: C.text, fontFamily: 'inherit', boxSizing: 'border-box',
 };
-const tag = { marginLeft: 6, fontSize: 10, background: '#eef2ff', color: '#3730a3', padding: '1px 6px', borderRadius: 4 };
+const tag = { marginLeft: 6, fontSize: 10, background: '#eef2ff', color: '#2d5a87', padding: '1px 6px', borderRadius: 4 };
 const linkBtn = { background: 'none', border: 'none', color: C.steel, cursor: 'pointer', fontWeight: 700, padding: 0 };
 const primaryBtn = { background: C.navy, color: 'white', padding: '10px 16px', borderRadius: 8, border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', minHeight: 44 };

@@ -163,7 +163,7 @@ export default function SailDashboard({ companyFilter = null }) {
     <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
         padding: '20px',
         color: 'white'
       }}>

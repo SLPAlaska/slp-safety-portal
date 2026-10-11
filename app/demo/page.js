@@ -30,7 +30,7 @@ const CONSEQ = [
   { level: 1, label: 'Negligible', color: '#22c55e', maxE: 20,  desc: 'Minor bruise or no injury expected' },
   { level: 2, label: 'Minor',      color: '#84cc16', maxE: 80,  desc: 'First aid level injury likely' },
   { level: 3, label: 'Moderate',   color: '#eab308', maxE: 200, desc: 'Medical treatment injury possible' },
-  { level: 4, label: 'Major',      color: '#f97316', maxE: 500, desc: 'Serious injury or permanent disability possible' },
+  { level: 4, label: 'Major',      color: '#3b6ea5', maxE: 500, desc: 'Serious injury or permanent disability possible' },
   { level: 5, label: 'Critical',   color: '#ef4444', maxE: Infinity, desc: 'FATALITY or life-altering injury possible' },
 ];
 const LIKELY = ['Rare', 'Unlikely', 'Possible', 'Likely', 'Almost Certain'];
@@ -43,10 +43,10 @@ const RISK_LABELS = [
 ];
 const RISK_COLORS = [
   ['#22c55e','#22c55e','#84cc16','#eab308','#eab308'],
-  ['#22c55e','#84cc16','#eab308','#eab308','#f97316'],
-  ['#84cc16','#eab308','#eab308','#f97316','#ef4444'],
-  ['#eab308','#eab308','#f97316','#ef4444','#ef4444'],
-  ['#eab308','#f97316','#ef4444','#ef4444','#7f1d1d'],
+  ['#22c55e','#84cc16','#eab308','#eab308','#3b6ea5'],
+  ['#84cc16','#eab308','#eab308','#3b6ea5','#ef4444'],
+  ['#eab308','#eab308','#3b6ea5','#ef4444','#ef4444'],
+  ['#eab308','#3b6ea5','#ef4444','#ef4444','#7f1d1d'],
 ];
 
 // ── Micro-LMS: one lesson + quiz ──
@@ -64,7 +64,7 @@ const LESSON = {
 };
 
 const S = {
-  wrap: { minHeight: '100vh', background: 'linear-gradient(160deg,#0f172a 0%,#1e293b 100%)', padding: '20px', fontFamily: 'system-ui,-apple-system,sans-serif' },
+  wrap: { minHeight: '100vh', background: 'linear-gradient(160deg,#1e3a5f 0%,#2d5a87 100%)', padding: '20px', fontFamily: 'system-ui,-apple-system,sans-serif' },
   card: { maxWidth: '560px', margin: '0 auto', background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.4)' },
   h1: { margin: '0 0 6px', fontSize: '24px', color: '#0f172a' },
   sub: { margin: '0 0 16px', color: '#475569', fontSize: '14px', lineHeight: 1.5 },
@@ -72,10 +72,10 @@ const S = {
   input: { width: '100%', padding: '14px', fontSize: '16px', border: '2px solid #e2e8f0', borderRadius: '10px', boxSizing: 'border-box' },
   ta: { width: '100%', padding: '14px', fontSize: '16px', border: '2px solid #e2e8f0', borderRadius: '10px', minHeight: '80px', boxSizing: 'border-box' },
   chips: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-  chip: (on) => ({ padding: '10px 14px', borderRadius: '999px', border: '2px solid ' + (on ? '#f97316' : '#e2e8f0'), background: on ? '#fff7ed' : 'white', color: on ? '#c2410c' : '#475569', fontSize: '14px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }),
+  chip: (on) => ({ padding: '10px 14px', borderRadius: '999px', border: '2px solid ' + (on ? '#3b6ea5' : '#e2e8f0'), background: on ? '#fff7ed' : 'white', color: on ? '#2d5a87' : '#475569', fontSize: '14px', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }),
   big: { width: '100%', padding: '17px', fontSize: '17px', fontWeight: 700, border: 'none', borderRadius: '12px', cursor: 'pointer', marginTop: '16px' },
-  orange: { background: 'linear-gradient(135deg,#f97316,#ea580c)', color: 'white' },
-  green: { background: 'linear-gradient(135deg,#059669,#047857)', color: 'white' },
+  orange: { background: 'linear-gradient(135deg,#1e3a5f,#2d5a87)', color: 'white' },
+  green: { background: 'linear-gradient(135deg,#1e3a5f,#2d5a87)', color: 'white' },
   ghost: { background: '#f1f5f9', color: '#334155' },
   menuBtn: (grad) => ({ width: '100%', textAlign: 'left', padding: '15px 16px', marginTop: '10px', border: 'none', borderRadius: '12px', cursor: 'pointer', background: grad, color: 'white' }),
   menuTitle: { fontSize: '16.5px', fontWeight: 700, margin: 0 },
@@ -185,31 +185,31 @@ export default function DemoPage() {
       <label style={S.label}>Your name (shows on the dashboard)</label>
       <input style={S.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="First name is fine" />
 
-      <button style={S.menuBtn('linear-gradient(135deg,#f97316,#c2410c)')} onClick={() => openForm('hazard')}>
+      <button style={S.menuBtn('linear-gradient(135deg,#1e3a5f,#2d5a87)')} onClick={() => openForm('hazard')}>
         <p style={S.menuTitle}>⚠ Hazard ID</p>
         <p style={S.menuSub}>Spot it, snap it, report it — 60 seconds</p>
       </button>
-      <button style={S.menuBtn('linear-gradient(135deg,#dc2626,#7f1d1d)')} onClick={() => openForm('drops')}>
+      <button style={S.menuBtn('linear-gradient(135deg,#1e3a5f,#2d5a87)')} onClick={() => openForm('drops')}>
         <p style={S.menuTitle}>🧮 DROPS Hunt — Dropped Object Calculator</p>
         <p style={S.menuSub}>Weight + height = live physics: energy, impact force, exclusion zone</p>
       </button>
-      <button style={S.menuBtn('linear-gradient(135deg,#0ea5e9,#0369a1)')} onClick={() => openForm('bbs')}>
+      <button style={S.menuBtn('linear-gradient(135deg,#1e3a5f,#2d5a87)')} onClick={() => openForm('bbs')}>
         <p style={S.menuTitle}>👀 BBS Observation</p>
         <p style={S.menuSub}>Safe or at-risk behavior → drives the culture index</p>
       </button>
-      <button style={S.menuBtn('linear-gradient(135deg,#10b981,#047857)')} onClick={() => openForm('gc')}>
+      <button style={S.menuBtn('linear-gradient(135deg,#1e3a5f,#2d5a87)')} onClick={() => openForm('gc')}>
         <p style={S.menuTitle}>🎯 Good Catch / Near Miss</p>
         <p style={S.menuSub}>Almost happened → feeds SIF-potential analytics</p>
       </button>
-      <button style={S.menuBtn('linear-gradient(135deg,#8b5cf6,#6d28d9)')} onClick={() => openForm('st5')}>
+      <button style={S.menuBtn('linear-gradient(135deg,#1e3a5f,#2d5a87)')} onClick={() => openForm('st5')}>
         <p style={S.menuTitle}>✋ Stop / Take 5</p>
         <p style={S.menuSub}>Pre-task pause → leading-indicator gold</p>
       </button>
-      <button style={S.menuBtn('linear-gradient(135deg,#f59e0b,#b45309)')} onClick={() => openForm('sling')}>
+      <button style={S.menuBtn('linear-gradient(135deg,#1e3a5f,#2d5a87)')} onClick={() => openForm('sling')}>
         <p style={S.menuTitle}>🪢 Sling Inspection</p>
         <p style={S.menuSub}>12-point nylon sling check, tap-through in under a minute</p>
       </button>
-      <button style={S.menuBtn('linear-gradient(135deg,#06b6d4,#0e7490)')} onClick={() => openForm('lms')}>
+      <button style={S.menuBtn('linear-gradient(135deg,#1e3a5f,#2d5a87)')} onClick={() => openForm('lms')}>
         <p style={S.menuTitle}>🎓 Safety Training (LMS)</p>
         <p style={S.menuSub}>90-second micro-lesson, quiz, instant certificate</p>
       </button>
@@ -489,7 +489,7 @@ export default function DemoPage() {
       const q = LESSON.quiz[qIdx];
       return (
         <div style={S.wrap}><div style={S.card}>
-          <p style={{ ...S.sub, margin: 0, fontWeight: 700, color: '#0e7490' }}>QUIZ — {qIdx + 1} of {LESSON.quiz.length}</p>
+          <p style={{ ...S.sub, margin: 0, fontWeight: 700, color: '#2d5a87' }}>QUIZ — {qIdx + 1} of {LESSON.quiz.length}</p>
           <h1 style={{ ...S.h1, fontSize: '20px' }}>{q.q}</h1>
           {q.a.map((opt, i) => (
             <button key={i} style={{ ...S.big, ...S.ghost, textAlign: 'left' }} onClick={() => {
@@ -507,7 +507,7 @@ export default function DemoPage() {
     const s = LESSON.slides[slide];
     return (
       <div style={S.wrap}><div style={S.card}>
-        <p style={{ ...S.sub, margin: 0, fontWeight: 700, color: '#0e7490' }}>{LESSON.title} — slide {slide + 1} of {LESSON.slides.length}</p>
+        <p style={{ ...S.sub, margin: 0, fontWeight: 700, color: '#2d5a87' }}>{LESSON.title} — slide {slide + 1} of {LESSON.slides.length}</p>
         <h1 style={{ ...S.h1, marginTop: '8px' }}>{s.h}</h1>
         <p style={{ ...S.sub, fontSize: '16px' }}>{s.t}</p>
         <button style={{ ...S.big, ...S.orange }} onClick={() => setSlide(slide + 1)}>{slide + 1 < LESSON.slides.length ? 'Next →' : 'Take the Quiz →'}</button>

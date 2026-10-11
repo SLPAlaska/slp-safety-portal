@@ -230,9 +230,9 @@ export default function FallProtectionPlan(){
     // Determine grade
     let grade,color;
     if(score>=90){grade='A';color='#059669';}
-    else if(score>=80){grade='B';color='#0891b2';}
+    else if(score>=80){grade='B';color='#2d5a87';}
     else if(score>=70){grade='C';color='#f59e0b';}
-    else if(score>=60){grade='D';color='#ea580c';}
+    else if(score>=60){grade='D';color='#3b6ea5';}
     else{grade='F';color='#dc2626';}
 
     // Can't submit if F
@@ -479,17 +479,17 @@ export default function FallProtectionPlan(){
     rescueAdditionalNotes:''});setComplianceGrade({grade:'',score:0,color:'',issues:[],suggestions:[],canSubmit:false});setSubmitted(false);setShowGuidance(false);};
 
   const s={
-    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
+    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',padding:'20px'},
     formContainer:{maxWidth:'900px',margin:'0 auto',background:'white',borderRadius:'12px',boxShadow:'0 4px 6px rgba(0,0,0,0.1)',overflow:'hidden'},
-    header:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',padding:'30px',textAlign:'center'},
+    header:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'30px',textAlign:'center'},
     content:{padding:'30px'},
     section:{marginBottom:'25px',padding:'20px',background:'#f8fafc',borderRadius:'12px',border:'1px solid #e5e7eb'},
     sectionHeader:{background:'#1e3a8a',color:'white',padding:'12px 20px',margin:'-20px -20px 20px',fontWeight:'600',fontSize:'15px',display:'flex',alignItems:'center',gap:'10px',borderRadius:'12px 12px 0 0'},
-    sectionRed:{background:'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)'},
-    sectionGreen:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)'},
-    sectionPurple:{background:'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'},
-    sectionOrange:{background:'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)'},
-    sectionCyan:{background:'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)'},
+    sectionRed:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'},
+    sectionGreen:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'},
+    sectionPurple:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'},
+    sectionOrange:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'},
+    sectionCyan:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'},
     formRow:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'15px'},
     formGroup:{marginBottom:'15px'},
     label:{display:'block',marginBottom:'6px',fontWeight:'500',color:'#1f2937',fontSize:'14px'},
@@ -510,9 +510,9 @@ export default function FallProtectionPlan(){
     clearanceResult:{display:'flex',alignItems:'center',gap:'20px',marginTop:'15px',padding:'15px',background:'white',borderRadius:'8px'},
     equipGrid:{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(120px, 1fr))',gap:'15px'},
     equipItem:{background:'#f3f4f6',borderRadius:'8px',padding:'15px',textAlign:'center'},
-    submitBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'18px',fontWeight:'600',cursor:'pointer',marginTop:'20px'},
-    submitBtnDisabled:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'18px',fontWeight:'600',cursor:'pointer',marginTop:'20px'},
-    successMessage:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',padding:'30px',borderRadius:'8px',textAlign:'center',marginTop:'20px'},
+    submitBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'18px',fontWeight:'600',cursor:'pointer',marginTop:'20px'},
+    submitBtnDisabled:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'18px',fontWeight:'600',cursor:'pointer',marginTop:'20px'},
+    successMessage:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'30px',borderRadius:'8px',textAlign:'center',marginTop:'20px'},
     verifyItem:{display:'flex',alignItems:'center',gap:'10px',padding:'12px',background:'white',border:'1px solid #d1d5db',borderRadius:'8px',marginBottom:'10px'},
     verifyChecked:{borderColor:'#059669',background:'rgba(5,150,105,0.05)'},
     // GRADE BOX STYLES
@@ -535,7 +535,7 @@ export default function FallProtectionPlan(){
     tierLabel:{fontWeight:'800',fontSize:'12px',letterSpacing:'0.5px',marginBottom:'10px',display:'flex',alignItems:'center',gap:'6px'},
     recCard:{background:'white',borderRadius:'8px',padding:'12px',marginBottom:'8px',display:'flex',alignItems:'flex-start',gap:'12px',cursor:'pointer',border:'2px solid transparent',transition:'all 0.2s'},
     recCardSelected:{borderColor:'#1e3a8a',background:'#eff6ff'},
-    nextBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',color:'white',border:'none',borderRadius:'10px',fontSize:'16px',fontWeight:'700',cursor:'pointer',marginTop:'20px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'},
+    nextBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',border:'none',borderRadius:'10px',fontSize:'16px',fontWeight:'700',cursor:'pointer',marginTop:'20px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'},
     backBtn:{padding:'10px 20px',background:'white',color:'#1e3a8a',border:'2px solid #1e3a8a',borderRadius:'8px',fontSize:'14px',fontWeight:'600',cursor:'pointer'}
   };
 
@@ -573,13 +573,13 @@ export default function FallProtectionPlan(){
             
             {majorIssues.length>0&&(
               <div style={{marginBottom:'15px'}}>
-                <h4 style={{color:'#ea580c',margin:'0 0 10px',fontSize:'14px'}}>⚠️ Major Issues:</h4>
+                <h4 style={{color:'#3b6ea5',margin:'0 0 10px',fontSize:'14px'}}>⚠️ Major Issues:</h4>
                 {majorIssues.map((issue,i)=>(
                   <div key={i} style={{...s.issueCard,borderColor:'#f59e0b'}}>
                     <div style={{fontWeight:'700',color:'#92400e',marginBottom:'5px'}}>{issue.title}</div>
                     <div style={{fontSize:'13px',color:'#1f2937',marginBottom:'5px'}}>{issue.problem}</div>
                     <div style={{fontSize:'13px',color:'#065f46'}}><strong>Solution:</strong> {issue.solution}</div>
-                    {issue.action&&<button onClick={()=>applyRecommendedSystem(issue.action)} style={{...s.fixButton,background:'#ea580c'}}>Apply: {PROTECTION_SYSTEMS[issue.action]?.name}</button>}
+                    {issue.action&&<button onClick={()=>applyRecommendedSystem(issue.action)} style={{...s.fixButton,background:'#3b6ea5'}}>Apply: {PROTECTION_SYSTEMS[issue.action]?.name}</button>}
                   </div>
                 ))}
               </div>
@@ -599,12 +599,12 @@ export default function FallProtectionPlan(){
             
             {suggestions.length>0&&canSubmit&&(
               <div>
-                <h4 style={{color:'#0891b2',margin:'0 0 10px',fontSize:'14px'}}>💡 Suggestions to Improve:</h4>
+                <h4 style={{color:'#2d5a87',margin:'0 0 10px',fontSize:'14px'}}>💡 Suggestions to Improve:</h4>
                 {suggestions.map((sug,i)=>(
                   <div key={i} style={s.suggestionCard}>
                     <div style={{fontWeight:'600',color:'#92400e',marginBottom:'3px'}}>{sug.title}</div>
                     <div style={{fontSize:'13px',color:'#78350f'}}>{sug.message}</div>
-                    {sug.action&&<button onClick={()=>applyRecommendedSystem(sug.action)} style={{...s.fixButton,background:'#0891b2',marginTop:'8px'}}>Try: {PROTECTION_SYSTEMS[sug.action]?.name}</button>}
+                    {sug.action&&<button onClick={()=>applyRecommendedSystem(sug.action)} style={{...s.fixButton,background:'#2d5a87',marginTop:'8px'}}>Try: {PROTECTION_SYSTEMS[sug.action]?.name}</button>}
                   </div>
                 ))}
               </div>
@@ -760,7 +760,7 @@ export default function FallProtectionPlan(){
       1: { border:'#059669', bg:'#ecfdf5', label:'🛑 Level 1 — Elimination / Passive Protection', labelColor:'#065f46', badge:'MOST PROTECTIVE' },
       2: { border:'#1e3a8a', bg:'#eff6ff', label:'🔒 Level 2 — Fall Restraint (Prevents Fall)', labelColor:'#1e3a8a', badge:'PREVENTS FALL' },
       3: { border:'#f59e0b', bg:'#fffbeb', label:'🪢 Level 3 — Fall Arrest (Stops Fall)', labelColor:'#92400e', badge:'PRIMARY FIELD METHOD' },
-      4: { border:'#7c3aed', bg:'#f5f3ff', label:'🕸️ Level 4 — Catch Systems', labelColor:'#5b21b6', badge:'SUPPLEMENTAL' },
+      4: { border:'#3b6ea5', bg:'#e0eaf5', label:'🕸️ Level 4 — Catch Systems', labelColor:'#2d5a87', badge:'SUPPLEMENTAL' },
     };
 
     const renderTier = (level, tierNum) => {
@@ -789,7 +789,7 @@ export default function FallProtectionPlan(){
 
     return (
       <div>
-        <div style={{background:'linear-gradient(135deg,#1e3a8a,#1e40af)',borderRadius:'12px',padding:'18px',marginBottom:'20px',color:'white'}}>
+        <div style={{background:'linear-gradient(135deg,#1e3a5f,#2d5a87)',borderRadius:'12px',padding:'18px',marginBottom:'20px',color:'white'}}>
           <div style={{fontSize:'12px',opacity:0.8,marginBottom:'4px'}}>Based on: {envLabel} at {h} ft</div>
           {rec.topRec ? (
             <div>
@@ -881,7 +881,7 @@ export default function FallProtectionPlan(){
 
         {/* Clearance calc — only if system needs it */}
         {needsClearance && (
-          <div style={s.section}><div style={{...s.sectionHeader,background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>📏 Fall Clearance Check</div>
+          <div style={s.section}><div style={{...s.sectionHeader,background:'linear-gradient(135deg,#1e3a5f,#2d5a87)'}}>📏 Fall Clearance Check</div>
             <div style={{background:'#fef3c7',borderRadius:'8px',padding:'12px',marginBottom:'16px',fontSize:'13px',color:'#92400e'}}>
               <strong>{PROTECTION_SYSTEMS[formData.userSelectedSystem]?.name}</strong> requires adequate clearance below the anchor. The worker must not strike the lower level before the system arrests the fall.
             </div>
@@ -1022,7 +1022,7 @@ export default function FallProtectionPlan(){
     return (
       <div>
         {/* Context Banner */}
-        <div style={{background:'linear-gradient(135deg,#991b1b,#b91c1c)',borderRadius:'12px',padding:'18px',marginBottom:'20px',color:'white'}}>
+        <div style={{background:'linear-gradient(135deg,#1e3a5f,#2d5a87)',borderRadius:'12px',padding:'18px',marginBottom:'20px',color:'white'}}>
           <div style={{fontWeight:'800',fontSize:'16px',marginBottom:'8px'}}>🚨 Rescue Plan Required by OSHA</div>
           <div style={{fontSize:'12px',opacity:0.85,marginBottom:'12px'}}>
             OSHA 1926.502(d) requires a prompt rescue plan before work begins. Suspension trauma can begin within <strong>3–5 minutes</strong> of a fall arrest event.
@@ -1307,15 +1307,15 @@ export default function FallProtectionPlan(){
 
       <div style={{display:'flex',gap:'12px',marginTop:'10px'}}>
         <button style={s.backBtn} type="button" onClick={()=>setWizardStep(5)}>← Back</button>
-        <button type="button" onClick={printFPP} style={{padding:'16px 20px',background:'linear-gradient(135deg,#374151,#1f2937)',color:'white',border:'none',borderRadius:'10px',fontSize:'14px',fontWeight:'700',cursor:'pointer'}}>🖨️ Print</button>
+        <button type="button" onClick={printFPP} style={{padding:'16px 20px',background:'linear-gradient(135deg,#1e3a5f,#2d5a87)',color:'white',border:'none',borderRadius:'10px',fontSize:'14px',fontWeight:'700',cursor:'pointer'}}>🖨️ Print</button>
         <div style={{flex:1}}>
           {complianceGrade.canSubmit ? (
-            <button type="submit" disabled={isSubmitting} style={{...s.nextBtn,background:'linear-gradient(135deg,#059669,#047857)',opacity:isSubmitting?0.5:1}}>
+            <button type="submit" disabled={isSubmitting} style={{...s.nextBtn,background:'linear-gradient(135deg,#1e3a5f,#2d5a87)',opacity:isSubmitting?0.5:1}}>
               {isSubmitting?'Submitting...':'✓ Submit Fall Protection Plan (Grade: '+complianceGrade.grade+')'}
             </button>
           ) : (
             <div>
-              <button type="button" onClick={()=>setShowGuidance(true)} style={{...s.nextBtn,background:'linear-gradient(135deg,#dc2626,#991b1b)'}}>
+              <button type="button" onClick={()=>setShowGuidance(true)} style={{...s.nextBtn,background:'linear-gradient(135deg,#1e3a5f,#2d5a87)'}}>
                 🚫 Cannot Submit — Grade: {complianceGrade.grade||'?'} (Must fix issues above)
               </button>
             </div>

@@ -52,8 +52,8 @@ const POWER_LINE_CLEARANCE = {
   '≤50V (de minimis)':                                    { min: '10 ft',  exclusion: 10, note: 'Minimum 10 ft applies even at very low voltages per OSHA 1926.1408.', osha: 'OSHA 1926.1408 Table A', color: '#eab308' },
   '51V–1,000V (LV Distribution)':                         { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#eab308' },
   '1,001V–15kV (MV Distribution)':                        { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#eab308' },
-  '15kV–35kV (MV Distribution)':                          { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#f97316' },
-  '35kV–50kV (Sub-Transmission)':                         { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#f97316' },
+  '15kV–35kV (MV Distribution)':                          { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#3b6ea5' },
+  '35kV–50kV (Sub-Transmission)':                         { min: '10 ft',  exclusion: 10, note: 'Standard minimum clearance. Dedicated spotter required when operating within 20 ft.', osha: 'OSHA 1926.1408 Table A', color: '#3b6ea5' },
   'Unknown voltage — Assume overhead distribution (≤50kV)':{ min: '20 ft', exclusion: 20, note: '⚠️ CONSERVATIVE DEFAULT: When voltage is unknown, OSHA requires 20 ft minimum. Do not assume lower clearance. Contact utility to confirm voltage.', osha: 'OSHA 1926.1408(a)(2)', color: '#dc2626' },
   '50kV–100kV (Transmission)':                            { min: '15 ft',  exclusion: 15, note: 'Add 0.4 in per kV above 50kV. Dedicated spotter required. Pre-work utility notification recommended.', osha: 'OSHA 1926.1408 Table A', color: '#dc2626' },
   '100kV–200kV (Transmission)':                           { min: '20 ft',  exclusion: 20, note: 'High voltage transmission — engineering review required. Utility coordination mandatory.', osha: 'OSHA 1926.1408 Table A', color: '#dc2626' },
@@ -426,7 +426,7 @@ export default function CriticalLiftPlanForm() {
        .lift-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
        .back-link { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #1e3a8a; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
        .back-link:hover { background: #1e40af; }
-       .lift-header { background: linear-gradient(135deg, #991b1b 0%, #c41e3a 100%); color: white; padding: 40px; text-align: center; border-radius: 12px 12px 0 0; border: 4px solid #1e3a8a; }
+       .lift-header { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; padding: 40px; text-align: center; border-radius: 12px 12px 0 0; border: 4px solid #1e3a8a; }
        .lift-header img { height: 80px; margin-bottom: 15px; }
        .lift-header h1 { font-size: 42px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
        .subtitle { font-size: 18px; font-weight: 300; margin-top: 8px; }
@@ -436,9 +436,9 @@ export default function CriticalLiftPlanForm() {
        .message.success { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
        .message.error { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
        .section-header { background: #1e3a8a; color: white; padding: 15px 20px; margin: 30px -40px 20px -40px; font-size: 20px; font-weight: 700; border-left: 6px solid #dc2626; }
-       .section-header.red { background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%); }
-       .section-header.orange { background: linear-gradient(135deg, #c2410c 0%, #ea580c 100%); }
-       .section-header.green { background: linear-gradient(135deg, #065f46 0%, #059669 100%); }
+       .section-header.red { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); }
+       .section-header.orange { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); }
+       .section-header.green { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); }
        .info-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; color: #78350f; font-weight: 600; border-radius: 4px; }
        .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
        .form-row-3 { display: flex; gap: 20px; margin-bottom: 20px; }
@@ -458,7 +458,7 @@ export default function CriticalLiftPlanForm() {
        .calc-display { background: #f1f5f9; padding: 15px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 16px; font-weight: 600; color: #1e3a8a; text-align: center; }
        .capacity-status { padding: 20px; border-radius: 10px; text-align: center; font-size: 20px; font-weight: 700; margin: 20px 0; border: 3px solid; }
        .status-red { background: #fee2e2; color: #991b1b; border-color: #dc2626; }
-       .status-orange { background: #fed7aa; color: #9a3412; border-color: #ea580c; }
+       .status-orange { background: #fed7aa; color: #9a3412; border-color: #3b6ea5; }
        .status-yellow { background: #fef3c7; color: #78350f; border-color: #f59e0b; }
        .status-green { background: #d1fae5; color: #065f46; border-color: #10b981; }
        .status-blue { background: #dbeafe; color: #1e3a8a; border-color: #3b82f6; }
@@ -466,7 +466,7 @@ export default function CriticalLiftPlanForm() {
        .rigging-ok { background: #d1fae5; color: #065f46; border: 2px solid #10b981; }
        .rigging-bad { background: #fee2e2; color: #991b1b; border: 2px solid #ef4444; }
        .rigging-neutral { background: #f1f5f9; color: #475569; border: 2px solid #cbd5e1; }
-       .submit-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; border: 3px solid #1e3a8a; }
+       .submit-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: 700; cursor: pointer; margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; border: 3px solid #1e3a8a; }
        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(220,38,38,0.4); }
        .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; transform: none; box-shadow: none; border-color: #6b7280; }
        .reset-btn { width: 100%; padding: 14px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
@@ -863,7 +863,7 @@ export default function CriticalLiftPlanForm() {
                 {submitting ? 'Generating Lift Plan...' : 'Generate Critical Lift Plan'}
               </button>
               <button type="button" onClick={printLiftPlan}
-                style={{flex:1,padding:'16px 32px',background:'linear-gradient(135deg,#374151,#1f2937)',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>
+                style={{flex:1,padding:'16px 32px',background:'linear-gradient(135deg,#1e3a5f,#2d5a87)',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'600',cursor:'pointer'}}>
                 🖨️ Print / Save PDF
               </button>
             </div>

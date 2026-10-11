@@ -61,13 +61,13 @@ export default function WitnessStatement(){
   const resetForm=()=>{setFormData({reportType:'',incidentDate:'',incidentTime:'',incidentLocation:'',witnessName:'',witnessPhone:'',witnessEmail:'',company:'',jobTitle:'',whatWitnessed:'',otherWitnesses:'',otherWitnessNames:'',additionalComments:'',acknowledgment:false});setSubmitted(false);setStatementId('');};
 
   const s={
-    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
+    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',padding:'20px'},
     formBox:{maxWidth:'700px',margin:'0 auto',background:'white',borderRadius:'16px',boxShadow:'0 20px 60px rgba(0,0,0,0.3)',overflow:'hidden'},
-    header:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',padding:'30px',textAlign:'center',borderBottom:'4px solid #c41e3a'},
+    header:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'30px',textAlign:'center',borderBottom:'4px solid #c41e3a'},
     logoBox:{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'0 auto 20px',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'},
     badge:{display:'inline-block',background:'white',color:'#c41e3a',padding:'6px 16px',borderRadius:'20px',fontWeight:'700',fontSize:'0.85rem',marginBottom:'15px',border:'3px solid #c41e3a',boxShadow:'0 2px 8px rgba(0,0,0,0.2)'},
     content:{padding:'30px'},
-    sectionTitle:{color:'#c41e3a',fontSize:'16px',fontWeight:'700',margin:'25px 0 15px',paddingBottom:'8px',borderBottom:'2px solid #ea580c'},
+    sectionTitle:{color:'#c41e3a',fontSize:'16px',fontWeight:'700',margin:'25px 0 15px',paddingBottom:'8px',borderBottom:'2px solid #3b6ea5'},
     firstSection:{marginTop:0},
     formGroup:{marginBottom:'18px'},
     label:{display:'block',marginBottom:'6px',fontWeight:'500',color:'#1e3a5f',fontSize:'14px'},
@@ -85,7 +85,7 @@ export default function WitnessStatement(){
     checkboxGroup:{display:'flex',alignItems:'flex-start',gap:'10px',padding:'15px',background:'#f8fafc',borderRadius:'8px',border:'2px solid #e2e8f0'},
     checkboxInput:{width:'20px',height:'20px',marginTop:'2px',cursor:'pointer',flexShrink:0},
     checkboxLabel:{fontWeight:'400',fontSize:'13px',lineHeight:'1.5',cursor:'pointer'},
-    submitBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #c41e3a 0%, #a01830 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'700',cursor:'pointer',marginTop:'25px',textTransform:'uppercase',letterSpacing:'1px'},
+    submitBtn:{width:'100%',padding:'16px',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',border:'none',borderRadius:'8px',fontSize:'16px',fontWeight:'700',cursor:'pointer',marginTop:'25px',textTransform:'uppercase',letterSpacing:'1px'},
     successBox:{textAlign:'center',padding:'60px 30px'},
     successIcon:{fontSize:'4rem',color:'#059669',marginBottom:'15px'},
     statementIdBox:{fontFamily:'monospace',fontSize:'18px',background:'#f0fdf4',padding:'10px 20px',borderRadius:'8px',display:'inline-block',margin:'15px 0',border:'2px solid #059669'},

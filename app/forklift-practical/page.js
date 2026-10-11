@@ -254,9 +254,9 @@ export default function ForkliftPractical() {
           onClick={() => setPassFail(item.name, 'Pass')}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-            border: `2px solid ${formData[item.name] === 'Pass' ? '#6366f1' : '#e5e7eb'}`,
+            border: `2px solid ${formData[item.name] === 'Pass' ? '#e0eaf5' : '#e5e7eb'}`,
             borderRadius: '8px', cursor: 'pointer',
-            background: formData[item.name] === 'Pass' ? '#ddd6fe' : 'white'
+            background: formData[item.name] === 'Pass' ? '#e0eaf5' : 'white'
           }}
         >
           <input type="radio" name={item.name} value="Pass" checked={formData[item.name] === 'Pass'} onChange={() => {}} required />
@@ -281,7 +281,7 @@ export default function ForkliftPractical() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4338ca 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -293,7 +293,7 @@ export default function ForkliftPractical() {
               </span>
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                 New Evaluation
               </button>
               <a href="https://portal.slpalaska.com" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
@@ -311,17 +311,17 @@ export default function ForkliftPractical() {
     select: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', background: 'white' },
     textarea: { width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '100px', resize: 'vertical', boxSizing: 'border-box' },
     label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' },
-    section: { marginBottom: '35px', background: '#f8fafc', borderRadius: '12px', padding: '25px', borderLeft: '4px solid #6366f1' },
+    section: { marginBottom: '35px', background: '#f8fafc', borderRadius: '12px', padding: '25px', borderLeft: '4px solid #e0eaf5' },
     sectionHeader: { display: 'flex', alignItems: 'center', marginBottom: '20px', fontSize: '18px', fontWeight: '600', color: '#1e293b' },
     safetyCritical: { background: '#fef2f2', border: '2px solid #fca5a5', borderRadius: '8px', padding: '12px', marginBottom: '15px' }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4338ca 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '700px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <div style={{ fontSize: '48px', margin: '15px 0' }}>🚜</div>
           <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>Forklift Practical Evaluation</h1>
@@ -385,9 +385,9 @@ export default function ForkliftPractical() {
                     onClick={() => toggleEnergySource(source.value)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '12px',
-                      border: `2px solid ${formData.energy_sources.includes(source.value) ? '#6366f1' : '#e5e7eb'}`,
+                      border: `2px solid ${formData.energy_sources.includes(source.value) ? '#e0eaf5' : '#e5e7eb'}`,
                       borderRadius: '8px', cursor: 'pointer',
-                      background: formData.energy_sources.includes(source.value) ? '#ddd6fe' : 'white'
+                      background: formData.energy_sources.includes(source.value) ? '#e0eaf5' : 'white'
                     }}
                   >
                     <span>{source.icon}</span>
@@ -417,9 +417,9 @@ export default function ForkliftPractical() {
                       onClick={() => setFormData(prev => ({ ...prev, stky_assessment: opt.value }))}
                       style={{
                         display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-                        border: `2px solid ${formData.stky_assessment === opt.value ? '#6366f1' : '#e5e7eb'}`,
+                        border: `2px solid ${formData.stky_assessment === opt.value ? '#e0eaf5' : '#e5e7eb'}`,
                         borderRadius: '8px', cursor: 'pointer',
-                        background: formData.stky_assessment === opt.value ? '#ddd6fe' : 'white'
+                        background: formData.stky_assessment === opt.value ? '#e0eaf5' : 'white'
                       }}
                     >
                       <input type="radio" name="stky_assessment" value={opt.value} checked={formData.stky_assessment === opt.value} onChange={() => {}} required />
@@ -543,7 +543,7 @@ export default function ForkliftPractical() {
                 disabled={isSubmitting}
                 style={{
                   width: '100%', padding: '16px 32px',
-                  background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                   color: 'white', border: 'none', borderRadius: '8px',
                   fontSize: '16px', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer',
                   boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'

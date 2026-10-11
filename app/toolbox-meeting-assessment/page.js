@@ -19,7 +19,7 @@ const QUALITY_SCORES = [
   { value: 'A - Excellent (90-100%)', letter: 'A', desc: 'Excellent', color: '#22c55e' },
   { value: 'B - Good (80-89%)', letter: 'B', desc: 'Good', color: '#84cc16' },
   { value: 'C - Average (70-79%)', letter: 'C', desc: 'Average', color: '#f59e0b' },
-  { value: 'D - Below Average (60-69%)', letter: 'D', desc: 'Below Avg', color: '#f97316' },
+  { value: 'D - Below Average (60-69%)', letter: 'D', desc: 'Below Avg', color: '#3b6ea5' },
   { value: 'F - Failing (Below 60%)', letter: 'F', desc: 'Failing', color: '#dc2626' }
 ]
 
@@ -129,7 +129,7 @@ export default function ToolboxMeetingAssessment() {
       overflow: 'hidden'
     },
     header: {
-      background: 'linear-gradient(135deg, #1e3a8a 0%, #059669 100%)',
+      background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
       color: 'white',
       padding: '30px',
       textAlign: 'center',
@@ -181,35 +181,35 @@ export default function ToolboxMeetingAssessment() {
       overflow: 'hidden'
     },
     sectionHeaderBlue: {
-      background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '12px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderGreen: {
-      background: 'linear-gradient(135deg, #059669, #047857)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '12px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderPurple: {
-      background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '12px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderOrange: {
-      background: 'linear-gradient(135deg, #d97706, #ea580c)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '12px 18px',
       fontWeight: '600',
       fontSize: '0.95rem'
     },
     sectionHeaderCyan: {
-      background: 'linear-gradient(135deg, #0891b2, #0e7490)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       padding: '12px 18px',
       fontWeight: '600',
@@ -326,7 +326,7 @@ export default function ToolboxMeetingAssessment() {
     submitBtn: {
       width: '100%',
       padding: '14px 28px',
-      background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+      background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
       color: 'white',
       border: 'none',
       borderRadius: '10px',
@@ -431,7 +431,7 @@ export default function ToolboxMeetingAssessment() {
 
   if (isSuccess) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #059669 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <a href="https://portal.slpalaska.com" style={styles.backButton}>← Back to Portal</a>
         <div style={styles.container}>
           <div style={styles.header}>
@@ -459,7 +459,7 @@ export default function ToolboxMeetingAssessment() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #059669 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }

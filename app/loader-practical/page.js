@@ -261,7 +261,7 @@ export default function LoaderPractical() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -273,7 +273,7 @@ export default function LoaderPractical() {
               </span>
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                 New Evaluation
               </button>
               <a href="https://portal.slpalaska.com" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
@@ -297,11 +297,11 @@ export default function LoaderPractical() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '700px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <div style={{ fontSize: '48px', margin: '15px 0' }}>🚜</div>
           <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: '700' }}>Loader Practical Evaluation</h1>
@@ -514,7 +514,7 @@ export default function LoaderPractical() {
                 disabled={isSubmitting}
                 style={{
                   width: '100%', padding: '16px 32px',
-                  background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                  background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                   color: 'white', border: 'none', borderRadius: '8px',
                   fontSize: '16px', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer',
                   boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'

@@ -192,7 +192,7 @@ export default function FlammableStorageAuditForm() {
             <h2 style={{ margin: 0 }}>Audit Score</h2>
           </div>
           <div style={{ padding: '30px', textAlign: 'center' }}>
-            <div style={{ width: '120px', height: '120px', borderRadius: '50%', margin: '0 auto 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '4px solid white', background: scores.grade === 'A' ? '#22c55e' : scores.grade === 'B' ? '#84cc16' : scores.grade === 'C' ? '#facc15' : scores.grade === 'D' ? '#f97316' : '#dc2626', color: scores.grade === 'C' ? '#000' : 'white' }}>
+            <div style={{ width: '120px', height: '120px', borderRadius: '50%', margin: '0 auto 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '4px solid white', background: scores.grade === 'A' ? '#22c55e' : scores.grade === 'B' ? '#84cc16' : scores.grade === 'C' ? '#facc15' : scores.grade === 'D' ? '#3b6ea5' : '#dc2626', color: scores.grade === 'C' ? '#000' : 'white' }}>
               <div style={{ fontSize: '60px', fontWeight: 'bold', lineHeight: 1 }}>{scores.grade}</div>
               <div style={{ fontSize: '16px' }}>{scores.overall}%</div>
             </div>

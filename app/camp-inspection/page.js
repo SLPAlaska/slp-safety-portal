@@ -801,7 +801,7 @@ function ReviewScreen({ meta, setMeta, counters, responses, goNoGo, setGoNoGo, h
         <Stat label="Non-Compliant" value={counters.non_compliant} color="#991B1B" bg="#FEE2E2" />
         <Stat label="Needs Action" value={counters.needs_action} color="#92400E" bg="#FEF3C7" />
         <Stat label="N/A" value={counters.na} color="#374151" bg="#F3F4F6" />
-        <Stat label="Not Verified" value={counters.not_verified} color="#3730A3" bg="#E0E7FF" />
+        <Stat label="Not Verified" value={counters.not_verified} color="#2d5a87" bg="#E0E7FF" />
         <Stat label="Unanswered" value={CAMP_QUESTIONS.length - counters.answered} color="#6B7280" bg="#fff" />
       </div>
 

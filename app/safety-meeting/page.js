@@ -62,17 +62,17 @@ export default function SafetyMeeting(){
   const resetForm=()=>{setFormData({personLeading:'',meetingDate:new Date().toLocaleDateString('en-CA'),company:'',location:'',meetingType:'',safetyRepOnSite:'',meetingStartTime:'',meetingEndTime:'',listAttendees:'',topicsDiscussed:'',tasksHazardsControls:'',majorEnergySources:'',reactToChange:'',photoUrl:''});setPhotoPreview(null);setSubmitted(false);};
 
   const s={
-    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
+    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',padding:'20px'},
     formBox:{maxWidth:'850px',margin:'0 auto',background:'white',borderRadius:'16px',boxShadow:'0 20px 60px rgba(0,0,0,0.3)',overflow:'hidden'},
-    header:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',padding:'30px',textAlign:'center'},
+    header:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'30px',textAlign:'center'},
     logoBox:{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'0 auto 20px',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'},
-    badge:{display:'inline-block',background:'white',color:'#1e3a8a',padding:'6px 16px',borderRadius:'20px',fontWeight:'700',fontSize:'0.85rem',marginBottom:'15px',border:'3px solid #0d9488',boxShadow:'0 2px 8px rgba(0,0,0,0.2)'},
+    badge:{display:'inline-block',background:'white',color:'#1e3a8a',padding:'6px 16px',borderRadius:'20px',fontWeight:'700',fontSize:'0.85rem',marginBottom:'15px',border:'3px solid #2d5a87',boxShadow:'0 2px 8px rgba(0,0,0,0.2)'},
     content:{padding:'30px'},
     section:{marginBottom:'30px',border:'1px solid #e5e7eb',borderRadius:'12px',overflow:'hidden'},
     sectionHeader:{color:'white',padding:'12px 20px',fontWeight:'600',fontSize:'1rem'},
-    sectionBlue:{background:'linear-gradient(135deg, #1e3a8a, #1e40af)'},
-    sectionRed:{background:'linear-gradient(135deg, #b91c1c, #dc2626)'},
-    sectionTeal:{background:'linear-gradient(135deg, #0d9488, #0f766e)'},
+    sectionBlue:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionRed:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionTeal:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
     sectionBody:{padding:'20px',background:'#f8fafc'},
     formRow:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(250px, 1fr))',gap:'20px',marginBottom:'20px'},
     formGroup:{display:'flex',flexDirection:'column'},
@@ -86,8 +86,8 @@ export default function SafetyMeeting(){
     photoUploadActive:{borderColor:'#059669',background:'rgba(5,150,105,0.05)'},
     photoIcon:{fontSize:'2.5rem',marginBottom:'10px'},
     photoPreview:{maxWidth:'200px',maxHeight:'150px',margin:'10px auto',borderRadius:'8px'},
-    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a8a, #1e40af)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(30,58,138,0.3)'},
-    successBox:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px'},
+    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a5f, #2d5a87)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(30,58,138,0.3)'},
+    successBox:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px'},
     footer:{textAlign:'center',padding:'20px',background:'linear-gradient(to bottom, #f8fafc, #ffffff)',color:'#64748b',fontSize:'11px',borderTop:'1px solid #e2e8f0'}
   };
 

@@ -153,7 +153,7 @@ export default function ClientReports() {
       <style jsx global>{`
         .client-reports-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%);
           padding: 20px;
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
@@ -236,7 +236,7 @@ export default function ClientReports() {
         .login-btn {
           width: 100%;
           padding: 15px;
-          background: linear-gradient(135deg, #1e3a5f 0%, #0f3460 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #1e3a5f 100%);
           color: white;
           border: none;
           border-radius: 6px;
@@ -288,7 +288,7 @@ export default function ClientReports() {
         }
         
         .company-header .company-name {
-          color: #ea580c;
+          color: #3b6ea5;
           font-size: 18px;
           font-weight: 700;
         }

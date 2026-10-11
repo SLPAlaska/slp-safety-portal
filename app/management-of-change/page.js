@@ -92,14 +92,14 @@ export default function ManagementOfChange() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
             <h2 style={{ color: '#059669', marginBottom: '10px', fontSize: '24px' }}>MOC Request Submitted!</h2>
             <p style={{ color: '#6b7280', marginBottom: '25px' }}>Your Management of Change request has been recorded.</p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+              <button onClick={resetForm} style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                 Submit Another Request
               </button>
               <a href="https://portal.slpalaska.com" style={{ background: '#6b7280', color: 'white', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', textDecoration: 'none' }}>
@@ -120,11 +120,11 @@ export default function ManagementOfChange() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', fontSize: '14px' }}>← Back to Portal</a>
           <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '12px', padding: '15px', width: 'fit-content', margin: '15px auto', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', height: 'auto' }} />
@@ -142,7 +142,7 @@ export default function ManagementOfChange() {
             
             {/* Requestor Information */}
             <div style={{ marginBottom: '30px', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '16px' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '16px' }}>
                 Requestor Information
               </div>
               <div style={{ padding: '20px', background: '#fafafa' }}>
@@ -195,7 +195,7 @@ export default function ManagementOfChange() {
 
             {/* Change Details */}
             <div style={{ marginBottom: '30px', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '16px' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '16px' }}>
                 Change Details
               </div>
               <div style={{ padding: '20px', background: '#fafafa' }}>
@@ -233,7 +233,7 @@ export default function ManagementOfChange() {
 
             {/* Photo Upload */}
             <div style={{ marginBottom: '30px', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '16px' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '16px' }}>
                 Supporting Documentation
               </div>
               <div style={{ padding: '20px', background: '#fafafa' }}>
@@ -247,7 +247,7 @@ export default function ManagementOfChange() {
               disabled={isSubmitting}
               style={{
                 width: '100%', padding: '16px 32px',
-                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white', border: 'none', borderRadius: '10px',
                 fontSize: '18px', fontWeight: '600', cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 boxShadow: '0 4px 15px rgba(30, 58, 138, 0.3)',

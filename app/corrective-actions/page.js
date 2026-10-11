@@ -13,7 +13,7 @@ const HIERARCHY_OF_CONTROLS = [
   { level: 1, name: 'Elimination', color: '#166534' },
   { level: 2, name: 'Substitution', color: '#15803d' },
   { level: 3, name: 'Engineering Controls', color: '#eab308' },
-  { level: 4, name: 'Administrative Controls', color: '#f97316' },
+  { level: 4, name: 'Administrative Controls', color: '#3b6ea5' },
   { level: 5, name: 'PPE', color: '#dc2626' }
 ];
 
@@ -22,7 +22,7 @@ const STATUS_OPTIONS = ['Open', 'In Progress', 'Completed', 'Verified', 'Overdue
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1200px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
@@ -41,17 +41,17 @@ const styles = {
   caCardOverdue: { borderColor: '#dc2626', background: '#fef2f2' },
   badge: { display: 'inline-block', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: '700' },
   actionBtn: { padding: '10px 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   successBtn: { background: '#059669', color: 'white' },
   outlineBtn: { background: 'white', color: '#1e3a8a', border: '2px solid #1e3a8a' },
   progressBar: { height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', marginTop: '10px' },
-  progressFill: { height: '100%', background: 'linear-gradient(90deg, #22c55e, #16a34a)', transition: 'width 0.3s' },
+  progressFill: { height: '100%', background: 'linear-gradient(90deg, #1e3a5f, #2d5a87)', transition: 'width 0.3s' },
   modal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
   modalContent: { background: 'white', borderRadius: '16px', padding: '30px', maxWidth: '600px', width: '90%', maxHeight: '80vh', overflow: 'auto' },
   modalHeader: { fontSize: '20px', fontWeight: '700', color: '#1e293b', marginBottom: '20px' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
   formGroup: { marginBottom: '20px' },
   label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#1e293b', fontSize: '14px' }

@@ -61,7 +61,7 @@ const PSIF_OPTIONS = [
 const PSIF_COLORS = {
   'SIF-Actual': { bg: '#1f2937', text: '#fff', border: '#000' },
   'PSIF-Critical': { bg: '#fef2f2', text: '#991b1b', border: '#dc2626' },
-  'PSIF-High': { bg: '#fff7ed', text: '#9a3412', border: '#ea580c' },
+  'PSIF-High': { bg: '#fff7ed', text: '#9a3412', border: '#3b6ea5' },
   'PSIF-Elevated': { bg: '#fefce8', text: '#854d0e', border: '#eab308' },
   'STKY-Controlled': { bg: '#f0fdf4', text: '#166534', border: '#22c55e' },
   'Non-STKY': { bg: '#eff6ff', text: '#1e40af', border: '#3b82f6' }
@@ -69,17 +69,17 @@ const PSIF_COLORS = {
 
 const SEVERITY_COLORS = {
   'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626',
-  'E': '#F97316', 'F': '#EAB308', 'G': '#22C55E'
+  'E': '#3b6ea5', 'F': '#EAB308', 'G': '#22C55E'
 };
 
 const STATUS_COLORS = {
   'Draft': { bg: '#f3f4f6', text: '#374151' },
   'Submitted': { bg: '#fef3c7', text: '#92400e' },
-  'Under Review - Triage': { bg: '#e0e7ff', text: '#3730a3' },
+  'Under Review - Triage': { bg: '#e0e7ff', text: '#2d5a87' },
   'Under Review - First Draft': { bg: '#dbeafe', text: '#1e40af' },
   'Under Review - Asset Review': { bg: '#d1fae5', text: '#065f46' },
-  'Under Review - Final Review': { bg: '#cffafe', text: '#0e7490' },
-  'Pending Approval': { bg: '#fae8ff', text: '#86198f' },
+  'Under Review - Final Review': { bg: '#e0eaf5', text: '#2d5a87' },
+  'Pending Approval': { bg: '#e0eaf5', text: '#2d5a87' },
   'Approved': { bg: '#dcfce7', text: '#166534' },
   'Closed': { bg: '#f3f4f6', text: '#374151' }
 };
@@ -99,7 +99,7 @@ const styles = {
     margin: '0 auto'
   },
   header: {
-    background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     borderRadius: '16px 16px 0 0',
     padding: '25px 30px',
     color: 'white',
@@ -246,7 +246,7 @@ const styles = {
     transition: 'all 0.2s'
   },
   primaryBtn: {
-    background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     color: 'white'
   },
   secondaryBtn: {
@@ -275,7 +275,7 @@ const styles = {
   submitBtn: {
     width: '100%',
     padding: '14px',
-    background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '8px',

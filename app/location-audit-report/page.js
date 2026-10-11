@@ -111,7 +111,7 @@ export default function LocationAuditForm() {
 
   const styles = {
     container: { maxWidth: '900px', margin: '0 auto', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-    header: { background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff', padding: '25px', textAlign: 'center' },
+    header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '25px', textAlign: 'center' },
     formContent: { padding: '25px' },
     sectionHeader: { padding: '10px 18px', margin: '20px -25px 15px', fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' },
     row: { display: 'flex', gap: '15px', flexWrap: 'wrap' },
@@ -125,10 +125,10 @@ export default function LocationAuditForm() {
     radioOption: { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', border: '2px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
     auditQuestion: { background: '#f3f4f6', borderRadius: '8px', padding: '15px', marginBottom: '12px' },
     conditionalField: { marginTop: '15px', padding: '15px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d' },
-    infoBox: { background: '#f3e8ff', border: '1px solid #c4b5fd', borderRadius: '6px', padding: '12px', marginBottom: '15px', fontSize: '12px', color: '#6d28d9' },
+    infoBox: { background: '#e0eaf5', border: '1px solid #e0eaf5', borderRadius: '6px', padding: '12px', marginBottom: '15px', fontSize: '12px', color: '#3b6ea5' },
     photoUpload: { border: '2px dashed #d1d5db', borderRadius: '8px', padding: '25px', textAlign: 'center', cursor: 'pointer' },
-    submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '15px' },
-    successMessage: { background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#fff', padding: '25px', borderRadius: '8px', textAlign: 'center', marginTop: '15px' },
+    submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '15px' },
+    successMessage: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: '#fff', padding: '25px', borderRadius: '8px', textAlign: 'center', marginTop: '15px' },
     footer: { textAlign: 'center', padding: '20px 10px', marginTop: '30px', borderTop: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b' }
   };
 
@@ -137,7 +137,7 @@ export default function LocationAuditForm() {
       <label style={{ ...styles.label, marginBottom: '10px', fontSize: '14px' }}>{label} {required && <span style={{ color: '#dc2626' }}>*</span>}</label>
       <div style={styles.radioGroup}>
         {options.map(opt => (
-          <label key={opt} style={{ ...styles.radioOption, borderColor: formData[name] === opt ? '#7c3aed' : '#d1d5db', background: formData[name] === opt ? 'rgba(124,58,237,0.05)' : '#fff' }}>
+          <label key={opt} style={{ ...styles.radioOption, borderColor: formData[name] === opt ? '#3b6ea5' : '#d1d5db', background: formData[name] === opt ? 'rgba(124,58,237,0.05)' : '#fff' }}>
             <input type="radio" name={name} value={opt} checked={formData[name] === opt} onChange={handleChange} required={required} style={{ width: '16px', height: '16px' }} />
             <span>{opt}</span>
           </label>
@@ -175,12 +175,12 @@ export default function LocationAuditForm() {
           <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '180px', margin: '0 auto 15px auto', display: 'block' }} />
           <h1 style={{ margin: 0, fontSize: '24px' }}>Location Audit Report</h1>
           <p style={{ margin: '8px 0 0', opacity: 0.9, fontSize: '13px' }}>Comprehensive Safety Audit for Work Locations</p>
-          <div style={{ display: 'inline-block', background: '#fff', color: '#7c3aed', padding: '4px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: '600', marginTop: '8px' }}>🔍 SITE SAFETY AUDIT</div>
+          <div style={{ display: 'inline-block', background: '#fff', color: '#3b6ea5', padding: '4px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: '600', marginTop: '8px' }}>🔍 SITE SAFETY AUDIT</div>
         </div>
 
         <div style={styles.formContent}>
           <form onSubmit={handleSubmit}>
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#7c3aed', marginTop: 0 }}>👤 Auditor Information</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5', marginTop: 0 }}>👤 Auditor Information</div>
             <div style={styles.row}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Name of Auditor <span style={{ color: '#dc2626' }}>*</span></label>
@@ -192,7 +192,7 @@ export default function LocationAuditForm() {
               </div>
             </div>
 
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#ea580c' }}>📍 Work Location & Crew</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#3b6ea5' }}>📍 Work Location & Crew</div>
             <div style={styles.row}>
               <div style={styles.formGroup}>
                 <label style={styles.label}>Company <span style={{ color: '#dc2626' }}>*</span></label>
@@ -228,12 +228,12 @@ export default function LocationAuditForm() {
               <textarea name="work_description" value={formData.work_description} onChange={handleChange} placeholder="Describe the work being performed..." required style={styles.textarea} />
             </div>
 
-            <div style={{ ...styles.sectionHeader, backgroundColor: '#0891b2' }}>📋 Permit Information</div>
+            <div style={{ ...styles.sectionHeader, backgroundColor: '#2d5a87' }}>📋 Permit Information</div>
             <div style={styles.fullWidth}>
               <label style={styles.label}>Is there a permit for this work? <span style={{ color: '#dc2626' }}>*</span></label>
               <div style={styles.radioGroup}>
                 {['Yes', 'No'].map(opt => (
-                  <label key={opt} style={{ ...styles.radioOption, borderColor: formData.is_there_permit === opt ? '#7c3aed' : '#d1d5db', background: formData.is_there_permit === opt ? 'rgba(124,58,237,0.05)' : '#fff' }}>
+                  <label key={opt} style={{ ...styles.radioOption, borderColor: formData.is_there_permit === opt ? '#3b6ea5' : '#d1d5db', background: formData.is_there_permit === opt ? 'rgba(124,58,237,0.05)' : '#fff' }}>
                     <input type="radio" name="is_there_permit" value={opt} checked={formData.is_there_permit === opt} onChange={handleChange} required style={{ width: '16px', height: '16px' }} />
                     <span>{opt}</span>
                   </label>

@@ -99,14 +99,14 @@ export default function DailyActivityLog(){
   };
 
   const s={
-    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
+    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',padding:'20px'},
     formContainer:{maxWidth:'800px',margin:'0 auto',background:'white',borderRadius:'16px',boxShadow:'0 20px 60px rgba(0,0,0,0.3)',overflow:'hidden'},
-    header:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',padding:'30px',textAlign:'center'},
+    header:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'30px',textAlign:'center'},
     content:{padding:'30px'},
     section:{marginBottom:'25px',border:'1px solid #e5e7eb',borderRadius:'12px',overflow:'hidden'},
     sectionHeader:{color:'white',padding:'12px 20px',fontWeight:'600',fontSize:'1rem'},
-    sectionBlue:{background:'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)'},
-    sectionRed:{background:'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)'},
+    sectionBlue:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'},
+    sectionRed:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)'},
     sectionBody:{padding:'20px',background:'#fafafa'},
     formGroup:{marginBottom:'20px'},
     label:{display:'block',marginBottom:'8px',fontWeight:'600',color:'#1f2937',fontSize:'0.95rem'},
@@ -118,8 +118,8 @@ export default function DailyActivityLog(){
     checkboxItem:{display:'flex',alignItems:'center',gap:'8px',cursor:'pointer',padding:'8px',borderRadius:'6px',transition:'all 0.2s'},
     checkboxItemChecked:{background:'#dbeafe',border:'1px solid #3b82f6'},
     checkbox:{width:'18px',height:'18px',accentColor:'#1e3a8a'},
-    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(30,58,138,0.3)'},
-    successMessage:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px 0'}
+    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(30,58,138,0.3)'},
+    successMessage:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px 0'}
   };
 
   if(submitted){

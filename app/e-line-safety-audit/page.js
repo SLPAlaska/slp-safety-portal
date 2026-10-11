@@ -127,7 +127,7 @@ export default function ELineSafetyAuditForm() {
       <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 20px', backgroundColor: '#1e3a5f', color: '#fff', textDecoration: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '500' }}>← Back to Portal</a>
       <div style={{ maxWidth: '900px', margin: '0 auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         
-        <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
+        <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center' }}>
           <img src="/Logo.png" alt="SLP Alaska Logo" style={{ maxWidth: '180px', height: 'auto', marginBottom: '15px', display: 'block', margin: '0 auto 15px auto' }} />
           <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 700 }}>E-Line Safety Audit</h1>
           <p style={{ margin: '10px 0 0', opacity: 0.9, fontSize: '14px' }}>Pre-Job Safety Audit for Electric Line Operations</p>
@@ -157,7 +157,7 @@ export default function ELineSafetyAuditForm() {
 
             <div style={{ maxWidth: '200px', marginBottom: '25px' }}><label style={{ display: 'block', marginBottom: '6px', fontWeight: 500, fontSize: '14px' }}>Crew Size</label><input type="number" name="crew_size" value={formData.crew_size} onChange={handleChange} min="1" max="20" style={{ width: '100%', padding: '12px', border: '2px solid #d1d5db', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} /></div>
 
-            <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📝 Pre-Job Planning</div>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📝 Pre-Job Planning</div>
             <ChecklistTable items={[
               { name: 'jsa_reviewed', label: 'JSA/JHA reviewed with crew' },
               { name: 'work_permit', label: 'Work permit obtained' },
@@ -174,7 +174,7 @@ export default function ELineSafetyAuditForm() {
               { name: 'ppe_appropriate', label: 'PPE appropriate for task' }
             ]} valueKey="yn" />
 
-            <div style={{ background: '#7c3aed', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🚛 E-Line Unit & Equipment</div>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🚛 E-Line Unit & Equipment</div>
             <ChecklistTable items={[
               { name: 'unit_pre_trip', label: 'Unit pre-trip inspection complete' },
               { name: 'tools_inspected', label: 'Tools inspected and ready' }
@@ -188,7 +188,7 @@ export default function ELineSafetyAuditForm() {
               { name: 'bop_tested', label: 'WLV function tested' }
             ]} valueKey="ok" />
 
-            <div style={{ background: '#0891b2', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📊 Pressure Testing</div>
+            <div style={{ background: '#2d5a87', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>📊 Pressure Testing</div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '18px' }}>
               <div>
@@ -221,7 +221,7 @@ export default function ELineSafetyAuditForm() {
               { name: 'electrical_connections', label: 'Electrical connections secure' }
             ]} valueKey="ok" />
 
-            <div style={{ background: '#ea580c', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🛢️ Well Site Safety</div>
+            <div style={{ background: '#3b6ea5', color: 'white', padding: '12px 20px', margin: '25px -30px 20px', fontWeight: 600, fontSize: '15px' }}>🛢️ Well Site Safety</div>
             <ChecklistTable items={[
               { name: 'well_status', label: 'Well status verified with client' },
               { name: 'wellhead_condition', label: 'Wellhead condition acceptable' }
@@ -285,7 +285,7 @@ export default function ELineSafetyAuditForm() {
             {/* Photo Documentation */}
             <MultiPhotoUpload ref={photoRef} formType="e-line-safety-audit" />
 
-            <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
+            <button type="submit" disabled={isSubmitting} style={{ width: '100%', padding: '16px', background: isSubmitting ? '#d1d5db' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 600, cursor: isSubmitting ? 'not-allowed' : 'pointer', marginTop: '20px' }}>
               {isSubmitting ? 'Submitting...' : 'Submit E-Line Safety Audit'}
             </button>
 

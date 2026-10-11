@@ -201,7 +201,7 @@ export default function FirstAidKitInspection() {
 
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #002868 0%, #002868 33%, #FFFFFF 33%, #FFFFFF 66%, #BF0A30 66%, #BF0A30 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #1e3a5f 0%, #1e3a5f 33%, #FFFFFF 33%, #FFFFFF 66%, #2d5a87 66%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4), 0 0 0 4px #BF0A30, 0 0 0 8px #FFFFFF, 0 0 0 12px #002868' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -211,7 +211,7 @@ export default function FirstAidKitInspection() {
             <button
               onClick={resetForm}
               style={{
-                background: 'linear-gradient(135deg, #002868 0%, #001845 50%, #BF0A30 100%)',
+                background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 padding: '12px 30px',
@@ -289,7 +289,7 @@ export default function FirstAidKitInspection() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #002868 0%, #002868 33%, #FFFFFF 33%, #FFFFFF 66%, #BF0A30 66%, #BF0A30 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #1e3a5f 0%, #1e3a5f 33%, #FFFFFF 33%, #FFFFFF 66%, #2d5a87 66%, #2d5a87 100%)', padding: '20px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         <a href="https://portal.slpalaska.com" style={{ color: 'white', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', marginBottom: '15px', fontSize: '14px' }}>
           ← Back to Portal
@@ -297,7 +297,7 @@ export default function FirstAidKitInspection() {
 
         <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4), 0 0 0 4px #BF0A30, 0 0 0 8px #FFFFFF, 0 0 0 12px #002868', overflow: 'hidden' }}>
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #002868 0%, #001845 50%, #BF0A30 100%)', color: 'white', padding: '30px 20px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)', color: 'white', padding: '30px 20px', textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
               <div style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #f0f0f0 100%)', borderRadius: '16px', padding: '15px 25px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)', border: '3px solid #BF0A30' }}>
                 <img src="/Logo.png" alt="SLP Alaska" style={{ height: '90px', width: 'auto' }} />
@@ -311,7 +311,7 @@ export default function FirstAidKitInspection() {
           </div>
 
           {/* USA Banner */}
-          <div style={{ background: 'linear-gradient(90deg, #002868 0%, #002868 40%, #BF0A30 60%, #BF0A30 100%)', color: 'white', textAlign: 'center', padding: '8px', fontWeight: '600', letterSpacing: '2px', fontSize: '12px' }}>
+          <div style={{ background: 'linear-gradient(90deg, #1e3a5f 0%, #264b73 40%, #264b73 60%, #2d5a87 100%)', color: 'white', textAlign: 'center', padding: '8px', fontWeight: '600', letterSpacing: '2px', fontSize: '12px' }}>
             ★ ★ ★ SAFETY FIRST • ALASKA PROUD ★ ★ ★
           </div>
 
@@ -364,7 +364,7 @@ export default function FirstAidKitInspection() {
                       </p>
                       <div style={{ display: 'flex', gap: '10px' }}>
                         <button type="button" onClick={() => setDuplicateConfirmed(true)}
-                          style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
+                          style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>
                           Inspect Anyway
                         </button>
                         <button type="button" onClick={() => { setFormData(prev => ({ ...prev, kit_id: '' })); setDuplicateWarning(null); }}
@@ -561,7 +561,7 @@ export default function FirstAidKitInspection() {
             <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button type="submit" disabled={submitting}
                 style={{
-                  background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #002868 0%, #001845 50%, #BF0A30 100%)',
+                  background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #264b73 50%, #2d5a87 100%)',
                   color: 'white',
                   border: 'none',
                   padding: '12px 30px',

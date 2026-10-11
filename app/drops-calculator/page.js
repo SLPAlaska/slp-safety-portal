@@ -31,7 +31,7 @@ const CONSEQUENCE_LEVELS = [
   { level: 1, label: 'Negligible', color: '#22c55e', maxEnergy: 20, description: 'Minor bruise or no injury expected' },
   { level: 2, label: 'Minor', color: '#84cc16', maxEnergy: 80, description: 'First aid level injury likely' },
   { level: 3, label: 'Moderate', color: '#eab308', maxEnergy: 200, description: 'Medical treatment injury possible' },
-  { level: 4, label: 'Major', color: '#f97316', maxEnergy: 500, description: 'Serious injury or permanent disability possible' },
+  { level: 4, label: 'Major', color: '#3b6ea5', maxEnergy: 500, description: 'Serious injury or permanent disability possible' },
   { level: 5, label: 'Critical', color: '#ef4444', maxEnergy: Infinity, description: 'Fatality or life-altering injury possible' },
 ];
 
@@ -47,10 +47,10 @@ const LIKELIHOOD_LEVELS = [
 // Risk matrix color: matrix[likelihood-1][consequence-1]
 const RISK_MATRIX = [
   ['#22c55e','#22c55e','#84cc16','#eab308','#eab308'],
-  ['#22c55e','#84cc16','#eab308','#eab308','#f97316'],
-  ['#84cc16','#eab308','#eab308','#f97316','#ef4444'],
-  ['#eab308','#eab308','#f97316','#ef4444','#ef4444'],
-  ['#eab308','#f97316','#ef4444','#ef4444','#7f1d1d'],
+  ['#22c55e','#84cc16','#eab308','#eab308','#3b6ea5'],
+  ['#84cc16','#eab308','#eab308','#3b6ea5','#ef4444'],
+  ['#eab308','#eab308','#3b6ea5','#ef4444','#ef4444'],
+  ['#eab308','#3b6ea5','#ef4444','#ef4444','#7f1d1d'],
 ];
 
 const RISK_LABELS = [
@@ -294,14 +294,14 @@ export default function DropsCalculator() {
   };
 
   const st = {
-    container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #475569 100%)', padding: '0 0 40px 0' },
+    container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '0 0 40px 0' },
     backBtn: { display: 'inline-block', padding: '10px 16px', color: 'white', textDecoration: 'none', fontSize: '14px', opacity: 0.9 },
     header: { textAlign: 'center', padding: '20px 20px 24px', color: 'white' },
     logoContainer: { width: '80px', height: '80px', background: 'white', borderRadius: '16px', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' },
     logo: { maxWidth: '60px', maxHeight: '60px' },
     badge: { display: 'inline-block', padding: '6px 16px', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '13px', fontWeight: '600', letterSpacing: '1px' },
     card: { maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)' },
-    sectionHeader: { background: 'linear-gradient(135deg, #991b1b 0%, #b91c1c 100%)', color: 'white', padding: '12px 16px', borderRadius: '8px', fontSize: '15px', fontWeight: '600', marginTop: '24px', marginBottom: '16px' },
+    sectionHeader: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 16px', borderRadius: '8px', fontSize: '15px', fontWeight: '600', marginTop: '24px', marginBottom: '16px' },
     fieldGroup: { marginBottom: '16px' },
     label: { display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' },
     input: { width: '100%', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none' },
@@ -309,9 +309,9 @@ export default function DropsCalculator() {
     textarea: { width: '100%', padding: '10px 12px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box', outline: 'none', minHeight: '80px', resize: 'vertical' },
     row: { display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' },
     halfField: { flex: '1 1 200px' },
-    calcBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.5px', marginTop: '16px' },
-    saveBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
-    printBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
+    calcBtn: { width: '100%', padding: '16px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.5px', marginTop: '16px' },
+    saveBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
+    printBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '10px' },
     resultBox: { padding: '16px', borderRadius: '12px', marginTop: '12px', border: '2px solid #e2e8f0' },
     resultLabel: { fontSize: '11px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' },
     resultValue: { fontSize: '22px', fontWeight: '700', color: '#1e3a5f', marginTop: '2px' },

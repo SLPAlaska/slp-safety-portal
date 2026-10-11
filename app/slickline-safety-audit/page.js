@@ -358,7 +358,7 @@ export default function SlicklineSafetyAuditPage() {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     padding: '20px',
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif"
   },
@@ -383,7 +383,7 @@ const styles = {
     transition: 'all 0.2s'
   },
   header: {
-  background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+  background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
   color: 'white',
   padding: '30px',
   textAlign: 'center',
@@ -443,13 +443,13 @@ const styles = {
     fontSize: '1rem'
   },
   sectionHeaderBlue: {
-    background: 'linear-gradient(135deg, #1e3a8a, #1e40af)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderRed: {
-    background: 'linear-gradient(135deg, #b91c1c, #dc2626)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionHeaderSlate: {
-    background: 'linear-gradient(135deg, #475569, #334155)'
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)'
   },
   sectionBody: {
     padding: '20px',
@@ -565,7 +565,7 @@ const styles = {
   submitBtn: {
     width: '100%',
     padding: '16px 32px',
-    background: 'linear-gradient(135deg, #1e3a8a, #1e40af)',
+    background: 'linear-gradient(135deg, #1e3a5f, #2d5a87)',
     color: 'white',
     border: 'none',
     borderRadius: '10px',

@@ -39,7 +39,19 @@ for (const m of manifest.modules) {
 }
 
 // Home links.
-const hrefs = [...home.matchAll(/href:\s*'([^']+)'/g)].map((x) => x[1])
+const allHrefs = [...home.matchAll(/href:\s*'([^']+)'/g)].map((x) => x[1])
+// Links to another site (the predictive safety dashboard) name their module
+// with module: '<id>' on the same line instead of owning a path here.
+const externals = [...home.matchAll(/href:\s*'(https?:[^']+)'[^\n]*module:\s*'([^']+)'/g)].map((x) => ({ href: x[1], module: x[2] }))
+const hrefs = allHrefs.filter((h) => !/^https?:/.test(h))
+for (const h of allHrefs.filter((h) => /^https?:/.test(h))) ok(externals.some((e) => e.href === h), `external home link ${h} names its module`)
+for (const e of externals) {
+  ok(ids.includes(e.module), `external link ${e.href}: unknown module ${e.module}`)
+  const g = makeGate(manifest, { [e.module]: false })
+  const cat = [{ id: 'x', forms: [{ href: e.href, module: e.module }, { href: '/' }] }]
+  ok(g.filterCategories(cat)[0].forms.length === 1, `external link ${e.href} hides when ${e.module} is off`)
+  ok(makeGate(manifest, {}).filterCategories(cat)[0].forms.length === 2, `external link ${e.href} shows by default`)
+}
 ok(hrefs.length > 50, `found home links (${hrefs.length})`)
 const base = makeGate(manifest, {}, '')
 for (const h of hrefs) {

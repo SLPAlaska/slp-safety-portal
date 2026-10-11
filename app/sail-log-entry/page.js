@@ -112,7 +112,7 @@ export default function SAILLogEntry() {
               to: [formData.assigned_to_email],
               subject: `Action Item Assigned to You — Due ${formData.target_completion_date || 'TBD'}`,
               html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-                <div style="background:linear-gradient(135deg,#1e3a8a,#b91c1c);padding:20px;border-radius:8px 8px 0 0">
+                <div style="background:linear-gradient(135deg,#1e3a5f,#2d5a87);padding:20px;border-radius:8px 8px 0 0">
                   <h2 style="color:white;margin:0">⚠️ SAIL Log Action Item Assigned</h2>
                 </div>
                 <div style="background:#f8fafc;padding:20px;border:1px solid #e2e8f0;border-radius:0 0 8px 8px">
@@ -170,9 +170,9 @@ export default function SAILLogEntry() {
 
   if (submitStatus === 'success') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '850px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
-          <div style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: 'white', padding: '40px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '40px', textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '15px' }}>✅</div>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>Action Item Submitted Successfully!</h2>
             <p>Your SAIL Log entry has been recorded.</p>
@@ -195,11 +195,11 @@ export default function SAILLogEntry() {
   const formRowStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '20px' }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
       <div style={{ maxWidth: '850px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
         
         {/* Header */}
-<div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+<div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '20px', color: 'white', textDecoration: 'none', fontSize: '0.95rem' }}>
             ← Back to Portal
           </a>
@@ -219,7 +219,7 @@ export default function SAILLogEntry() {
 
             {/* Basic Information */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 📋 Basic Information
               </div>
               <div style={sectionBodyStyle}>
@@ -254,7 +254,7 @@ export default function SAILLogEntry() {
 
             {/* Action Item Details */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 🎯 Action Item Details
               </div>
               <div style={sectionBodyStyle}>
@@ -271,7 +271,7 @@ export default function SAILLogEntry() {
 
             {/* Assignment & Priority */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 👤 Assignment & Priority
               </div>
               <div style={sectionBodyStyle}>
@@ -346,7 +346,7 @@ export default function SAILLogEntry() {
 
             {/* Photo Documentation */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 📸 Photo Documentation
               </div>
               <div style={sectionBodyStyle}>
@@ -377,7 +377,7 @@ export default function SAILLogEntry() {
               style={{
                 width: '100%',
                 padding: '16px 32px',
-                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',

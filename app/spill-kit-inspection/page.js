@@ -64,20 +64,20 @@ export default function SpillKitInspection(){
   };
 
   const s={
-    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
+    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',padding:'20px'},
     formBox:{maxWidth:'950px',margin:'0 auto',background:'white',borderRadius:'16px',boxShadow:'0 20px 60px rgba(0,0,0,0.3)',overflow:'hidden'},
-    header:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',padding:'30px',textAlign:'center'},
+    header:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'30px',textAlign:'center'},
     logoBox:{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'0 auto 20px',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'},
     badge:{display:'inline-block',background:'white',color:'#d97706',padding:'6px 16px',borderRadius:'20px',fontWeight:'700',fontSize:'0.85rem',marginBottom:'15px',border:'3px solid #d97706',boxShadow:'0 2px 8px rgba(0,0,0,0.2)'},
     content:{padding:'30px'},
     section:{marginBottom:'25px',border:'1px solid #e5e7eb',borderRadius:'12px',overflow:'hidden'},
     sectionHeader:{color:'white',padding:'12px 20px',fontWeight:'600',fontSize:'1rem'},
-    sectionBlue:{background:'linear-gradient(135deg, #1e3a8a, #1e40af)'},
-    sectionRed:{background:'linear-gradient(135deg, #b91c1c, #dc2626)'},
-    sectionOrange:{background:'linear-gradient(135deg, #d97706, #ea580c)'},
-    sectionGreen:{background:'linear-gradient(135deg, #059669, #047857)'},
-    sectionPurple:{background:'linear-gradient(135deg, #7c3aed, #6d28d9)'},
-    sectionCyan:{background:'linear-gradient(135deg, #0891b2, #0e7490)'},
+    sectionBlue:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionRed:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionOrange:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionGreen:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionPurple:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionCyan:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
     sectionBody:{padding:'20px',background:'#f8fafc'},
     formRow:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',gap:'20px',marginBottom:'20px'},
     formGroup:{display:'flex',flexDirection:'column'},
@@ -90,8 +90,8 @@ export default function SpillKitInspection(){
     checklistItem:{background:'white',padding:'12px 15px',borderRadius:'8px',border:'2px solid #e5e7eb',transition:'all 0.2s'},
     checklistSelect:{padding:'6px 8px',fontSize:'0.85rem',border:'2px solid #d1d5db',borderRadius:'6px'},
     conditionalField:{marginTop:'15px',padding:'15px',background:'#fef3c7',border:'2px solid #f59e0b',borderRadius:'8px'},
-    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a8a, #1e40af)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(30,58,138,0.3)',marginTop:'10px'},
-    successBox:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px'},
+    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a5f, #2d5a87)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(30,58,138,0.3)',marginTop:'10px'},
+    successBox:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px'},
     footer:{textAlign:'center',padding:'20px',background:'linear-gradient(to bottom, #f8fafc, #ffffff)',color:'#64748b',fontSize:'11px',borderTop:'1px solid #e2e8f0'}
   };
 

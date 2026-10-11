@@ -155,6 +155,7 @@ const FORM_CATEGORIES = [
     icon: '📊',
     isPSA: true,
     forms: [
+      { name: 'Predictive Safety Dashboard (company login)', href: 'https://slp-safety-dashboard.vercel.app', isLocal: false, module: 'analytics', icon: '📊' },
       { name: 'Investigation Analytics', href: '/investigation-analytics', isLocal: true },
       { name: 'TrueCost™ Calculator', href: '/truecost', isLocal: true },
       { name: 'Similar Incident Finder', href: '/similar-incidents', isLocal: true },
@@ -396,7 +397,7 @@ export default function SafetyPortal() {
         }
         
         .tagline {
-          color: #fbbf24;
+          color: #bfdbfe;
           font-style: italic;
           margin-top: 10px;
           font-size: 15px;
@@ -414,7 +415,7 @@ export default function SafetyPortal() {
         }
         
         .stat-number {
-          color: #fbbf24;
+          color: #bfdbfe;
           font-size: 28px;
           font-weight: 700;
         }
@@ -439,7 +440,7 @@ export default function SafetyPortal() {
         
         .search-box:focus {
           outline: none;
-          box-shadow: 0 4px 25px rgba(196, 30, 58, 0.4);
+          box-shadow: 0 4px 25px rgba(59, 110, 165, 0.5);
         }
         
         .folders-grid {
@@ -462,7 +463,7 @@ export default function SafetyPortal() {
         }
         
         .folder-header {
-          background: linear-gradient(135deg, #ea580c 0%, #c41e3a 100%);
+          background: linear-gradient(135deg, #2d5a87 0%, #3b6ea5 100%);
           color: white;
           padding: 15px 20px;
           cursor: pointer;
@@ -474,32 +475,14 @@ export default function SafetyPortal() {
         }
         
         .folder-header:hover {
-          background: linear-gradient(135deg, #c41e3a 0%, #9a1830 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
         }
         
-        .training-header {
-          background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-        }
         
-        .training-header:hover {
-          background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
-        }
         
-        .psa-header {
-          background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%) !important;
-        }
         
-        .psa-header:hover {
-          background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%) !important;
-        }
         
-        .da-header {
-          background: linear-gradient(135deg, #0f766e 0%, #115e59 100%) !important;
-        }
 
-        .da-header:hover {
-          background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
-        }
 
         .folder-icon {
           font-size: 20px;
@@ -559,7 +542,7 @@ export default function SafetyPortal() {
         .form-link:hover {
           background: #e0f2fe;
           padding-left: 28px;
-          color: #c41e3a;
+          color: #1e3a5f;
         }
         
         .form-link:last-child {
@@ -574,7 +557,7 @@ export default function SafetyPortal() {
         }
         
         .footer a {
-          color: #fbbf24;
+          color: #bfdbfe;
           text-decoration: none;
         }
         
@@ -592,7 +575,7 @@ export default function SafetyPortal() {
         }
 
         .quick-title {
-          color: #fbbf24;
+          color: #bfdbfe;
           font-size: 13px;
           font-weight: 700;
           text-transform: uppercase;
@@ -623,14 +606,13 @@ export default function SafetyPortal() {
         }
 
         a.quick-btn.pinned {
-          background: #fee2e2;
-          color: #991b1b;
+          border-left: 5px solid #b91c1c;
         }
 
         a.help-btn {
           display: inline-block;
           margin-top: 14px;
-          background: #fbbf24;
+          background: #ffffff;
           color: #1e3a5f;
           font-weight: 700;
           font-size: 14px;
@@ -723,7 +705,7 @@ export default function SafetyPortal() {
                       </Link>
                     ) : (
                       <a href={form.href} target="_blank" rel="noopener noreferrer" className="form-link">
-                        📄 {form.name}
+                        {form.icon || '📄'} {form.name}
                       </a>
                     )}
                   </div>

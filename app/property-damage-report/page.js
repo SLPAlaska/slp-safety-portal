@@ -136,18 +136,18 @@ export default function PropertyDamageReport(){
   const resetForm=()=>{setFormData({personName:'',incidentDate:new Date().toLocaleDateString('en-CA'),company:'',location:'',securityNotified:'',injuriesInvolved:'',spillInvolved:'',spillVolumeOutside:'',totalSpillVolume:'',namesContactInvolved:'',weatherLocation:'',witnessNames:'',truckVehicleNumber:'',equipmentId:'',vehiclesEquipmentInvolved:'',priorCondition:'',equipmentAsIntended:'',lastInspection:'',warningsBeforehand:'',unusualSounds:'',priorIncidents:'',describeIncident:'',employeeActivity:'',shortServiceEmployee:'',hazardsCaused:'',drivingFactors:'',driverTraveling:'',hazardType:'',dotRightOfWay:'',precipitatingEvents:'',appropriatePPE:'',describePPE:'',protectiveMethods:'',procedureErrors:'',correctiveActions:'',preTripUrl:'',photoUrl:'',highEnergyPresent:'',energyReleaseOccurred:'',directControlStatus:'',energyTypes:'',psifClassification:'',stkyEvent:''});setPhotoPreview(null);setPreTripPreview(null);setSelectedEnergyTypes([]);setPsifResult({classification:'',explanation:'',badgeClass:''});setSubmitted(false);};
 
   const s={
-    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',padding:'20px'},
+    container:{minHeight:'100vh',background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',padding:'20px'},
     formBox:{maxWidth:'900px',margin:'0 auto',background:'white',borderRadius:'16px',boxShadow:'0 20px 60px rgba(0,0,0,0.3)',overflow:'hidden'},
-    header:{background:'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',color:'white',padding:'30px',textAlign:'center'},
+    header:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'30px',textAlign:'center'},
     logoBox:{background:'rgba(255,255,255,0.95)',borderRadius:'12px',padding:'15px',width:'fit-content',margin:'0 auto 20px',boxShadow:'0 4px 15px rgba(0,0,0,0.2)'},
     badge:{display:'inline-block',background:'white',color:'#b91c1c',padding:'6px 16px',borderRadius:'20px',fontWeight:'700',fontSize:'0.85rem',marginBottom:'15px',border:'3px solid #d97706'},
     content:{padding:'30px'},
     warningBox:{background:'#fef3c7',border:'2px solid #f59e0b',borderRadius:'8px',padding:'15px',marginBottom:'20px',display:'flex',alignItems:'center',gap:'10px'},
     section:{marginBottom:'30px',border:'1px solid #e5e7eb',borderRadius:'12px',overflow:'hidden'},
     sectionHeader:{color:'white',padding:'12px 20px',fontWeight:'600',fontSize:'1rem'},
-    sectionBlue:{background:'linear-gradient(135deg, #1e3a8a, #1e40af)'},
-    sectionRed:{background:'linear-gradient(135deg, #b91c1c, #dc2626)'},
-    sectionOrange:{background:'linear-gradient(135deg, #d97706, #ea580c)'},
+    sectionBlue:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionRed:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
+    sectionOrange:{background:'linear-gradient(135deg, #1e3a5f, #2d5a87)'},
     sectionBody:{padding:'20px',background:'#f8fafc'},
     formRow:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(250px, 1fr))',gap:'20px',marginBottom:'20px'},
     formGroup:{display:'flex',flexDirection:'column'},
@@ -170,15 +170,15 @@ export default function PropertyDamageReport(){
     energyItemSelected:{borderColor:'#b91c1c',background:'#fef2f2'},
     psifBadge:{marginTop:'15px',padding:'15px 20px',borderRadius:'8px',textAlign:'center',fontWeight:'bold',fontSize:'14px'},
     psifCritical:{background:'#fecaca',color:'#991b1b',border:'2px solid #dc2626'},
-    psifHigh:{background:'#fed7aa',color:'#9a3412',border:'2px solid #ea580c'},
+    psifHigh:{background:'#fed7aa',color:'#9a3412',border:'2px solid #3b6ea5'},
     psifElevated:{background:'#fef3c7',color:'#92400e',border:'2px solid #f59e0b'},
     psifControlled:{background:'#d1fae5',color:'#065f46',border:'2px solid #22c55e'},
     psifNonStky:{background:'#dbeafe',color:'#1e40af',border:'2px solid #3b82f6'},
     photoUpload:{border:'2px dashed #d1d5db',borderRadius:'8px',padding:'30px',textAlign:'center',background:'white',cursor:'pointer'},
     photoUploadActive:{borderColor:'#059669',background:'rgba(5,150,105,0.05)'},
     photoPreview:{maxWidth:'200px',maxHeight:'150px',margin:'10px auto',borderRadius:'8px'},
-    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #b91c1c, #dc2626)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(185,28,28,0.3)'},
-    successBox:{background:'linear-gradient(135deg, #059669 0%, #047857 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px'},
+    submitBtn:{width:'100%',padding:'16px 32px',background:'linear-gradient(135deg, #1e3a5f, #2d5a87)',color:'white',border:'none',borderRadius:'10px',fontSize:'1.1rem',fontWeight:'600',cursor:'pointer',boxShadow:'0 4px 15px rgba(185,28,28,0.3)'},
+    successBox:{background:'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',color:'white',padding:'40px',borderRadius:'12px',textAlign:'center',margin:'20px'},
     footer:{textAlign:'center',padding:'20px',background:'linear-gradient(to bottom, #f8fafc, #ffffff)',color:'#64748b',fontSize:'11px',borderTop:'1px solid #e2e8f0'}
   };
 

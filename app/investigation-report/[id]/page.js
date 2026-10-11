@@ -364,7 +364,7 @@ function ReportHeader({ incident }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #d71919 0%, #a80a0a 100%)',
+      background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
       borderRadius: 14,
       padding: '22px 24px',
       color: 'white',
@@ -460,7 +460,7 @@ function Section({ icon, title, count, children, breakBefore }) {
       className={breakBefore ? 'section section-break-before' : 'section'}
     >
       <div className="section-header" style={{
-        background: 'linear-gradient(90deg, #d71919 0%, #a80a0a 100%)',
+        background: 'linear-gradient(90deg, #1e3a5f 0%, #2d5a87 100%)',
         color: 'white',
         padding: '10px 16px',
         borderRadius: 6,

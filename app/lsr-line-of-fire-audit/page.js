@@ -141,7 +141,7 @@ export default function LSRLineOfFireAudit() {
   // Success Screen
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto', paddingTop: '50px' }}>
           <div style={{ background: 'white', borderRadius: '16px', padding: '40px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}>
             <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
@@ -173,7 +173,7 @@ export default function LSRLineOfFireAudit() {
             <button
               onClick={resetForm}
               style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 padding: '12px 30px',
@@ -251,11 +251,11 @@ export default function LSRLineOfFireAudit() {
 
         <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '25px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '25px', textAlign: 'center' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '160px', marginBottom: '10px' }} />
             <h1 style={{ margin: '0', fontSize: '24px' }}>LSR-Line of Fire Audit</h1>
             <p style={{ margin: '8px 0 0', opacity: 0.9, fontSize: '13px' }}>Life Saving Rules - Struck-by, Caught-between & Crush Hazard Prevention</p>
-            <div style={{ display: 'inline-block', background: '#ea580c', color: 'white', padding: '4px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: '600', marginTop: '8px' }}>
+            <div style={{ display: 'inline-block', background: '#3b6ea5', color: 'white', padding: '4px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: '600', marginTop: '8px' }}>
               ⚠️ LINE OF FIRE AUDIT
             </div>
           </div>
@@ -361,7 +361,7 @@ export default function LSRLineOfFireAudit() {
               style={{
                 width: '100%',
                 padding: '14px',
-                background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                background: submitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',

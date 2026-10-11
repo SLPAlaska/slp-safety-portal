@@ -193,9 +193,9 @@ export default function PhaseConditionRiskAssessment() {
 
   if (submitStatus === 'success') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
-          <div style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: 'white', padding: '40px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '40px', textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '15px' }}>✓</div>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>Assessment Submitted!</h2>
             <p>Your Phase Condition Risk Assessment has been recorded.</p>
@@ -218,11 +218,11 @@ export default function PhaseConditionRiskAssessment() {
   const formGroupStyle = { marginBottom: '20px' }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
       <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
         
         {/* Header */}
-<div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+<div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '20px', color: 'white', textDecoration: 'none', fontSize: '0.95rem' }}>
             ← Back to Portal
           </a>
@@ -242,7 +242,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Assessment Information */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Assessment Information
               </div>
               <div style={sectionContentStyle}>
@@ -275,7 +275,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Personnel Information */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Personnel Information
               </div>
               <div style={sectionContentStyle}>
@@ -302,7 +302,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Work Scope */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Work Scope
               </div>
               <div style={sectionContentStyle}>
@@ -315,7 +315,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Weather Conditions */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Weather Conditions
               </div>
               <div style={sectionContentStyle}>
@@ -328,7 +328,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Hazards & Risk Controls */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Hazards & Risk Controls</span>
                 {formData.hazards_risks.length > 0 && (() => {
                   const n = formData.hazards_risks.length;
@@ -384,7 +384,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Emergency Preparedness */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Emergency Preparedness
               </div>
               <div style={sectionContentStyle}>
@@ -424,7 +424,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Re-Evaluation */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Re-Evaluation
               </div>
               <div style={sectionContentStyle}>
@@ -452,7 +452,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Phase Work Plans */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Phase Work Plans
               </div>
               <div style={sectionContentStyle}>
@@ -469,7 +469,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Status & Approval */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Status & Approval
               </div>
               <div style={sectionContentStyle}>
@@ -516,7 +516,7 @@ export default function PhaseConditionRiskAssessment() {
 
             {/* Photo Upload */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 Photo Documentation
               </div>
               <div style={sectionContentStyle}>
@@ -547,7 +547,7 @@ export default function PhaseConditionRiskAssessment() {
               style={{
                 width: '100%',
                 padding: '16px 32px',
-                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)',
+                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',

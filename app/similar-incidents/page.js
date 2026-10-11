@@ -25,13 +25,13 @@ const HAZARD_KEYWORDS = {
 
 const SEVERITY_COLORS = {
   'A': '#7F1D1D', 'B': '#991B1B', 'C': '#B91C1C', 'D': '#DC2626',
-  'E': '#F97316', 'F': '#EAB308', 'G': '#22C55E'
+  'E': '#3b6ea5', 'F': '#EAB308', 'G': '#22C55E'
 };
 
 const PSIF_COLORS = {
   'SIF-Actual': { bg: '#1f2937', text: '#fff' },
   'PSIF-Critical': { bg: '#dc2626', text: '#fff' },
-  'PSIF-High': { bg: '#ea580c', text: '#fff' },
+  'PSIF-High': { bg: '#3b6ea5', text: '#fff' },
   'PSIF-Elevated': { bg: '#eab308', text: '#000' },
   'STKY-Controlled': { bg: '#22c55e', text: '#fff' },
   'Non-STKY': { bg: '#3b82f6', text: '#fff' }
@@ -40,7 +40,7 @@ const PSIF_COLORS = {
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' },
   wrapper: { maxWidth: '1200px', margin: '0 auto' },
-  header: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
+  header: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', borderRadius: '16px 16px 0 0', padding: '25px 30px', color: 'white' },
   headerTitle: { fontSize: '28px', fontWeight: '700' },
   headerSubtitle: { fontSize: '14px', opacity: 0.9, marginTop: '5px' },
   card: { background: '#fff', borderRadius: '0 0 16px 16px', padding: '25px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' },
@@ -50,7 +50,7 @@ const styles = {
   input: { width: '100%', padding: '15px 20px', border: '2px solid #e2e8f0', borderRadius: '10px', fontSize: '16px', boxSizing: 'border-box' },
   select: { padding: '12px 15px', border: '2px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', background: 'white', minWidth: '180px' },
   actionBtn: { padding: '12px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '15px', fontWeight: '600' },
-  primaryBtn: { background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white' },
+  primaryBtn: { background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white' },
   secondaryBtn: { background: '#1e3a8a', color: 'white' },
   resultCard: { border: '2px solid #e2e8f0', borderRadius: '12px', padding: '20px', marginBottom: '15px', transition: 'all 0.2s' },
   resultCardHigh: { borderColor: '#dc2626', background: '#fef2f2' },
@@ -63,7 +63,7 @@ const styles = {
   patternCount: { fontSize: '24px', fontWeight: '700', color: '#991b1b' },
   patternLabel: { fontSize: '14px', color: '#64748b' },
   footer: { textAlign: 'center', padding: '20px', color: 'white', fontSize: '13px' },
-  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  submitBtn: { width: '100%', padding: '14px', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   statsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px', marginBottom: '25px' },
   statCard: { background: '#f8fafc', borderRadius: '12px', padding: '20px', textAlign: 'center', border: '2px solid #e2e8f0' },
   statNumber: { fontSize: '28px', fontWeight: '700', marginBottom: '5px' },
@@ -405,7 +405,7 @@ export default function SimilarIncidentFinder() {
                         {inc.incident_types && inc.incident_types.length > 0 && (
                           <div style={{ marginTop: '10px' }}>
                             {inc.incident_types.map((t, j) => (
-                              <span key={j} style={{ ...styles.badge, background: '#e0e7ff', color: '#3730a3' }}>{t}</span>
+                              <span key={j} style={{ ...styles.badge, background: '#e0e7ff', color: '#2d5a87' }}>{t}</span>
                             ))}
                           </div>
                         )}

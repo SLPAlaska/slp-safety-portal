@@ -143,7 +143,7 @@ export default function LmsDashboard() {
             <p style={S.regulation}>Competency program: {comp.units.filter(u => u.status.complete).length} of {comp.units.length} units complete</p>
           </div>
           <div style={S.cardActions}>
-            <button style={{ ...S.btn, background: comp.all_complete ? '#e8f5e9' : '#b71c1c', color: comp.all_complete ? '#2e7d32' : '#fff' }}
+            <button style={{ ...S.btn, background: comp.all_complete ? '#e8f5e9' : '#1e3a5f', color: comp.all_complete ? '#2e7d32' : '#fff' }}
               onClick={() => window.location.href = `/lms/competency/program/${comp.subject.id}`}>
               {comp.all_complete ? 'Review Program' : 'Open Program'}
             </button>
@@ -207,7 +207,7 @@ export default function LmsDashboard() {
               </div>
               <div style={S.cardActions}>
                 <button
-                  style={{ ...S.btn, background: course.status === 'Complete' ? '#e8f5e9' : course.status === 'Due Soon' ? '#f59e0b' : '#b71c1c', color: course.status === 'Complete' ? '#2e7d32' : '#fff' }}
+                  style={{ ...S.btn, background: course.status === 'Complete' ? '#e8f5e9' : course.status === 'Due Soon' ? '#f59e0b' : '#1e3a5f', color: course.status === 'Complete' ? '#2e7d32' : '#fff' }}
                   onClick={() => window.location.href = `/lms/course/${course.id}`}
                 >
                   {course.status === 'Complete' ? '✓ Review Course' : course.status === 'Expired' ? '↻ Retake Course' : course.status === 'Due Soon' ? '↻ Renew Early' : course.status === 'In Progress' ? '▶ Resume Course' : '▶ Start Course'}
@@ -231,7 +231,7 @@ export default function LmsDashboard() {
 const S = {
   page: { minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', fontFamily: 'Arial, Helvetica, sans-serif', padding: '24px' },
   loadingCenter: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' },
-  spinner: { width: '48px', height: '48px', border: '4px solid #ddd', borderTop: '4px solid #b71c1c', borderRadius: '50%', animation: 'spin 1s linear infinite' },
+  spinner: { width: '48px', height: '48px', border: '4px solid #ddd', borderTop: '4px solid #1e3a5f', borderRadius: '50%', animation: 'spin 1s linear infinite' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' },
   headerLeft: { display: 'flex', alignItems: 'center', gap: '16px' },
   headerRight: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },

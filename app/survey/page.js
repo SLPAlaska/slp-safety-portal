@@ -433,7 +433,7 @@ export default function Survey() {
       <style jsx>{`
         .page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
           padding: 20px;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
@@ -448,7 +448,7 @@ export default function Survey() {
         }
 
         .card-header {
-          background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+          background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
           color: white;
           padding: 30px;
           text-align: center;
@@ -743,7 +743,7 @@ export default function Survey() {
           width: 100%;
           min-height: 56px;
           padding: 16px;
-          background: #ea580c;
+          background: #3b6ea5;
           color: white;
           border: none;
           border-radius: 8px;
@@ -754,7 +754,7 @@ export default function Survey() {
         }
 
         .primary:hover:not(:disabled) {
-          background: #c2410c;
+          background: #2d5a87;
         }
 
         .primary:disabled {

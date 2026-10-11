@@ -48,7 +48,7 @@ const SAFETY_SEVERITY_OPTIONS = [
   { value: 'B', label: 'B - Permanent Total Disability', description: 'Permanent total disability or potential for 10-25 fatalities', color: '#991B1B' },
   { value: 'C', label: 'C - Serious Injury', description: 'Serious injury (hospitalization) or potential for 3-9 fatalities', color: '#B91C1C' },
   { value: 'D', label: 'D - Lost Time Injury', description: 'Lost workday case or potential for 1-2 fatalities', color: '#DC2626' },
-  { value: 'E', label: 'E - Medical Treatment', description: 'Medical treatment or permanent partial disability potential', color: '#F97316' },
+  { value: 'E', label: 'E - Medical Treatment', description: 'Medical treatment or permanent partial disability potential', color: '#3b6ea5' },
   { value: 'F', label: 'F - First Aid / Minor', description: 'First aid or single/multiple recordable potential', color: '#EAB308' },
   { value: 'G', label: 'G - Near Miss / No Injury', description: 'Near miss or first aid/exposure potential', color: '#22C55E' }
 ];
@@ -56,7 +56,7 @@ const SAFETY_SEVERITY_OPTIONS = [
 const ENVIRONMENTAL_SEVERITY_OPTIONS = [
   { value: '1', label: 'Level 1 - Catastrophic', description: '>1000 bbl to HCA Water or >10,000 bbl to Non-HCA Ground', color: '#7F1D1D' },
   { value: '2', label: 'Level 2 - Major', description: '100-1000 bbl to HCA Water or 5000-10000 bbl to Non-HCA Ground', color: '#DC2626' },
-  { value: '3', label: 'Level 3 - Moderate', description: '10-100 bbl to HCA Water or 1000-5000 bbl to Non-HCA Ground', color: '#F97316' },
+  { value: '3', label: 'Level 3 - Moderate', description: '10-100 bbl to HCA Water or 1000-5000 bbl to Non-HCA Ground', color: '#3b6ea5' },
   { value: '4', label: 'Level 4 - Minor', description: '1-10 bbl to HCA Water or 100-1000 bbl to Non-HCA Ground', color: '#EAB308' },
   { value: '5', label: 'Level 5 - Negligible', description: '<1 bbl to HCA Water or ≤10 bbl to Pad/Disturbed Ground', color: '#22C55E' }
 ];
@@ -191,7 +191,7 @@ const styles = {
     margin: '0 auto'
   },
   header: {
-    background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     borderRadius: '16px 16px 0 0',
     padding: '25px 30px',
     color: 'white',
@@ -365,7 +365,7 @@ const styles = {
   submitBtn: {
     width: '100%',
     padding: '16px',
-    background: 'linear-gradient(135deg, #991b1b 0%, #c41e3a 100%)',
+    background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
     color: 'white',
     border: 'none',
     borderRadius: '10px',
@@ -442,8 +442,8 @@ const PSIF_DISPLAY = {
   },
   'PSIF-High': {
     bg: '#fff7ed',
-    border: '#ea580c',
-    badgeBg: '#ea580c',
+    border: '#3b6ea5',
+    badgeBg: '#3b6ea5',
     text: 'HIGH: Energy released with only alternative controls (PPE/procedures)',
     icon: '🟠'
   },
@@ -472,7 +472,7 @@ const PSIF_DISPLAY = {
 
 const INVESTIGATION_TYPE_DISPLAY = {
   'Root Cause Analysis': { bg: '#7f1d1d', color: '#fff', icon: '🔬' },
-  '5-Why Analysis': { bg: '#f97316', color: '#fff', icon: '❓' },
+  '5-Why Analysis': { bg: '#3b6ea5', color: '#fff', icon: '❓' },
   'Local Review': { bg: '#22c55e', color: '#fff', icon: '📋' }
 };
 
@@ -1338,7 +1338,7 @@ export default function IncidentReportForm() {
                 onClick={() => {
                   window.location.href = `/investigation-workbench/${createdIncidentUUID}`;
                 }}
-                style={{ ...styles.submitBtn, background: 'linear-gradient(135deg, #1e40af 0%, #7c3aed 100%)', marginBottom: '15px' }}
+                style={{ ...styles.submitBtn, background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', marginBottom: '15px' }}
               >
                 🔍 Open Investigation Workbench
               </button>
@@ -1864,7 +1864,7 @@ export default function IncidentReportForm() {
             {/* ============================================================ */}
             {/* SECTION 4: STKY/PSIF ASSESSMENT */}
             {/* ============================================================ */}
-            <div style={{ ...styles.sectionHeader, background: '#7c3aed' }}>
+            <div style={{ ...styles.sectionHeader, background: '#3b6ea5' }}>
               ⚡ STKY / SIF Potential Assessment
             </div>
 
@@ -1883,7 +1883,7 @@ export default function IncidentReportForm() {
                     key={option}
                     style={{
                       ...styles.radioOption,
-                      borderColor: formData.high_energy_present === option ? '#7c3aed' : '#e2e8f0',
+                      borderColor: formData.high_energy_present === option ? '#3b6ea5' : '#e2e8f0',
                       background: formData.high_energy_present === option ? 'rgba(124, 58, 237, 0.05)' : '#fff'
                     }}
                   >
@@ -1941,7 +1941,7 @@ export default function IncidentReportForm() {
                         key={option}
                         style={{
                           ...styles.radioOption,
-                          borderColor: formData.energy_release_occurred === option ? '#7c3aed' : '#e2e8f0',
+                          borderColor: formData.energy_release_occurred === option ? '#3b6ea5' : '#e2e8f0',
                           background: formData.energy_release_occurred === option ? 'rgba(124, 58, 237, 0.05)' : '#fff'
                         }}
                       >
@@ -2172,7 +2172,7 @@ export default function IncidentReportForm() {
             {/* CONDITIONAL SECTION: EMPLOYEE/CONTRACTOR DETAILS (shows when injury) */}
             {showInjurySection && (
               <>
-                <div style={{ ...styles.sectionHeader, background: '#0f766e' }}>
+                <div style={{ ...styles.sectionHeader, background: '#1e3a5f' }}>
                   👷 Employee / Contractor Information
                 </div>
 
@@ -2474,7 +2474,7 @@ export default function IncidentReportForm() {
             {/* ============================================================ */}
             {showVehicleSection && (
               <>
-                <div style={{ ...styles.sectionHeader, background: '#4338ca' }}>
+                <div style={{ ...styles.sectionHeader, background: '#3b6ea5' }}>
                   🚗 Vehicle Incident Details
                 </div>
 
@@ -2522,7 +2522,7 @@ export default function IncidentReportForm() {
                         key={option}
                         style={{
                           ...styles.radioOption,
-                          borderColor: formData.other_vehicle_involved === option ? '#4338ca' : '#e2e8f0',
+                          borderColor: formData.other_vehicle_involved === option ? '#3b6ea5' : '#e2e8f0',
                           background: formData.other_vehicle_involved === option ? 'rgba(67, 56, 202, 0.05)' : '#fff'
                         }}
                       >
@@ -2669,7 +2669,7 @@ export default function IncidentReportForm() {
 
             {/* ============================================================ */}
             {/* SECTION: CONDITIONS & MEDICAL */}
-            <div style={{ ...styles.sectionHeader, background: '#4338ca' }}>
+            <div style={{ ...styles.sectionHeader, background: '#3b6ea5' }}>
               🌤️ Conditions, Medical & Risk
             </div>
 
@@ -2797,7 +2797,7 @@ export default function IncidentReportForm() {
                 style={{
                   flex: 1,
                   padding: '16px',
-                  background: 'linear-gradient(135deg, #475569 0%, #64748b 100%)',
+                  background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '10px',

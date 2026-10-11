@@ -140,9 +140,9 @@ export default function RiskControlConversation() {
 
   if (submitStatus === 'success') {
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
-          <div style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: 'white', padding: '40px', textAlign: 'center' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '40px', textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '15px' }}>✅</div>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '10px' }}>Conversation Submitted Successfully!</h2>
             <p>Your risk control conversation has been recorded.</p>
@@ -165,18 +165,18 @@ export default function RiskControlConversation() {
   const formRowStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '20px' }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', padding: '20px', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', padding: '20px', fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
       <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
         
         {/* Header */}
-<div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #b91c1c 100%)', color: 'white', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+<div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <a href="https://portal.slpalaska.com" style={{ display: 'inline-block', marginBottom: '20px', color: 'white', textDecoration: 'none', fontSize: '0.95rem' }}>
             ← Back to Portal
           </a>
           <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '12px', padding: '15px', display: 'inline-block', margin: '0 auto 20px auto', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}>
             <img src="/Logo.png" alt="SLP Alaska" style={{ maxWidth: '200px', height: 'auto', display: 'block', margin: '0 auto' }} />
           </div>
-          <div style={{ display: 'inline-block', background: 'white', color: '#1e3a8a', padding: '6px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '0.85rem', marginBottom: '15px', border: '3px solid #7c3aed', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+          <div style={{ display: 'inline-block', background: 'white', color: '#1e3a8a', padding: '6px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '0.85rem', marginBottom: '15px', border: '3px solid #3b6ea5', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
             💬 RISK CONTROL CONVERSATION
           </div>
           <h1 style={{ fontSize: '1.5rem', marginBottom: '8px', textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>Risk Control Conversation</h1>
@@ -196,7 +196,7 @@ export default function RiskControlConversation() {
 
             {/* Basic Information */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 📋 Basic Information
               </div>
               <div style={sectionBodyStyle}>
@@ -241,7 +241,7 @@ export default function RiskControlConversation() {
 
             {/* Hazardous Energy Identification */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 ⚡ Hazardous Energy Identification
               </div>
               <div style={sectionBodyStyle}>
@@ -429,7 +429,7 @@ export default function RiskControlConversation() {
 
             {/* Risk Control Questions */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 🎯 Risk Control Questions
               </div>
               <div style={sectionBodyStyle}>
@@ -461,7 +461,7 @@ export default function RiskControlConversation() {
 
             {/* Observer Notes */}
             <div style={sectionStyle}>
-              <div style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
+              <div style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)', color: 'white', padding: '12px 20px', fontWeight: '600', fontSize: '1rem' }}>
                 📝 Observer Notes
               </div>
               <div style={sectionBodyStyle}>
@@ -483,7 +483,7 @@ export default function RiskControlConversation() {
               style={{
                 width: '100%',
                 padding: '16px 32px',
-                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)',
+                background: isSubmitting ? '#9ca3af' : 'linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '10px',
