@@ -310,6 +310,20 @@
         "/api/demo-reset",
         "/api/demo-training"
       ]
+    },
+    {
+      "id": "help-desk",
+      "label": "Help Desk (answers to portal questions, works offline)",
+      "routes": [
+        "/help"
+      ],
+      "note": "Off: the Help Desk page answers 404 and the Help button disappears from every page."
+    },
+    {
+      "id": "quick-start",
+      "label": "Quick Start buttons on the home page (most-used forms)",
+      "routes": [],
+      "note": "Home-page shortcut row only, no pages of its own. Each button also hides when the module that owns its form is off. List and ranking: config/quickstart.json."
     }
   ]
 }

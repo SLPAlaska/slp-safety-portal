@@ -11,7 +11,8 @@
     "check:audit-mobile": "node scripts/check-audit-mobile.mjs",
     "check:inv-guide": "node scripts/check-inv-guide.mjs",
     "check:text-gate": "node scripts/check-investigation-text-gate.mjs",
-    "check:modules": "node scripts/check-modules.mjs"
+    "check:modules": "node scripts/check-modules.mjs",
+    "check:help": "node scripts/check-help.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

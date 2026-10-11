@@ -1,0 +1,107 @@
+{
+  "_comment": "Quick Start buttons (home page and Help Desk). items are ranked by records submitted in the last 90 days, read from the live database on 2026-10-11 (THA = tha_assessments, LMS = lms_certificates issued, LSR = each audit table). pinned are always shown regardless of volume because reporting must be one tap. A button hides when its module is off. Re-rank by editing last90 and the order; npm run check:help fails if the order does not match last90.",
+  "asOf": "2026-10-11",
+  "pinned": [
+    {
+      "name": "Report an Incident",
+      "short": "Incident",
+      "href": "/incident-report",
+      "icon": "🚨",
+      "last90": 14
+    },
+    {
+      "name": "Good Catch / Near Miss",
+      "short": "Near Miss",
+      "href": "/good-catch",
+      "icon": "👀",
+      "last90": 27
+    }
+  ],
+  "items": [
+    {
+      "name": "Online Training (LMS)",
+      "short": "Training",
+      "href": "/lms/login",
+      "icon": "🎓",
+      "last90": 3734
+    },
+    {
+      "name": "BBS Observation",
+      "short": "BBS",
+      "href": "/bbs-form",
+      "icon": "👁️",
+      "last90": 1068
+    },
+    {
+      "name": "THA / JSA",
+      "short": "THA / JSA",
+      "href": "/tha-jsa",
+      "icon": "☀️",
+      "last90": 787
+    },
+    {
+      "name": "Fire Extinguisher Inspection",
+      "short": "Fire Ext.",
+      "href": "/fire-extinguisher-inspection",
+      "icon": "🧯",
+      "last90": 295
+    },
+    {
+      "name": "Synthetic Sling Inspection",
+      "short": "Sling",
+      "href": "/synthetic-sling-inspection",
+      "icon": "🎗️",
+      "last90": 153
+    },
+    {
+      "name": "Toolbox Meeting Assessment",
+      "short": "Toolbox",
+      "href": "/toolbox-meeting-assessment",
+      "icon": "🧰",
+      "last90": 79
+    },
+    {
+      "name": "LSR-Work Permits Audit",
+      "short": "LSR Permits",
+      "href": "/lsr-work-permits-audit",
+      "icon": "🛡️",
+      "last90": 69
+    },
+    {
+      "name": "Task/Crew Audit",
+      "short": "Task/Crew",
+      "href": "/task-crew-audit",
+      "icon": "👷",
+      "last90": 68
+    },
+    {
+      "name": "Shackle Inspection",
+      "short": "Shackle",
+      "href": "/shackle-inspection",
+      "icon": "⛓️",
+      "last90": 61
+    },
+    {
+      "name": "LSR-Line of Fire Audit",
+      "short": "LSR Line of Fire",
+      "href": "/lsr-line-of-fire-audit",
+      "icon": "🛡️",
+      "last90": 55
+    },
+    {
+      "name": "LSR-Lifting Operations Audit",
+      "short": "LSR Lifting",
+      "href": "/lsr-lifting-operations-audit",
+      "icon": "🛡️",
+      "last90": 52
+    },
+    {
+      "name": "Welding/Fab Shop Audit",
+      "short": "Weld/Fab Shop",
+      "href": "/welding-fab-shop-audit",
+      "icon": "🔧",
+      "last90": 47
+    }
+  ],
+  "homeCount": 8
+}

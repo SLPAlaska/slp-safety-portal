@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { isDaAdmin } from '@/lib/daAdmins'
-import { filterCategories, isPathEnabled } from '@/lib/modules'
+import { filterCategories, isPathEnabled, isModuleEnabled } from '@/lib/modules'
+import quickStart from '../config/quickstart.json'
 
 // Shared, lock-free auth client. Portal pages each build their own Supabase
 // client and brawl over the browser auth lock; this one reuses AdminGate's
@@ -312,6 +313,17 @@ export default function SafetyPortal() {
        ...visibleCategories.slice(daAt)]
     : visibleCategories
 
+  // Quick Start: one tap to the most-used forms (ranked by live use, see
+  // config/quickstart.json). Pinned reporting buttons first. Each button hides
+  // when its own module is off; the whole row is the quick-start module.
+  const quickButtons = isModuleEnabled('quick-start')
+    ? [
+        ...(quickStart.pinned || []).map(i => ({ ...i, pinned: true })),
+        ...quickStart.items.slice(0, quickStart.homeCount || 8),
+      ].filter(i => isPathEnabled(i.href))
+    : []
+  const helpOn = isModuleEnabled('help-desk')
+
   const totalForms = categories.reduce((sum, category) => sum + category.forms.length, 0)
 
   const filteredCategories = categories.map(category => {
@@ -574,6 +586,60 @@ export default function SafetyPortal() {
           color: rgba(255,255,255,0.7);
         }
         
+        .quick-start {
+          max-width: 760px;
+          margin: 18px auto 0;
+        }
+
+        .quick-title {
+          color: #fbbf24;
+          font-size: 13px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          text-align: center;
+          margin-bottom: 8px;
+        }
+
+        .quick-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 8px;
+        }
+
+        a.quick-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(255,255,255,0.95);
+          color: #1e3a5f;
+          text-decoration: none;
+          font-weight: 700;
+          font-size: 14px;
+          padding: 11px 12px;
+          border-radius: 12px;
+          min-height: 46px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        a.quick-btn.pinned {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+
+        a.help-btn {
+          display: inline-block;
+          margin-top: 14px;
+          background: #fbbf24;
+          color: #1e3a5f;
+          font-weight: 700;
+          font-size: 14px;
+          padding: 9px 18px;
+          border-radius: 999px;
+          text-decoration: none;
+          box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+        }
+
         .no-results {
           text-align: center;
           padding: 40px;
@@ -582,6 +648,7 @@ export default function SafetyPortal() {
         
         @media (max-width: 600px) {
           .page-wrapper { padding: 10px; }
+          .quick-grid { grid-template-columns: repeat(2, 1fr); }
           h1 { font-size: 22px; }
           .folder-header { padding: 12px 15px; font-size: 13px; }
           .form-link { padding: 10px 15px; font-size: 12px; }
@@ -606,6 +673,23 @@ export default function SafetyPortal() {
               <div className="stat-label">Categories</div>
             </div>
           </div>
+
+          {helpOn && (
+            <Link href="/help" className="help-btn">❓ Help Desk: ask anything</Link>
+          )}
+
+          {quickButtons.length > 0 && (
+            <div className="quick-start">
+              <div className="quick-title">⚡ Quick Start</div>
+              <div className="quick-grid">
+                {quickButtons.map(q => (
+                  <Link key={q.href} href={q.href} className={`quick-btn${q.pinned ? ' pinned' : ''}`}>
+                    <span style={{ fontSize: '20px' }}>{q.icon}</span>{q.short}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         <input

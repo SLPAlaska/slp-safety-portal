@@ -1,4 +1,5 @@
 import './globals.css'
+import HelpLauncher from '@/components/HelpLauncher'
 
 export const metadata = {
   title: 'SLP Safety Portal',
@@ -18,7 +19,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#ea580c" />
         <link rel="apple-touch-icon" href="/Logo.png" />
       </head>
-      <body>{children}</body>
+      <body>{children}<HelpLauncher /></body>
     </html>
   )
 }

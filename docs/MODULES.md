@@ -22,6 +22,13 @@ Then redeploy. The switch is read at build time.
 - Modules that depend on it turn off too (`incidents` off also turns off `analytics` and `truecost`; `lms` off also turns off `lms-competency` and `game`).
 - Data is never touched. Turning a module back on brings everything back as it was.
 
+## Help Desk and Quick Start
+
+- `help-desk` off: `/help` answers 404, the home Help Desk button and the floating Help button disappear.
+- `quick-start` off: the Quick Start row on the home page and Help Desk disappears. Each button also hides on its own when the module owning its form is off.
+
+See `docs/HELP-DESK.md`.
+
 ## What it does not do
 
 - `core` cannot be turned off. Sign-in (`/api/lms`), SafeSubmit (`/api/field-data`, `/api/closeout`) and `/api/spellcheck` are shared by every form and always stay open.
