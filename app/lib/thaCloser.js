@@ -88,7 +88,9 @@ export function namesMatch(typed, listed) {
   if (!tFull.length || !lFull.length) return false;
   if (lFull.length === 1) return tFull.some((x) => sameFirst(x, lFull[0]) || sameLast(x, lFull[0]));
   if (tFull.length === 1) return false; // listed has first + last; one word is not enough
-  return sameFirst(tFull[0], lFull[0]) && sameLast(tFull[tFull.length - 1], lFull[lFull.length - 1]);
+  const tF = tFull[0], tL = tFull[tFull.length - 1], lF = lFull[0], lL = lFull[lFull.length - 1];
+  if (sameFirst(tF, lF) && sameLast(tL, lL)) return true;
+  return sameFirst(tL, lF) && sameLast(tF, lL); // entered last-name-first without a comma: "Gonzalez Gerardo"
 }
 
 /** Everyone named on a THA: crew lead + crew sign-on names, de-duplicated, original spelling kept. */

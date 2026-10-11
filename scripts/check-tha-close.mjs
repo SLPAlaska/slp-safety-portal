@@ -15,7 +15,7 @@ ok(normaliseName("  O'Brien, José M. ") === 'jose m obrien', 'normalise: comma 
 for (const [t, l] of [
   ['John Smith', 'John Smith'], ['john smith', 'JOHN SMITH'], ['Mike Jones', 'Michael Jones'], ['Michael Jones', 'Mike Jones'],
   ['Smith, John', 'John Smith'], ['John A. Smith', 'John Smith'], ['Jon Thompson', 'Jon Thomson'], ['Matthew Lee', 'Mathew Lee'],
-  ['Mike Jones', 'Mike'], ['Jose Garcia Jr', 'José García'], ['Mary-Ann Price', 'Mary Ann Price'],
+  ['Mike Jones', 'Mike'], ['Jose Garcia Jr', 'José García'], ['Mary-Ann Price', 'Mary Ann Price'], ['Gonzalez Gerardo', 'Gerardo Gonzalez'],
 ]) ok(namesMatch(t, l), `should match: "${t}" vs "${l}"`)
 for (const [t, l] of [
   ['John Smith', 'Jane Smith'], ['John Smith', 'John Smythe-Jones'], ['John', 'John Smith'], ['Bob Lee', 'Bill Lee'],
