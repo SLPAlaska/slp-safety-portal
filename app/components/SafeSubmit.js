@@ -16,7 +16,8 @@ const ADMIN_EMAIL = 'brian@slpalaska.com';
  * 2. Photo failures are non-fatal - form saves without photos, admin notified
  * 3. Admin gets email alert on ANY failure
  * 4. User always sees success if data was captured (even in backup)
- * 5. Offline submissions queue and auto-retry when connection returns
+ * 5. Offline submissions queue on the phone and re-send automatically when
+ *    signal returns (started by <OfflineSync/> in app/layout.js)
  */
 
 /**
@@ -95,7 +96,7 @@ export async function safeSubmit({ table, data, photoRef, formType }) {
     queueOfflineSubmission({ table, formType, data: submitData });
     result.success = true;
     result.usedBackup = true;
-    result.photoWarning = (result.photoWarning || '') + ' You appear to be offline. Your submission has been saved and will auto-submit when you reconnect.';
+    result.photoWarning = (result.photoWarning || '') + ' No signal: saved on this phone, NOT sent yet. It sends automatically when signal returns.';
     return result;
   }
 
@@ -145,7 +146,7 @@ export async function safeSubmit({ table, data, photoRef, formType }) {
 
       result.success = true;
       result.usedBackup = true;
-      result.photoWarning = (result.photoWarning || '') + ' Data saved locally on your device. It will auto-submit when connection is restored.';
+      result.photoWarning = (result.photoWarning || '') + ' Saved on this phone, NOT sent yet. It sends automatically when the connection returns.';
 
       alertAdmin({
         form_type: formType,
@@ -177,10 +178,82 @@ async function alertAdmin({ form_type, alert_type, error_message, target_table, 
   }
 }
 
+// ── Offline queue ───────────────────────────────────────────────────────────
+//
+// Submissions that could not reach the server are kept in localStorage under
+// QUEUE_KEY and re-sent by flushOfflineQueue(). The flush is started from
+// <OfflineSync/> in the root layout (online / focus / visibility / pageshow
+// events, a timer while anything is waiting, and once on every page load).
+//
+// Rules: nothing is ever dropped from the queue unless the server accepted it
+// (target table) or it landed in the failed_submissions backup table. Each
+// item is removed the moment it is accepted, so a dropped connection halfway
+// through a flush never re-sends what already went in, and items queued while
+// a flush is running are never overwritten.
+
+const QUEUE_KEY = 'offline_submission_queue';
+export const OFFLINE_QUEUE_EVENT = 'slp-offline-queue';
+
+function newQueueId() {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function readQueue() {
+  try {
+    const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+    return Array.isArray(q) ? q : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeQueue(queue) {
+  try {
+    if (queue.length) localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    else localStorage.removeItem(QUEUE_KEY);
+  } catch (e) {
+    console.error('Failed to write offline queue:', e);
+  }
+  notifyQueue();
+}
+
+function notifyQueue(detail) {
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(OFFLINE_QUEUE_EVENT, { detail: { count: readQueue().length, ...(detail || {}) } }));
+    }
+  } catch (e) {}
+}
+
+// Older builds could write two items with the same id; give every item its
+// own id before a flush so removing one can never remove another.
+function normaliseQueueIds() {
+  const q = readQueue();
+  const seen = new Set();
+  let changed = false;
+  for (const item of q) {
+    if (!item.id || seen.has(item.id)) { item.id = newQueueId(); changed = true; }
+    seen.add(item.id);
+  }
+  if (changed) writeQueue(q);
+}
+
+function removeFromQueue(id) {
+  writeQueue(readQueue().filter(i => i.id !== id));
+}
+
+function patchQueueItem(id, patch) {
+  const q = readQueue();
+  const item = q.find(i => i.id === id);
+  if (!item) return;
+  Object.assign(item, patch);
+  writeQueue(q);
+}
+
 function queueOfflineSubmission({ table, formType, data, primaryError, backupError }) {
   try {
     const entry = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: newQueueId(),
       timestamp: new Date().toISOString(),
       form_type: formType,
       target_table: table,
@@ -189,86 +262,168 @@ function queueOfflineSubmission({ table, formType, data, primaryError, backupErr
       backup_error: backupError || null,
       retryCount: 0
     };
-    const queue = JSON.parse(localStorage.getItem('offline_submission_queue') || '[]');
+    const queue = readQueue();
     queue.push(entry);
-    localStorage.setItem('offline_submission_queue', JSON.stringify(queue));
+    writeQueue(queue);
+    notifyQueue({ queued: 1 });
   } catch (e) {
     console.error('Failed to queue offline submission:', e);
   }
 }
 
+// One flush at a time: per tab (in-memory promise) and across tabs (Web Locks
+// where the browser has them).
+let flushInFlight = null;
+
+async function flushOnce() {
+  normaliseQueueIds();
+  const snapshot = readQueue();
+  if (snapshot.length === 0) return { processed: 0, toBackup: 0, failed: 0, remaining: 0 };
+
+  let processed = 0;
+  let toBackup = 0;
+  let failed = 0;
+
+  for (const item of snapshot) {
+    // Another tab may already have sent it.
+    if (!readQueue().some(i => i.id === item.id)) continue;
+    const replayData = nullifyEmptyStrings(item.data);
+    let insertErr = null;
+    try {
+      // A hung request on weak LTE must not freeze the queue forever.
+      let q = supabase.from(item.target_table).insert([replayData]);
+      if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) q = q.abortSignal(AbortSignal.timeout(25000));
+      const { error } = await q;
+      insertErr = error || null;
+    } catch (e) {
+      insertErr = e;
+    }
+
+    if (!insertErr) {
+      removeFromQueue(item.id);
+      processed++;
+      continue;
+    }
+
+    if (isNetworkError(insertErr) || isAbort(insertErr)) {
+      // Still no real connection. Keep this and everything after it; try
+      // again on the next online / focus / timer tick. Not counted as a
+      // give-up: the item stays queued until the server has it.
+      patchQueueItem(item.id, { last_error: insertErr.message || String(insertErr), last_try: new Date().toISOString() });
+      failed++;
+      break;
+    }
+
+    // The server answered but refused the row (bad data, RLS, constraint).
+    // Same path as an online submit: park it in failed_submissions for
+    // recovery and alert the admin. Only removed once that insert succeeds.
+    try {
+      const { error: backupErr } = await supabase.from('failed_submissions').insert([{
+        form_type: item.form_type,
+        target_table: item.target_table,
+        submission_data: replayData,
+        error_message: `Offline retry: ${insertErr.message}`,
+        status: 'pending',
+        created_at: item.timestamp
+      }]);
+      if (backupErr) throw backupErr;
+      removeFromQueue(item.id);
+      toBackup++;
+      alertAdmin({
+        form_type: item.form_type,
+        alert_type: 'offline_replay_rejected',
+        error_message: insertErr.message,
+        target_table: item.target_table,
+        details: `Saved-on-phone submission from ${item.timestamp} was refused on re-send; moved to failed_submissions for recovery.`
+      });
+    } catch (e) {
+      patchQueueItem(item.id, {
+        retryCount: (item.retryCount || 0) + 1,
+        last_error: (e && e.message) || String(e),
+        last_try: new Date().toISOString()
+      });
+      failed++;
+      if (isNetworkError(e)) break;
+    }
+  }
+
+  return { processed, toBackup, failed, remaining: readQueue().length };
+}
+
 export async function processOfflineQueue() {
-  try {
-    const queue = JSON.parse(localStorage.getItem('offline_submission_queue') || '[]');
-    if (queue.length === 0) return { processed: 0, failed: 0, remaining: 0 };
-
-    const remaining = [];
-    let processed = 0;
-    let failed = 0;
-
-    for (const item of queue) {
-      try {
-        const replayData = nullifyEmptyStrings(item.data);
-        const { error } = await supabase.from(item.target_table).insert([replayData]);
-        if (error) {
-          const { error: backupErr } = await supabase.from('failed_submissions').insert([{
-            form_type: item.form_type,
-            target_table: item.target_table,
-            submission_data: replayData,
-            error_message: `Offline retry: ${error.message}`,
-            status: 'pending',
-            created_at: item.timestamp
-          }]);
-          if (backupErr) throw backupErr;
-        }
-        processed++;
-      } catch (e) {
-        item.retryCount = (item.retryCount || 0) + 1;
-        if (item.retryCount >= 5) {
-          failed++;
-          item.gaveUp = true;
-        }
-        remaining.push(item);
+  if (typeof window === 'undefined') return { processed: 0, toBackup: 0, failed: 0, remaining: 0 };
+  if (flushInFlight) return flushInFlight;
+  flushInFlight = (async () => {
+    try {
+      if (readQueue().length === 0) return { processed: 0, toBackup: 0, failed: 0, remaining: 0 };
+      notifyQueue({ sending: true });
+      let result;
+      if (typeof navigator !== 'undefined' && navigator.locks && navigator.locks.request) {
+        result = await navigator.locks.request('slp-offline-queue', { ifAvailable: true }, async (lock) => {
+          if (!lock) return { processed: 0, toBackup: 0, failed: 0, remaining: readQueue().length, busy: true };
+          return flushOnce();
+        });
+      } else {
+        result = await flushOnce();
       }
+      notifyQueue({ sending: false, result });
+      return result;
+    } catch (e) {
+      notifyQueue({ sending: false });
+      return { processed: 0, toBackup: 0, failed: 0, remaining: -1 };
+    } finally {
+      flushInFlight = null;
     }
-
-    localStorage.setItem('offline_submission_queue', JSON.stringify(remaining));
-    if (remaining.length === 0) localStorage.removeItem('offline_submission_queue');
-    return { processed, failed, remaining: remaining.length };
-  } catch (e) {
-    return { processed: 0, failed: 0, remaining: -1 };
-  }
+  })();
+  return flushInFlight;
 }
 
+/** Number of submissions saved on this phone and not yet sent. */
 export function getOfflineQueueCount() {
-  try {
-    return JSON.parse(localStorage.getItem('offline_submission_queue') || '[]').filter(i => !i.gaveUp).length;
-  } catch (e) {
-    return 0;
-  }
+  return readQueue().length;
 }
 
+/**
+ * Start automatic re-sending. Safe to call more than once; returns a cleanup
+ * function. Flushes on: page load, 'online', tab becoming visible, window
+ * focus, back/forward cache restore, and every 30 s while something waits
+ * (navigator.onLine often stays true on weak LTE, so 'online' never fires).
+ */
 export function initOfflineSync() {
-  if (typeof window === 'undefined') return;
-  window.addEventListener('online', async () => {
-    const result = await processOfflineQueue();
-    if (result.processed > 0) {
-      console.log(`[SafeSubmit] Synced ${result.processed} offline submissions`);
-    }
-  });
-  if (navigator.onLine) {
-    setTimeout(() => processOfflineQueue(), 3000);
-  }
+  if (typeof window === 'undefined') return () => {};
+  const kick = () => {
+    if (navigator.onLine === false) return;
+    if (readQueue().length === 0) return;
+    processOfflineQueue().then(r => {
+      if (r && (r.processed || r.toBackup)) console.log(`[SafeSubmit] Re-sent ${r.processed + r.toBackup} saved submission(s)`);
+    });
+  };
+  const onVisible = () => { if (document.visibilityState === 'visible') kick(); };
+  window.addEventListener('online', kick);
+  window.addEventListener('focus', kick);
+  window.addEventListener('pageshow', kick);
+  document.addEventListener('visibilitychange', onVisible);
+  const timer = setInterval(kick, 30000);
+  // Fold in anything an older build left under 'emergency_submissions', then flush.
+  const first = setTimeout(() => { migrateEmergencySubmissions(); kick(); }, 1500);
+  return () => {
+    window.removeEventListener('online', kick);
+    window.removeEventListener('focus', kick);
+    window.removeEventListener('pageshow', kick);
+    document.removeEventListener('visibilitychange', onVisible);
+    clearInterval(timer);
+    clearTimeout(first);
+  };
 }
 
-export async function retryEmergencySubmissions() {
+function migrateEmergencySubmissions() {
   try {
     const old = JSON.parse(localStorage.getItem('emergency_submissions') || '[]');
-    if (old.length > 0) {
-      const queue = JSON.parse(localStorage.getItem('offline_submission_queue') || '[]');
+    if (Array.isArray(old) && old.length > 0) {
+      const queue = readQueue();
       for (const item of old) {
         queue.push({
-          id: `legacy-${Date.now()}`,
+          id: `legacy-${newQueueId()}`,
           timestamp: item.timestamp,
           form_type: item.form_type,
           target_table: item.target_table,
@@ -277,10 +432,14 @@ export async function retryEmergencySubmissions() {
           retryCount: 0
         });
       }
-      localStorage.setItem('offline_submission_queue', JSON.stringify(queue));
+      writeQueue(queue);
       localStorage.removeItem('emergency_submissions');
     }
   } catch (e) {}
+}
+
+export async function retryEmergencySubmissions() {
+  migrateEmergencySubmissions();
   return processOfflineQueue();
 }
 
@@ -370,6 +529,9 @@ export async function safeCloseout(table, id, code, updates, codeId, mode) {
 // Retry the primary insert on network-level failures only (stale connection after idle on Slope LTE).
 // Server rejections (RLS, constraints, bad data) return immediately and fall through to the backup table.
 const NET_ERR = /Load failed|Failed to fetch|NetworkError|fetch failed|Network request failed|network connection was lost/i;
+function isAbort(err) {
+  return !!err && !err.code && /AbortError|aborted|timed? ?out|TimeoutError/i.test(`${err.name || ''} ${err.message || ''}`);
+}
 function isNetworkError(err) {
   return !!err && !err.code && NET_ERR.test(err.message || ``);
 }
