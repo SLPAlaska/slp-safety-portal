@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { callReportTextGate } from '@/components/ReportTextGate';
 import { loadQualityGate, DraftWatermark } from '@/components/QualityGate';
+import { loadThaGate } from '@/lib/thaGate';
 import { OSHA1904_LABELS, isRecordable } from '@/lib/osha1904';
 
 // =====================================================================
@@ -111,6 +112,9 @@ export default function InvestigationReport() {
   // Spelling & grammar HARD GATE: nothing of the report renders (so nothing can
   // be printed or saved as PDF) until the server says the current text passes.
   const [gate, setGate] = useState(null);
+  // THA hard gate: unlike the quality watermark, Approved does not skip this.
+  // Nothing of the report renders until a THA PDF or a valid No-THA reason is on file.
+  const [thaBlock, setThaBlock] = useState(null);
   // Quality gate (SQL 54): until the checklist is green (or the investigation is
   // Approved/Closed) the client report renders as a watermarked DRAFT only.
   const [draft, setDraft] = useState(null); // null | { reason, open }
@@ -126,9 +130,16 @@ export default function InvestigationReport() {
     setLoading(true);
     setError('');
     setGate(null);
+    setThaBlock(null);
     const g = await callReportTextGate(supabase, incidentId);
     if (g.status !== 'pass') {
       setGate(g);
+      setLoading(false);
+      return;
+    }
+    const tha = await loadThaGate(supabase, incidentId);
+    if (!tha || tha.status !== 'pass') {
+      setThaBlock(tha || { status: 'error', message: 'The THA check did not answer.' });
       setLoading(false);
       return;
     }
@@ -203,6 +214,9 @@ export default function InvestigationReport() {
   }
   if (gate) {
     return <TextGateBlocked gate={gate} incidentId={incidentId} onRetry={loadAll} />;
+  }
+  if (thaBlock) {
+    return <ThaGateBlocked gate={thaBlock} incidentId={incidentId} onRetry={loadAll} />;
   }
   if (error) {
     return <FullScreenMessage text={error} tone="danger" />;
@@ -344,6 +358,28 @@ export default function InvestigationReport() {
 // =====================================================================
 // Spelling & grammar gate: blocked screen (no report content is rendered)
 // =====================================================================
+function ThaGateBlocked({ gate, incidentId, onRetry }) {
+  const failed = gate?.status === 'block';
+  return (
+    <div style={{ minHeight: '100vh', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ background: 'white', borderRadius: 12, maxWidth: 720, width: '100%', padding: 22, boxShadow: '0 4px 14px rgba(0,0,0,0.12)' }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#b91c1c' }}>
+          {failed ? 'Report blocked: the THA is not on the evidence' : 'Report blocked: the THA check could not run'}
+        </div>
+        <div style={{ fontSize: 14, color: '#374151', marginTop: 8 }}>
+          {failed
+            ? (gate.message || 'Attach a THA PDF, or record why there is not one, before this report can be opened, printed, or exported.')
+            : (gate?.message || 'The THA check did not answer.') + ' The report stays locked until the check passes.'}
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+          <a href={`/investigation-workbench/${incidentId}`} style={{ ...btnPrimary, textDecoration: 'none', background: '#1e3a5f' }}>Add the THA in the Workbench</a>
+          <button onClick={onRetry} style={{ ...btnPrimary, background: '#16a34a' }}>Check again</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TextGateBlocked({ gate, incidentId, onRetry }) {
   const issues = Array.isArray(gate.issues) ? gate.issues : [];
   const labels = Object.fromEntries((gate.fields || []).map(f => [f.key, f.label]));

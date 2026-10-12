@@ -24,6 +24,12 @@
 //   report: the stored passed_hash must match the hash of the CURRENT report
 //   text (public.inv_report_text_gate). Otherwise -> 409, no PDF.
 //
+// THA GATE (SQL 58):
+//   No PDF at all unless public.inv_tha_gate() is a pass: a THA evidence PDF,
+//   a valid No-THA reason, or Brian's override. Approved does not skip this.
+//   If the check cannot be read, the export is refused (fails closed).
+//   Deploy this function only after SQL 58 is applied.
+//
 // QUALITY GATE (SQL 53-55, Oct 11 2026):
 //   Client-facing conclusions export. Unless public.inv_quality_gate() is green
 //   (or the investigation is Approved/Closed) every page is stamped
@@ -141,6 +147,17 @@ Deno.serve(async (req: Request) => {
         "TEXT_GATE: The spelling & grammar check has not passed for the current report text. " +
         "Run it in the Investigation Workbench (Close It Out), then export again.",
         409,
+      );
+    }
+
+    // --- THA gate: hard block, including investigations that are already Approved
+    const { data: thaGate, error: thaErr } = await supabase.rpc("inv_tha_gate", { p_incident: incident_id });
+    if (thaErr || !thaGate || thaGate.status !== "pass") {
+      const detail = thaGate?.message || thaErr?.message || "The THA check did not answer.";
+      return jsonErr(
+        "THA_GATE: This report cannot be exported until a THA PDF is on the evidence, " +
+        "or a reason there is not one is recorded. " + detail,
+        thaErr ? 503 : 409,
       );
     }
 

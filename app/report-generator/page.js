@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { callReportTextGate } from '@/components/ReportTextGate';
 import { loadQualityGate } from '@/components/QualityGate';
+import { loadThaGate } from '@/lib/thaGate';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -93,6 +94,14 @@ export default function ReportGenerator() {
   async function generateReport() {
     if (!incidentData) return;
     setGenerating(true);
+    const tha = await loadThaGate(supabase, incidentData.incident.id);
+    if (!tha || tha.status !== 'pass') {
+      setGenerating(false);
+      alert(tha?.status === 'block'
+        ? 'Report blocked: attach a THA PDF, or record why there is not one, in the Investigation Workbench (Setup & Evidence).\n\n' + (tha.message || '')
+        : 'Report blocked: the THA check could not run.\n\n' + (tha?.message || '') + '\n\nTry again in a minute.');
+      return;
+    }
     const gate = await callReportTextGate(supabase, incidentData.incident.id);
     if (gate.status !== 'pass') {
       setGenerating(false);

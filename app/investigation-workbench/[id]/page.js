@@ -17,6 +17,8 @@ import { ReportTextGateModal, callReportTextGate, textGateDbMessage } from '@/co
 import Osha1904Classification, { osha1904Value } from '@/components/Osha1904Classification';
 import { validateOsha1904 } from '@/lib/osha1904';
 import { QualityChecklist, QualityGateModal, loadQualityGate, qualityGateDbMessage, parseFix } from '@/components/QualityGate';
+import { ThaGate } from '@/components/ThaGate';
+import { loadThaGate, thaGateDbMessage } from '@/lib/thaGate';
 
 // =====================================================================
 // AnthroSafe Investigation Workbench v2
@@ -336,7 +338,7 @@ export default function InvestigationWorkbench() {
       }
       const { data: cur } = await supabase.from('incidents').select('status').eq('id', incidentId).single();
       if (cur) setIncident(prev => ({ ...prev, status: cur.status }));
-      alert(qualityGateDbMessage(refused) || textGateDbMessage(refused) || refused.message);
+      alert(thaGateDbMessage(refused) || qualityGateDbMessage(refused) || textGateDbMessage(refused) || refused.message);
       refreshQualityGate();
     }
     if (error) console.error('Autosave failed:', error);
@@ -355,15 +357,17 @@ export default function InvestigationWorkbench() {
   }
 
   async function markStageComplete(stage) {
-    const patch = { [`stage_${stage}_complete`]: true };
-    const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
-    if (error) {
-      alert(qualityGateDbMessage(error) || textGateDbMessage(error) || ('Could not mark the stage complete: ' + error.message));
-      refreshQualityGate();
-      return;
-    }
-    setIncident(prev => ({ ...prev, ...patch }));
-    if (stage < 4) setCurrentStage(stage + 1);
+    await requireThaGate(`mark stage ${stage} complete`, async () => {
+      const patch = { [`stage_${stage}_complete`]: true };
+      const { error } = await supabase.from('incidents').update(patch).eq('id', incidentId);
+      if (error) {
+        alert(thaGateDbMessage(error) || qualityGateDbMessage(error) || textGateDbMessage(error) || ('Could not mark the stage complete: ' + error.message));
+        refreshQualityGate();
+        return;
+      }
+      setIncident(prev => ({ ...prev, ...patch }));
+      if (stage < 4) setCurrentStage(stage + 1);
+    });
   }
 
   // -------- Spelling & grammar HARD GATE --------
@@ -396,6 +400,23 @@ export default function InvestigationWorkbench() {
     if (g && g.applies === false) return proceed();
     if (g && g.status === 'pass') return proceed();
     setQgModal({ action, proceed });
+  }
+  // THA gate applies to every investigation, including ones outside the
+  // quality-checklist scope. The incidents trigger is the lock; this is the
+  // explanation. A check that cannot run fails closed.
+  async function requireThaGate(action, proceed) {
+    await flushAutosave();
+    const g = await loadThaGate(supabase, incidentId);
+    if (g && g.status === 'pass') return proceed();
+    setCurrentStage(1);
+    const detail = g?.status === 'error'
+      ? `The THA check could not run, so this stays locked. ${g.message || ''}`
+      : `A THA PDF, or a recorded reason there is not one, is required before you can ${action}.\n\n${g?.message || ''}`;
+    alert(detail);
+    setTimeout(() => {
+      const el = document.getElementById('qg-tha');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
   }
   function jumpTo(fix) {
     const { stage, target } = parseFix(fix);
@@ -453,7 +474,7 @@ export default function InvestigationWorkbench() {
   async function handleGeneratePDF() {
     setPdfGenerating(true);
     try {
-      await requireTextGate('open or export the final report', openReport);
+      await requireThaGate('open or export the final report', () => requireTextGate('open or export the final report', openReport));
     } finally {
       setPdfGenerating(false);
     }
@@ -513,6 +534,7 @@ export default function InvestigationWorkbench() {
               }}
               onComplete={() => markStageComplete(1)}
               onAfterSave={refreshQualityGate}
+              onIncidentPatched={patch => setIncident(prev => ({ ...prev, ...patch }))}
             />
           )}
 
@@ -567,6 +589,7 @@ export default function InvestigationWorkbench() {
               requireTextGate={requireTextGate}
               textGateBusy={textGateBusy}
               requireQualityGate={requireQualityGate}
+              requireThaGate={requireThaGate}
               qualityApplies={!!qualityGate && qualityGate.applies !== false}
               caPrefill={caPrefill}
               bankHints={bankHints}
@@ -693,7 +716,7 @@ function Stepper({ stages, current, incident, onJump }) {
 // =====================================================================
 // STAGE 1 - Setup & Evidence
 // =====================================================================
-function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete, onAfterSave }) {
+function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete, onAfterSave, onIncidentPatched }) {
   return (
     <div>
       <StageHeader stage={1} title="Setup & Evidence" subtitle="Confirm the scope of this investigation, then gather photos and witness statements." />
@@ -758,6 +781,15 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, 
       </div>
 
       <AdditionalFields incident={incident} onChange={onIncidentChange} />
+
+      <ThaGate
+        supabase={supabase}
+        incident={incident}
+        evidence={evidence}
+        userEmail={userEmail}
+        onEvidence={async () => { await onEvidenceReload(); onAfterSave?.(); }}
+        onIncident={onIncidentPatched}
+      />
 
       <div id="qg-evidence" />
       <Card title={`Evidence (${evidence.length + (Array.isArray(incident.photo_urls) ? incident.photo_urls.length : 0)})`}>
@@ -1153,7 +1185,7 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, requireTextGate, textGateBusy, requireQualityGate, qualityApplies, caPrefill, bankHints, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, requireTextGate, textGateBusy, requireQualityGate, requireThaGate, qualityApplies, caPrefill, bankHints, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
   const [gateBusy, setGateBusy] = useState(false);
   // Close-out review (Interview Guide P0): warns and asks for a reason, never hard-blocks.
   const [closeGate, setCloseGate] = useState(null);
@@ -1196,7 +1228,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
   // text, so a direct update is refused too.
   async function setStatusDirect(next) {
     const { error } = await supabase.from('incidents').update({ status: next }).eq('id', incident.id);
-    if (error) return alert(qualityGateDbMessage(error) || textGateDbMessage(error) || ('Failed to set status: ' + error.message));
+    if (error) return alert(thaGateDbMessage(error) || qualityGateDbMessage(error) || textGateDbMessage(error) || ('Failed to set status: ' + error.message));
     window.location.reload();
   }
 
@@ -1213,7 +1245,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
   async function handleStatusChange(next) {
     if (next === 'Approved' || next === 'Closed' || next === 'Pending Approval') {
       const verb = next === 'Approved' ? 'approve this investigation' : next === 'Closed' ? 'close this investigation' : 'submit this investigation for approval';
-      return require1904(() => runCloseoutGate(next, () => requireTextGate(verb, () => requireQualityGate(verb, () => setStatusDirect(next)))));
+      return requireThaGate(verb, () => require1904(() => runCloseoutGate(next, () => requireTextGate(verb, () => requireQualityGate(verb, () => setStatusDirect(next))))));
     }
     onIncidentChange({ status: next });
   }
@@ -1271,7 +1303,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
         </div>
       </Card>
 
-      <StageFooter complete={incident.stage_4_complete} onComplete={() => require1904(() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', () => requireQualityGate('mark this investigation complete', onComplete))))} nextLabel="Mark Investigation Complete" />
+      <StageFooter complete={incident.stage_4_complete} onComplete={() => requireThaGate('mark this investigation complete', () => require1904(() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', () => requireQualityGate('mark this investigation complete', onComplete)))))} nextLabel="Mark Investigation Complete" />
 
       {closeGate && (
         <CloseoutGateModal
@@ -1374,6 +1406,10 @@ function EvidenceUploader({ incidentId, fkText, userEmail, onUploaded }) {
     setBusy(true);
     for (const raw of files) {
       try {
+        if (evidenceType === 'THA' && !/\.pdf$/i.test(raw.name)) {
+          alert(`A THA on the evidence has to be a PDF. ${raw.name} was not added.`);
+          continue;
+        }
         const file = await compressImage(raw);
         const ext = file.name.split('.').pop().toLowerCase();
         const path = `${incidentId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -1407,7 +1443,7 @@ function EvidenceUploader({ incidentId, fkText, userEmail, onUploaded }) {
     <div style={{ background: '#f9fafb', border: `1px dashed ${C.border}`, borderRadius: 8, padding: 14, marginBottom: 14 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12, marginBottom: 10 }}>
         <select value={evidenceType} onChange={e => setEvidenceType(e.target.value)} style={inputStyle}>
-          {['Photo', 'Document', 'Video', 'Report', 'Other'].map(t => <option key={t}>{t}</option>)}
+          {['Photo', 'Document', 'Video', 'Report', 'THA', 'Other'].map(t => <option key={t}>{t}</option>)}
         </select>
         <input
           value={description}
@@ -1515,6 +1551,8 @@ function AdditionalFields({ incident, onChange }) {
     'osha_1904_classification','osha_1904_work_related','osha_1904_basis','osha_1904_justification',
     'osha_1904_days_away','osha_1904_days_restricted','osha_1904_privacy_case','osha_1904_wc_note',
     'osha_1904_classified_by','osha_1904_classified_at',
+    // Managed by the THA gate panel (stage 1)
+    'no_tha','no_tha_reason','no_tha_reason_detail','no_tha_set_by','no_tha_set_at',
   ]);
 
   const extras = Object.entries(incident || {}).filter(([k, v]) => {
