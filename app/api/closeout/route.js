@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { namedPeople, findNamedCloser, missingAar, notNamedMessage, AAR_REQUIRED_MESSAGE, THA_CLOSE_RULE_VERSION } from '../../lib/thaCloser.js';
+import { namedPeople, findNamedCloser, missingAar, notNamedMessage, AAR_REQUIRED_MESSAGE, THA_CLOSE_RULE_VERSION, THA_CLOSE_COMPANY_RULE, decideThaClose } from '../../lib/thaCloser.js';
+import { resolveThaCloser } from '../../lib/thaCloseAccess.js';
 
 /**
  * /api/closeout — server-validated close-out for no-login field workflows.
@@ -15,6 +16,10 @@ import { namedPeople, findNamedCloser, missingAar, notNamedMessage, AAR_REQUIRED
  * THA close-out (since 11 Oct 2026) does NOT use a code: only a person named
  * on that THA (crew lead or crew sign-on) can close it, and only with the
  * after-action review answered. See closeTha() and app/lib/thaCloser.js.
+ * Since the same day it also needs a SIGNED-IN closer whose LMS company is the
+ * THA's company (SLP staff: any). Anyone may VIEW another company's THA;
+ * nobody outside that company may CLOSE it. Every close is written to
+ * tha_close_log (SQL #57). Rule: decideThaClose() in app/lib/thaCloser.js.
  * The 48-hour auto-close (pg_cron job tha-auto-close-stale) is unchanged.
  */
 
@@ -89,7 +94,7 @@ export async function POST(req) {
     const thaCodeBump = table === 'tha_assessments' && code && updates && typeof updates === 'object' &&
       Object.keys(updates).length > 0 && Object.keys(updates).every((k) => k === 'last_modified');
     if (table === 'tha_assessments' && !thaCodeBump) {
-      return closeTha(id, updates);
+      return closeTha(req, id, updates);
     }
 
     if (!id || !code || !updates || typeof updates !== 'object') {
@@ -182,15 +187,20 @@ function adminClient() {
  * and the three after-action questions are answered. closed_by is stored as
  * the name exactly as it appears on the THA.
  */
-async function closeTha(thaNumber, updates) {
+async function closeTha(req, thaNumber, updates) {
   if (!thaNumber || !updates || typeof updates !== 'object') {
     return Response.json({ error: 'Missing THA number or close-out answers.' }, { status: 400 });
   }
   const closer = String(updates.closed_by || '').trim();
-  if (!closer) {
+  const admin = adminClient();
+  // Who is closing, from their own session (never the body). null = signed out.
+  const scope = await resolveThaCloser(req, admin);
+  if (!scope) {
+    return Response.json({ error: decideThaClose({ scope: null }).error, reason: 'signed_out' }, { status: 401 });
+  }
+  if (!closer && !scope.isStaff) {
     return Response.json({ error: 'Tap your name (you must be named on this THA to close it).', reason: 'closer_missing' }, { status: 400 });
   }
-  const admin = adminClient();
   const { data: tha, error: e1 } = await admin.from('tha_assessments')
     .select('tha_number, status, crew_lead, company, closed_by, closed_at')
     .eq('tha_number', thaNumber).maybeSingle();
@@ -203,9 +213,11 @@ async function closeTha(thaNumber, updates) {
     .select('crew_member_name').eq('tha_number', thaNumber);
   if (e2) return Response.json({ error: 'Crew lookup failed: ' + e2.message }, { status: 500 });
 
-  const person = findNamedCloser(closer, namedPeople(tha, crew));
-  if (!person) {
-    return Response.json({ error: notNamedMessage(thaNumber), reason: 'not_named' }, { status: 403 });
+  // Company lock + named person (learner: as themselves; company admin: for a
+  // named crew member; SLP staff: any).
+  const verdict = decideThaClose({ scope, tha, people: namedPeople(tha, crew), tapped: closer });
+  if (!verdict.ok) {
+    return Response.json({ error: verdict.error, reason: verdict.reason }, { status: verdict.status });
   }
   if (missingAar(updates).length) {
     return Response.json({ error: AAR_REQUIRED_MESSAGE, reason: 'aar_missing', missing: missingAar(updates) }, { status: 400 });
@@ -215,7 +227,7 @@ async function closeTha(thaNumber, updates) {
   const clean = {};
   for (const k of Object.keys(updates)) if (cols.includes(k)) clean[k] = updates[k];
   clean.status = 'Closed';
-  clean.closed_by = person.name;
+  clean.closed_by = verdict.closedBy;
   clean.closed_at = new Date().toISOString();
   clean.last_modified = clean.closed_at;
 
@@ -224,5 +236,19 @@ async function closeTha(thaNumber, updates) {
     .update(clean).eq('tha_number', thaNumber).eq('status', 'Open').select('tha_number, status, closed_by, closed_at').maybeSingle();
   if (e3) return Response.json({ error: e3.message }, { status: 500 });
   if (!row) return Response.json({ error: thaNumber + ' was closed by someone else a moment ago.', reason: 'already_closed' }, { status: 409 });
-  return Response.json({ ok: true, row, closed_by: person.name, rule: THA_CLOSE_RULE_VERSION });
+
+  // Audit: who actually closed it (verified sign-in), as whom, for which company.
+  const { error: e4 } = await admin.from('tha_close_log').insert({
+    tha_number: thaNumber,
+    tha_company: tha.company || null,
+    closed_by_name_on_tha: verdict.closedBy,
+    closer_email: scope.email,
+    closer_lms_name: scope.fullName,
+    closer_role: scope.isStaff ? 'slp_staff' : (scope.role || null),
+    closer_company: scope.companyName,
+    on_behalf: !!verdict.onBehalf,
+    rule: THA_CLOSE_RULE_VERSION + '+' + THA_CLOSE_COMPANY_RULE,
+  });
+  if (e4) console.error('tha_close_log insert failed for ' + thaNumber + ':', e4.message);
+  return Response.json({ ok: true, row, closed_by: verdict.closedBy, closed_by_email: scope.email, rule: THA_CLOSE_RULE_VERSION + '+' + THA_CLOSE_COMPANY_RULE });
 }
