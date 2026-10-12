@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { namesMatch, namedPeople, findNamedCloser, missingAar, normaliseName } from '../app/lib/thaCloser.js'
+import { namesMatch, namedPeople, findNamedCloser, missingAar, normaliseName, decideThaClose, companyIn } from '../app/lib/thaCloser.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 let fails = 0
@@ -35,6 +35,39 @@ ok(findNamedCloser('', people) === null, 'blank closer cannot close')
 ok(missingAar({ aar_went_well: 'ok', aar_didnt_go_as_planned: 'nothing', aar_how_improve: 'n/a' }).length === 0, 'short answers accepted')
 ok(missingAar({ aar_went_well: 'good', aar_didnt_go_as_planned: ' ', aar_how_improve: '' }).length === 2, 'blank AAR answers rejected')
 
+// Phase 1 company lock: sign-in + LMS company (decideThaClose)
+const POLLARD = ['Pollard Wireline', 'Pollard', 'Pollard Wireline LLC']
+const mark = { email: 'markleon.pollard@gmail.com', fullName: 'Mark Leon', isStaff: false, role: 'company_admin', companyName: 'Pollard Wireline', companyNames: POLLARD }
+const steve = { email: 'wlsup@acsalaska.net', fullName: 'Steven Barrow', isStaff: false, role: 'learner', companyName: 'Pollard Wireline', companyNames: POLLARD }
+const brian = { email: 'brian@slpalaska.com', fullName: 'Brian Walden', isStaff: true, role: null, companyName: null, companyNames: [] }
+const nobody = { email: 'x@example.com', fullName: null, isStaff: false, role: null, companyName: null, companyNames: [] }
+const magtecTha = { tha_number: 'THA-20261011-0001', company: 'MagTec Alaska' }
+const chosenTha = { tha_number: 'THA-20261011-0002', company: 'Chosen Construction' }
+const pollardTha = { tha_number: 'THA-20261011-0003', company: 'Pollard Wireline' }
+const pPeople = namedPeople({ crew_lead: 'Zach Smith' }, [{ crew_member_name: 'Steve Barrow' }, { crew_member_name: 'Ana Ruiz' }])
+const mPeople = namedPeople({ crew_lead: 'Steven Barrow' }, [])
+const d = (scope, tha, people, tapped) => decideThaClose({ scope, tha, people, tapped })
+
+ok(d(null, pollardTha, pPeople, 'Zach Smith').reason === 'signed_out', 'signed out cannot close')
+ok(d(null, pollardTha, pPeople, 'Zach Smith').status === 401, 'signed out = 401')
+ok(d(mark, magtecTha, mPeople, 'Steven Barrow').reason === 'company_mismatch', 'Pollard admin cannot close MagTec (even if a name matches)')
+ok(d(mark, chosenTha, mPeople, 'Steven Barrow').reason === 'company_mismatch', 'Pollard admin cannot close Chosen')
+ok(d(steve, magtecTha, mPeople, 'Steven Barrow').reason === 'company_mismatch', 'Pollard crew named on a MagTec THA still cannot close it')
+const mk = d(mark, pollardTha, pPeople, 'Zach Smith')
+ok(mk.ok && mk.closedBy === 'Zach Smith' && mk.onBehalf === true, 'Mark closes a Pollard THA for a named crew member (logged on behalf)')
+ok(d(mark, pollardTha, pPeople, 'Pete Other').reason === 'not_named', 'Mark cannot close for someone not named on it')
+ok(d(mark, pollardTha, pPeople, '').reason === 'not_named', 'Mark must tap a named person')
+const st = d(steve, pollardTha, pPeople, 'Steve Barrow')
+ok(st.ok && st.closedBy === 'Steve Barrow' && !st.onBehalf, 'named crew closes as themselves (nickname/LMS name match)')
+ok(d(steve, pollardTha, pPeople, 'Ana Ruiz').reason === 'not_you', 'crew cannot close as someone else')
+ok(d(steve, { tha_number: 'THA-20261011-0004', company: 'Pollard' }, namedPeople({ crew_lead: 'Zach Smith' }, []), 'Zach Smith').reason === 'not_named_self', 'unnamed crew (own company) cannot close')
+ok(d(steve, { tha_number: 'THA-20261011-0005', company: 'Pollard Wireline, LLC' }, pPeople, 'Steve Barrow').ok, 'company spelling variants match')
+ok(d(nobody, pollardTha, pPeople, 'Zach Smith').reason === 'no_company', 'signed in with no LMS company cannot close')
+ok(d(brian, magtecTha, mPeople, 'Steven Barrow').ok, 'SLP staff can close any company')
+ok(d(brian, chosenTha, mPeople, '').ok && d(brian, chosenTha, mPeople, '').closedBy === 'Brian Walden', 'SLP staff blank closer = themselves')
+ok(d(brian, chosenTha, mPeople, 'Pete Other').reason === 'not_named', 'SLP staff typed name must still be on the THA')
+ok(companyIn('MagTec Alaska, LLC', ['MagTec Alaska LLC']) && !companyIn('MagTec Alaska', POLLARD) && !companyIn('', POLLARD), 'companyIn')
+
 // Wiring
 const page = readFileSync(join(root, 'app/tha-jsa/page.js'), 'utf8')
 ok(!/closeoutThaCode|THA CODE|THA Code \*/.test(page), 'page: no close-out code input or code box')
@@ -43,6 +76,9 @@ ok(/AAR_REQUIRED_MESSAGE/.test(page), 'page: AAR required')
 const route = readFileSync(join(root, 'app/api/closeout/route.js'), 'utf8')
 ok(/closeTha\(/.test(route) && /findNamedCloser/.test(route) && /missingAar/.test(route), 'route: server enforces named person + AAR')
 ok(/\.eq\('status', 'Open'\)/.test(route), 'route: does not overwrite an auto-closed / closed THA')
+ok(/resolveThaCloser\(req, admin\)/.test(route) && /decideThaClose\(/.test(route) && /tha_close_log/.test(route), 'route: session company lock + audit log')
+ok(!/jobBar|close_company/.test(route), 'route: company never taken from the request body')
+ok(/ThaCloseSignIn/.test(page) && /authFetch\('\/api\/closeout'/.test(page), 'page: sign-in panel + token on close')
 const help = readFileSync(join(root, 'app/lib/help/howto.js'), 'utf8') + readFileSync(join(root, 'app/lib/help/forms.js'), 'utf8')
 ok(!/THA CODE|enter the THA number and THA code|with the code: what went well|Ask the crew lead for the THA code/.test(help), 'help: no "enter the code" guidance for THAs')
 ok(/id: 'tha-not-named'/.test(help), 'help: not-named answer present')

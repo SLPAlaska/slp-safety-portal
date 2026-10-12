@@ -130,3 +130,90 @@ export function notNamedMessage(thaNumber) {
     ', and the after-action review is required to close it. Tap your name on the list. Not on the list? This is not your THA; ask its crew lead to close it.';
 }
 export const AAR_REQUIRED_MESSAGE = 'The after-action review is required to close a THA: answer all 3 questions (what went well, what did not go as planned, how we will improve). A short answer such as "nothing" is fine.';
+
+// ---------------------------------------------------------------------------
+// SIGN-IN + COMPANY LOCK (Phase 1, since 11 Oct 2026, rule 2026-10-11.lms-company)
+//
+// A name tap alone proved nothing about WHO was tapping: the names on every
+// open THA are public. On 11 Oct a Pollard login saw MagTec's and Chosen's
+// open THAs on the close-out list. Seeing them is fine. Closing them is not.
+//
+// To close a THA now (server: /api/closeout closeTha; this is the rule):
+//   1. Signed in (LMS magic link / password; the session sticks until sign-out).
+//   2. The company comes from the LMS account (lms_users.company_id ->
+//      lms_companies.name + sail_company_names). The client never sends it.
+//   3. THA.company must be that company. HARD BLOCK otherwise.
+//   4. Learner / crew: their own LMS name must be named on the THA (crew lead
+//      or crew sign-on). They close as themselves.
+//      Company admin: may close for any person named on the THA (tap that
+//      person); the audit log records the admin as the closer.
+//      SLP staff (super admin / portal_staff): any THA, any company.
+// No Job bar in Phase 1, so there is no job/location check yet.
+
+export const THA_CLOSE_COMPANY_RULE = '2026-10-11.lms-company';
+
+/** "MagTec Alaska, LLC" -> "magtec alaska llc" (case, punctuation, spacing). */
+export function companyKey(raw) {
+  return String(raw || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/** Is `company` one of `names` (a company's LMS name + its known spellings)? */
+export function companyIn(company, names) {
+  const k = companyKey(company);
+  if (!k) return false;
+  return (names || []).some((n) => companyKey(n) === k);
+}
+
+export const SIGN_IN_TO_CLOSE_MESSAGE = 'Sign in to close a THA. Anyone can view THAs; only the crew\'s own company can close them. Use the email on your SLP training (LMS) account.';
+
+export function companyMismatchMessage(thaNumber, thaCompany, yourCompany) {
+  return (thaNumber || 'This THA') + ' belongs to ' + (thaCompany || 'another company') + '. You are signed in for ' +
+    (yourCompany || 'a different company') + '. You can view it, but only ' + (thaCompany || 'that company') + '\'s own crew can close it.';
+}
+
+/**
+ * The whole close decision, pure (no I/O).
+ *   scope   null when signed out, else
+ *           { email, fullName, isStaff, role, companyName, companyNames: [...] }
+ *           derived server-side from the caller's own session (never the body)
+ *   tha     { tha_number, company }
+ *   people  namedPeople(tha, crew)
+ *   tapped  the name the closer tapped/typed (may be blank)
+ * Returns { ok:true, closedBy, onBehalf, as } or { ok:false, status, reason, error }.
+ */
+export function decideThaClose({ scope, tha, people, tapped }) {
+  const n = tha && tha.tha_number;
+  const list = people || [];
+  const person = String(tapped || '').trim() ? findNamedCloser(tapped, list) : null;
+  if (!scope) return { ok: false, status: 401, reason: 'signed_out', error: SIGN_IN_TO_CLOSE_MESSAGE };
+
+  if (scope.isStaff) {
+    // SLP staff: any company. Record the named person they tapped, else themselves.
+    if (String(tapped || '').trim() && !person) return { ok: false, status: 403, reason: 'not_named', error: notNamedMessage(n) };
+    const closedBy = person ? person.name : (scope.fullName || scope.email);
+    return { ok: true, closedBy, onBehalf: !!person && !namesMatch(scope.fullName || '', person.name), as: 'staff' };
+  }
+
+  if (!scope.companyNames || !scope.companyNames.length) {
+    return { ok: false, status: 403, reason: 'no_company', error: 'You are signed in as ' + scope.email + ', but that sign-in is not linked to an active company on the SLP training (LMS) site, so it cannot close THAs. Ask your company admin or SLP Alaska to add you, or ask your crew lead to close it.' };
+  }
+  if (!companyIn(tha && tha.company, scope.companyNames)) {
+    return { ok: false, status: 403, reason: 'company_mismatch', error: companyMismatchMessage(n, tha && tha.company, scope.companyName) };
+  }
+
+  if (scope.role === 'company_admin') {
+    if (!person) return { ok: false, status: 403, reason: 'not_named', error: notNamedMessage(n) + ' As a company admin you can close it for anyone named on it: tap their name.' };
+    return { ok: true, closedBy: person.name, onBehalf: !namesMatch(scope.fullName || '', person.name), as: 'company_admin' };
+  }
+
+  // Learner / crew: must be named on this THA themselves, and closes as themselves.
+  const self = scope.fullName ? findNamedCloser(scope.fullName, list) : null;
+  if (!self) {
+    return { ok: false, status: 403, reason: 'not_named_self', error: 'You are signed in as ' + (scope.fullName || scope.email) + ', and that name is not on ' + (n || 'this THA') + ' (crew lead or crew sign-on). Only someone named on it can close it. Sign onto the crew first if you were on it, or ask your crew lead or company admin to close it.' };
+  }
+  if (person && person.name !== self.name) {
+    return { ok: false, status: 403, reason: 'not_you', error: 'You are signed in as ' + (scope.fullName || scope.email) + '. You can only close a THA as yourself: tap your own name (' + self.name + '), or ask your company admin to close it for ' + person.name + '.' };
+  }
+  return { ok: true, closedBy: self.name, onBehalf: false, as: 'crew' };
+}
