@@ -165,6 +165,21 @@ export function companyIn(company, names) {
   return (names || []).some((n) => companyKey(n) === k);
 }
 
+/**
+ * Open-THA list for whoever is looking (11 Oct 2026, Brian: a signed-in client
+ * must not even SEE another company's THAs).
+ *   scope null (signed out) ... list unchanged (public, as before).
+ *   SLP staff ................. every company.
+ *   Signed in, LMS company .... only THAs whose company is theirs.
+ *   Signed in, no company ..... nothing.
+ * Pure; /api/field-data (open_thas) applies it server-side.
+ */
+export function filterThasForScope(rows, scope) {
+  const list = Array.isArray(rows) ? rows : [];
+  if (!scope || scope.isStaff) return list;
+  return list.filter((r) => r && companyIn(r.company, scope.companyNames));
+}
+
 export const SIGN_IN_TO_CLOSE_MESSAGE = 'Sign in to close a THA. Anyone can view THAs; only the crew\'s own company can close them. Use the email on your SLP training (LMS) account.';
 
 export function companyMismatchMessage(thaNumber, thaCompany, yourCompany) {

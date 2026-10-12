@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { namesMatch, namedPeople, findNamedCloser, missingAar, normaliseName, decideThaClose, companyIn } from '../app/lib/thaCloser.js'
+import { namesMatch, namedPeople, findNamedCloser, missingAar, normaliseName, decideThaClose, companyIn, filterThasForScope } from '../app/lib/thaCloser.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 let fails = 0
@@ -68,6 +68,17 @@ ok(d(brian, chosenTha, mPeople, '').ok && d(brian, chosenTha, mPeople, '').close
 ok(d(brian, chosenTha, mPeople, 'Pete Other').reason === 'not_named', 'SLP staff typed name must still be on the THA')
 ok(companyIn('MagTec Alaska, LLC', ['MagTec Alaska LLC']) && !companyIn('MagTec Alaska', POLLARD) && !companyIn('', POLLARD), 'companyIn')
 
+// Signed-in list = own company only (11 Oct 2026)
+const openRows = [pollardTha, magtecTha, chosenTha, { tha_number: 'THA-20261011-0006', company: 'Pollard Wireline, LLC' }]
+const markSees = filterThasForScope(openRows, mark).map((r) => r.tha_number)
+ok(markSees.length === 2 && !markSees.includes(magtecTha.tha_number) && !markSees.includes(chosenTha.tha_number), 'Mark sees only Pollard THAs, got ' + markSees.join(','))
+ok(filterThasForScope(openRows, steve).every((r) => companyIn(r.company, POLLARD)), 'Pollard crew sees only Pollard')
+ok(filterThasForScope(openRows, brian).length === 4, 'SLP staff sees every company')
+ok(filterThasForScope(openRows, null).length === 4, 'signed out: public list unchanged')
+ok(filterThasForScope(openRows, nobody).length === 0, 'signed in with no LMS company sees none')
+const fd = readFileSync(join(root, 'app/api/field-data/route.js'), 'utf8')
+ok(/resolveThaCloser\(request, admin\)/.test(fd) && /filterThasForScope\(/.test(fd), 'field-data open_thas filters by the signed-in LMS company')
+
 // Wiring
 const page = readFileSync(join(root, 'app/tha-jsa/page.js'), 'utf8')
 ok(!/closeoutThaCode|THA CODE|THA Code \*/.test(page), 'page: no close-out code input or code box')
@@ -79,6 +90,7 @@ ok(/\.eq\('status', 'Open'\)/.test(route), 'route: does not overwrite an auto-cl
 ok(/resolveThaCloser\(req, admin\)/.test(route) && /decideThaClose\(/.test(route) && /tha_close_log/.test(route), 'route: session company lock + audit log')
 ok(!/jobBar|close_company/.test(route), 'route: company never taken from the request body')
 ok(/ThaCloseSignIn/.test(page) && /authFetch\('\/api\/closeout'/.test(page), 'page: sign-in panel + token on close')
+ok(/authFetch\('\/api\/field-data\?view=open_thas'\)/.test(page) && /visibleOpenTHAs\.map\(/.test(page) && !/\{openTHAs\.map\(/.test(page), 'page: open-THA lists carry the token and render only the filtered list')
 const help = readFileSync(join(root, 'app/lib/help/howto.js'), 'utf8') + readFileSync(join(root, 'app/lib/help/forms.js'), 'utf8')
 ok(!/THA CODE|enter the THA number and THA code|with the code: what went well|Ask the crew lead for the THA code/.test(help), 'help: no "enter the code" guidance for THAs')
 ok(/id: 'tha-not-named'/.test(help), 'help: not-named answer present')
