@@ -9,7 +9,9 @@
 // Views (all service-role on the server):
 //   open_permits   &table=<permit table>   → open-permit picker rows
 //   ei_workers     &permit=<permit_number> → signed-in workers on an EI permit
-//   open_thas                              → open-THA picker rows
+//   open_thas                              → open-THA picker rows (signed in with an
+//                                            LMS company = that company only; staff = all;
+//                                            signed out = all, unchanged)
 //   tha_detail     &tha=<tha_number>       → one THA + steps + crew (sign-on view)
 //   recent_check   &table=<insp>&id=<eqId> → 30-day duplicate-inspection check
 //   camp_responses &inspection=&code=      → response ids (code-validated)
@@ -19,6 +21,8 @@
 // ============================================================================
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { resolveThaCloser } from '@/lib/thaCloseAccess';
+import { filterThasForScope } from '@/lib/thaCloser';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -87,7 +91,11 @@ export async function GET(request) {
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return NextResponse.json({ rows: data || [] });
+      // Signed-in client sees only their own LMS company's THAs (no Bearer = public list as before).
+      const scope = await resolveThaCloser(request, admin);
+      const rows = filterThasForScope(data || [], scope);
+      const filter = scope && !scope.isStaff ? { company: scope.companyName || null } : null;
+      return NextResponse.json({ rows, filter });
     }
 
     if (view === 'tha_detail') {
