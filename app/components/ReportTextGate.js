@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { applyReplacement } from '@/lib/investigationTextGate';
 
-export async function callReportTextGate(supabase, incidentId, keep = []) {
+export async function callReportTextGate(supabase, incidentId, keep = [], add = []) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch('/api/investigation-text-gate', {
@@ -21,7 +21,7 @@ export async function callReportTextGate(supabase, incidentId, keep = []) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session?.access_token || ''}`,
       },
-      body: JSON.stringify({ incidentId, keep }),
+      body: JSON.stringify({ incidentId, keep, add }),
     });
     const json = await res.json().catch(() => null);
     if (!json || typeof json.status !== 'string') {
@@ -73,7 +73,7 @@ export function ReportTextGateModal({ supabase, incidentId, action, result, onPa
     });
   }
 
-  async function recheck(extraKeep = []) {
+  async function recheck(extraKeep = [], extraAdd = []) {
     setBusy(true);
     setMsg('');
     try {
@@ -86,8 +86,13 @@ export function ReportTextGateModal({ supabase, incidentId, action, result, onPa
         if (error) throw new Error(`${f.label}: ${error.message}`);
       }
       const allKeep = [...new Set([...keep, ...extraKeep])];
-      const r = await callReportTextGate(supabase, incidentId, allKeep);
+      const r = await callReportTextGate(supabase, incidentId, allKeep, extraAdd);
       if (r.status === 'pass') { setBusy(false); return onPass(); }
+      if (r.status === 'error' || r.status === 'unavailable') {
+        setMsg(r.reason || 'The spelling check could not be saved.');
+        setBusy(false);
+        return;
+      }
       setRes(r);
       setKeep(allKeep);
       if (r.status === 'fail') setEdits(Object.fromEntries((r.fields || []).map(f => [f.key, f.text])));
@@ -138,11 +143,17 @@ export function ReportTextGateModal({ supabase, incidentId, action, result, onPa
                             {v || '(remove)'}
                           </button>
                         ))}
-                        {i.canKeep && !i.applied && (
-                          <button type="button" disabled={busy || kept} onClick={() => setKeep(k => [...new Set([...k, i.word])])}
-                            style={{ padding: '6px 10px', borderRadius: 6, border: `1px solid ${C.border}`, background: kept ? '#e5e7eb' : 'white', color: '#374151', fontSize: 13, cursor: 'pointer' }}>
-                            {kept ? 'Kept as name/term' : 'Keep — it’s a name/term'}
-                          </button>
+                        {i.kind === 'spelling' && !i.applied && (
+                          <>
+                            <button type="button" data-testid="spell-add" disabled={busy} onClick={() => recheck([], [i.word])}
+                              style={{ padding: '6px 10px', borderRadius: 6, border: `1px solid ${C.border}`, background: 'white', color: '#374151', fontSize: 13, cursor: 'pointer' }}>
+                              Add to dictionary
+                            </button>
+                            <button type="button" data-testid="spell-ignore" disabled={busy || kept} onClick={() => recheck([i.word], [])}
+                              style={{ padding: '6px 10px', borderRadius: 6, border: `1px solid ${C.border}`, background: kept ? '#e5e7eb' : 'white', color: '#374151', fontSize: 13, cursor: 'pointer' }}>
+                              {kept ? 'Ignored' : 'Ignore'}
+                            </button>
+                          </>
                         )}
                       </div>
                     </li>

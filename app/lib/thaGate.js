@@ -39,11 +39,10 @@ export const THA_COPY = {
     passOverride: 'Brian Walden overrode the THA check.',
     checkFailed: 'The THA check could not run. Completion, approval, and export stay locked until it does.',
     suggestHeading: 'THAs that match this incident',
-    suggestHint: 'Same company, within a day of the incident, and the same location or crew.',
+    suggestHint: 'Same company, on the incident date, and the same location or crew. A THA from another day is not listed.',
     browseHeading: 'THAs for this company',
-    browseHint: 'Incident date, plus or minus one day, at this location. Widen the dates or include other locations if the right THA is not here.',
+    browseHint: 'This company’s THAs from the incident date only (Alaska). A THA written after the incident is not listed. Include other locations if the job was not at this site.',
     showBrowse: 'None of these — browse the company’s THAs',
-    dateWindowLabel: 'Date range',
     otherLocations: 'Include other locations',
     filterPlaceholder: 'Filter by crew, job, or location',
     view: 'View',
@@ -66,13 +65,8 @@ export const THA_COPY = {
     clearNoTha: 'Remove this and attach a THA instead',
     attachButton: 'Attach THA',
     matchHeading: 'THAs that name someone on this investigation',
-    matchHint: 'Same company, on the incident date or one day either side (shift crossover), and a crew or worker name that includes the person involved or a witness.',
+    matchHint: 'Same company, on the incident date (Alaska time), created at or before the incident time, and a crew or worker name that includes the person involved or a witness.',
     noMatch: 'No matching THA found',
-    fallbackHint: 'Search this company’s THAs by number or date, or record that there is no THA.',
-    searchNumber: 'THA number',
-    searchDate: 'Date',
-    search: 'Search',
-    noneSearch: 'No THA for this company matched that number or date.',
     attach: 'Attach',
     upload: 'Upload PDF',
     override: 'Override (Brian only)',
@@ -80,8 +74,8 @@ export const THA_COPY = {
     revoke: 'Remove override',
     whyLocation: 'location',
     whyCrew: 'crew',
-    noneSuggested: 'No THA matched the company, the date (within a day), and the location or crew.',
-    noneBrowse: 'No THAs in this date range and location. Widen the dates, include other locations, or record why there is not one.',
+    noneSuggested: 'No THA matched the company, the incident date, and the location or crew.',
+    noneBrowse: 'No THAs from the incident date at this location. Include other locations, or record why there is not one.',
     noneCompany: 'No THAs are on file for this company. Upload the PDF, or record why there is not one.',
     reasons: {
       office_shop_only: 'Office or shop only — no field work',
@@ -100,11 +94,10 @@ export const THA_COPY = {
     passOverride: 'Brian Walden anuló la verificación del ATS.',
     checkFailed: 'No se pudo hacer la verificación del ATS. Completar, aprobar y exportar siguen bloqueados hasta que se pueda.',
     suggestHeading: 'ATS que coinciden con este incidente',
-    suggestHint: 'La misma empresa, a un día del incidente, y el mismo lugar o la misma cuadrilla.',
+    suggestHint: 'La misma empresa, en la fecha del incidente, y el mismo lugar o la misma cuadrilla. Un ATS de otro día no aparece.',
     browseHeading: 'ATS de esta empresa',
-    browseHint: 'Fecha del incidente, más o menos un día, en este lugar. Amplíe las fechas o incluya otros lugares si el ATS correcto no está aquí.',
+    browseHint: 'Solo los ATS de esta empresa en la fecha del incidente (hora de Alaska). Un ATS escrito después del incidente no aparece. Incluya otros lugares si el trabajo no fue en este sitio.',
     showBrowse: 'Ninguno de estos — ver los ATS de la empresa',
-    dateWindowLabel: 'Rango de fechas',
     otherLocations: 'Incluir otros lugares',
     filterPlaceholder: 'Filtrar por cuadrilla, trabajo o lugar',
     view: 'Ver',
@@ -127,13 +120,8 @@ export const THA_COPY = {
     clearNoTha: 'Quitar esto y adjuntar un ATS',
     attachButton: 'Adjuntar ATS',
     matchHeading: 'ATS que nombran a alguien de esta investigación',
-    matchHint: 'La misma empresa, en la fecha del incidente o un día antes o después (cambio de turno), y un nombre de la cuadrilla que incluye a la persona involucrada o a un testigo.',
+    matchHint: 'La misma empresa, en la fecha del incidente (hora de Alaska), creado a la hora del incidente o antes, y un nombre de la cuadrilla que incluye a la persona involucrada o a un testigo.',
     noMatch: 'No se encontró un ATS que coincida',
-    fallbackHint: 'Busque los ATS de esta empresa por número o fecha, o registre que no hay ATS.',
-    searchNumber: 'Número de ATS',
-    searchDate: 'Fecha',
-    search: 'Buscar',
-    noneSearch: 'Ningún ATS de esta empresa coincidió con ese número o esa fecha.',
     attach: 'Adjuntar',
     upload: 'Subir PDF',
     override: 'Anular (solo Brian)',
@@ -141,8 +129,8 @@ export const THA_COPY = {
     revoke: 'Quitar la anulación',
     whyLocation: 'lugar',
     whyCrew: 'cuadrilla',
-    noneSuggested: 'Ningún ATS coincidió con la empresa, la fecha (un día) y el lugar o la cuadrilla.',
-    noneBrowse: 'No hay ATS en este rango de fechas y lugar. Amplíe las fechas, incluya otros lugares, o registre por qué no hay uno.',
+    noneSuggested: 'Ningún ATS coincidió con la empresa, la fecha del incidente y el lugar o la cuadrilla.',
+    noneBrowse: 'No hay ATS de la fecha del incidente en este lugar. Incluya otros lugares, o registre por qué no hay uno.',
     noneCompany: 'No hay ATS de esta empresa. Suba el PDF, o registre por qué no hay uno.',
     reasons: {
       office_shop_only: 'Solo oficina o taller — no hubo trabajo de campo',
@@ -181,27 +169,72 @@ export function companiesMatch(a, b) {
   return longer.includes(shorter);
 }
 
-export function isoDay(value) {
-  const m = /^(\d{4}-\d{2}-\d{2})/.exec(String(value || ''));
-  return m ? m[1] : null;
+export const ALASKA_TZ = 'America/Anchorage';
+
+/** Date-only values are already a calendar day. Timestamps become the Alaska day. */
+export function calendarDay(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const d = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'));
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: ALASKA_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(d);
 }
 
-export function shiftIsoDate(iso, days) {
-  const day = isoDay(iso);
-  if (!day) return null;
+function alaskaOffsetMs(instant) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: ALASKA_TZ,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(instant).map((p) => [p.type, p.value]));
+  const asUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+  return asUtc - instant.getTime();
+}
+
+/** Incident date + incident_time as an Alaska wall-clock instant. Null when there is no time. */
+export function incidentInstant(incident) {
+  const day = calendarDay(incident?.incident_date);
+  const tm = /^(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(incident?.incident_time || '').trim());
+  if (!day || !tm) return null;
   const [y, m, d] = day.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() + days);
-  return dt.toISOString().slice(0, 10);
+  const wall = Date.UTC(y, m - 1, d, Number(tm[1]), Number(tm[2]), Number(tm[3] || 0));
+  let utc = wall;
+  for (let i = 0; i < 2; i++) utc = wall - alaskaOffsetMs(new Date(utc));
+  const out = new Date(utc);
+  return Number.isNaN(out.getTime()) ? null : out;
 }
 
-export function daysBetween(a, b) {
-  const x = isoDay(a);
-  const y = isoDay(b);
-  if (!x || !y) return null;
-  const dx = Date.parse(`${x}T00:00:00Z`);
-  const dy = Date.parse(`${y}T00:00:00Z`);
-  return Math.round((dx - dy) / 86400000);
+/**
+ * A THA is evidence only on the incident's calendar date. When the incident
+ * has a time, the THA must also have been created at or before that time.
+ * Returns null when it may be offered or attached, otherwise a refusal.
+ * A later calendar date is always refused.
+ */
+export function thaDateRefusal(incident, tha) {
+  const incidentDay = calendarDay(incident?.incident_date);
+  const thaDay = calendarDay(tha?.date);
+  if (!incidentDay || !thaDay || thaDay !== incidentDay) {
+    if (incidentDay && thaDay && thaDay > incidentDay) {
+      return 'That THA is dated after this incident and cannot be attached.';
+    }
+    return 'That THA is not from the incident date and cannot be attached.';
+  }
+  const instant = incidentInstant(incident);
+  if (!instant) return null;
+  const created = tha?.created_at
+    ? new Date(String(tha.created_at).includes('T') ? tha.created_at : String(tha.created_at).replace(' ', 'T'))
+    : null;
+  if (!created || Number.isNaN(created.getTime()) || created.getTime() > instant.getTime()) {
+    return 'That THA was created after this incident and cannot be attached.';
+  }
+  return null;
+}
+
+export function thaOnIncidentDate(incident, tha) {
+  return thaDateRefusal(incident, tha) == null;
 }
 
 export function placesOverlap(a, b) {
@@ -288,7 +321,9 @@ export function personOnCrew(person, crewNames) {
 }
 
 /**
- * Company + incident date ±1 day + crew/worker names the involved person or a witness.
+ * Company + the incident's calendar date + crew/worker names of the involved
+ * person or a witness. A THA from another day never matches. When the incident
+ * has a time, the THA must have been created at or before that time (Alaska).
  * Location is not required. Another company's THA never matches.
  * This is the investigation lookup. It does not use the open-THA company filter.
  */
@@ -298,43 +333,22 @@ export function matchThasByPeople(incident, thas, { witnesses = [] } = {}) {
   const out = [];
   for (const tha of thas || []) {
     if (!companiesMatch(company, tha?.company)) continue;
-    const delta = daysBetween(incident?.incident_date, tha?.date);
-    if (delta == null || Math.abs(delta) > 1) continue;
+    if (!thaOnIncidentDate(incident, tha)) continue;
     const crew = [tha?.crew_lead, ...(tha?.crew_names || [])].filter(Boolean);
     const matched = people.filter((person) => personOnCrew(person, crew));
     if (!matched.length) continue;
-    out.push({ ...tha, day_delta: delta, matched_people: matched });
+    out.push({ ...tha, matched_people: matched });
   }
   out.sort((a, b) =>
-    Math.abs(a.day_delta) - Math.abs(b.day_delta)
-    || String(b.date || '').localeCompare(String(a.date || ''))
+    String(b.date || '').localeCompare(String(a.date || ''))
     || String(a.tha_number).localeCompare(String(b.tha_number)));
   return out;
 }
 
 /**
- * Fallback when no person matched. Still the investigation's company only.
- * A number, a date (±1 day), or both. Empty input matches nothing.
- */
-export function searchThasForIncident(incident, thas, { thaNumber = '', date = '' } = {}) {
-  const company = incident?.company_name || incident?.company;
-  const num = normPlace(thaNumber).replace(/\s+/g, '');
-  const day = isoDay(date);
-  if (!num && !day) return [];
-  return (thas || []).filter((tha) => {
-    if (!companiesMatch(company, tha?.company)) return false;
-    if (num && !normPlace(tha?.tha_number).replace(/\s+/g, '').includes(num)) return false;
-    if (day) {
-      const delta = daysBetween(day, tha?.date);
-      if (delta == null || Math.abs(delta) > 1) return false;
-    }
-    return true;
-  });
-}
-
-/**
- * THAs that match company + incident date (±1 day) + location or crew.
- * thas: rows with tha_number, company, date, location, work_area, crew_lead.
+ * THAs that match company + the incident calendar date + location or crew.
+ * A THA from another day is never suggested. When the incident has a time,
+ * the THA must have been created at or before that time.
  * crewByTha: optional { [tha_number]: string[] } of crew sign-off names.
  */
 export function suggestThas(incident, thas, crewByTha = {}) {
@@ -343,27 +357,17 @@ export function suggestThas(incident, thas, crewByTha = {}) {
   const incidentPlace = incident?.location_name || incident?.location;
   for (const tha of thas || []) {
     if (!companiesMatch(incidentCompany, tha?.company)) continue;
-    const delta = daysBetween(incident?.incident_date, tha?.date);
-    if (delta == null || Math.abs(delta) > 1) continue;
+    if (!thaOnIncidentDate(incident, tha)) continue;
     const loc = placesOverlap(incidentPlace, tha?.location) || placesOverlap(incidentPlace, tha?.work_area);
     const names = crewByTha[tha?.tha_number] || tha?.crew_names || [];
     const crew = crewsMatch(incident, tha, names);
     if (!loc && !crew) continue;
-    out.push({ ...tha, match_location: !!loc, match_crew: !!crew, day_delta: delta });
+    out.push({ ...tha, match_location: !!loc, match_crew: !!crew });
   }
   out.sort((a, b) =>
     (Number(b.match_location) + Number(b.match_crew)) - (Number(a.match_location) + Number(a.match_crew))
-    || Math.abs(a.day_delta) - Math.abs(b.day_delta)
     || String(a.tha_number).localeCompare(String(b.tha_number)));
   return out;
-}
-
-/** Windows the browse list can be widened to. Default is the incident date ±1 day. */
-export const THA_DATE_WINDOWS = [1, 3, 7, 14, 30];
-
-export function clampDateWindow(days) {
-  const n = Number(days);
-  return THA_DATE_WINDOWS.includes(n) ? n : 1;
 }
 
 /** Clock time in Alaska. THA rows store a date plus created_at; there is no separate time column. */
@@ -379,24 +383,23 @@ export function thaTimeLabel(createdAt) {
 }
 
 /**
- * Company THAs in a date window around the incident.
+ * Company THAs from the incident's calendar date only.
  * otherLocations false keeps rows whose location or work area overlaps the incident site.
  * An incident with no site is not location-filtered.
+ * A later date, an earlier date, or a THA created after the incident time is omitted.
  */
-export function browseThas(incident, thas, { days = 1, otherLocations = false } = {}) {
-  const windowDays = clampDateWindow(days);
+export function browseThas(incident, thas, { otherLocations = false } = {}) {
   const incidentCompany = incident?.company_name || incident?.company;
   const incidentPlace = incident?.location_name || incident?.location;
   const out = [];
   for (const tha of thas || []) {
     if (!companiesMatch(incidentCompany, tha?.company)) continue;
-    const delta = daysBetween(incident?.incident_date, tha?.date);
-    if (delta == null || Math.abs(delta) > windowDays) continue;
+    if (!thaOnIncidentDate(incident, tha)) continue;
     if (!otherLocations && incidentPlace) {
       const loc = placesOverlap(incidentPlace, tha?.location) || placesOverlap(incidentPlace, tha?.work_area);
       if (!loc) continue;
     }
-    out.push({ ...tha, day_delta: delta });
+    out.push({ ...tha });
   }
   out.sort((a, b) =>
     String(b.date || '').localeCompare(String(a.date || ''))

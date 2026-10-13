@@ -18,7 +18,9 @@ import Osha1904Classification, { osha1904Value } from '@/components/Osha1904Clas
 import { validateOsha1904 } from '@/lib/osha1904';
 import { QualityChecklist, QualityGateModal, loadQualityGate, qualityGateDbMessage, parseFix } from '@/components/QualityGate';
 import { ThaGate } from '@/components/ThaGate';
+import { StageTabs, Stepper, StageFooter } from '@/components/InvestigationSteps';
 import { loadThaGate, thaGateDbMessage } from '@/lib/thaGate';
+import { resumeStage } from '@/lib/investigationNav';
 
 // =====================================================================
 // AnthroSafe Investigation Workbench v2
@@ -110,6 +112,7 @@ export default function InvestigationWorkbench() {
   const [lessons, setLessons] = useState([]);
 
   const [currentStage, setCurrentStage] = useState(1);
+  const stagePinned = useRef(false);
   const [saving, setSaving] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
@@ -295,12 +298,12 @@ export default function InvestigationWorkbench() {
       } else setBankHints([]);
       refreshQualityGate();
 
-      // Resume at first incomplete stage
-      const d = incR.data;
-      if (!d.stage_1_complete) setCurrentStage(1);
-      else if (!d.stage_2_complete) setCurrentStage(2);
-      else if (!d.stage_3_complete) setCurrentStage(3);
-      else setCurrentStage(4);
+      // Resume once. Later reloads (spell-check cancel, evidence refresh) must
+      // not snap the investigator back to the last stage.
+      if (!stagePinned.current) {
+        stagePinned.current = true;
+        setCurrentStage(resumeStage(incR.data));
+      }
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to load investigation.');
@@ -366,7 +369,7 @@ export default function InvestigationWorkbench() {
         return;
       }
       setIncident(prev => ({ ...prev, ...patch }));
-      if (stage < 4) setCurrentStage(stage + 1);
+      if (stage < 4) goToStage(stage + 1);
     });
   }
 
@@ -408,7 +411,7 @@ export default function InvestigationWorkbench() {
     await flushAutosave();
     const g = await loadThaGate(supabase, incidentId);
     if (g && g.status === 'pass') return proceed();
-    setCurrentStage(1);
+    // Gates never move the page. Alert, and scroll only if the THA panel is already on screen.
     const detail = g?.status === 'error'
       ? `The THA check could not run, so this stays locked. ${g.message || ''}`
       : `A THA PDF, or a recorded reason there is not one, is required before you can ${action}.\n\n${g?.message || ''}`;
@@ -418,9 +421,16 @@ export default function InvestigationWorkbench() {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 200);
   }
+  function goToStage(stage) {
+    const n = Number(stage);
+    if (!Number.isInteger(n) || n < 1 || n > STAGES.length) return;
+    // Step tabs and Back do not consult spelling, quality, THA, or 1904.
+    stagePinned.current = true;
+    setCurrentStage(n);
+  }
   function jumpTo(fix) {
     const { stage, target } = parseFix(fix);
-    if (stage) setCurrentStage(stage);
+    if (stage) goToStage(stage);
     const ids = target === 'qg-osha' ? ['osha-1904'] : target ? [target] : [];
     let tries = 0;
     const tick = () => {
@@ -508,10 +518,11 @@ export default function InvestigationWorkbench() {
           stages={STAGES}
           current={currentStage}
           incident={incident}
-          onJump={setCurrentStage}
+          onJump={goToStage}
         />
 
         <main>
+          <StageTabs stages={STAGES} current={currentStage} onJump={goToStage} />
           {qualityGate && qualityGate.applies !== false && (
             <QualityChecklist gate={qualityGate} {...gateHandlers} />
           )}
@@ -533,6 +544,7 @@ export default function InvestigationWorkbench() {
                 setWitnesses(data || []);
               }}
               onComplete={() => markStageComplete(1)}
+              onBack={goToStage}
               onAfterSave={refreshQualityGate}
               onIncidentPatched={patch => setIncident(prev => ({ ...prev, ...patch }))}
             />
@@ -549,6 +561,7 @@ export default function InvestigationWorkbench() {
                 setTimeline(data || []);
               }}
               onComplete={() => markStageComplete(2)}
+              onBack={goToStage}
             />
           )}
 
@@ -570,6 +583,7 @@ export default function InvestigationWorkbench() {
               guidePreview={guidePreview}
               onIncidentPatched={patch => setIncident(prev => ({ ...prev, ...patch }))}
               onComplete={() => markStageComplete(3)}
+              onBack={goToStage}
             />
           )}
 
@@ -605,6 +619,7 @@ export default function InvestigationWorkbench() {
                 refreshQualityGate();
               }}
               onComplete={() => markStageComplete(4)}
+              onBack={goToStage}
             />
           )}
         </main>
@@ -671,52 +686,9 @@ function TopBar({ incident, saving, lastSavedAt, pdfGenerating, onPDF, onBack, u
 }
 
 // =====================================================================
-// Stepper sidebar
-// =====================================================================
-function Stepper({ stages, current, incident, onJump }) {
-  return (
-    <aside style={{ position: 'sticky', top: 24, alignSelf: 'flex-start' }}>
-      <div style={{ background: C.card, border: `1px solid ${C.borderL}`, borderRadius: 12, padding: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-          Investigation Path
-        </div>
-        {stages.map(stage => {
-          const isCurrent = stage.id === current;
-          const isComplete = incident[`stage_${stage.id}_complete`];
-          const dotColor = isComplete ? C.success : isCurrent ? C.steel : C.border;
-          return (
-            <button
-              key={stage.id}
-              onClick={() => onJump(stage.id)}
-              style={{
-                display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%',
-                padding: '12px 8px', border: 'none', background: isCurrent ? C.blueL : 'transparent',
-                borderRadius: 8, cursor: 'pointer', textAlign: 'left', marginBottom: 4,
-              }}
-            >
-              <div style={{
-                minWidth: 28, height: 28, borderRadius: '50%', background: dotColor,
-                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700, fontSize: 13,
-              }}>
-                {isComplete ? '✓' : stage.id}
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: isCurrent ? C.navy : C.text }}>{stage.title}</div>
-                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{stage.description}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </aside>
-  );
-}
-
-// =====================================================================
 // STAGE 1 - Setup & Evidence
 // =====================================================================
-function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete, onAfterSave, onIncidentPatched }) {
+function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, onIncidentChange, onEvidenceReload, onWitnessesReload, onComplete, onBack, onAfterSave, onIncidentPatched }) {
   return (
     <div>
       <StageHeader stage={1} title="Setup & Evidence" subtitle="Confirm the scope of this investigation, then gather photos and witness statements." />
@@ -821,6 +793,8 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, 
       </Card>
 
       <StageFooter
+        stage={1}
+        onBack={onBack}
         complete={incident.stage_1_complete}
         onComplete={onComplete}
         nextLabel="Complete & Continue to Timeline"
@@ -832,7 +806,7 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, 
 // =====================================================================
 // STAGE 2 - Timeline
 // =====================================================================
-function Stage2({ timeline, fkText, incidentDate, userEmail, onReload, onComplete }) {
+function Stage2({ timeline, fkText, incidentDate, userEmail, onReload, onComplete, onBack }) {
   const [form, setForm] = useState({ event_date: incidentDate || '', event_time: '', description: '', is_critical: false });
   const [busy, setBusy] = useState(false);
 
@@ -937,7 +911,7 @@ function Stage2({ timeline, fkText, incidentDate, userEmail, onReload, onComplet
         )}
       </Card>
 
-      <StageFooter complete={false} onComplete={onComplete} nextLabel="Complete & Continue to Analysis" />
+      <StageFooter stage={2} onBack={onBack} complete={false} onComplete={onComplete} nextLabel="Complete & Continue to Analysis" />
     </div>
   );
 }
@@ -945,7 +919,7 @@ function Stage2({ timeline, fkText, incidentDate, userEmail, onReload, onComplet
 // =====================================================================
 // STAGE 3 - Why It Happened (adaptive: Local Review / 5-Why / RCA)
 // =====================================================================
-function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, localReview, setLocalReview, legacyRcaText, incidentId, fkText, userEmail, onIncidentChange, guideEnabled, guidePreview, onIncidentPatched, onComplete }) {
+function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, localReview, setLocalReview, legacyRcaText, incidentId, fkText, userEmail, onIncidentChange, guideEnabled, guidePreview, onIncidentPatched, onComplete, onBack }) {
   const type = (incident.investigation_type || '').toLowerCase();
   const isLocal  = type.includes('local');
   const is5Why   = !isLocal && (type.includes('5') || type.includes('why'));
@@ -985,7 +959,7 @@ function Stage3({ incident, rcaFactors, setRcaFactors, fiveWhy, setFiveWhy, loca
       {is5Why   && <FiveWhyForm      data={fiveWhy}     setData={setFiveWhy}     fkText={fkText} userEmail={userEmail} />}
       {isRCA    && <StructuredRCA    factors={rcaFactors} setFactors={setRcaFactors} incident={incident} onIncidentChange={onIncidentChange} incidentUuid={incidentId} />}
 
-      <StageFooter complete={false} onComplete={onComplete} nextLabel="Complete & Continue to Closure" />
+      <StageFooter stage={3} onBack={onBack} complete={false} onComplete={onComplete} nextLabel="Complete & Continue to Closure" />
     </div>
   );
 }
@@ -1193,7 +1167,7 @@ function LocalReviewForm({ data, setData, fkText, userEmail }) {
 // =====================================================================
 // STAGE 4 - Close It Out
 // =====================================================================
-function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, requireTextGate, textGateBusy, requireQualityGate, requireThaGate, qualityApplies, caPrefill, bankHints, onIncidentChange, onActionsReload, onLessonsReload, onComplete }) {
+function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkText, fkUuid, userEmail, guideEnabled, pdfGenerating, onGeneratePDF, requireTextGate, textGateBusy, requireQualityGate, requireThaGate, qualityApplies, caPrefill, bankHints, onIncidentChange, onActionsReload, onLessonsReload, onComplete, onBack }) {
   const [gateBusy, setGateBusy] = useState(false);
   // Close-out review (Interview Guide P0): warns and asks for a reason, never hard-blocks.
   const [closeGate, setCloseGate] = useState(null);
@@ -1311,7 +1285,7 @@ function Stage4({ incident, timeline, witnesses, correctiveActions, lessons, fkT
         </div>
       </Card>
 
-      <StageFooter complete={incident.stage_4_complete} onComplete={() => requireThaGate('mark this investigation complete', () => require1904(() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', () => requireQualityGate('mark this investigation complete', onComplete)))))} nextLabel="Mark Investigation Complete" />
+      <StageFooter stage={4} onBack={onBack} complete={incident.stage_4_complete} onComplete={() => requireThaGate('mark this investigation complete', () => require1904(() => runCloseoutGate('Complete', () => requireTextGate('mark this investigation complete', () => requireQualityGate('mark this investigation complete', onComplete)))))} nextLabel="Mark Investigation Complete" />
 
       {closeGate && (
         <CloseoutGateModal
@@ -2185,16 +2159,6 @@ function StageHeader({ stage, title, subtitle }) {
       </div>
       <h1 style={{ margin: '4px 0 6px 0', fontSize: 26, fontWeight: 700, color: C.navy }}>{title}</h1>
       <div style={{ fontSize: 14, color: C.muted }}>{subtitle}</div>
-    </div>
-  );
-}
-
-function StageFooter({ complete, onComplete, nextLabel }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
-      <button onClick={onComplete} style={{ ...btnPrimaryDark, fontSize: 14, padding: '12px 20px' }}>
-        {complete ? '✓ Stage Complete — Re-mark Complete' : nextLabel}
-      </button>
     </div>
   );
 }

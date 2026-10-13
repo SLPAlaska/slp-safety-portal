@@ -14,12 +14,13 @@ import {
   browseThas,
   evaluateThaGate,
   filterThaBrowse,
+  incidentInstant,
   isBrianThaOverride,
   isThaPdfEvidence,
   matchThasByPeople,
   personOnCrew,
-  searchThasForIncident,
   suggestThas,
+  thaDateRefusal,
   thaRowText,
   validateNoTha,
 } from '../app/lib/thaGate.js';
@@ -102,38 +103,41 @@ assert.equal(isBrianThaOverride({ ...brian, revoked_at: '2026-10-12T00:00:00Z' }
 assert.equal(isBrianThaOverride({ ...brian, reason: 'short' }), false);
 assert.equal(evaluateThaGate({ incident, evidence: [], override: { ...brian, reason: 'short' } }).status, 'block');
 
-// Suggestions: company + date ±1 day + location or crew. Not company alone.
+// Suggestions: company + the incident calendar date + location or crew. Not company alone.
+// A day earlier or later is never offered, even at the same pad.
 const thas = [
   { tha_number: 'THA-1', company: 'MagTec LLC', date: '2026-10-11', location: 'Pad A-12', crew_lead: 'Someone Else' },
   { tha_number: 'THA-2', company: 'MagTec', date: '2026-10-12', location: 'Shop', crew_lead: 'Ched Isaac' },
   { tha_number: 'THA-3', company: 'Other Co', date: '2026-10-12', location: 'Pad A-12', crew_lead: 'Ched Isaac' },
   { tha_number: 'THA-4', company: 'MagTec', date: '2026-10-09', location: 'Pad A-12', crew_lead: 'Ched Isaac' },
   { tha_number: 'THA-5', company: 'MagTec', date: '2026-10-12', location: 'Far Away Camp', crew_lead: 'Nobody Relevant' },
+  { tha_number: 'THA-6', company: 'MagTec', date: '2026-10-13', location: 'Pad A-12', crew_lead: 'Ched Isaac' },
 ];
-assert.deepEqual(suggestThas(incident, thas).map((t) => t.tha_number), ['THA-2', 'THA-1']);
+assert.deepEqual(suggestThas(incident, thas).map((t) => t.tha_number), ['THA-2']);
 
-// Browse list: company + incident date ±1 at this location. Widen dates or locations separately.
+// Browse list: company + the incident calendar date. Locations can widen; dates cannot.
 // The free-text filter matches crew, job, and location, never the THA number.
 const browseRows = [
   { tha_number: 'THA-1', company: 'MagTec LLC', date: '2026-10-11', created_at: '2026-10-11T18:00:00Z', location: 'Pad A-12', work_area: 'Wellhead', task_description: 'Change the glycol filter', crew_lead: 'Dana Cole', crew_names: ['Ched Isaac'] },
+  { tha_number: 'THA-PAD', company: 'MagTec', date: '2026-10-12', created_at: '2026-10-12T18:00:00Z', location: 'Pad A-12', work_area: 'Wellhead', task_description: 'Change the glycol filter', crew_lead: 'Dana Cole', crew_names: ['Ched Isaac'] },
   { tha_number: 'THA-2', company: 'MagTec', date: '2026-10-12', location: 'Shop', work_area: 'Bay 2', task_description: 'Shop inventory', crew_lead: 'Ched Isaac', crew_names: [] },
   { tha_number: 'THA-5', company: 'MagTec', date: '2026-10-12', location: 'Far Away Camp', task_description: 'Camp move', crew_lead: 'Nobody Relevant', crew_names: ['Pat Lee'] },
   { tha_number: 'THA-4', company: 'MagTec', date: '2026-10-09', location: 'Pad A-12', task_description: 'Earlier job', crew_lead: 'Ched Isaac', crew_names: [] },
+  { tha_number: 'THA-6', company: 'MagTec', date: '2026-10-13', location: 'Pad A-12', task_description: 'Next day job', crew_lead: 'Ched Isaac', crew_names: [] },
   { tha_number: 'THA-3', company: 'Other Co', date: '2026-10-12', location: 'Pad A-12', task_description: 'Not our company', crew_lead: 'Ched Isaac', crew_names: [] },
 ];
-assert.deepEqual(browseThas(incident, browseRows).map((t) => t.tha_number), ['THA-1']);
-assert.deepEqual(browseThas(incident, browseRows, { otherLocations: true }).map((t) => t.tha_number).sort(), ['THA-1', 'THA-2', 'THA-5']);
-assert.deepEqual(browseThas(incident, browseRows, { days: 7 }).map((t) => t.tha_number).sort(), ['THA-1', 'THA-4']);
-assert.deepEqual(browseThas(incident, browseRows, { days: 99 }).map((t) => t.tha_number), ['THA-1'], 'unknown windows stay at ±1 day');
+assert.deepEqual(browseThas(incident, browseRows).map((t) => t.tha_number), ['THA-PAD']);
+assert.deepEqual(browseThas(incident, browseRows, { otherLocations: true }).map((t) => t.tha_number).sort(), ['THA-2', 'THA-5', 'THA-PAD']);
+assert.deepEqual(browseThas(incident, browseRows, { days: 7 }).map((t) => t.tha_number), ['THA-PAD'], 'a date window is ignored');
 const sameDay = browseThas(incident, browseRows, { otherLocations: true });
-assert.deepEqual(filterThaBrowse(sameDay, 'isaac').map((t) => t.tha_number), ['THA-2', 'THA-1']);
-assert.deepEqual(filterThaBrowse(sameDay, 'glycol').map((t) => t.tha_number), ['THA-1']);
-assert.deepEqual(filterThaBrowse(sameDay, 'pad a-12').map((t) => t.tha_number), ['THA-1']);
-assert.deepEqual(filterThaBrowse(sameDay, 'THA-1'), [], 'the THA number is not a search field');
-assert.equal(thaRowText(browseRows[0]).includes('THA-1'), false);
-assert.match(thaRowText(browseRows[0]), /Pad A-12/);
-assert.match(thaRowText(browseRows[0]), /Ched Isaac/);
-assert.match(thaRowText(browseRows[0]), /glycol filter/);
+assert.deepEqual(filterThaBrowse(sameDay, 'isaac').map((t) => t.tha_number).sort(), ['THA-2', 'THA-PAD']);
+assert.deepEqual(filterThaBrowse(sameDay, 'glycol').map((t) => t.tha_number), ['THA-PAD']);
+assert.deepEqual(filterThaBrowse(sameDay, 'pad a-12').map((t) => t.tha_number), ['THA-PAD']);
+assert.deepEqual(filterThaBrowse(sameDay, 'THA-PAD'), [], 'the THA number is not a search field');
+assert.equal(thaRowText(browseRows[1]).includes('THA-PAD'), false);
+assert.match(thaRowText(browseRows[1]), /Pad A-12/);
+assert.match(thaRowText(browseRows[1]), /Ched Isaac/);
+assert.match(thaRowText(browseRows[1]), /glycol filter/);
 
 // INC-2026-0085: MagTec Alaska, Deadhorse, 2026-10-09, person Ched Isaac.
 // The THA the next day lists the crew member as "Ched I", not the full name.
@@ -141,6 +145,7 @@ const inc0085 = {
   incident_id: 'INC-2026-0085',
   company_name: 'MagTec Alaska',
   incident_date: '2026-10-09',
+  incident_time: '15:02:00',
   location_name: 'Deadhorse',
   injured_person_name: 'Ched Isaac',
 };
@@ -148,34 +153,51 @@ const tha0085 = {
   tha_number: 'THA-20261010-5905',
   company: 'MagTec Alaska',
   date: '2026-10-10',
+  created_at: '2026-10-10T17:14:38Z',
   location: 'Deadhorse',
   task_description: 'General automotive and equipment Maintenance',
   crew_lead: 'Shop lead',
   crew_names: ['Ched I'],
 };
+assert.equal(incidentInstant(inc0085).toISOString(), '2026-10-09T23:02:00.000Z');
+assert.match(thaDateRefusal(inc0085, tha0085), /dated after/);
 assert.equal(personOnCrew('Ched Isaac', ['Ched I']), true);
 assert.equal(personOnCrew('Ched Isaac', ['Sam Ortiz']), false);
+const sameDayBefore = {
+  ...tha0085,
+  tha_number: 'THA-20261009-2594',
+  date: '2026-10-09',
+  created_at: '2026-10-09T14:50:07Z',
+};
+const sameDayAfter = {
+  ...sameDayBefore,
+  tha_number: 'THA-LATE',
+  created_at: '2026-10-10T01:36:33Z',
+};
+assert.match(thaDateRefusal(inc0085, sameDayAfter), /created after/);
+assert.equal(thaDateRefusal(inc0085, sameDayBefore), null);
 const hit0085 = matchThasByPeople(inc0085, [
   tha0085,
-  { ...tha0085, tha_number: 'THA-OTHER', company: 'Other Co', crew_names: ['Ched Isaac'] },
-  { ...tha0085, tha_number: 'THA-OLD', date: '2026-10-07' },
-  { ...tha0085, tha_number: 'THA-WITNESS', crew_names: ['Pat Lee'], crew_lead: 'Pat Lee' },
+  sameDayBefore,
+  sameDayAfter,
+  { ...sameDayBefore, tha_number: 'THA-OTHER', company: 'Other Co', crew_names: ['Ched Isaac'] },
+  { ...sameDayBefore, tha_number: 'THA-OLD', date: '2026-10-07' },
+  { ...sameDayBefore, tha_number: 'THA-WITNESS', crew_names: ['Pat Lee'], crew_lead: 'Pat Lee' },
 ]);
-assert.deepEqual(hit0085.map((t) => t.tha_number), ['THA-20261010-5905']);
+assert.deepEqual(hit0085.map((t) => t.tha_number), ['THA-20261009-2594']);
+assert.equal(matchThasByPeople(inc0085, [tha0085]).length, 0, 'THA-20261010-5905 is the next day and is not offered');
+assert.equal(browseThas(inc0085, [tha0085], { otherLocations: true }).length, 0);
 const byWitness = matchThasByPeople(
   { ...inc0085, injured_person_name: '' },
-  [tha0085],
+  [sameDayBefore],
   { witnesses: [{ witness_name: 'Ched Isaac' }] },
 );
-assert.equal(byWitness.length, 1, 'a witness name matches the crew');
+assert.equal(byWitness.length, 1, 'a witness name matches the crew on the incident date');
 // Open-THA list (PR #21) hides MagTec from an SLP investigator who is not that company.
 const todd = { isStaff: false, companyName: 'SLP', companyNames: ['SLP'] };
 assert.equal(filterThasForScope([tha0085], todd).length, 0);
-assert.equal(matchThasByPeople(inc0085, [tha0085]).length, 1, 'investigation lookup is not the open-THA filter');
-assert.deepEqual(searchThasForIncident(inc0085, [tha0085, { ...tha0085, tha_number: 'THA-OTHER', company: 'Other Co' }], { thaNumber: 'THA-20261010-5905' }).map((t) => t.tha_number), ['THA-20261010-5905']);
-assert.deepEqual(searchThasForIncident(inc0085, [tha0085], { thaNumber: 'THA-OTHER' }), []);
-assert.equal(searchThasForIncident(inc0085, [tha0085], { date: '2026-10-10' }).length, 1);
-assert.equal(searchThasForIncident(inc0085, [tha0085], {}).length, 0);
+assert.equal(matchThasByPeople(inc0085, [sameDayBefore]).length, 1, 'investigation lookup is not the open-THA filter');
+assert.equal(matchThasByPeople({ ...inc0085, incident_time: null }, [{ ...sameDayBefore, created_at: null }]).length, 1, 'no incident time does not require a created time');
 
 // English and Spanish copy cover the same keys and every reason.
 function keysOf(obj, prefix = '') {
@@ -263,24 +285,23 @@ const panel = readFileSync(new URL('../app/components/ThaGate.js', import.meta.u
 const route = readFileSync(new URL('../app/api/investigation-tha/route.js', import.meta.url), 'utf8');
 assert.match(panel, /data-testid="tha-attach-open"/);
 assert.match(panel, /No matching THA found|copy\.noMatch/);
-assert.match(panel, /data-testid="tha-search-number"/);
-assert.match(panel, /data-testid="tha-search-date"/);
-assert.match(panel, /data-testid="tha-fallback-search"/);
 assert.match(panel, /data-testid="tha-browse-list"/);
 assert.match(panel, /data-testid="tha-browse-filter"/);
-assert.match(panel, /data-testid="tha-date-window"/);
 assert.match(panel, /data-testid="tha-other-locations"/);
 assert.match(panel, /data-testid="tha-view"/);
 assert.match(panel, /data-testid="tha-attach"/);
 assert.match(panel, /data-testid="tha-no-tha"/);
 assert.match(panel, /type="checkbox"/);
-assert.doesNotMatch(panel, /tha-company-pick|pickPlaceholder|THA Number|placeholder="THA/);
+assert.doesNotMatch(panel, /tha-search-number|tha-search-date|tha-fallback-search|tha-date-window/);
+assert.doesNotMatch(panel, /tha-company-pick|pickPlaceholder|THA Number|placeholder="THA|search by THA/i);
 assert.match(route, /browseThas/);
 assert.match(route, /matchThasByPeople/);
-assert.match(route, /action === 'search'/);
+assert.match(route, /thaDateRefusal/);
+assert.match(route, /\.eq\('date', day\)/);
 assert.match(route, /task_description/);
 assert.match(route, /action === 'preview'/);
 assert.match(route, /buildThaPdf/);
+assert.doesNotMatch(route, /action === 'search'|dateWindowDays|shiftIsoDate|clampDateWindow/);
 assert.doesNotMatch(route, /companyThas/);
 assert.doesNotMatch(route, /filterThasForScope\s*\(/);
 const workbench = readFileSync(new URL('../app/investigation-workbench/[id]/page.js', import.meta.url), 'utf8');

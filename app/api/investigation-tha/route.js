@@ -5,8 +5,7 @@
 // public.inv_tha_gate / the incidents trigger (SQL 58). This route only
 // attaches the PDF or records the No-THA reason, for a signed-in investigator.
 //
-//   { action: 'context', incidentId, dateWindowDays?, otherLocations? }
-//   { action: 'search',  incidentId, thaNumber?, date? }  // fallback; this incident's company only
+//   { action: 'context', incidentId, otherLocations? }
 //   { action: 'preview', incidentId, thaNumber }
 //   { action: 'attach',  incidentId, thaNumber }
 //   { action: 'upload',  incidentId, fileName, pdfBase64 }
@@ -23,15 +22,14 @@ import { pageAll, pageAllIn } from '@/lib/supabasePage';
 import { buildThaPdf } from '@/lib/thaPdf';
 import {
   browseThas,
-  clampDateWindow,
+  calendarDay,
   companiesMatch,
   evaluateThaGate,
-  isoDay,
   isThaPdfEvidence,
   matchThasByPeople,
   NO_THA_DETAIL_MIN,
-  searchThasForIncident,
-  shiftIsoDate,
+  thaDateRefusal,
+  thaOnIncidentDate,
   validateNoTha,
 } from '@/lib/thaGate';
 
@@ -187,18 +185,14 @@ export async function POST(request) {
       const override = await loadOverride(supabase, incident.id);
       const gate = evaluateThaGate({ incident, evidence, override });
       const company = incident.company_name || incident.company || '';
-      const days = clampDateWindow(body?.dateWindowDays);
       const otherLocations = body?.otherLocations === true;
+      const day = calendarDay(incident.incident_date);
       let suggestions = [];
       let browse = [];
-      if (company) {
-        const start = shiftIsoDate(incident.incident_date, -days);
-        const end = shiftIsoDate(incident.incident_date, days);
-        const windowR = start && end
-          ? await pageAll(() => supabase.from('tha_assessments').select(THA_COLS).gte('date', start).lte('date', end))
-          : { data: [], error: null };
+      if (company && day) {
+        const windowR = await pageAll(() => supabase.from('tha_assessments').select(THA_COLS).eq('date', day));
         if (windowR.error) throw windowR.error;
-        const windowRows = (windowR.data || []).filter((row) => companiesMatch(company, row.company));
+        const windowRows = (windowR.data || []).filter((row) => companiesMatch(company, row.company) && thaOnIncidentDate(incident, row));
         const numbers = windowRows.map((row) => row.tha_number).filter(Boolean);
         const crewByTha = {};
         if (numbers.length) {
@@ -222,7 +216,7 @@ export async function POST(request) {
         // evidence for a client investigation must still see that client's THAs.
         suggestions = matchThasByPeople(incident, withCrew, { witnesses: witnessRows || [] }).map(publicTha);
         const seen = new Set(suggestions.map((row) => row.tha_number));
-        browse = browseThas(incident, withCrew, { days, otherLocations })
+        browse = browseThas(incident, withCrew, { otherLocations })
           .filter((row) => !seen.has(row.tha_number))
           .map(publicTha);
       }
@@ -230,53 +224,11 @@ export async function POST(request) {
         gate,
         suggestions,
         browse,
-        dateWindowDays: days,
         otherLocations,
         evidence: evidence.filter(isThaPdfEvidence).map((row) => ({
           id: row.id, file_name: row.file_name, file_url: row.file_url, source_tha_number: row.source_tha_number, description: row.description,
         })),
       });
-    }
-
-    if (action === 'search') {
-      // Fallback only. Scoped to this investigation's company, never the caller's
-      // LMS company and never every company. A THA number from another company
-      // comes back as no rows.
-      const thaNumber = String(body?.thaNumber || '').trim();
-      const date = String(body?.date || '').trim();
-      if (!thaNumber && !isoDay(date)) return reply({ error: 'Enter a THA number or a date.' }, 400);
-      const company = incident.company_name || incident.company || '';
-      let rows = [];
-      if (thaNumber && !isoDay(date)) {
-        const { data, error } = await supabase.from('tha_assessments').select(THA_COLS).eq('tha_number', thaNumber).limit(5);
-        if (error) throw error;
-        rows = data || [];
-      } else {
-        const anchor = isoDay(date) || isoDay(incident.incident_date);
-        const start = shiftIsoDate(anchor, -1);
-        const end = shiftIsoDate(anchor, 1);
-        const windowR = start && end
-          ? await pageAll(() => supabase.from('tha_assessments').select(THA_COLS).gte('date', start).lte('date', end))
-          : { data: [], error: null };
-        if (windowR.error) throw windowR.error;
-        rows = windowR.data || [];
-      }
-      rows = rows.filter((row) => companiesMatch(company, row.company));
-      const numbers = rows.map((row) => row.tha_number).filter(Boolean);
-      const crewByTha = {};
-      if (numbers.length) {
-        const { data: crew, error: crewErr } = await pageAllIn(
-          supabase, 'tha_crew_signoff', 'tha_number, crew_member_name', 'tha_number', numbers,
-        );
-        if (crewErr) throw crewErr;
-        for (const person of crew || []) {
-          if (!crewByTha[person.tha_number]) crewByTha[person.tha_number] = [];
-          if (person.crew_member_name) crewByTha[person.tha_number].push(person.crew_member_name);
-        }
-      }
-      const withCrew = rows.map((row) => ({ ...row, crew_names: crewByTha[row.tha_number] || [] }));
-      const results = searchThasForIncident(incident, withCrew, { thaNumber, date }).map(publicTha);
-      return reply({ results });
     }
 
     if (action === 'preview') {
@@ -288,6 +240,8 @@ export async function POST(request) {
       if (!companiesMatch(incident.company_name || incident.company, tha.company)) {
         return reply({ error: 'That THA belongs to a different company than this incident.' }, 403);
       }
+      const previewRefusal = thaDateRefusal(incident, tha);
+      if (previewRefusal) return reply({ error: previewRefusal }, 403);
       const [{ data: steps, error: stepErr }, { data: crew, error: crewErr }] = await Promise.all([
         supabase.from('tha_task_steps').select('step_number, task_step, potential_hazards, recommended_actions').eq('tha_number', thaNumber).order('step_number'),
         supabase.from('tha_crew_signoff').select('crew_member_name, company').eq('tha_number', thaNumber),
@@ -305,16 +259,17 @@ export async function POST(request) {
     if (action === 'attach') {
       const thaNumber = String(body?.thaNumber || '').trim();
       if (!THA_NUMBER_RE.test(thaNumber)) return reply({ error: 'That THA number is not valid.' }, 400);
-      const evidence = await loadEvidence(supabase, incident);
-      const already = evidence.find((row) => isThaPdfEvidence(row) && row.source_tha_number === thaNumber);
-      if (already) return reply({ evidence: already, source: 'existing', gate: evaluateThaGate({ incident, evidence }) });
-
       const { data: tha, error: thaErr } = await supabase.from('tha_assessments').select('*').eq('tha_number', thaNumber).maybeSingle();
       if (thaErr) throw thaErr;
       if (!tha) return reply({ error: 'THA not found.' }, 404);
       if (!companiesMatch(incident.company_name || incident.company, tha.company)) {
         return reply({ error: 'That THA belongs to a different company than this incident.' }, 403);
       }
+      const attachRefusal = thaDateRefusal(incident, tha);
+      if (attachRefusal) return reply({ error: attachRefusal }, 403);
+      const evidence = await loadEvidence(supabase, incident);
+      const already = evidence.find((row) => isThaPdfEvidence(row) && row.source_tha_number === thaNumber);
+      if (already) return reply({ evidence: already, source: 'existing', gate: evaluateThaGate({ incident, evidence }) });
       const [{ data: steps, error: stepErr }, { data: crew, error: crewErr }] = await Promise.all([
         supabase.from('tha_task_steps').select('*').eq('tha_number', thaNumber).order('step_number'),
         supabase.from('tha_crew_signoff').select('*').eq('tha_number', thaNumber),

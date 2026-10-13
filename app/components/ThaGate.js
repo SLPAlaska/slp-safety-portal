@@ -7,7 +7,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   THA_COPY,
-  THA_DATE_WINDOWS,
   THA_GATE_KEY,
   THA_GATE_OWNER,
   NO_THA_DETAIL_MIN,
@@ -39,7 +38,6 @@ export function ThaGatePanel({
   gate,
   suggestions = [],
   browse = [],
-  dateWindowDays = 1,
   otherLocations = false,
   thaEvidence = [],
   noTha = { reason: '', detail: '' },
@@ -54,7 +52,6 @@ export function ThaGatePanel({
   onRevoke,
   onBrowseChange,
   onPreview,
-  onSearch,
 }) {
   const [reason, setReason] = useState(noTha.reason || '');
   const [detail, setDetail] = useState(noTha.detail || '');
@@ -62,9 +59,6 @@ export function ThaGatePanel({
   const [filter, setFilter] = useState('');
   const [showBrowse, setShowBrowse] = useState(false);
   const [finderOpen, setFinderOpen] = useState(true);
-  const [searchNumber, setSearchNumber] = useState('');
-  const [searchDate, setSearchDate] = useState('');
-  const [searchHits, setSearchHits] = useState(null);
   const [preview, setPreview] = useState(null);
   const [overrideOn, setOverrideOn] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
@@ -85,7 +79,7 @@ export function ThaGatePanel({
     if (noTha.reason || gate?.via === 'no_tha') setNoThaOn(true);
   }, [noTha.reason, noTha.detail, gate?.via]);
 
-  const browseOpen = showBrowse;
+  const browseOpen = suggestions.length === 0 || showBrowse;
   const visibleBrowse = filterThaBrowse(browse, filter);
 
   async function openPreview(tha) {
@@ -138,50 +132,6 @@ export function ThaGatePanel({
             {suggestions.map((tha) => (
               <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} onView={openPreview} showNumber />
             ))}
-            {suggestions.length === 0 && (
-              <div data-testid="tha-fallback-search" style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>{copy.fallbackHint}</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'end' }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
-                    {copy.searchNumber}
-                    <input
-                      data-testid="tha-search-number"
-                      value={searchNumber}
-                      onChange={(e) => setSearchNumber(e.target.value)}
-                      style={{ ...inputStyle, display: 'block', marginTop: 4 }}
-                    />
-                  </label>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
-                    {copy.searchDate}
-                    <input
-                      data-testid="tha-search-date"
-                      type="date"
-                      value={searchDate}
-                      onChange={(e) => setSearchDate(e.target.value)}
-                      style={{ ...inputStyle, display: 'block', marginTop: 4 }}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    data-testid="tha-search-go"
-                    disabled={busy || (!searchNumber.trim() && !searchDate)}
-                    onClick={async () => {
-                      const hits = await onSearch?.({ thaNumber: searchNumber.trim(), date: searchDate });
-                      setSearchHits(Array.isArray(hits) ? hits : []);
-                    }}
-                    style={{ ...btnDark, opacity: busy ? 0.5 : 1 }}
-                  >
-                    {copy.search}
-                  </button>
-                </div>
-                {searchHits && searchHits.length === 0 && (
-                  <div data-testid="tha-none-search" style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>{copy.noneSearch}</div>
-                )}
-                {(searchHits || []).map((tha) => (
-                  <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} onView={openPreview} showNumber />
-                ))}
-              </div>
-            )}
             {suggestions.length > 0 && !showBrowse && (
               <button type="button" data-testid="tha-show-browse" onClick={() => setShowBrowse(true)} style={{ ...btn, marginTop: 8 }}>
                 {copy.showBrowse}
@@ -196,25 +146,12 @@ export function ThaGatePanel({
           <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.browseHeading}</div>
           <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{copy.browseHint}</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
-              {copy.dateWindowLabel}{' '}
-              <select
-                data-testid="tha-date-window"
-                value={dateWindowDays}
-                onChange={(e) => onBrowseChange?.({ days: Number(e.target.value), otherLocations })}
-                style={{ ...inputStyle, width: 'auto', marginLeft: 4 }}
-              >
-                {THA_DATE_WINDOWS.map((days) => (
-                  <option key={days} value={days}>± {days} day{days === 1 ? '' : 's'}</option>
-                ))}
-              </select>
-            </label>
             <label style={{ fontSize: 13, color: C.text, display: 'flex', gap: 6, alignItems: 'center' }}>
               <input
                 data-testid="tha-other-locations"
                 type="checkbox"
                 checked={otherLocations}
-                onChange={(e) => onBrowseChange?.({ days: dateWindowDays, otherLocations: e.target.checked })}
+                onChange={(e) => onBrowseChange?.({ otherLocations: e.target.checked })}
               />
               {copy.otherLocations}
             </label>
@@ -424,7 +361,7 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
   const [remote, setRemote] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [browseOpts, setBrowseOpts] = useState({ days: 1, otherLocations: false });
+  const [browseOpts, setBrowseOpts] = useState({ otherLocations: false });
   const browseRef = useRef(browseOpts);
   const isBrian = String(userEmail || '').toLowerCase() === THA_GATE_OWNER;
   const localEvidence = (evidence || []).filter(isThaPdfEvidence);
@@ -437,11 +374,10 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
 
   async function refresh() {
     if (!incident?.id) return;
-    const { days, otherLocations } = browseRef.current;
+    const { otherLocations } = browseRef.current;
     const res = await callThaApi(supabase, {
       action: 'context',
       incidentId: incident.id,
-      dateWindowDays: days,
       otherLocations,
     });
     if (res.ok) {
@@ -463,15 +399,6 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
       return null;
     }
     return res.tha ? { ...res.tha, steps: res.steps || [], crew: res.crew || [] } : null;
-  }
-
-  async function onSearch({ thaNumber, date }) {
-    const res = await callThaApi(supabase, { action: 'search', incidentId: incident.id, thaNumber, date });
-    if (!res.ok) {
-      setError(res.error || 'Could not search THAs.');
-      return [];
-    }
-    return res.results || [];
   }
 
   useEffect(() => {
@@ -551,7 +478,6 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
       gate={gate}
       suggestions={remote?.suggestions || []}
       browse={remote?.browse || []}
-      dateWindowDays={browseOpts.days}
       otherLocations={browseOpts.otherLocations}
       thaEvidence={remote?.evidence?.length ? remote.evidence : localEvidence}
       noTha={{ reason: incident?.no_tha_reason || '', detail: incident?.no_tha_reason_detail || '' }}
@@ -566,7 +492,6 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
       onRevoke={onRevoke}
       onBrowseChange={onBrowseChange}
       onPreview={onPreview}
-      onSearch={onSearch}
     />
   );
 }

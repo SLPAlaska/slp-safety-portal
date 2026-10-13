@@ -40,7 +40,10 @@ assert.equal((await g.runTextGate([], { fetchImpl: async () => { throw new Error
   assert.equal(r.issues.length, 1, 'style advice does not block');
   assert.equal(r.issues[0].key, 'a');
   assert.equal(items[0].text.slice(r.issues[0].offset, r.issues[0].offset + 3), 'teh');
-  assert.equal(r.issues[0].canKeep, false, 'a lowercase misspelling cannot be kept');
+  assert.equal(r.issues[0].kind, 'spelling');
+  assert.equal(r.issues[0].canKeep, true, 'a spelling miss can be ignored for this incident');
+  assert.equal(g.issuesFromMatches(chunk, [spell(at, 3)], new Set(), new Set(['teh'])).length, 0, 'ignored teh does not block');
+  assert.equal(g.issuesFromMatches(chunk, [spell(at, 3)], new Set(), new Set(), new Set(['teh'])).length, 0, 'dictionary teh does not block');
   assert.equal(g.applyReplacement(items[0].text, r.issues[0].offset, 3, 'the'), 'The pump was not at the bay.');
 }
 
@@ -60,17 +63,37 @@ assert.equal(g.keepable('Dangerus', 'Dangerus work.', 0), false, 'sentence-start
 assert.equal(g.keepable('Dangerus', 'It was hot. Dangerus work.', 12), false);
 assert.equal(g.keepable('XJ9', 'XJ9 failed.', 0), true);
 assert.equal(g.keepable('teh', 'at teh bay', 3), false);
-assert.deepEqual(g.sanitizeAcceptedTerms(['Tukle', 'teh', 'DROP TABLE', 'XJ9', '']), ['tukle', 'xj9']);
+assert.deepEqual(g.sanitizeAcceptedTerms(['Tukle', 'teh', 'DROP TABLE', 'XJ9', '']), ['tukle', 'teh', 'xj9']);
 
 // Kept terms and report names excuse dictionary misses only.
 {
-  const its = [{ key: 'a', text: 'Spoke with Tukle and Qorvak.' }];
+  const its = [{ key: 'a', text: 'Spoke with tukle and qorvak.' }];
   const chunk = g.buildChunks(its)[0];
-  const m = [spell(chunk.text.indexOf('Tukle'), 5), spell(chunk.text.indexOf('Qorvak'), 6)];
+  const m = [spell(chunk.text.indexOf('tukle'), 5), spell(chunk.text.indexOf('qorvak'), 6)];
   assert.equal(g.issuesFromMatches(chunk, m).length, 2);
   assert.equal(g.issuesFromMatches(chunk, m, g.wordsFromNames(['Jim Qorvak']), new Set(['tukle'])).length, 0);
-  const grammar = { offset: 0, length: 5, message: 'Grammar', replacements: [], rule: { id: 'THEIR_IS', issueType: 'misspelling', category: { id: 'TYPOS' } } };
-  assert.equal(g.issuesFromMatches(chunk, [grammar], new Set(['spoke']), new Set(['spoke'])).length, 1, 'non-dictionary rules cannot be kept away');
+  const named = [{ key: 'a', text: 'Spoke with Tukle and Qorvak.' }];
+  const namedChunk = g.buildChunks(named)[0];
+  const namedMatches = [spell(namedChunk.text.indexOf('Tukle'), 5), spell(namedChunk.text.indexOf('Qorvak'), 6)];
+  assert.equal(g.issuesFromMatches(namedChunk, namedMatches).length, 0, 'capitalized names are not a hard block');
+  const grammar = { offset: 0, length: 5, message: 'Grammar', replacements: [], rule: { id: 'THEIR_IS', issueType: 'grammar', category: { id: 'GRAMMAR' } } };
+  const grammarIssues = g.issuesFromMatches(chunk, [grammar], new Set(['spoke']), new Set(['spoke']));
+  assert.equal(grammarIssues.length, 1, 'grammar still blocks');
+  assert.equal(grammarIssues[0].kind, 'grammar');
+}
+
+// Sentence-start proper nouns are not a hard block. Real grammar still is.
+{
+  const its = [{ key: 'a', text: 'Ched Isaac saw the spill.' }];
+  const chunk = g.buildChunks(its)[0];
+  const m = [spell(chunk.text.indexOf('Ched'), 4), spell(chunk.text.indexOf('Isaac'), 5)];
+  assert.equal(g.issuesFromMatches(chunk, m).length, 0, 'Ched Isaac is not a hard block');
+  const their = { offset: 0, length: 5, message: 'Did you mean there', replacements: [], rule: { id: 'THEIR_IS', issueType: 'grammar', category: { id: 'GRAMMAR' } } };
+  const bad = [{ key: 'a', text: 'Their was a spill.' }];
+  const badChunk = g.buildChunks(bad)[0];
+  const badIssues = g.issuesFromMatches(badChunk, [their]);
+  assert.equal(badIssues.length, 1);
+  assert.equal(badIssues[0].kind, 'grammar');
 }
 
 // Domain vocabulary is not flagged.
@@ -106,6 +129,29 @@ assert.doesNotMatch(sql, /\bdrop\s+(table|trigger|function)|\bdelete\s+from/i, '
 const route = fs.readFileSync(new URL('../app/api/investigation-text-gate/route.js', import.meta.url), 'utf8');
 assert.match(route, /if \(result\.status === 'pass'\) \{\s*Object\.assign\(row, \{\s*passed_hash/);
 assert.match(route, /isInvestigator\(authData\.user\)/);
+assert.match(route, /requireAdmin\(request, supabase, \{ allowCompanyAdmin: true \}\)/);
+assert.match(route, /dictionary migration not applied/);
+assert.match(route, /inv_custom_dictionary/);
+
+const dictFile = fs.readdirSync(dir).find(f => /_59_inv_custom_dictionary\.sql$/.test(f));
+assert.equal(dictFile, '20261013124236_sql_2026_10_13_59_inv_custom_dictionary.sql');
+const dictSql = fs.readFileSync(new URL(dictFile, dir), 'utf8');
+assert.match(dictSql, /enable row level security/);
+assert.match(dictSql, /revoke all on table public\.inv_custom_dictionary from public, anon, authenticated/);
+assert.match(dictSql, /grant select, insert on table public\.inv_custom_dictionary to service_role/);
+assert.match(dictSql, /'Ched'/);
+assert.match(dictSql, /'Isaac'/);
+assert.match(dictSql, /brian@slpalaska\.com/);
+assert.doesNotMatch(dictSql, /\bdrop\s+(table|trigger|function)|\bdelete\s+from/i);
+assert.doesNotMatch(dictSql, /on delete cascade/i);
+assert.match(dictSql, /create or replace function public\.inv_report_text_gate/);
+
+const ui = fs.readFileSync(new URL('../app/components/ReportTextGate.js', import.meta.url), 'utf8');
+assert.match(ui, /data-testid="spell-add"/);
+assert.match(ui, /Add to dictionary/);
+assert.match(ui, /data-testid="spell-ignore"/);
+assert.match(ui, /'Ignore'/);
+assert.doesNotMatch(ui, /Keep — it/);
 
 if (process.env.LT_LIVE) {
   const live = await g.runTextGate([{ key: 'bad', text: 'Their was no pump at teh bay.' }, { key: 'ok', text: 'The pump was not at the bay.' }]);
