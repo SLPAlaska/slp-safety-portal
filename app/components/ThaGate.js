@@ -4,9 +4,10 @@
 // This panel attaches a THA PDF, records a No-THA reason, or (Brian only)
 // calls inv_gate_override for gate key THA, which logs the override.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   THA_COPY,
+  THA_DATE_WINDOWS,
   THA_GATE_KEY,
   THA_GATE_OWNER,
   NO_THA_DETAIL_MIN,
@@ -14,8 +15,10 @@ import {
   callThaApi,
   detailRequired,
   evaluateThaGate,
+  filterThaBrowse,
   isThaPdfEvidence,
   reasonLabel,
+  thaTimeLabel,
 } from '@/lib/thaGate';
 
 const C = {
@@ -35,7 +38,9 @@ export function ThaGatePanel({
   copy = THA_COPY.en,
   gate,
   suggestions = [],
-  companyThas = [],
+  browse = [],
+  dateWindowDays = 1,
+  otherLocations = false,
   thaEvidence = [],
   noTha = { reason: '', detail: '' },
   isBrian = false,
@@ -47,10 +52,15 @@ export function ThaGatePanel({
   onClearNoTha,
   onOverride,
   onRevoke,
+  onBrowseChange,
+  onPreview,
 }) {
-  const [picked, setPicked] = useState('');
   const [reason, setReason] = useState(noTha.reason || '');
   const [detail, setDetail] = useState(noTha.detail || '');
+  const [noThaOn, setNoThaOn] = useState(!!(noTha.reason || gate?.via === 'no_tha'));
+  const [filter, setFilter] = useState('');
+  const [showBrowse, setShowBrowse] = useState(false);
+  const [preview, setPreview] = useState(null);
   const [overrideOn, setOverrideOn] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
   const passed = gate?.status === 'pass';
@@ -67,7 +77,18 @@ export function ThaGatePanel({
   useEffect(() => {
     setReason(noTha.reason || '');
     setDetail(noTha.detail || '');
-  }, [noTha.reason, noTha.detail]);
+    if (noTha.reason || gate?.via === 'no_tha') setNoThaOn(true);
+  }, [noTha.reason, noTha.detail, gate?.via]);
+
+  const browseOpen = suggestions.length === 0 || showBrowse;
+  const visibleBrowse = filterThaBrowse(browse, filter);
+
+  async function openPreview(tha) {
+    setPreview(tha);
+    if (!onPreview) return;
+    const extra = await onPreview(tha.tha_number);
+    if (extra) setPreview((cur) => (cur && cur.tha_number === tha.tha_number ? { ...cur, ...extra } : cur));
+  }
 
   return (
     <section id="qg-tha" data-testid="tha-gate-panel" style={{
@@ -96,31 +117,64 @@ export function ThaGatePanel({
       <div style={{ marginTop: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.suggestHeading}</div>
         <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{copy.suggestHint}</div>
-        {suggestions.length === 0 && <div style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>{copy.noneSuggested}</div>}
+        {suggestions.length === 0 && <div data-testid="tha-none-suggested" style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>{copy.noneSuggested}</div>}
         {suggestions.map((tha) => (
-          <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} />
+          <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} onView={openPreview} />
         ))}
+        {suggestions.length > 0 && !showBrowse && (
+          <button type="button" data-testid="tha-show-browse" onClick={() => setShowBrowse(true)} style={{ ...btn, marginTop: 8 }}>
+            {copy.showBrowse}
+          </button>
+        )}
       </div>
 
-      <div style={{ marginTop: 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.pickHeading}</div>
-        {companyThas.length === 0 && suggestions.length === 0 && (
-          <div style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>{copy.noneCompany}</div>
-        )}
-        {companyThas.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-            <select data-testid="tha-company-pick" value={picked} onChange={(e) => setPicked(e.target.value)} style={inputStyle}>
-              <option value="">{copy.pickPlaceholder}</option>
-              {companyThas.map((tha) => (
-                <option key={tha.tha_number} value={tha.tha_number}>
-                  {tha.tha_number} · {tha.date || ''} · {tha.location || ''} · {tha.crew_lead || ''}
-                </option>
-              ))}
-            </select>
-            <button type="button" disabled={!picked || busy} onClick={() => onAttach?.(picked)} style={{ ...btnDark, opacity: !picked || busy ? 0.5 : 1 }}>{copy.attach}</button>
+      {browseOpen && (
+        <div style={{ marginTop: 14 }} data-testid="tha-browse-list">
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.browseHeading}</div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{copy.browseHint}</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
+              {copy.dateWindowLabel}{' '}
+              <select
+                data-testid="tha-date-window"
+                value={dateWindowDays}
+                onChange={(e) => onBrowseChange?.({ days: Number(e.target.value), otherLocations })}
+                style={{ ...inputStyle, width: 'auto', marginLeft: 4 }}
+              >
+                {THA_DATE_WINDOWS.map((days) => (
+                  <option key={days} value={days}>± {days} day{days === 1 ? '' : 's'}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ fontSize: 13, color: C.text, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                data-testid="tha-other-locations"
+                type="checkbox"
+                checked={otherLocations}
+                onChange={(e) => onBrowseChange?.({ days: dateWindowDays, otherLocations: e.target.checked })}
+              />
+              {copy.otherLocations}
+            </label>
           </div>
-        )}
-      </div>
+          <input
+            data-testid="tha-browse-filter"
+            type="search"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={copy.filterPlaceholder}
+            aria-label={copy.filterPlaceholder}
+            style={{ ...inputStyle, marginTop: 8 }}
+          />
+          {visibleBrowse.length === 0 && (
+            <div data-testid="tha-none-browse" style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>
+              {copy.noneBrowse}
+            </div>
+          )}
+          {visibleBrowse.map((tha) => (
+            <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} onView={openPreview} />
+          ))}
+        </div>
+      )}
 
       <div style={{ marginTop: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.uploadHeading}</div>
@@ -139,43 +193,66 @@ export function ThaGatePanel({
       </div>
 
       <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.noThaHeading}</div>
-        <label style={{ display: 'block', marginTop: 8, fontSize: 12, fontWeight: 700, color: C.muted }} htmlFor="tha-no-reason">Reason</label>
-        <select id="tha-no-reason" data-testid="tha-reason" value={reason} onChange={(e) => setReason(e.target.value)} style={{ ...inputStyle, marginTop: 4 }}>
-          <option value="">Choose…</option>
-          {NO_THA_REASONS.map((code) => <option key={code} value={code}>{copy.reasons[code]}</option>)}
-        </select>
-        {needsDetail && (
-          <div style={{ marginTop: 8 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }} htmlFor="tha-no-detail">{copy.detailLabel}</label>
-            <textarea
-              id="tha-no-detail"
-              data-testid="tha-reason-detail"
-              rows={3}
-              value={detail}
-              onChange={(e) => setDetail(e.target.value)}
-              style={{ ...inputStyle, marginTop: 4 }}
-            />
-            <div style={{ fontSize: 12, color: detailOk ? C.muted : C.red, marginTop: 4 }}>
-              {copy.detailHint} {detail.trim().length}/{NO_THA_DETAIL_MIN}
+        <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 14, fontWeight: 800, color: C.text }}>
+          <input
+            data-testid="tha-no-tha"
+            type="checkbox"
+            checked={noThaOn}
+            onChange={(e) => {
+              const on = e.target.checked;
+              setNoThaOn(on);
+              if (!on && gate?.via === 'no_tha') onClearNoTha?.();
+            }}
+          />
+          <span>
+            {copy.noThaHeading}
+            <span style={{ display: 'block', fontWeight: 500, fontSize: 12, color: C.muted, marginTop: 2 }}>{copy.noThaHint}</span>
+          </span>
+        </label>
+        {noThaOn && (
+          <div style={{ marginTop: 10 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: C.muted }} htmlFor="tha-no-reason">{copy.justificationLabel}</label>
+            <select id="tha-no-reason" data-testid="tha-reason" value={reason} onChange={(e) => setReason(e.target.value)} style={{ ...inputStyle, marginTop: 4 }}>
+              <option value="">Choose…</option>
+              {NO_THA_REASONS.map((code) => <option key={code} value={code}>{copy.reasons[code]}</option>)}
+            </select>
+            {needsDetail && (
+              <div style={{ marginTop: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }} htmlFor="tha-no-detail">{copy.detailLabel}</label>
+                <textarea
+                  id="tha-no-detail"
+                  data-testid="tha-reason-detail"
+                  rows={3}
+                  value={detail}
+                  onChange={(e) => setDetail(e.target.value)}
+                  style={{ ...inputStyle, marginTop: 4 }}
+                />
+                <div style={{ fontSize: 12, color: detailOk ? C.muted : C.red, marginTop: 4 }}>
+                  {copy.detailHint} {detail.trim().length}/{NO_THA_DETAIL_MIN}
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              <button
+                type="button"
+                data-testid="tha-save-no-tha"
+                disabled={busy || !reason || !detailOk}
+                onClick={() => onSaveNoTha?.({ reason, detail: detail.trim() })}
+                style={{ ...btnDark, opacity: busy || !reason || !detailOk ? 0.5 : 1 }}
+              >
+                {busy ? 'Saving…' : copy.saveNoTha}
+              </button>
+              {gate?.via === 'no_tha' && (
+                <button type="button" disabled={busy} onClick={() => onClearNoTha?.()} style={btn}>{copy.clearNoTha}</button>
+              )}
             </div>
           </div>
         )}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-          <button
-            type="button"
-            data-testid="tha-save-no-tha"
-            disabled={busy || !reason || !detailOk}
-            onClick={() => onSaveNoTha?.({ reason, detail: detail.trim() })}
-            style={{ ...btnDark, opacity: busy || !reason || !detailOk ? 0.5 : 1 }}
-          >
-            {busy ? 'Saving…' : copy.saveNoTha}
-          </button>
-          {gate?.via === 'no_tha' && (
-            <button type="button" disabled={busy} onClick={() => onClearNoTha?.()} style={btn}>{copy.clearNoTha}</button>
-          )}
-        </div>
       </div>
+
+      {preview && (
+        <ThaPreview copy={copy} tha={preview} onClose={() => setPreview(null)} onAttach={onAttach} busy={busy} />
+      )}
 
       {isBrian && gate?.status === 'block' && (
         <div style={{ marginTop: 12 }}>
@@ -208,18 +285,62 @@ export function ThaGatePanel({
   );
 }
 
-function ThaRow({ tha, copy, busy, onAttach }) {
+function ThaRow({ tha, copy, busy, onAttach, onView }) {
+  const time = thaTimeLabel(tha.created_at);
+  const crew = (tha.crew_names || []).filter(Boolean).join(', ');
+  const site = [tha.location, tha.work_area].filter(Boolean).join(' · ');
   const why = [tha.match_location ? copy.whyLocation : null, tha.match_crew ? copy.whyCrew : null].filter(Boolean).join(', ');
   return (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', border: `1px solid ${C.border}`, borderRadius: 8, padding: 10, marginTop: 8 }}>
-      <div style={{ fontSize: 13 }}>
-        <strong>{tha.tha_number}</strong>
-        <div style={{ color: C.muted }}>
-          {tha.date || '—'} · {tha.location || '—'} · {tha.crew_lead || '—'}
-          {why ? ` · matches ${why}` : ''}
+    <div data-testid="tha-row" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', border: `1px solid ${C.border}`, borderRadius: 8, padding: 10, marginTop: 8 }}>
+      <div style={{ fontSize: 13, flex: '1 1 220px', lineHeight: 1.45 }}>
+        <div><strong>{copy.when}:</strong> {tha.date || '—'}{time ? ` · ${time}` : ''}</div>
+        <div><strong>{copy.site}:</strong> {site || '—'}</div>
+        <div><strong>{copy.job}:</strong> {tha.task_description || '—'}</div>
+        <div><strong>{copy.crew}:</strong> {crew || '—'}</div>
+        <div><strong>{copy.supervisor}:</strong> {tha.crew_lead || '—'}</div>
+        {why ? <div style={{ color: C.muted }}>matches {why}</div> : null}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" data-testid="tha-view" onClick={() => onView?.(tha)} style={btn}>{copy.view}</button>
+        <button type="button" data-testid="tha-attach" disabled={busy} onClick={() => onAttach?.(tha.tha_number)} style={{ ...btnDark, opacity: busy ? 0.5 : 1 }}>{copy.attach}</button>
+      </div>
+    </div>
+  );
+}
+
+function ThaPreview({ copy, tha, onClose, onAttach, busy }) {
+  const time = thaTimeLabel(tha.created_at);
+  const site = [tha.location, tha.work_area].filter(Boolean).join(' · ');
+  const names = (tha.crew || tha.crew_names || []).map((c) => (typeof c === 'string' ? c : c?.name)).filter(Boolean);
+  return (
+    <div role="dialog" aria-label={copy.previewTitle} data-testid="tha-preview" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+      <div style={{ background: 'white', borderRadius: 12, maxWidth: 680, width: '100%', maxHeight: '90vh', overflow: 'auto', padding: 16, fontFamily: 'system-ui, sans-serif' }}>
+        <h3 style={{ margin: '0 0 8px', color: C.navy }}>{copy.previewTitle}</h3>
+        <div style={{ fontSize: 14, lineHeight: 1.5 }}>
+          <div><strong>{copy.when}:</strong> {tha.date || '—'}{time ? ` · ${time}` : ''}</div>
+          <div><strong>{copy.site}:</strong> {site || '—'}</div>
+          <div><strong>{copy.job}:</strong> {tha.task_description || '—'}</div>
+          <div><strong>{copy.supervisor}:</strong> {tha.crew_lead || '—'}</div>
+          <div><strong>{copy.crew}:</strong> {names.join(', ') || '—'}</div>
+        </div>
+        {(tha.steps || []).length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ fontWeight: 800, fontSize: 13 }}>{copy.steps}</div>
+            <ol style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 13 }}>
+              {tha.steps.map((step) => (
+                <li key={step.step_number} style={{ marginBottom: 6 }}>
+                  {step.task_step || '—'}
+                  {step.potential_hazards ? ` — ${step.potential_hazards}` : ''}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14 }}>
+          <button type="button" data-testid="tha-preview-close" onClick={onClose} style={btn}>{copy.closePreview}</button>
+          <button type="button" data-testid="tha-preview-attach" disabled={busy} onClick={() => onAttach?.(tha.tha_number)} style={{ ...btnDark, opacity: busy ? 0.5 : 1 }}>{copy.attach}</button>
         </div>
       </div>
-      <button type="button" disabled={busy} onClick={() => onAttach?.(tha.tha_number)} style={btnDark}>{copy.attach}</button>
     </div>
   );
 }
@@ -239,6 +360,8 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
   const [remote, setRemote] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [browseOpts, setBrowseOpts] = useState({ days: 1, otherLocations: false });
+  const browseRef = useRef(browseOpts);
   const isBrian = String(userEmail || '').toLowerCase() === THA_GATE_OWNER;
   const localEvidence = (evidence || []).filter(isThaPdfEvidence);
   const localGate = evaluateThaGate({
@@ -250,11 +373,32 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
 
   async function refresh() {
     if (!incident?.id) return;
-    const res = await callThaApi(supabase, { action: 'context', incidentId: incident.id });
+    const { days, otherLocations } = browseRef.current;
+    const res = await callThaApi(supabase, {
+      action: 'context',
+      incidentId: incident.id,
+      dateWindowDays: days,
+      otherLocations,
+    });
     if (res.ok) {
       setRemote(res);
       setError('');
     }
+  }
+
+  function onBrowseChange(next) {
+    browseRef.current = next;
+    setBrowseOpts(next);
+    refresh();
+  }
+
+  async function onPreview(thaNumber) {
+    const res = await callThaApi(supabase, { action: 'preview', incidentId: incident.id, thaNumber });
+    if (!res.ok) {
+      setError(res.error || 'Could not open that THA.');
+      return null;
+    }
+    return res.tha ? { ...res.tha, steps: res.steps || [], crew: res.crew || [] } : null;
   }
 
   useEffect(() => {
@@ -333,7 +477,9 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
       copy={copy}
       gate={gate}
       suggestions={remote?.suggestions || []}
-      companyThas={remote?.companyThas || []}
+      browse={remote?.browse || []}
+      dateWindowDays={browseOpts.days}
+      otherLocations={browseOpts.otherLocations}
       thaEvidence={remote?.evidence?.length ? remote.evidence : localEvidence}
       noTha={{ reason: incident?.no_tha_reason || '', detail: incident?.no_tha_reason_detail || '' }}
       isBrian={isBrian}
@@ -345,6 +491,8 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
       onClearNoTha={() => run('clear_no_tha')}
       onOverride={onOverride}
       onRevoke={onRevoke}
+      onBrowseChange={onBrowseChange}
+      onPreview={onPreview}
     />
   );
 }

@@ -40,23 +40,39 @@ export const THA_COPY = {
     checkFailed: 'The THA check could not run. Completion, approval, and export stay locked until it does.',
     suggestHeading: 'THAs that match this incident',
     suggestHint: 'Same company, within a day of the incident, and the same location or crew.',
-    pickHeading: 'Other THAs for this company',
-    pickPlaceholder: 'Choose a THA…',
+    browseHeading: 'THAs for this company',
+    browseHint: 'Incident date, plus or minus one day, at this location. Widen the dates or include other locations if the right THA is not here.',
+    showBrowse: 'None of these — browse the company’s THAs',
+    dateWindowLabel: 'Date range',
+    otherLocations: 'Include other locations',
+    filterPlaceholder: 'Filter by crew, job, or location',
+    view: 'View',
+    previewTitle: 'THA preview',
+    closePreview: 'Close',
+    supervisor: 'Supervisor',
+    crew: 'Crew',
+    job: 'Job',
+    site: 'Location',
+    when: 'When',
+    steps: 'Task steps',
     uploadHeading: 'Or upload a THA PDF',
     uploadHint: 'PDF only. It is stored with the other evidence on this investigation.',
-    noThaHeading: 'There is no THA',
+    noThaHeading: 'No THA',
+    noThaHint: 'Check this only when none of the THAs above is the one for this job.',
+    justificationLabel: 'Justification',
     detailLabel: 'Explain (at least 30 characters)',
     detailHint: 'Required when the reason is “lost or not found” or “Other”.',
-    saveNoTha: 'Save No-THA reason',
+    saveNoTha: 'Save justification',
     clearNoTha: 'Remove this and attach a THA instead',
-    attach: 'Attach PDF',
+    attach: 'Attach',
     upload: 'Upload PDF',
     override: 'Override (Brian only)',
     overrideHint: 'Override this check? Your reason is logged and prints on the reviewer page.',
     revoke: 'Remove override',
     whyLocation: 'location',
     whyCrew: 'crew',
-    noneSuggested: 'No THA matched the company, the date (within a day), and the location or crew. Pick one from the company list, or upload the PDF.',
+    noneSuggested: 'No THA matched the company, the date (within a day), and the location or crew.',
+    noneBrowse: 'No THAs in this date range and location. Widen the dates, include other locations, or record why there is not one.',
     noneCompany: 'No THAs are on file for this company. Upload the PDF, or record why there is not one.',
     reasons: {
       office_shop_only: 'Office or shop only — no field work',
@@ -76,23 +92,39 @@ export const THA_COPY = {
     checkFailed: 'No se pudo hacer la verificación del ATS. Completar, aprobar y exportar siguen bloqueados hasta que se pueda.',
     suggestHeading: 'ATS que coinciden con este incidente',
     suggestHint: 'La misma empresa, a un día del incidente, y el mismo lugar o la misma cuadrilla.',
-    pickHeading: 'Otros ATS de esta empresa',
-    pickPlaceholder: 'Elija un ATS…',
+    browseHeading: 'ATS de esta empresa',
+    browseHint: 'Fecha del incidente, más o menos un día, en este lugar. Amplíe las fechas o incluya otros lugares si el ATS correcto no está aquí.',
+    showBrowse: 'Ninguno de estos — ver los ATS de la empresa',
+    dateWindowLabel: 'Rango de fechas',
+    otherLocations: 'Incluir otros lugares',
+    filterPlaceholder: 'Filtrar por cuadrilla, trabajo o lugar',
+    view: 'Ver',
+    previewTitle: 'Vista del ATS',
+    closePreview: 'Cerrar',
+    supervisor: 'Supervisor',
+    crew: 'Cuadrilla',
+    job: 'Trabajo',
+    site: 'Lugar',
+    when: 'Cuándo',
+    steps: 'Pasos de la tarea',
     uploadHeading: 'O suba un PDF del ATS',
     uploadHint: 'Solo PDF. Se guarda con la otra evidencia de esta investigación.',
     noThaHeading: 'No hay ATS',
+    noThaHint: 'Márquelo solo cuando ninguno de los ATS de arriba sea el de este trabajo.',
+    justificationLabel: 'Justificación',
     detailLabel: 'Explique (al menos 30 caracteres)',
     detailHint: 'Obligatorio si el motivo es “perdido o no se encontró” u “Otro”.',
-    saveNoTha: 'Guardar motivo de sin ATS',
+    saveNoTha: 'Guardar justificación',
     clearNoTha: 'Quitar esto y adjuntar un ATS',
-    attach: 'Adjuntar PDF',
+    attach: 'Adjuntar',
     upload: 'Subir PDF',
     override: 'Anular (solo Brian)',
     overrideHint: '¿Anular esta verificación? Su motivo queda registrado y se imprime en la página del revisor.',
     revoke: 'Quitar la anulación',
     whyLocation: 'lugar',
     whyCrew: 'cuadrilla',
-    noneSuggested: 'Ningún ATS coincidió con la empresa, la fecha (un día) y el lugar o la cuadrilla. Elija uno de la lista de la empresa, o suba el PDF.',
+    noneSuggested: 'Ningún ATS coincidió con la empresa, la fecha (un día) y el lugar o la cuadrilla.',
+    noneBrowse: 'No hay ATS en este rango de fechas y lugar. Amplíe las fechas, incluya otros lugares, o registre por qué no hay uno.',
     noneCompany: 'No hay ATS de esta empresa. Suba el PDF, o registre por qué no hay uno.',
     reasons: {
       office_shop_only: 'Solo oficina o taller — no hubo trabajo de campo',
@@ -201,6 +233,86 @@ export function suggestThas(incident, thas, crewByTha = {}) {
     || Math.abs(a.day_delta) - Math.abs(b.day_delta)
     || String(a.tha_number).localeCompare(String(b.tha_number)));
   return out;
+}
+
+/** Windows the browse list can be widened to. Default is the incident date ±1 day. */
+export const THA_DATE_WINDOWS = [1, 3, 7, 14, 30];
+
+export function clampDateWindow(days) {
+  const n = Number(days);
+  return THA_DATE_WINDOWS.includes(n) ? n : 1;
+}
+
+/** Clock time in Alaska. THA rows store a date plus created_at; there is no separate time column. */
+export function thaTimeLabel(createdAt) {
+  if (!createdAt) return '';
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Anchorage',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(d);
+}
+
+/**
+ * Company THAs in a date window around the incident.
+ * otherLocations false keeps rows whose location or work area overlaps the incident site.
+ * An incident with no site is not location-filtered.
+ */
+export function browseThas(incident, thas, { days = 1, otherLocations = false } = {}) {
+  const windowDays = clampDateWindow(days);
+  const incidentCompany = incident?.company_name || incident?.company;
+  const incidentPlace = incident?.location_name || incident?.location;
+  const out = [];
+  for (const tha of thas || []) {
+    if (!companiesMatch(incidentCompany, tha?.company)) continue;
+    const delta = daysBetween(incident?.incident_date, tha?.date);
+    if (delta == null || Math.abs(delta) > windowDays) continue;
+    if (!otherLocations && incidentPlace) {
+      const loc = placesOverlap(incidentPlace, tha?.location) || placesOverlap(incidentPlace, tha?.work_area);
+      if (!loc) continue;
+    }
+    out.push({ ...tha, day_delta: delta });
+  }
+  out.sort((a, b) =>
+    String(b.date || '').localeCompare(String(a.date || ''))
+    || String(b.created_at || '').localeCompare(String(a.created_at || ''))
+    || String(a.tha_number).localeCompare(String(b.tha_number)));
+  return out;
+}
+
+/**
+ * Free-text filter for the browse list. Matches crew, supervisor, job, and location.
+ * The THA number is not searchable — crews do not know it.
+ */
+export function filterThaBrowse(rows, query) {
+  const q = normPlace(query);
+  if (!q) return rows || [];
+  const tokens = q.split(' ').filter(Boolean);
+  return (rows || []).filter((tha) => {
+    const blob = normPlace([
+      tha?.location,
+      tha?.work_area,
+      tha?.task_description,
+      tha?.crew_lead,
+      ...(tha?.crew_names || []),
+    ].filter(Boolean).join(' '));
+    return tokens.every((tok) => blob.includes(tok));
+  });
+}
+
+/** Visible row text. Deliberately omits the THA number. */
+export function thaRowText(tha) {
+  return [
+    tha?.date,
+    thaTimeLabel(tha?.created_at),
+    tha?.location,
+    tha?.work_area,
+    tha?.task_description,
+    tha?.crew_lead,
+    ...(tha?.crew_names || []),
+  ].filter(Boolean).join(' · ');
 }
 
 export function looksLikePdf(fileName, fileUrl) {

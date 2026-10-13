@@ -5,7 +5,8 @@
 // public.inv_tha_gate / the incidents trigger (SQL 58). This route only
 // attaches the PDF or records the No-THA reason, for a signed-in investigator.
 //
-//   { action: 'context', incidentId }
+//   { action: 'context', incidentId, dateWindowDays?, otherLocations? }
+//   { action: 'preview', incidentId, thaNumber }
 //   { action: 'attach',  incidentId, thaNumber }
 //   { action: 'upload',  incidentId, fileName, pdfBase64 }
 //   { action: 'no_tha',  incidentId, reason, detail }
@@ -17,8 +18,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { isInvestigator } from '@/lib/investigatorAuth';
+import { pageAll, pageAllIn } from '@/lib/supabasePage';
 import { buildThaPdf } from '@/lib/thaPdf';
 import {
+  browseThas,
+  clampDateWindow,
   companiesMatch,
   evaluateThaGate,
   isThaPdfEvidence,
@@ -34,7 +38,7 @@ export const dynamic = 'force-dynamic';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const THA_NUMBER_RE = /^[A-Za-z0-9][A-Za-z0-9-]{2,60}$/;
 const PDF_MAX = 8 * 1024 * 1024;
-const THA_COLS = 'tha_number, company, location, work_area, crew_lead, date, status, pdf_url';
+const THA_COLS = 'tha_number, company, location, work_area, crew_lead, date, created_at, status, pdf_url, task_description';
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -93,7 +97,10 @@ function publicTha(row) {
     location: row.location,
     work_area: row.work_area,
     crew_lead: row.crew_lead,
+    crew_names: row.crew_names || [],
+    task_description: row.task_description || '',
     date: row.date,
+    created_at: row.created_at || null,
     status: row.status,
     has_pdf: !!row.pdf_url,
     match_location: row.match_location || false,
@@ -177,43 +184,70 @@ export async function POST(request) {
       const override = await loadOverride(supabase, incident.id);
       const gate = evaluateThaGate({ incident, evidence, override });
       const company = incident.company_name || incident.company || '';
+      const days = clampDateWindow(body?.dateWindowDays);
+      const otherLocations = body?.otherLocations === true;
       let suggestions = [];
-      let companyThas = [];
+      let browse = [];
       if (company) {
-        const start = shiftIsoDate(incident.incident_date, -1);
-        const end = shiftIsoDate(incident.incident_date, 1);
-        const windowQuery = start && end
-          ? supabase.from('tha_assessments').select(THA_COLS).gte('date', start).lte('date', end).limit(400)
-          : Promise.resolve({ data: [], error: null });
-        const [windowR, companyR] = await Promise.all([
-          windowQuery,
-          supabase.from('tha_assessments').select(THA_COLS).ilike('company', company).order('date', { ascending: false }).limit(100),
-        ]);
+        const start = shiftIsoDate(incident.incident_date, -days);
+        const end = shiftIsoDate(incident.incident_date, days);
+        const windowR = start && end
+          ? await pageAll(() => supabase.from('tha_assessments').select(THA_COLS).gte('date', start).lte('date', end))
+          : { data: [], error: null };
         if (windowR.error) throw windowR.error;
-        if (companyR.error) throw companyR.error;
         const windowRows = (windowR.data || []).filter((row) => companiesMatch(company, row.company));
         const numbers = windowRows.map((row) => row.tha_number).filter(Boolean);
-        let crewByTha = {};
+        const crewByTha = {};
         if (numbers.length) {
-          const { data: crew, error: crewErr } = await supabase.from('tha_crew_signoff')
-            .select('tha_number, crew_member_name')
-            .in('tha_number', numbers);
+          const { data: crew, error: crewErr } = await pageAllIn(
+            supabase, 'tha_crew_signoff', 'tha_number, crew_member_name', 'tha_number', numbers,
+          );
           if (crewErr) throw crewErr;
-          crewByTha = {};
           for (const person of crew || []) {
             if (!crewByTha[person.tha_number]) crewByTha[person.tha_number] = [];
             if (person.crew_member_name) crewByTha[person.tha_number].push(person.crew_member_name);
           }
         }
-        suggestions = suggestThas(incident, windowRows, crewByTha).map(publicTha);
+        const withCrew = windowRows.map((row) => ({ ...row, crew_names: crewByTha[row.tha_number] || [] }));
+        suggestions = suggestThas(incident, withCrew).map(publicTha);
         const seen = new Set(suggestions.map((row) => row.tha_number));
-        companyThas = (companyR.data || [])
-          .filter((row) => companiesMatch(company, row.company) && !seen.has(row.tha_number))
+        browse = browseThas(incident, withCrew, { days, otherLocations })
+          .filter((row) => !seen.has(row.tha_number))
           .map(publicTha);
       }
-      return reply({ gate, suggestions, companyThas, evidence: evidence.filter(isThaPdfEvidence).map((row) => ({
-        id: row.id, file_name: row.file_name, file_url: row.file_url, source_tha_number: row.source_tha_number, description: row.description,
-      })) });
+      return reply({
+        gate,
+        suggestions,
+        browse,
+        dateWindowDays: days,
+        otherLocations,
+        evidence: evidence.filter(isThaPdfEvidence).map((row) => ({
+          id: row.id, file_name: row.file_name, file_url: row.file_url, source_tha_number: row.source_tha_number, description: row.description,
+        })),
+      });
+    }
+
+    if (action === 'preview') {
+      const thaNumber = String(body?.thaNumber || '').trim();
+      if (!THA_NUMBER_RE.test(thaNumber)) return reply({ error: 'That THA could not be opened.' }, 400);
+      const { data: tha, error: thaErr } = await supabase.from('tha_assessments').select(THA_COLS).eq('tha_number', thaNumber).maybeSingle();
+      if (thaErr) throw thaErr;
+      if (!tha) return reply({ error: 'THA not found.' }, 404);
+      if (!companiesMatch(incident.company_name || incident.company, tha.company)) {
+        return reply({ error: 'That THA belongs to a different company than this incident.' }, 403);
+      }
+      const [{ data: steps, error: stepErr }, { data: crew, error: crewErr }] = await Promise.all([
+        supabase.from('tha_task_steps').select('step_number, task_step, potential_hazards, recommended_actions').eq('tha_number', thaNumber).order('step_number'),
+        supabase.from('tha_crew_signoff').select('crew_member_name, company').eq('tha_number', thaNumber),
+      ]);
+      if (stepErr) throw stepErr;
+      if (crewErr) throw crewErr;
+      const crewNames = (crew || []).map((person) => person.crew_member_name).filter(Boolean);
+      return reply({
+        tha: publicTha({ ...tha, crew_names: crewNames }),
+        steps: steps || [],
+        crew: (crew || []).map((person) => ({ name: person.crew_member_name, company: person.company })),
+      });
     }
 
     if (action === 'attach') {

@@ -11,10 +11,13 @@ import {
   THA_COPY,
   THA_GATE_OWNER,
   NO_THA_REASONS,
+  browseThas,
   evaluateThaGate,
+  filterThaBrowse,
   isBrianThaOverride,
   isThaPdfEvidence,
   suggestThas,
+  thaRowText,
   validateNoTha,
 } from '../app/lib/thaGate.js';
 import { buildThaPdf } from '../app/lib/thaPdf.js';
@@ -105,6 +108,29 @@ const thas = [
 ];
 assert.deepEqual(suggestThas(incident, thas).map((t) => t.tha_number), ['THA-2', 'THA-1']);
 
+// Browse list: company + incident date ±1 at this location. Widen dates or locations separately.
+// The free-text filter matches crew, job, and location, never the THA number.
+const browseRows = [
+  { tha_number: 'THA-1', company: 'MagTec LLC', date: '2026-10-11', created_at: '2026-10-11T18:00:00Z', location: 'Pad A-12', work_area: 'Wellhead', task_description: 'Change the glycol filter', crew_lead: 'Dana Cole', crew_names: ['Ched Isaac'] },
+  { tha_number: 'THA-2', company: 'MagTec', date: '2026-10-12', location: 'Shop', work_area: 'Bay 2', task_description: 'Shop inventory', crew_lead: 'Ched Isaac', crew_names: [] },
+  { tha_number: 'THA-5', company: 'MagTec', date: '2026-10-12', location: 'Far Away Camp', task_description: 'Camp move', crew_lead: 'Nobody Relevant', crew_names: ['Pat Lee'] },
+  { tha_number: 'THA-4', company: 'MagTec', date: '2026-10-09', location: 'Pad A-12', task_description: 'Earlier job', crew_lead: 'Ched Isaac', crew_names: [] },
+  { tha_number: 'THA-3', company: 'Other Co', date: '2026-10-12', location: 'Pad A-12', task_description: 'Not our company', crew_lead: 'Ched Isaac', crew_names: [] },
+];
+assert.deepEqual(browseThas(incident, browseRows).map((t) => t.tha_number), ['THA-1']);
+assert.deepEqual(browseThas(incident, browseRows, { otherLocations: true }).map((t) => t.tha_number).sort(), ['THA-1', 'THA-2', 'THA-5']);
+assert.deepEqual(browseThas(incident, browseRows, { days: 7 }).map((t) => t.tha_number).sort(), ['THA-1', 'THA-4']);
+assert.deepEqual(browseThas(incident, browseRows, { days: 99 }).map((t) => t.tha_number), ['THA-1'], 'unknown windows stay at ±1 day');
+const sameDay = browseThas(incident, browseRows, { otherLocations: true });
+assert.deepEqual(filterThaBrowse(sameDay, 'isaac').map((t) => t.tha_number), ['THA-2', 'THA-1']);
+assert.deepEqual(filterThaBrowse(sameDay, 'glycol').map((t) => t.tha_number), ['THA-1']);
+assert.deepEqual(filterThaBrowse(sameDay, 'pad a-12').map((t) => t.tha_number), ['THA-1']);
+assert.deepEqual(filterThaBrowse(sameDay, 'THA-1'), [], 'the THA number is not a search field');
+assert.equal(thaRowText(browseRows[0]).includes('THA-1'), false);
+assert.match(thaRowText(browseRows[0]), /Pad A-12/);
+assert.match(thaRowText(browseRows[0]), /Ched Isaac/);
+assert.match(thaRowText(browseRows[0]), /glycol filter/);
+
 // English and Spanish copy cover the same keys and every reason.
 function keysOf(obj, prefix = '') {
   return Object.entries(obj).flatMap(([k, v]) => (
@@ -185,5 +211,22 @@ for (const g of ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9', 'G10', 'G
 }
 assert.match(s54, /Quality gate overridden/);
 assert.match(s54, /investigation_activity_log/);
+
+// The attach panel browses by date, place, job, and crew. It does not ask for a THA number.
+const panel = readFileSync(new URL('../app/components/ThaGate.js', import.meta.url), 'utf8');
+const route = readFileSync(new URL('../app/api/investigation-tha/route.js', import.meta.url), 'utf8');
+assert.match(panel, /data-testid="tha-browse-list"/);
+assert.match(panel, /data-testid="tha-browse-filter"/);
+assert.match(panel, /data-testid="tha-date-window"/);
+assert.match(panel, /data-testid="tha-other-locations"/);
+assert.match(panel, /data-testid="tha-view"/);
+assert.match(panel, /data-testid="tha-attach"/);
+assert.match(panel, /data-testid="tha-no-tha"/);
+assert.match(panel, /type="checkbox"/);
+assert.doesNotMatch(panel, /tha-company-pick|pickPlaceholder|THA Number|placeholder="THA/);
+assert.match(route, /browseThas/);
+assert.match(route, /task_description/);
+assert.match(route, /action === 'preview'/);
+assert.doesNotMatch(route, /companyThas/);
 
 console.log('check:tha-gate: all checks passed');
