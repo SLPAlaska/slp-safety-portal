@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { thaGateDbMessage } from '@/lib/thaGate';
+import { qualityGateDbMessage } from '@/components/QualityGate';
 
 const supabase = createClient(
   'https://iypezirwdlqpptjpeeyf.supabase.co',
@@ -234,9 +236,11 @@ export default function InvestigationWorkbench({ params }) {
     if (error) {
       // Approved / Closed are refused by the database until the spelling &
       // grammar check passes on the current report text (inv_incidents_text_gate).
-      alert(/TEXT_GATE/.test(error.message || '')
-        ? 'Blocked: spelling & grammar must pass before an investigation can be ' + newStatus + '. Open it in the Investigation Workbench (Close It Out) to run the check and fix the flagged items.'
-        : 'Failed to update status: ' + error.message);
+      alert(thaGateDbMessage(error)
+        || qualityGateDbMessage(error)
+        || (/TEXT_GATE/.test(error.message || '')
+          ? 'Blocked: spelling & grammar must pass before an investigation can be ' + newStatus + '. Open it in the Investigation Workbench (Close It Out) to run the check and fix the flagged items.'
+          : 'Failed to update status: ' + error.message));
       return;
     }
     setIncident({ ...incident, status: newStatus });

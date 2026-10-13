@@ -34,11 +34,12 @@
 //   Blocking: misspellings (TYPOS), GRAMMAR, CONFUSED_WORDS, CASING.
 //   Not blocking: punctuation/comma advice, style, typography, redundancy,
 //   wordiness — LanguageTool opinions, not errors.
-//   A flagged word that is Capitalized, ALL CAPS or contains a digit is most
-//   likely a name, acronym or equipment ID: the investigator may mark it
-//   "Keep — it's a name/term" (stored per incident, audited). A lowercase
-//   misspelling must be fixed unless it is in DOMAIN_TERMS below. Grammar must
-//   be fixed (rephrase or apply a suggestion).
+//   A proper noun (Capitalized, ALL CAPS, or containing a digit) is never a
+//   hard block, including at the start of a sentence. Names already recorded
+//   on the investigation or in the company employee list are exempt, as are
+//   words in the company custom dictionary and words the investigator Ignored
+//   for this incident. Grammar that is not a dictionary or spelling miss still
+//   blocks.
 //
 // Pure module (no React, no Supabase) so scripts/check-investigation-text-gate.mjs
 // can test the shipped logic directly.
@@ -91,6 +92,20 @@ export function looksLikeNameOrTerm(word) {
   return /\d/.test(w) || /^[A-Z]/.test(w);
 }
 
+/**
+ * A proper noun: each word is Capitalized, ALL CAPS, or contains a digit.
+ * Sentence position does not matter. Spell check must not hard-block these.
+ */
+export function isProperNoun(word) {
+  const parts = String(word || '').trim().split(/[\s/]+/).filter(Boolean);
+  if (parts.length === 0) return false;
+  return parts.every(p => {
+    if (/\d/.test(p)) return true;
+    if (p.length > 1 && p === p.toUpperCase() && /[A-Z]/.test(p)) return true;
+    return /^[A-Z][A-Za-z0-9'’\-]*$/.test(p);
+  });
+}
+
 /** Every word in the people/company/place strings the report also prints. */
 export function wordsFromNames(names) {
   const out = new Set();
@@ -101,13 +116,15 @@ export function wordsFromNames(names) {
   return out;
 }
 
-/** Terms an investigator may "keep": name-like only, normalised, capped. */
+/**
+ * Words an investigator may Ignore for this incident, or Add to the dictionary.
+ * One token, normalised, capped. Phrases and punctuation are dropped.
+ */
 export function sanitizeAcceptedTerms(terms) {
   const out = new Set();
   for (const t of Array.isArray(terms) ? terms : []) {
     const s = String(t || '').trim().slice(0, 60);
     if (!s || !/^[A-Za-z0-9][A-Za-z0-9'’\-]*$/.test(s)) continue;
-    if (!looksLikeNameOrTerm(s)) continue;
     out.add(normWord(s));
     if (out.size >= 200) break;
   }
@@ -191,13 +208,19 @@ export function keepable(word, text, offset) {
   return /^[A-Z]/.test(w) && !atSentenceStart(text, offset);
 }
 
+function knownTerm(n, names, dictionary) {
+  return DOMAIN_TERMS.has(n) || names.has(n) || dictionary.has(n);
+}
+
 /**
  * Turn LanguageTool matches for one chunk into gate issues.
- * names: Set of normWord()s printed in the report's name fields (always accepted).
- * kept:  Set of normWord()s the investigator kept as names/terms (accepted only
- *        where the flagged word is keepable()).
+ * names: Set of normWord()s from investigation and employee name fields.
+ * kept:  Set of normWord()s the investigator chose to Ignore on this incident.
+ * dictionary: Set of normWord()s in the company custom dictionary.
+ * A spelling or dictionary miss on a proper noun never becomes an issue.
+ * Grammar that is not a spelling miss still blocks.
  */
-export function issuesFromMatches(chunk, matches, names = new Set(), kept = new Set()) {
+export function issuesFromMatches(chunk, matches, names = new Set(), kept = new Set(), dictionary = new Set()) {
   const issues = [];
   for (const m of matches || []) {
     if (!isBlockingMatch(m)) continue;
@@ -205,14 +228,13 @@ export function issuesFromMatches(chunk, matches, names = new Set(), kept = new 
     if (!seg) continue; // straddles the separator: not a real error in either field
     const word = chunk.text.slice(m.offset, m.offset + m.length);
     const spelling = isSpelling(m);
-    const dictionary = isDictionaryMatch(m);
-    const canKeep = dictionary && keepable(word, chunk.text, m.offset);
-    if (dictionary) {
+    const dictionaryMiss = isDictionaryMatch(m);
+    const canKeep = spelling && !isProperNoun(word);
+    if (dictionaryMiss || (spelling && isProperNoun(word))) {
       const n = normWord(word);
-      if (DOMAIN_TERMS.has(n) || names.has(n) || (canKeep && kept.has(n))) continue;
-      // Hyphenated / slashed compound where every part is known.
+      if (knownTerm(n, names, dictionary) || kept.has(n) || isProperNoun(word)) continue;
       const parts = n.split(/[-/]/).filter(Boolean);
-      if (parts.length > 1 && parts.every(p => DOMAIN_TERMS.has(p) || names.has(p))) continue;
+      if (parts.length > 1 && parts.every(p => knownTerm(p, names, dictionary) || kept.has(p) || isProperNoun(p))) continue;
     }
     issues.push({
       key: seg.key,
@@ -285,17 +307,18 @@ export async function checkChunk(chunk, {
  * Returns { status: 'pass' | 'fail' | 'unavailable', issues, reason }.
  * 'unavailable' is FAIL CLOSED: the caller must not approve or export.
  */
-export async function runTextGate(items, { names = [], accepted = [], ...opts } = {}) {
+export async function runTextGate(items, { names = [], accepted = [], dictionary = [], ...opts } = {}) {
   const live = (items || []).filter(i => typeof i?.text === 'string' && i.text.trim());
   if (live.length === 0) return { status: 'pass', issues: [] };
   const nameSet = wordsFromNames(names);
   const kept = new Set(accepted.map(normWord));
+  const dict = new Set((dictionary || []).map(normWord));
   const chunks = buildChunks(live);
   const issues = [];
   for (const chunk of chunks) {
     const r = await checkChunk(chunk, opts);
     if (!r.ok) return { status: 'unavailable', issues: [], reason: r.reason };
-    issues.push(...issuesFromMatches(chunk, r.matches, nameSet, kept));
+    issues.push(...issuesFromMatches(chunk, r.matches, nameSet, kept, dict));
   }
   return { status: issues.length ? 'fail' : 'pass', issues };
 }

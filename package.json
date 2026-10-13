@@ -18,6 +18,8 @@
     "check:tha-close": "node scripts/check-tha-close.mjs",
     "check:osha1904": "node scripts/check-osha1904.mjs",
     "check:quality-gate": "node scripts/check-quality-gate.mjs",
+    "check:tha-gate": "node scripts/check-tha-gate.mjs",
+    "check:investigation-nav": "node scripts/check-investigation-nav.mjs",
     "check:ca-access": "node scripts/check-ca-access.mjs"
   },
   "dependencies": {

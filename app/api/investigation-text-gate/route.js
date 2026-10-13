@@ -1,5 +1,5 @@
 // =====================================================================
-// POST /api/investigation-text-gate   { incidentId: <uuid>, keep?: [term] }
+// POST /api/investigation-text-gate   { incidentId: <uuid>, keep?: [term], add?: [word] }
 //
 // Spelling & grammar HARD GATE for the final investigation report.
 // See app/lib/investigationTextGate.js for the rules and
@@ -16,10 +16,15 @@
 //
 // Auth: signed-in investigator (app_metadata.role), verified server-side with
 // the service-role client — the same rule as /api/spellcheck.
+// Ignore (keep) is any investigator. Add to the company dictionary is an
+// admin (platform super admin, or that company's company_admin).
 // =====================================================================
 
 import { createClient } from '@supabase/supabase-js';
 import { isInvestigator } from '@/lib/investigatorAuth';
+import { requireAdmin } from '@/lib/requireAdmin';
+import { pageAll, pageAllIn } from '@/lib/supabasePage';
+import { companyIn, companyKey } from '@/lib/thaCloser';
 import {
   LT_DEFAULT_ENDPOINT,
   runTextGate,
@@ -50,6 +55,124 @@ function closed(reason, status) {
   return reply({ status: 'error', reason }, status);
 }
 
+function missingDictionary(error) {
+  const msg = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`;
+  return error?.code === '42P01'
+    || error?.code === 'PGRST205'
+    || (/inv_custom_dictionary/i.test(msg) && /schema cache|does not exist|Could not find/i.test(msg));
+}
+
+function cleanDictionaryWord(raw) {
+  const s = String(raw || '').trim().slice(0, 60);
+  if (!/^[A-Za-z0-9][A-Za-z0-9'’\-]*$/.test(s)) return null;
+  return s;
+}
+
+function pushName(out, value) {
+  if (value == null) return;
+  if (Array.isArray(value)) { value.forEach((v) => pushName(out, v)); return; }
+  if (typeof value === 'object') {
+    pushName(out, value.name || value.full_name || value.witness_name || '');
+    return;
+  }
+  const s = String(value).trim();
+  if (s) out.push(s);
+}
+
+async function loadIncident(supabase, incidentId) {
+  const { data, error } = await supabase.from('incidents').select(
+    'id, incident_id, company_id, company_name, team_leader_name, team_members_names, mentor_name, external_investigator_name, final_approver_name, closed_by_name',
+  ).eq('id', incidentId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function companyAliases(supabase, incident) {
+  const { data, error } = await pageAll(() => supabase.from('lms_companies').select('id, name, sail_company_names'));
+  if (error) throw error;
+  const names = [];
+  const ids = [];
+  if (incident?.company_name) names.push(incident.company_name);
+  for (const c of data || []) {
+    const aliases = [c.name, ...(c.sail_company_names || [])].filter(Boolean);
+    const hit = (incident?.company_id && c.id === incident.company_id) || companyIn(incident?.company_name, aliases);
+    if (!hit) continue;
+    ids.push(c.id);
+    names.push(...aliases);
+  }
+  return { names, ids };
+}
+
+async function extraNames(supabase, incident, incidentIdText) {
+  const out = [];
+  for (const key of ['team_leader_name', 'team_members_names', 'mentor_name', 'external_investigator_name', 'final_approver_name', 'closed_by_name']) {
+    pushName(out, incident?.[key]);
+  }
+  const ids = [incidentIdText, incident?.id].filter(Boolean);
+  if (ids.length) {
+    const { data, error } = await supabase.from('witness_statements')
+      .select('witness_name, name, other_witness_names, other_witnesses')
+      .in('incident_id', ids);
+    if (error) throw error;
+    for (const row of data || []) {
+      pushName(out, row.witness_name);
+      pushName(out, row.name);
+      pushName(out, row.other_witness_names);
+      pushName(out, row.other_witnesses);
+    }
+  }
+  const { ids: companyIds } = await companyAliases(supabase, incident);
+  if (companyIds.length) {
+    const { data, error } = await pageAllIn(supabase, 'lms_users', 'full_name', 'company_id', companyIds);
+    if (error) throw error;
+    for (const row of data || []) pushName(out, row.full_name);
+  }
+  return out;
+}
+
+async function dictionaryWords(supabase, incident) {
+  const { data, error } = await pageAll(() => supabase.from('inv_custom_dictionary').select('word, company_name, company_id'));
+  if (error) {
+    if (missingDictionary(error)) return { words: [], missing: true };
+    throw error;
+  }
+  const { names } = await companyAliases(supabase, incident);
+  const words = [];
+  for (const row of data || []) {
+    const byId = incident?.company_id && row.company_id === incident.company_id;
+    const byName = companyIn(row.company_name, names) || companyKey(row.company_name) === companyKey(incident?.company_name);
+    if (byId || byName) words.push(row.word);
+  }
+  return { words, missing: false };
+}
+
+async function adminMayAdd(supabase, auth, incident) {
+  if (auth.isSuper) return true;
+  if (incident?.company_id && incident.company_id === auth.companyId) return true;
+  const { data, error } = await supabase.from('lms_companies').select('name, sail_company_names').eq('id', auth.companyId).maybeSingle();
+  if (error || !data) return false;
+  return companyIn(incident?.company_name, [data.name, ...(data.sail_company_names || [])]);
+}
+
+async function insertDictionaryWords(supabase, incident, words, email) {
+  const companyName = String(incident?.company_name || '').trim();
+  if (!companyName) return { missing: false, refused: 'This investigation has no company, so a dictionary word cannot be saved.' };
+  const inserted = [];
+  for (const word of words) {
+    const { error } = await supabase.from('inv_custom_dictionary').insert({
+      company_id: incident.company_id || null,
+      company_name: companyName,
+      word,
+      added_by_email: email,
+    });
+    if (!error) { inserted.push(word); continue; }
+    if (missingDictionary(error)) return { missing: true, inserted };
+    if (error.code === '23505') continue;
+    throw error;
+  }
+  return { missing: false, inserted };
+}
+
 export async function POST(request) {
   try {
     const authHeader = request.headers.get('authorization') || '';
@@ -75,22 +198,55 @@ export async function POST(request) {
 
     const items = Array.isArray(gate.items) ? gate.items : [];
     const state = gate.state || {};
+    const incidentRow = await loadIncident(supabase, incidentId);
+    if (!incidentRow) return closed('Investigation not found.', 404);
 
-    // Kept terms: what was stored for this incident plus anything newly kept.
-    // Server-side rule: name-like words only (Capitalized / ALL CAPS / digits).
+    // Ignore: any single token the investigator keeps for this incident.
     const stored = (Array.isArray(state.accepted_terms) ? state.accepted_terms : []).map(t => String(t).toLowerCase());
     const newlyKept = sanitizeAcceptedTerms(body?.keep).filter(t => !stored.includes(t));
     const acceptedAll = [...new Set([...stored, ...newlyKept])].slice(0, 200);
 
+    const askedToAdd = Array.isArray(body?.add) && body.add.length > 0;
+    const addWords = askedToAdd ? body.add.map(cleanDictionaryWord).filter(Boolean) : [];
+    if (askedToAdd && addWords.length === 0) return closed('That word cannot be added to the dictionary.', 400);
+
+    let dictState;
+    try {
+      dictState = await dictionaryWords(supabase, incidentRow);
+    } catch (e) {
+      return closed('Could not read the custom dictionary: ' + (e?.message || 'error'), 503);
+    }
+    let dictionaryAdded = [];
+    if (askedToAdd) {
+      if (dictState.missing) return closed('dictionary migration not applied', 503);
+      const admin = await requireAdmin(request, supabase, { allowCompanyAdmin: true });
+      if (!admin.ok) return closed(admin.error || 'Not authorized', admin.status || 403);
+      const allowed = await adminMayAdd(supabase, admin, incidentRow);
+      if (!allowed) return closed('Not authorized for this company', 403);
+      const inserted = await insertDictionaryWords(supabase, incidentRow, addWords, email);
+      if (inserted.missing) return closed('dictionary migration not applied', 503);
+      if (inserted.refused) return closed(inserted.refused, 400);
+      dictionaryAdded = inserted.inserted;
+    }
+    const dictionary = dictState.missing ? [] : [...dictState.words, ...addWords];
+
+    let names = Array.isArray(gate.names) ? gate.names.slice() : [];
+    try {
+      names = names.concat(await extraNames(supabase, incidentRow, gate.incident_id));
+    } catch (e) {
+      return closed('Could not read names for the spelling check: ' + (e?.message || 'error'), 503);
+    }
+
     // Same text, same kept terms, already passed: no need to call the checker.
-    if (state.passed_hash && state.passed_hash === gate.hash && newlyKept.length === 0) {
+    if (!askedToAdd && state.passed_hash && state.passed_hash === gate.hash && newlyKept.length === 0) {
       return reply({ status: 'pass', cached: true, fieldsChecked: items.length, hash: gate.hash });
     }
 
     const endpoint = process.env.LANGUAGETOOL_URL || LT_DEFAULT_ENDPOINT;
     const result = await runTextGate(items, {
-      names: Array.isArray(gate.names) ? gate.names : [],
+      names,
       accepted: acceptedAll,
+      dictionary,
       endpoint,
       username: process.env.LANGUAGETOOL_USERNAME || undefined,
       apiKey: process.env.LANGUAGETOOL_API_KEY || undefined,
@@ -137,6 +293,7 @@ export async function POST(request) {
           fields_checked: items.length,
           issues: result.issues.length,
           kept_terms_added: newlyKept,
+          dictionary_added: dictionaryAdded,
           reason: result.reason || null,
         },
       });
