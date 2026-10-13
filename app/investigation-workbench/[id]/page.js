@@ -793,6 +793,14 @@ function Stage1({ incident, evidence, witnesses, userEmail, incidentId, fkText, 
 
       <div id="qg-evidence" />
       <Card title={`Evidence (${evidence.length + (Array.isArray(incident.photo_urls) ? incident.photo_urls.length : 0)})`}>
+        <button
+          type="button"
+          data-testid="evidence-attach-tha"
+          onClick={() => document.getElementById('qg-tha')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          style={{ marginBottom: 12, background: '#1e3a5f', color: 'white', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+        >
+          Attach THA
+        </button>
         <EvidenceUploader
           incidentId={incidentId}
           fkText={fkText}

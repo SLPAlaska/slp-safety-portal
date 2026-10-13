@@ -16,10 +16,14 @@ import {
   filterThaBrowse,
   isBrianThaOverride,
   isThaPdfEvidence,
+  matchThasByPeople,
+  personOnCrew,
+  searchThasForIncident,
   suggestThas,
   thaRowText,
   validateNoTha,
 } from '../app/lib/thaGate.js';
+import { filterThasForScope } from '../app/lib/thaCloser.js';
 import { buildThaPdf } from '../app/lib/thaPdf.js';
 
 const incident = {
@@ -131,6 +135,48 @@ assert.match(thaRowText(browseRows[0]), /Pad A-12/);
 assert.match(thaRowText(browseRows[0]), /Ched Isaac/);
 assert.match(thaRowText(browseRows[0]), /glycol filter/);
 
+// INC-2026-0085: MagTec Alaska, Deadhorse, 2026-10-09, person Ched Isaac.
+// The THA the next day lists the crew member as "Ched I", not the full name.
+const inc0085 = {
+  incident_id: 'INC-2026-0085',
+  company_name: 'MagTec Alaska',
+  incident_date: '2026-10-09',
+  location_name: 'Deadhorse',
+  injured_person_name: 'Ched Isaac',
+};
+const tha0085 = {
+  tha_number: 'THA-20261010-5905',
+  company: 'MagTec Alaska',
+  date: '2026-10-10',
+  location: 'Deadhorse',
+  task_description: 'General automotive and equipment Maintenance',
+  crew_lead: 'Shop lead',
+  crew_names: ['Ched I'],
+};
+assert.equal(personOnCrew('Ched Isaac', ['Ched I']), true);
+assert.equal(personOnCrew('Ched Isaac', ['Sam Ortiz']), false);
+const hit0085 = matchThasByPeople(inc0085, [
+  tha0085,
+  { ...tha0085, tha_number: 'THA-OTHER', company: 'Other Co', crew_names: ['Ched Isaac'] },
+  { ...tha0085, tha_number: 'THA-OLD', date: '2026-10-07' },
+  { ...tha0085, tha_number: 'THA-WITNESS', crew_names: ['Pat Lee'], crew_lead: 'Pat Lee' },
+]);
+assert.deepEqual(hit0085.map((t) => t.tha_number), ['THA-20261010-5905']);
+const byWitness = matchThasByPeople(
+  { ...inc0085, injured_person_name: '' },
+  [tha0085],
+  { witnesses: [{ witness_name: 'Ched Isaac' }] },
+);
+assert.equal(byWitness.length, 1, 'a witness name matches the crew');
+// Open-THA list (PR #21) hides MagTec from an SLP investigator who is not that company.
+const todd = { isStaff: false, companyName: 'SLP', companyNames: ['SLP'] };
+assert.equal(filterThasForScope([tha0085], todd).length, 0);
+assert.equal(matchThasByPeople(inc0085, [tha0085]).length, 1, 'investigation lookup is not the open-THA filter');
+assert.deepEqual(searchThasForIncident(inc0085, [tha0085, { ...tha0085, tha_number: 'THA-OTHER', company: 'Other Co' }], { thaNumber: 'THA-20261010-5905' }).map((t) => t.tha_number), ['THA-20261010-5905']);
+assert.deepEqual(searchThasForIncident(inc0085, [tha0085], { thaNumber: 'THA-OTHER' }), []);
+assert.equal(searchThasForIncident(inc0085, [tha0085], { date: '2026-10-10' }).length, 1);
+assert.equal(searchThasForIncident(inc0085, [tha0085], {}).length, 0);
+
 // English and Spanish copy cover the same keys and every reason.
 function keysOf(obj, prefix = '') {
   return Object.entries(obj).flatMap(([k, v]) => (
@@ -215,6 +261,11 @@ assert.match(s54, /investigation_activity_log/);
 // The attach panel browses by date, place, job, and crew. It does not ask for a THA number.
 const panel = readFileSync(new URL('../app/components/ThaGate.js', import.meta.url), 'utf8');
 const route = readFileSync(new URL('../app/api/investigation-tha/route.js', import.meta.url), 'utf8');
+assert.match(panel, /data-testid="tha-attach-open"/);
+assert.match(panel, /No matching THA found|copy\.noMatch/);
+assert.match(panel, /data-testid="tha-search-number"/);
+assert.match(panel, /data-testid="tha-search-date"/);
+assert.match(panel, /data-testid="tha-fallback-search"/);
 assert.match(panel, /data-testid="tha-browse-list"/);
 assert.match(panel, /data-testid="tha-browse-filter"/);
 assert.match(panel, /data-testid="tha-date-window"/);
@@ -225,8 +276,14 @@ assert.match(panel, /data-testid="tha-no-tha"/);
 assert.match(panel, /type="checkbox"/);
 assert.doesNotMatch(panel, /tha-company-pick|pickPlaceholder|THA Number|placeholder="THA/);
 assert.match(route, /browseThas/);
+assert.match(route, /matchThasByPeople/);
+assert.match(route, /action === 'search'/);
 assert.match(route, /task_description/);
 assert.match(route, /action === 'preview'/);
+assert.match(route, /buildThaPdf/);
 assert.doesNotMatch(route, /companyThas/);
+assert.doesNotMatch(route, /filterThasForScope\s*\(/);
+const workbench = readFileSync(new URL('../app/investigation-workbench/[id]/page.js', import.meta.url), 'utf8');
+assert.match(workbench, /data-testid="evidence-attach-tha"/);
 
 console.log('check:tha-gate: all checks passed');

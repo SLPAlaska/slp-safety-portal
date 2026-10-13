@@ -54,12 +54,17 @@ export function ThaGatePanel({
   onRevoke,
   onBrowseChange,
   onPreview,
+  onSearch,
 }) {
   const [reason, setReason] = useState(noTha.reason || '');
   const [detail, setDetail] = useState(noTha.detail || '');
   const [noThaOn, setNoThaOn] = useState(!!(noTha.reason || gate?.via === 'no_tha'));
   const [filter, setFilter] = useState('');
   const [showBrowse, setShowBrowse] = useState(false);
+  const [finderOpen, setFinderOpen] = useState(true);
+  const [searchNumber, setSearchNumber] = useState('');
+  const [searchDate, setSearchDate] = useState('');
+  const [searchHits, setSearchHits] = useState(null);
   const [preview, setPreview] = useState(null);
   const [overrideOn, setOverrideOn] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
@@ -80,7 +85,7 @@ export function ThaGatePanel({
     if (noTha.reason || gate?.via === 'no_tha') setNoThaOn(true);
   }, [noTha.reason, noTha.detail, gate?.via]);
 
-  const browseOpen = suggestions.length === 0 || showBrowse;
+  const browseOpen = showBrowse;
   const visibleBrowse = filterThaBrowse(browse, filter);
 
   async function openPreview(tha) {
@@ -115,16 +120,74 @@ export function ThaGatePanel({
       )}
 
       <div style={{ marginTop: 14 }}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.suggestHeading}</div>
-        <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{copy.suggestHint}</div>
-        {suggestions.length === 0 && <div data-testid="tha-none-suggested" style={{ fontSize: 13, color: C.muted, marginTop: 6 }}>{copy.noneSuggested}</div>}
-        {suggestions.map((tha) => (
-          <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} onView={openPreview} />
-        ))}
-        {suggestions.length > 0 && !showBrowse && (
-          <button type="button" data-testid="tha-show-browse" onClick={() => setShowBrowse(true)} style={{ ...btn, marginTop: 8 }}>
-            {copy.showBrowse}
-          </button>
+        <button
+          type="button"
+          data-testid="tha-attach-open"
+          onClick={() => setFinderOpen((open) => !open)}
+          style={btnDark}
+        >
+          {copy.attachButton}
+        </button>
+        {finderOpen && (
+          <div data-testid="tha-match-list" style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{copy.matchHeading}</div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{copy.matchHint}</div>
+            {suggestions.length === 0 && (
+              <div data-testid="tha-none-suggested" style={{ fontSize: 14, fontWeight: 800, color: C.red, marginTop: 8 }}>{copy.noMatch}</div>
+            )}
+            {suggestions.map((tha) => (
+              <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} onView={openPreview} showNumber />
+            ))}
+            {suggestions.length === 0 && (
+              <div data-testid="tha-fallback-search" style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>{copy.fallbackHint}</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'end' }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
+                    {copy.searchNumber}
+                    <input
+                      data-testid="tha-search-number"
+                      value={searchNumber}
+                      onChange={(e) => setSearchNumber(e.target.value)}
+                      style={{ ...inputStyle, display: 'block', marginTop: 4 }}
+                    />
+                  </label>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
+                    {copy.searchDate}
+                    <input
+                      data-testid="tha-search-date"
+                      type="date"
+                      value={searchDate}
+                      onChange={(e) => setSearchDate(e.target.value)}
+                      style={{ ...inputStyle, display: 'block', marginTop: 4 }}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    data-testid="tha-search-go"
+                    disabled={busy || (!searchNumber.trim() && !searchDate)}
+                    onClick={async () => {
+                      const hits = await onSearch?.({ thaNumber: searchNumber.trim(), date: searchDate });
+                      setSearchHits(Array.isArray(hits) ? hits : []);
+                    }}
+                    style={{ ...btnDark, opacity: busy ? 0.5 : 1 }}
+                  >
+                    {copy.search}
+                  </button>
+                </div>
+                {searchHits && searchHits.length === 0 && (
+                  <div data-testid="tha-none-search" style={{ fontSize: 13, color: C.muted, marginTop: 8 }}>{copy.noneSearch}</div>
+                )}
+                {(searchHits || []).map((tha) => (
+                  <ThaRow key={tha.tha_number} tha={tha} copy={copy} busy={busy} onAttach={onAttach} onView={openPreview} showNumber />
+                ))}
+              </div>
+            )}
+            {suggestions.length > 0 && !showBrowse && (
+              <button type="button" data-testid="tha-show-browse" onClick={() => setShowBrowse(true)} style={{ ...btn, marginTop: 8 }}>
+                {copy.showBrowse}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -285,7 +348,7 @@ export function ThaGatePanel({
   );
 }
 
-function ThaRow({ tha, copy, busy, onAttach, onView }) {
+function ThaRow({ tha, copy, busy, onAttach, onView, showNumber = false }) {
   const time = thaTimeLabel(tha.created_at);
   const crew = (tha.crew_names || []).filter(Boolean).join(', ');
   const site = [tha.location, tha.work_area].filter(Boolean).join(' · ');
@@ -293,6 +356,7 @@ function ThaRow({ tha, copy, busy, onAttach, onView }) {
   return (
     <div data-testid="tha-row" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', border: `1px solid ${C.border}`, borderRadius: 8, padding: 10, marginTop: 8 }}>
       <div style={{ fontSize: 13, flex: '1 1 220px', lineHeight: 1.45 }}>
+        {showNumber && <div data-testid="tha-row-number"><strong>THA #:</strong> {tha.tha_number}</div>}
         <div><strong>{copy.when}:</strong> {tha.date || '—'}{time ? ` · ${time}` : ''}</div>
         <div><strong>{copy.site}:</strong> {site || '—'}</div>
         <div><strong>{copy.job}:</strong> {tha.task_description || '—'}</div>
@@ -401,6 +465,15 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
     return res.tha ? { ...res.tha, steps: res.steps || [], crew: res.crew || [] } : null;
   }
 
+  async function onSearch({ thaNumber, date }) {
+    const res = await callThaApi(supabase, { action: 'search', incidentId: incident.id, thaNumber, date });
+    if (!res.ok) {
+      setError(res.error || 'Could not search THAs.');
+      return [];
+    }
+    return res.results || [];
+  }
+
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -493,6 +566,7 @@ export function ThaGate({ supabase, incident, evidence, userEmail, onEvidence, o
       onRevoke={onRevoke}
       onBrowseChange={onBrowseChange}
       onPreview={onPreview}
+      onSearch={onSearch}
     />
   );
 }

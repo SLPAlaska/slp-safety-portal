@@ -6,6 +6,7 @@
 // attaches the PDF or records the No-THA reason, for a signed-in investigator.
 //
 //   { action: 'context', incidentId, dateWindowDays?, otherLocations? }
+//   { action: 'search',  incidentId, thaNumber?, date? }  // fallback; this incident's company only
 //   { action: 'preview', incidentId, thaNumber }
 //   { action: 'attach',  incidentId, thaNumber }
 //   { action: 'upload',  incidentId, fileName, pdfBase64 }
@@ -25,10 +26,12 @@ import {
   clampDateWindow,
   companiesMatch,
   evaluateThaGate,
+  isoDay,
   isThaPdfEvidence,
+  matchThasByPeople,
   NO_THA_DETAIL_MIN,
+  searchThasForIncident,
   shiftIsoDate,
-  suggestThas,
   validateNoTha,
 } from '@/lib/thaGate';
 
@@ -209,7 +212,15 @@ export async function POST(request) {
           }
         }
         const withCrew = windowRows.map((row) => ({ ...row, crew_names: crewByTha[row.tha_number] || [] }));
-        suggestions = suggestThas(incident, withCrew).map(publicTha);
+        const witnessIds = [incident.incident_id, incident.id].filter(Boolean);
+        const { data: witnessRows, error: witnessErr } = await supabase.from('witness_statements')
+          .select('witness_name, name, other_witness_names')
+          .in('incident_id', witnessIds);
+        if (witnessErr) throw witnessErr;
+        // People match uses the investigation's company, not the viewer's LMS company.
+        // Do not apply the open-THA list filter here. An SLP investigator attaching
+        // evidence for a client investigation must still see that client's THAs.
+        suggestions = matchThasByPeople(incident, withCrew, { witnesses: witnessRows || [] }).map(publicTha);
         const seen = new Set(suggestions.map((row) => row.tha_number));
         browse = browseThas(incident, withCrew, { days, otherLocations })
           .filter((row) => !seen.has(row.tha_number))
@@ -225,6 +236,47 @@ export async function POST(request) {
           id: row.id, file_name: row.file_name, file_url: row.file_url, source_tha_number: row.source_tha_number, description: row.description,
         })),
       });
+    }
+
+    if (action === 'search') {
+      // Fallback only. Scoped to this investigation's company, never the caller's
+      // LMS company and never every company. A THA number from another company
+      // comes back as no rows.
+      const thaNumber = String(body?.thaNumber || '').trim();
+      const date = String(body?.date || '').trim();
+      if (!thaNumber && !isoDay(date)) return reply({ error: 'Enter a THA number or a date.' }, 400);
+      const company = incident.company_name || incident.company || '';
+      let rows = [];
+      if (thaNumber && !isoDay(date)) {
+        const { data, error } = await supabase.from('tha_assessments').select(THA_COLS).eq('tha_number', thaNumber).limit(5);
+        if (error) throw error;
+        rows = data || [];
+      } else {
+        const anchor = isoDay(date) || isoDay(incident.incident_date);
+        const start = shiftIsoDate(anchor, -1);
+        const end = shiftIsoDate(anchor, 1);
+        const windowR = start && end
+          ? await pageAll(() => supabase.from('tha_assessments').select(THA_COLS).gte('date', start).lte('date', end))
+          : { data: [], error: null };
+        if (windowR.error) throw windowR.error;
+        rows = windowR.data || [];
+      }
+      rows = rows.filter((row) => companiesMatch(company, row.company));
+      const numbers = rows.map((row) => row.tha_number).filter(Boolean);
+      const crewByTha = {};
+      if (numbers.length) {
+        const { data: crew, error: crewErr } = await pageAllIn(
+          supabase, 'tha_crew_signoff', 'tha_number, crew_member_name', 'tha_number', numbers,
+        );
+        if (crewErr) throw crewErr;
+        for (const person of crew || []) {
+          if (!crewByTha[person.tha_number]) crewByTha[person.tha_number] = [];
+          if (person.crew_member_name) crewByTha[person.tha_number].push(person.crew_member_name);
+        }
+      }
+      const withCrew = rows.map((row) => ({ ...row, crew_names: crewByTha[row.tha_number] || [] }));
+      const results = searchThasForIncident(incident, withCrew, { thaNumber, date }).map(publicTha);
+      return reply({ results });
     }
 
     if (action === 'preview') {

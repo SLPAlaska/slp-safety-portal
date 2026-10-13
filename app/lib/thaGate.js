@@ -64,6 +64,15 @@ export const THA_COPY = {
     detailHint: 'Required when the reason is “lost or not found” or “Other”.',
     saveNoTha: 'Save justification',
     clearNoTha: 'Remove this and attach a THA instead',
+    attachButton: 'Attach THA',
+    matchHeading: 'THAs that name someone on this investigation',
+    matchHint: 'Same company, on the incident date or one day either side (shift crossover), and a crew or worker name that includes the person involved or a witness.',
+    noMatch: 'No matching THA found',
+    fallbackHint: 'Search this company’s THAs by number or date, or record that there is no THA.',
+    searchNumber: 'THA number',
+    searchDate: 'Date',
+    search: 'Search',
+    noneSearch: 'No THA for this company matched that number or date.',
     attach: 'Attach',
     upload: 'Upload PDF',
     override: 'Override (Brian only)',
@@ -116,6 +125,15 @@ export const THA_COPY = {
     detailHint: 'Obligatorio si el motivo es “perdido o no se encontró” u “Otro”.',
     saveNoTha: 'Guardar justificación',
     clearNoTha: 'Quitar esto y adjuntar un ATS',
+    attachButton: 'Adjuntar ATS',
+    matchHeading: 'ATS que nombran a alguien de esta investigación',
+    matchHint: 'La misma empresa, en la fecha del incidente o un día antes o después (cambio de turno), y un nombre de la cuadrilla que incluye a la persona involucrada o a un testigo.',
+    noMatch: 'No se encontró un ATS que coincida',
+    fallbackHint: 'Busque los ATS de esta empresa por número o fecha, o registre que no hay ATS.',
+    searchNumber: 'Número de ATS',
+    searchDate: 'Fecha',
+    search: 'Buscar',
+    noneSearch: 'Ningún ATS de esta empresa coincidió con ese número o esa fecha.',
     attach: 'Adjuntar',
     upload: 'Subir PDF',
     override: 'Anular (solo Brian)',
@@ -207,6 +225,111 @@ export function crewsMatch(incident, tha, crewNames = []) {
   const blobTokens = new Set(blob.split(' ').filter((t) => t.length >= 5));
   const tokens = people.flatMap((n) => n.split(' ').filter((t) => t.length >= 5));
   return tokens.some((t) => blobTokens.has(t));
+}
+
+function pushPersonText(out, value) {
+  if (value == null) return;
+  if (typeof value === 'string') { out.push(value); return; }
+  if (Array.isArray(value)) { value.forEach((v) => pushPersonText(out, v)); return; }
+  if (typeof value === 'object') pushPersonText(out, value.name || value.witness_name || value.full_name || '');
+}
+
+/** People the THA crew must include: involved person, witnesses, and the named investigation team. */
+export function involvedPeople(incident, witnesses = []) {
+  const raw = [];
+  for (const key of [
+    'injured_person_name', 'injured_name', 'reported_by_name', 'team_leader_name',
+    'supervisor_name', 'team_members_names', 'mentor_name', 'external_investigator_name',
+    'witnesses', 'witness_statement_summary',
+  ]) pushPersonText(raw, incident?.[key]);
+  for (const w of witnesses || []) {
+    pushPersonText(raw, w?.witness_name);
+    pushPersonText(raw, w?.name);
+    pushPersonText(raw, w?.other_witness_names);
+  }
+  const seen = new Set();
+  const out = [];
+  for (const value of raw) {
+    for (const part of String(value).split(/[,;\n|/]+/)) {
+      const text = part.trim();
+      const key = normPlace(text);
+      if (key.length < 4 || seen.has(key)) continue;
+      seen.add(key);
+      out.push(text);
+    }
+  }
+  return out;
+}
+
+export function nameTokens(value) {
+  return normPlace(value).split(' ').filter(Boolean);
+}
+
+/**
+ * Does this crew line name the same person?
+ * A token of 4+ letters in common is enough ("Ched" on "Ched Isaac").
+ * A shortened last name still counts ("Ched I" and "Ched Isaac").
+ */
+export function personOnCrew(person, crewNames) {
+  const want = nameTokens(person);
+  const strong = want.filter((t) => t.length >= 4);
+  const first = strong[0] || '';
+  const last = strong.length > 1 ? strong[strong.length - 1] : '';
+  if (!first) return false;
+  for (const raw of crewNames || []) {
+    const tokens = nameTokens(raw);
+    if (!tokens.length) continue;
+    if (strong.some((t) => tokens.includes(t))) return true;
+    if (tokens[0] !== first) continue;
+    if (!last) return true;
+    if (tokens.some((t, i) => i > 0 && t[0] === last[0])) return true;
+  }
+  return false;
+}
+
+/**
+ * Company + incident date ±1 day + crew/worker names the involved person or a witness.
+ * Location is not required. Another company's THA never matches.
+ * This is the investigation lookup. It does not use the open-THA company filter.
+ */
+export function matchThasByPeople(incident, thas, { witnesses = [] } = {}) {
+  const people = involvedPeople(incident, witnesses);
+  const company = incident?.company_name || incident?.company;
+  const out = [];
+  for (const tha of thas || []) {
+    if (!companiesMatch(company, tha?.company)) continue;
+    const delta = daysBetween(incident?.incident_date, tha?.date);
+    if (delta == null || Math.abs(delta) > 1) continue;
+    const crew = [tha?.crew_lead, ...(tha?.crew_names || [])].filter(Boolean);
+    const matched = people.filter((person) => personOnCrew(person, crew));
+    if (!matched.length) continue;
+    out.push({ ...tha, day_delta: delta, matched_people: matched });
+  }
+  out.sort((a, b) =>
+    Math.abs(a.day_delta) - Math.abs(b.day_delta)
+    || String(b.date || '').localeCompare(String(a.date || ''))
+    || String(a.tha_number).localeCompare(String(b.tha_number)));
+  return out;
+}
+
+/**
+ * Fallback when no person matched. Still the investigation's company only.
+ * A number, a date (±1 day), or both. Empty input matches nothing.
+ */
+export function searchThasForIncident(incident, thas, { thaNumber = '', date = '' } = {}) {
+  const company = incident?.company_name || incident?.company;
+  const num = normPlace(thaNumber).replace(/\s+/g, '');
+  const day = isoDay(date);
+  if (!num && !day) return [];
+  return (thas || []).filter((tha) => {
+    if (!companiesMatch(company, tha?.company)) return false;
+    if (num && !normPlace(tha?.tha_number).replace(/\s+/g, '').includes(num)) return false;
+    if (day) {
+      const delta = daysBetween(day, tha?.date);
+      if (delta == null || Math.abs(delta) > 1) return false;
+    }
+    return true;
+  });
 }
 
 /**
