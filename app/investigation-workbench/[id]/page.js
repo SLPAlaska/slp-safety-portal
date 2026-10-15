@@ -657,17 +657,58 @@ export default function InvestigationWorkbench() {
 // =====================================================================
 // Top bar
 // =====================================================================
+// Brief incident description for the header, from existing fields only (no invented text):
+// brief_description, else detailed_description; first sentence, cut to ~100 chars with an ellipsis.
+function incidentBrief(incident) {
+  const full = String(incident?.brief_description || incident?.detailed_description || '').replace(/\s+/g, ' ').trim();
+  if (!full) return { short: '', full: '' };
+  const m = full.match(/^(.+?[.!?])(\s|$)/);
+  let first = m ? m[1] : full;
+  if (first.length > 100) {
+    const cut = first.slice(0, 100);
+    const sp = cut.lastIndexOf(' ');
+    first = (sp > 60 ? cut.slice(0, sp) : cut).replace(/[\s,;:.-]+$/, '') + '…';
+  }
+  return { short: first, full };
+}
+
+function fmtIncDate(d) {
+  if (!d) return '';
+  const [y, mo, da] = String(d).slice(0, 10).split('-').map(Number);
+  if (!y || !mo || !da) return '';
+  return new Date(y, mo - 1, da).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function TopBar({ incident, saving, lastSavedAt, pdfGenerating, onPDF, onBack, userEmail, onSignOut }) {
+  const [open, setOpen] = useState(false);
+  const brief = incidentBrief(incident);
+  const place = [incident.specific_location_onsite, incident.location_name]
+    .map((v) => String(v || '').trim()).filter((v) => v && v.toLowerCase() !== 'other')[0] || '';
+  const meta = [incident.investigation_type, place, incident.status].map((v) => String(v || '').trim()).filter(Boolean).join(' · ');
+  const when = fmtIncDate(incident.incident_date);
+  const expandable = brief.full && brief.full !== brief.short;
   return (
-    <div style={{ background: `linear-gradient(135deg, ${C.navy}, ${C.steel})`, color: 'white', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div style={{ background: `linear-gradient(135deg, ${C.navy}, ${C.steel})`, color: 'white', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, flex: '1 1 320px' }}>
         <button onClick={onBack} style={btnGhost}>← Dashboard</button>
-        <div>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{incident.incident_id || 'Investigation'}</div>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>{incident.investigation_type} - {incident.location} - {incident.status}</div>
+          {meta && <div style={{ fontSize: 12, opacity: 0.85 }}>{meta}</div>}
+          {brief.short && (
+            <div data-incident-brief style={{ fontSize: 13, marginTop: 4, lineHeight: 1.35, maxWidth: 720, overflowWrap: 'anywhere' }}>
+              {when && <span style={{ opacity: 0.8 }}>{when} · </span>}
+              <span title={brief.full}>{open ? brief.full : brief.short}</span>
+              {expandable && (
+                <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+                  style={{ marginLeft: 6, background: 'transparent', border: 'none', color: '#bfdbfe', textDecoration: 'underline', cursor: 'pointer', fontSize: 12, padding: '2px 4px' }}>
+                  {open ? 'less' : 'more'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, opacity: 0.85 }}>
           {saving ? 'Saving...' : lastSavedAt ? `Saved ${lastSavedAt.toLocaleTimeString()}` : ''}
         </span>
