@@ -20,7 +20,7 @@ const MAGTEC_COMPANY_ID = 'c1fd7a04-99e6-401a-8cf8-f88f8d7cea35'
 
 // Default temporary password for new employees and password resets.
 // Learners are flagged must_change_pw, so they set their own on first login.
-const DEFAULT_TEMP_PASSWORD = '1234567!'
+const MIN_TEMP_PASSWORD = 8
 
 function Modal({ title, onClose, children }) {
   return (
@@ -139,13 +139,13 @@ function EmployeesTab({ token, companyId }) {
     const res = await authFetch('/api/lms/create-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, password: DEFAULT_TEMP_PASSWORD, company_id: companyId, role: 'learner' })
+      body: JSON.stringify({ ...form, company_id: companyId, role: 'learner' })
     })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
     setShowModal(false)
-    setForm({ full_name: '', email: '', username: '', job_title: '', work_location: '', department: '', employee_id: '', hire_date: '' })
+    setForm({ full_name: '', email: '', username: '', job_title: '', work_location: '', department: '', employee_id: '', hire_date: '', password: '' })
     load()
   }
 
@@ -213,15 +213,17 @@ function EmployeesTab({ token, companyId }) {
   }
 
   async function handleResetPassword(user) {
-    if (!confirm(`Reset ${user.full_name}'s password to the default temporary password (${DEFAULT_TEMP_PASSWORD})?\n\nThey will be required to set a new password on their next login.`)) return
+    const password = prompt(`New temporary password for ${user.full_name} (at least ${MIN_TEMP_PASSWORD} characters).\n\nThey will be required to set a new password on their next login.`)
+    if (password === null) return
+    if (password.length < MIN_TEMP_PASSWORD) { alert(`The password must be at least ${MIN_TEMP_PASSWORD} characters.`); return }
     setResetting(user.id)
     const res = await fetch('/api/lms/company-admin/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ user_id: user.id, password: DEFAULT_TEMP_PASSWORD })
+      body: JSON.stringify({ user_id: user.id, password })
     })
     setResetting(null)
-    if (res.ok) { alert(`Password reset for ${user.full_name} to ${DEFAULT_TEMP_PASSWORD}.`) } else { alert('Reset failed.') }
+    if (res.ok) { alert(`Password reset for ${user.full_name}. Give them the new temporary password directly.`) } else { alert('Reset failed.') }
     load()
   }
 
@@ -305,9 +307,10 @@ function EmployeesTab({ token, companyId }) {
           <Field label="Department"><input style={S.input} value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} /></Field>
           <Field label="Employee ID"><input style={S.input} value={form.employee_id} onChange={e => setForm(f => ({ ...f, employee_id: e.target.value }))} /></Field>
           <Field label="Hire Date"><input style={S.input} type="date" value={form.hire_date} onChange={e => setForm(f => ({ ...f, hire_date: e.target.value }))} /></Field>
-          <div style={S.infoBox}>New employees start with the temporary password <strong>{DEFAULT_TEMP_PASSWORD}</strong> and will be prompted to set their own on first login.</div>
+          <Field label="Temporary Password *"><input style={S.input} type="password" value={form.password || ''} placeholder={`Min ${MIN_TEMP_PASSWORD} characters`} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} /></Field>
+          <div style={S.infoBox}>Give the new employee this temporary password directly. They will be prompted to set their own on first login.</div>
           {error && <div style={S.error}>{error}</div>}
-          <button style={S.btnPrimary} onClick={handleCreate} disabled={saving || !form.full_name || !form.email || !form.username}>
+          <button style={S.btnPrimary} onClick={handleCreate} disabled={saving || !form.full_name || !form.email || !form.username || (form.password || '').length < MIN_TEMP_PASSWORD}>
             {saving ? 'Creating…' : 'Create Account'}
           </button>
         </Modal>

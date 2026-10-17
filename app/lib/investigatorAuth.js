@@ -24,13 +24,13 @@
 
 export const INVESTIGATOR_ROLE = 'investigator'
 
-/**
- * The temporary password new investigator accounts are provisioned with.
- * Matches DEFAULT_TEMP_PASSWORD in app/api/lms/admin-reset-password/route.js.
- * Not a secret — it is a known default, which is exactly why a new password is
- * forced before the workbench will load.
- */
-export const TEMP_PASSWORD = '1234567!'
+// There is deliberately no fixed temporary password here any more. The forced
+// change is driven by user_metadata.must_change_password (below), not by the
+// value of the password, so the workbench does not need to know it. The admin
+// who provisions or resets the account chooses the temporary password; the
+// "pick a different one" rule compares against the password typed at sign-in
+// in this tab (kept in memory only), and Supabase Auth itself also refuses a
+// new password equal to the current one.
 
 export const MIN_PASSWORD_LENGTH = 10
 
@@ -52,11 +52,11 @@ export function mustChangePassword(user) {
  * Rules for the password chosen at first sign-in.
  * Returns { ok: true } or { ok: false, error: '<message for the person>' }.
  */
-export function validateNewPassword(password, confirmation) {
+export function validateNewPassword(password, confirmation, previous) {
   if (!password) {
     return { ok: false, error: 'Enter a new password.' }
   }
-  if (password === TEMP_PASSWORD) {
+  if (previous && password === previous) {
     return { ok: false, error: 'Choose a password other than the temporary one.' }
   }
   if (password.length < MIN_PASSWORD_LENGTH) {

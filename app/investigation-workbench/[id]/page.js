@@ -113,6 +113,8 @@ export default function InvestigationWorkbench() {
 
   const [currentStage, setCurrentStage] = useState(1);
   const stagePinned = useRef(false);
+  // Password typed at sign-in, memory only, so the forced change can refuse reusing it.
+  const signInPasswordRef = useRef('');
   const [saving, setSaving] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(null);
@@ -188,6 +190,7 @@ export default function InvestigationWorkbench() {
       setLoginError(signInError.message || 'Sign in failed.');
       return;
     }
+    signInPasswordRef.current = password;
     // adoptSession signs out and explains if this account is not an investigator.
     await adoptSession(data?.session);
   }
@@ -200,7 +203,7 @@ export default function InvestigationWorkbench() {
     const password = e.target.password.value;
     const confirmation = e.target.confirmation.value;
 
-    const check = validateNewPassword(password, confirmation);
+    const check = validateNewPassword(password, confirmation, signInPasswordRef.current);
     if (!check.ok) { setPwError(check.error); return; }
 
     setPwBusy(true);
@@ -214,6 +217,7 @@ export default function InvestigationWorkbench() {
       setPwError(updateError.message || 'Could not set the new password.');
       return;
     }
+    signInPasswordRef.current = '';
     setNeedsPasswordChange(false);
   }
 

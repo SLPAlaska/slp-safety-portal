@@ -31,7 +31,7 @@ export default function UserTrainingPage() {
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    const res = await fetch(`/api/lms/admin/user-training?user_id=${userId}`)
+    const res = await authFetch(`/api/lms/admin/user-training?user_id=${userId}`)
     const j = await res.json()
     if (!res.ok) { setError(j.error || 'Failed to load'); setLoading(false); return }
     setData(j); setLoading(false)
@@ -81,7 +81,7 @@ export default function UserTrainingPage() {
   async function handleExemptChange(checked) {
     setSavingExempt(true); setExemptError('')
     const token = getToken()
-    const res = await fetch('/api/lms/admin/user-training', {
+    const res = await authFetch('/api/lms/admin/user-training', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify({ user_id: userId, exempt_from_required: checked }),
@@ -101,7 +101,7 @@ export default function UserTrainingPage() {
   async function handleExclusion(courseId, exclude) {
     setExclusionBusy(courseId); setExemptError('')
     const token = getToken()
-    const res = await fetch('/api/lms/admin/user-training', {
+    const res = await authFetch('/api/lms/admin/user-training', {
       method: exclude ? 'POST' : 'DELETE',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify({ user_id: userId, course_id: courseId }),

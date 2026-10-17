@@ -39,6 +39,7 @@ const ROUTES = {
   'generate-audio': ['POST'], 'ai-generate': ['POST'], 'ai-job-status': ['GET'], assignments: ['GET', 'POST', 'DELETE'],
   'required-courses': ['GET', 'POST', 'DELETE'],
   // company admins may also call these (scoped to their company); a learner still gets 403
+  'admin/user-training': ['GET', 'PATCH', 'POST', 'DELETE'],
   'courses#ca': ['GET'], 'individual-assignments': ['GET', 'POST', 'DELETE'], 'reactivate-user': ['POST'],
 }
 for (const [key, methods] of Object.entries(ROUTES)) {
@@ -73,6 +74,47 @@ ok(r4.status === 400 && !globalThis.__mock.calls.some(c => c.op === 'updateUserB
 reset()
 const r5 = await reset_.POST(req('/api/lms/admin-reset-password', 'POST', 'tok-super', { user_id: TARGET_ID, password: 'short' }))
 ok(r5.status === 400 && !globalThis.__mock.calls.some(c => c.op === 'updateUserById'), 'password under min length -> 400, nothing changed')
+
+// company-admin reset-password: company scope kept, caller-supplied password, never returned.
+const car = await import('../app/api/lms/company-admin/reset-password/route.js')
+function resetWith(callerRole, callerCompany) {
+  reset()
+  globalThis.__mock.users['tok-ca'] = { id: 'auth-ca', email: 'ca@example.invalid' }
+  globalThis.__mock.row = (table, op, eq) => {
+    if (table !== 'lms_users') return { data: [], error: null }
+    if (eq.auth_user_id === 'auth-ca') return { data: { id: 'ca-row', role: callerRole, company_id: callerCompany, active: true, username: 'ca' }, error: null }
+    return { data: { id: TARGET_ID, auth_user_id: 'auth-target', full_name: 'Test Person', username: 'tp', company_id: 'c1', active: true }, error: null }
+  }
+}
+const pw2 = 'Yk' + Math.random().toString(36).slice(2, 12)
+resetWith('company_admin', 'c1')
+let r = await car.POST(req('/x', 'POST', null, { user_id: TARGET_ID, password: pw2 }))
+ok(r.status === 401, `company-admin reset unauthenticated -> 401 (got ${r.status})`)
+resetWith('learner', 'c1')
+r = await car.POST(req('/x', 'POST', 'tok-ca', { user_id: TARGET_ID, password: pw2 }))
+ok(r.status === 403 && !globalThis.__mock.calls.some(c => c.op === 'updateUserById'), `company-admin reset by a learner -> 403 (got ${r.status})`)
+resetWith('company_admin', 'c2')
+r = await car.POST(req('/x', 'POST', 'tok-ca', { user_id: TARGET_ID, password: pw2 }))
+ok(r.status === 403 && !globalThis.__mock.calls.some(c => c.op === 'updateUserById'), `company admin of another company -> 403 (got ${r.status})`)
+resetWith('company_admin', 'c1')
+r = await car.POST(req('/x', 'POST', 'tok-ca', { user_id: TARGET_ID }))
+ok(r.status === 400 && !globalThis.__mock.calls.some(c => c.op === 'updateUserById'), `company-admin reset with no password -> 400 (got ${r.status})`)
+resetWith('company_admin', 'c1')
+r = await car.POST(req('/x', 'POST', 'tok-ca', { user_id: TARGET_ID, password: pw2 }))
+const b6 = await r.text()
+const u6 = globalThis.__mock.calls.find(c => c.op === 'updateUserById')
+ok(r.status === 200 && u6?.attrs.password === pw2, `same-company company admin -> 200 with the supplied password (got ${r.status})`)
+ok(!b6.includes(pw2), 'company-admin reset response contains no password')
+resetWith('learner', 'c1')
+r = await car.POST(req('/x', 'POST', 'tok-super', { user_id: TARGET_ID, password: pw2 }))
+ok(r.status === 200, `super admin company-admin reset -> 200 (got ${r.status})`)
+
+// investigatorAuth: no fixed temp password; reuse of the sign-in password is refused.
+const inv = await import('../app/lib/investigatorAuth.js')
+ok(!('TEMP_PASSWORD' in inv), 'investigatorAuth exports no fixed TEMP_PASSWORD')
+ok(inv.validateNewPassword('SamePassword1', 'SamePassword1', 'SamePassword1').ok === false, 'new password equal to the sign-in password is refused')
+ok(inv.validateNewPassword('BrandNewPass1', 'BrandNewPass1', 'OldPassword12').ok === true, 'a different long password is accepted')
+ok(inv.validateNewPassword('short', 'short').ok === false, 'short password refused')
 
 console.log(`\n${passes} passed, ${fails} failed`)
 process.exit(fails ? 1 : 0)

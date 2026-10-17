@@ -1,9 +1,10 @@
 // app/api/lms/company-admin/reset-password/route.js
 //
-// Resets a learner's password to the standard temp password (1234567!)
-// and forces a password change on their next login via must_change_pw.
+// Sets the temporary password the caller supplies (at least MIN_PASSWORD_LENGTH
+// characters; never echoed back) and forces a password change on next login
+// via must_change_pw.
 //
-// Body:    { user_id: "<lms_users.id uuid>" }
+// Body:    { user_id: "<lms_users.id uuid>", password: "<new temporary password>" }
 // Headers: Authorization: Bearer <caller's Supabase session access token>
 //
 // Auth (enforced server-side in this route):
@@ -19,16 +20,9 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-const TEMP_PASSWORD = '1234567!'
+export const MIN_PASSWORD_LENGTH = 8
 
-// Existing super-admin logins only — never use domain checks,
-// real learners share the @slpalaska.com domain.
-const SUPER_ADMINS = ['brian@slpalaska.com', 'britney@slpalaska.com']
-
-function isSuperAdmin(email) {
-  if (!email) return false
-  return SUPER_ADMINS.includes(email.toLowerCase().trim())
-}
+import { isSuperAdmin } from '@/lib/superAdmins'
 
 export async function POST(request) {
   const supabaseAdmin = createClient(
@@ -65,6 +59,10 @@ export async function POST(request) {
   const userId = body?.user_id
   if (!userId) {
     return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
+  }
+  const newPassword = body?.password
+  if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
+    return NextResponse.json({ error: `A new password of at least ${MIN_PASSWORD_LENGTH} characters is required.` }, { status: 400 })
   }
 
   // ── 3. Look up the target employee ───────────────────────────────────
@@ -122,13 +120,13 @@ export async function POST(request) {
 
   const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(
     target.auth_user_id,
-    { password: TEMP_PASSWORD }
+    { password: newPassword }
   )
 
   if (pwErr) {
     console.error('[PW-RESET] Password update failed for', target.username, pwErr.message)
     return NextResponse.json(
-      { error: 'Password update failed: ' + pwErr.message },
+      { error: 'Password update failed.' },
       { status: 500 }
     )
   }
@@ -145,8 +143,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         error:
-          'Password was reset to the temp password, but the forced-change flag failed to set: ' +
-          flagErr.message,
+          'Password was reset, but the forced-change flag failed to set. Contact SLP Alaska support.',
       },
       { status: 500 }
     )
@@ -162,6 +159,6 @@ export async function POST(request) {
     message:
       'Password for ' +
       (target.full_name || target.username) +
-      ' has been reset to 1234567! — they will be required to change it at next login.',
+      ' has been reset. They will be required to change it at next login.',
   })
 }

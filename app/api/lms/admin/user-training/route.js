@@ -7,19 +7,13 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import { isSuperAdmin } from '@/lib/superAdmins'
+import { requireAdminRequest } from '@/lib/requireAdmin'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 
-async function getSuperAdmin(supabaseAdmin, token) {
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
-  if (error || !user) return null
-  // Platform super admins are an explicit email allowlist (NOT a domain check —
-  // real learners also have @slpalaska.com emails). See app/lib/superAdmins.js.
-  if (!isSuperAdmin(user.email)) return null
-  return user
-}
 
 export async function GET(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -121,10 +115,9 @@ export async function PATCH(request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const superAdmin = await getSuperAdmin(supabaseAdmin, authHeader.replace('Bearer ', ''))
-  if (!superAdmin) return NextResponse.json({ error: 'Access denied. Super admin only.' }, { status: 403 })
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
+  const superAdmin = auth.user
 
   try {
     const { user_id, exempt_from_required } = await request.json()
@@ -163,10 +156,9 @@ export async function POST(request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const superAdmin = await getSuperAdmin(supabaseAdmin, authHeader.replace('Bearer ', ''))
-  if (!superAdmin) return NextResponse.json({ error: 'Access denied. Super admin only.' }, { status: 403 })
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
+  const superAdmin = auth.user
 
   try {
     const { user_id, course_id, reason, error: bodyErr } = await readExclusionBody(request)
@@ -204,10 +196,9 @@ export async function DELETE(request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const superAdmin = await getSuperAdmin(supabaseAdmin, authHeader.replace('Bearer ', ''))
-  if (!superAdmin) return NextResponse.json({ error: 'Access denied. Super admin only.' }, { status: 403 })
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
+  const superAdmin = auth.user
 
   try {
     const { user_id, course_id, error: bodyErr } = await readExclusionBody(request)
