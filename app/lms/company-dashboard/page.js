@@ -50,10 +50,12 @@ function EditModal({ employee, onSave, onClose, onResetPassword }) {
   const [resetResult, setResetResult] = useState(null)
 
   async function doReset() {
-    if (!confirm(`Reset password for ${employee.full_name} to the temporary password 1234567! ? They will be required to change it the next time they log in.`)) return
+    const password = prompt(`New temporary password for ${employee.full_name} (at least 8 characters). They will be required to change it the next time they log in.`)
+    if (password === null) return
+    if (password.length < 8) { setResetResult({ ok: false, message: 'The password must be at least 8 characters.' }); return }
     setResetting(true)
     setResetResult(null)
-    const result = await onResetPassword(employee)
+    const result = await onResetPassword(employee, password)
     setResetting(false)
     setResetResult(result)
   }
@@ -94,7 +96,7 @@ function EditModal({ employee, onSave, onClose, onResetPassword }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
             <div>
               <div style={{ fontSize: '12px', fontWeight: '700', color: '#444' }}>Password</div>
-              <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Resets to 1234567! and requires a new password at next login.</div>
+              <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>Sets a temporary password you choose and requires a new password at next login.</div>
             </div>
             <button style={S.resetBtn} onClick={doReset} disabled={resetting}>
               {resetting ? 'Resetting…' : 'Reset Password'}
@@ -234,7 +236,7 @@ export default function CompanyDashboard() {
   }
 
   async function handleReactivate(emp) {
-    await fetch('/api/lms/reactivate-user', {
+    await authFetch('/api/lms/reactivate-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: emp.id, auth_user_id: emp.auth_user_id })
@@ -242,12 +244,12 @@ export default function CompanyDashboard() {
     load()
   }
 
-  async function handleResetPassword(emp) {
+  async function handleResetPassword(emp, password) {
     try {
       const res = await fetch('/api/lms/company-admin/reset-password', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: emp.id }),
+        body: JSON.stringify({ user_id: emp.id, password }),
       })
       let data = null
       try { data = await res.json() } catch (e) { data = null }

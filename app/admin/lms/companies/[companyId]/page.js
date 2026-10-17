@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+import { authFetch } from '@/lib/authFetch'
 import { getCourseStatus, formatFrequency, STATUS_COLORS } from '@/lib/courseStatus'
 
 
@@ -31,7 +32,7 @@ export default function CompanyMatrixPage() {
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    const res = await fetch(`/api/lms/admin/company-matrix?company_id=${companyId}`)
+    const res = await authFetch(`/api/lms/admin/company-matrix?company_id=${companyId}`)
     const j = await res.json()
     if (!res.ok) { setError(j.error || 'Failed to load'); setLoading(false); return }
     setData(j); setLoading(false)

@@ -51,7 +51,7 @@ function CompaniesTab() {
   const [importCompany, setImportCompany] = useState(null)
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/lms/companies')
+    const res = await authFetch('/api/lms/companies')
     const data = await res.json()
     setCompanies(data.companies || [])
   }, [])
@@ -64,7 +64,7 @@ function CompaniesTab() {
 
   async function handleSave() {
     setError(''); setSaving(true)
-    const res = await fetch('/api/lms/companies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+    const res = await authFetch('/api/lms/companies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
@@ -72,7 +72,7 @@ function CompaniesTab() {
   }
 
   async function toggleActive(company) {
-    await fetch('/api/lms/companies', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: company.id, active: !company.active }) })
+    await authFetch('/api/lms/companies', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: company.id, active: !company.active }) })
     load()
   }
 
@@ -136,7 +136,7 @@ function UsersTab() {
   const [editForm, setEditForm] = useState({})
 
   const load = useCallback(async () => {
-    const [ur,cr] = await Promise.all([authFetch('/api/lms/users'),fetch('/api/lms/companies')])
+    const [ur,cr] = await Promise.all([authFetch('/api/lms/users'),authFetch('/api/lms/companies')])
     const [ud,cd] = await Promise.all([ur.json(),cr.json()])
     setUsers(ud.users||[])
     setCompanies((cd.companies||[]).filter(c=>c.active))
@@ -199,7 +199,7 @@ function UsersTab() {
   }
 
   async function handleReactivate(user) {
-    await fetch('/api/lms/reactivate-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id}) })
+    await authFetch('/api/lms/reactivate-user', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:user.id,auth_user_id:user.auth_user_id}) })
     load()
   }
 
@@ -210,13 +210,15 @@ function UsersTab() {
   }
 
   async function handleResetPw(user) {
-    if (!confirm(`Reset ${user.full_name}'s password to the default temporary password (1234567!)?\n\nThey will be required to set a new password at next login.`)) return
-    const res = await fetch('/api/lms/admin-reset-password', {
+    const password = prompt(`New temporary password for ${user.full_name} (at least 8 characters).\n\nThey will be required to set a new password at next login.`)
+    if (password === null) return
+    if (password.length < 8) { alert('The password must be at least 8 characters.'); return }
+    const res = await authFetch('/api/lms/admin-reset-password', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ user_id:user.id })
+      body:JSON.stringify({ user_id:user.id, password })
     })
     const d = await res.json().catch(()=>({}))
-    if (res.ok) alert(`Password for ${user.full_name} reset to 1234567!`)
+    if (res.ok) alert(`Password for ${user.full_name} was reset. Give them the new temporary password directly.`)
     else alert('Reset failed: ' + (d.error || 'Unknown error'))
   }
 
@@ -386,7 +388,7 @@ function CoursesTab() {
   const [savingNotes, setSavingNotes] = useState(false)
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/lms/courses')
+    const res = await authFetch('/api/lms/courses')
     const data = await res.json()
     setCourses(data.courses||[])
   }, [])
@@ -395,7 +397,7 @@ function CoursesTab() {
 
   async function handleCreateCourse() {
     setError(''); setSaving(true)
-    const res = await fetch('/api/lms/create-course', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
+    const res = await authFetch('/api/lms/create-course', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(form) })
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
@@ -414,7 +416,7 @@ function CoursesTab() {
       fd.append('course_id',course.id)
       fd.append('slide_order',i+1)
       fd.append('speaker_notes',speakerNotes[i]||'')
-      const res = await fetch('/api/lms/upload-slide',{method:'POST',body:fd})
+      const res = await authFetch('/api/lms/upload-slide',{method:'POST',body:fd})
       if (!res.ok) {
         const d = await res.json()
         setError(`Slide ${i+1} failed: ${d.error}`)
@@ -425,9 +427,9 @@ function CoursesTab() {
   }
 
   async function loadVideoSlides(course) {
-    const res = await fetch(`/api/lms/quiz-questions?course_id=${course.id}`)
+    const res = await authFetch(`/api/lms/quiz-questions?course_id=${course.id}`)
     // Reuse courses endpoint to get slides
-    const slidesRes = await fetch(`/api/lms/courses`)
+    const slidesRes = await authFetch(`/api/lms/courses`)
     const data = await slidesRes.json()
     // Get slide count from course
     const c = (data.courses||[]).find(c=>c.id===course.id)
@@ -450,7 +452,7 @@ function CoursesTab() {
     if (videoFile) fd.append('file', videoFile)
     if (videoUrl) fd.append('video_url', videoUrl)
 
-    const res = await fetch('/api/lms/upload-video',{method:'POST',body:fd})
+    const res = await authFetch('/api/lms/upload-video',{method:'POST',body:fd})
     setSaving(false)
     if (!res.ok) { const d = await res.json(); setError(d.error); return }
     setShowVideoModal(null); setVideoFile(null); setVideoUrl(''); setSelectedVideoSlide('')
@@ -462,7 +464,7 @@ function CoursesTab() {
   }
 
   async function toggleCourseActive(course) {
-    await fetch('/api/lms/courses',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:course.id,active:!course.active})})
+    await authFetch('/api/lms/courses',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:course.id,active:!course.active})})
     load()
   }
 
@@ -496,7 +498,7 @@ function CoursesTab() {
 
   async function handleEditCourse() {
     setError(''); setSaving(true)
-    const res = await fetch('/api/lms/courses', {
+    const res = await authFetch('/api/lms/courses', {
       method: 'PATCH',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(editForm)
@@ -509,7 +511,7 @@ function CoursesTab() {
 
   async function openSlideManager(course) {
     setShowSlideManager(course); setLoadingSlides(true)
-    const res = await fetch('/api/lms/slides?course_id=' + course.id)
+    const res = await authFetch('/api/lms/slides?course_id=' + course.id)
     const data = await res.json()
     setSlideManagerSlides(data.slides || [])
     setLoadingSlides(false)
@@ -517,7 +519,7 @@ function CoursesTab() {
 
   async function handleDeleteSlide(slide) {
     if (!confirm('Delete Slide ' + slide.slide_order + '? This cannot be undone.')) return
-    await fetch('/api/lms/slides', {
+    await authFetch('/api/lms/slides', {
       method: 'DELETE',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id: slide.id, course_id: showSlideManager.id })
@@ -526,7 +528,7 @@ function CoursesTab() {
   }
 
   async function handleReorderSlide(slide, direction) {
-    await fetch('/api/lms/slides', {
+    await authFetch('/api/lms/slides', {
       method: 'PATCH',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id: slide.id, course_id: showSlideManager.id, direction })
@@ -536,7 +538,7 @@ function CoursesTab() {
 
   async function handleSaveNotes(slide) {
     setSavingNotes(true)
-    await fetch('/api/lms/slides', {
+    await authFetch('/api/lms/slides', {
       method: 'PUT',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id: slide.id, speaker_notes: editNotes })
@@ -720,7 +722,7 @@ function QuizBuilderTab() {
   const audioPollRef = useRef(null)
 
   const loadCourses = useCallback(async () => {
-    const res = await fetch('/api/lms/courses')
+    const res = await authFetch('/api/lms/courses')
     const data = await res.json()
     setCourses(data.courses||[])
   }, [])
@@ -731,7 +733,7 @@ function QuizBuilderTab() {
   useEffect(() => {
     if (!jobId) return
     pollRef.current = setInterval(async () => {
-      const res = await fetch(`/api/lms/ai-job-status?job_id=${jobId}`)
+      const res = await authFetch(`/api/lms/ai-job-status?job_id=${jobId}`)
       const data = await res.json()
       setJobProgress(data)
       if (data.status === 'complete' || data.status === 'failed') {
@@ -749,7 +751,7 @@ function QuizBuilderTab() {
   useEffect(() => {
     if (!audioJobId) return
     audioPollRef.current = setInterval(async () => {
-      const res = await fetch(`/api/lms/ai-job-status?job_id=${audioJobId}`)
+      const res = await authFetch(`/api/lms/ai-job-status?job_id=${audioJobId}`)
       const data = await res.json()
       setAudioJobProgress(data)
       if (data.status === 'complete' || data.status === 'failed') {
@@ -764,14 +766,14 @@ function QuizBuilderTab() {
 
   async function selectCourse(course) {
     setSelectedCourse(course); setError(''); setJobProgress(null)
-    const res = await fetch(`/api/lms/quiz-questions?course_id=${course.id}`)
+    const res = await authFetch(`/api/lms/quiz-questions?course_id=${course.id}`)
     const data = await res.json()
     setQuestions(data.questions||[])
   }
 
   async function loadQuestions() {
     if (!selectedCourse) return
-    const res = await fetch(`/api/lms/quiz-questions?course_id=${selectedCourse.id}`)
+    const res = await authFetch(`/api/lms/quiz-questions?course_id=${selectedCourse.id}`)
     const data = await res.json()
     setQuestions(data.questions||[])
   }
@@ -779,7 +781,7 @@ function QuizBuilderTab() {
   async function handleAIGenerate() {
     setError(''); setGenerating(true); setJobProgress(null)
 
-    const res = await fetch('/api/lms/ai-generate', {
+    const res = await authFetch('/api/lms/ai-generate', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({course_id: selectedCourse.id, mode: generateMode})
@@ -794,7 +796,7 @@ function QuizBuilderTab() {
 
   async function handleGenerateAudio() {
     setError(''); setGeneratingAudio(true); setAudioResult(null); setAudioJobProgress(null)
-    const res = await fetch('/api/lms/generate-audio', {
+    const res = await authFetch('/api/lms/generate-audio', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ course_id: selectedCourse.id }),
@@ -824,7 +826,7 @@ function QuizBuilderTab() {
     const payload = {...form, course_id:selectedCourse.id, slide_reference:form.slide_reference?parseInt(form.slide_reference):null, is_ai_generated:false, always_include:true}
     const method = editingQuestion?'PATCH':'POST'
     if (editingQuestion) payload.id = editingQuestion.id
-    const res = await fetch('/api/lms/quiz-questions',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    const res = await authFetch('/api/lms/quiz-questions',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
     const data = await res.json()
     setSaving(false)
     if (!res.ok) { setError(data.error); return }
@@ -833,12 +835,12 @@ function QuizBuilderTab() {
 
   async function handleDelete(q) {
     if (!confirm('Delete this question?')) return
-    await fetch('/api/lms/quiz-questions',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:q.id})})
+    await authFetch('/api/lms/quiz-questions',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:q.id})})
     loadQuestions()
   }
 
   async function toggleAlwaysInclude(q) {
-    await fetch('/api/lms/quiz-questions',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:q.id,always_include:!q.always_include,question_text:q.question_text,option_a:q.option_a,option_b:q.option_b,option_c:q.option_c,option_d:q.option_d,correct_answer:q.correct_answer,slide_reference:q.slide_reference,question_order:q.question_order})})
+    await authFetch('/api/lms/quiz-questions',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:q.id,always_include:!q.always_include,question_text:q.question_text,option_a:q.option_a,option_b:q.option_b,option_c:q.option_c,option_d:q.option_d,correct_answer:q.correct_answer,slide_reference:q.slide_reference,question_order:q.question_order})})
     loadQuestions()
   }
 
@@ -1002,7 +1004,7 @@ function RequiredCoursesTab() {
   const [expanded, setExpanded] = useState({})
 
   const load = useCallback(async () => {
-    const [rr,cr,cor] = await Promise.all([fetch('/api/lms/required-courses'),fetch('/api/lms/companies'),fetch('/api/lms/courses')])
+    const [rr,cr,cor] = await Promise.all([authFetch('/api/lms/required-courses'),authFetch('/api/lms/companies'),authFetch('/api/lms/courses')])
     const [rd,cd,cod] = await Promise.all([rr.json(),cr.json(),cor.json()])
     setRequired(rd.required_courses||[])
     setCompanies((cd.companies||[]).filter(c=>c.active))
@@ -1015,7 +1017,7 @@ function RequiredCoursesTab() {
     setError(''); setSaving(true)
     let anyError = null
     for (const course_id of form.course_ids) {
-      const res = await fetch('/api/lms/required-courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company_id:form.company_id,course_id})})
+      const res = await authFetch('/api/lms/required-courses',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company_id:form.company_id,course_id})})
       const data = await res.json()
       if (!res.ok) anyError = data.error
     }
@@ -1026,7 +1028,7 @@ function RequiredCoursesTab() {
 
   async function handleRemove(item) {
     if (!confirm(`Remove "${item.lms_courses?.title}" as required for ${item.lms_companies?.name}?`)) return
-    await fetch('/api/lms/required-courses',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:item.id})})
+    await authFetch('/api/lms/required-courses',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:item.id})})
     load()
   }
 
@@ -1150,10 +1152,10 @@ function IndividualAssignmentsTab() {
 
   const load = useCallback(async () => {
     const [ar, ur, cor, comr] = await Promise.all([
-      fetch('/api/lms/individual-assignments'),
+      authFetch('/api/lms/individual-assignments'),
       authFetch('/api/lms/users'),
-      fetch('/api/lms/courses'),
-      fetch('/api/lms/companies'),
+      authFetch('/api/lms/courses'),
+      authFetch('/api/lms/companies'),
     ])
     const [ad, ud, cod, comd] = await Promise.all([
       ar.json(), ur.json(), cor.json(), comr.json(),
@@ -1171,7 +1173,7 @@ function IndividualAssignmentsTab() {
     setSaving(true)
     let anyError = null
     for (const course_id of form.course_ids) {
-      const res = await fetch('/api/lms/individual-assignments', {
+      const res = await authFetch('/api/lms/individual-assignments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1192,7 +1194,7 @@ function IndividualAssignmentsTab() {
 
   async function handleRemove(a) {
     if (!confirm(`Remove "${a.lms_courses?.title}" from ${a.lms_users?.full_name}?`)) return
-    await fetch('/api/lms/individual-assignments', {
+    await authFetch('/api/lms/individual-assignments', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: a.id }),
@@ -1498,8 +1500,8 @@ function GrantCreditTab() {
   const load = useCallback(async () => {
     const [ur, cor, comr] = await Promise.all([
       authFetch('/api/lms/users'),
-      fetch('/api/lms/courses'),
-      fetch('/api/lms/companies'),
+      authFetch('/api/lms/courses'),
+      authFetch('/api/lms/companies'),
     ])
     const [ud, cod, comd] = await Promise.all([ur.json(), cor.json(), comr.json()])
     setUsers((ud.users || []).filter(u => u.active))
@@ -1678,8 +1680,8 @@ function RevokeCreditTab() {
   const load = useCallback(async () => {
     const [ur, cor, comr] = await Promise.all([
       authFetch('/api/lms/users'),
-      fetch('/api/lms/courses'),
-      fetch('/api/lms/companies'),
+      authFetch('/api/lms/courses'),
+      authFetch('/api/lms/companies'),
     ])
     const [ud, cod, comd] = await Promise.all([ur.json(), cor.json(), comr.json()])
     setUsers((ud.users || []).filter(u => u.active))

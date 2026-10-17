@@ -38,6 +38,7 @@
 // promoting yourself first. The two fixes only mean anything together.
 
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { isSuperAdmin } from '@/lib/superAdmins'
 
 /** Shape returned when the caller is refused. */
@@ -143,4 +144,20 @@ export async function companyIdOfUser(supabaseAdmin, lmsUserId) {
     .eq('id', lmsUserId)
     .maybeSingle()
   return data?.company_id || null
+}
+
+/**
+ * Convenience wrapper for routes that do not otherwise need their own
+ * service-role client before the check: builds one, then runs requireAdmin.
+ * Super admin only unless opts.allowCompanyAdmin is set.
+ * 401 when there is no valid session, 403 when the caller is not allowed.
+ */
+export async function requireAdminRequest(request, opts = {}) {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+  const auth = await requireAdmin(request, supabaseAdmin, opts)
+  return auth.ok ? { ...auth, supabaseAdmin } : auth
 }

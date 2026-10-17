@@ -1,27 +1,30 @@
 // app/api/lms/admin-reset-password/route.js
 //
-// Super-admin password reset. Resets a learner (or any user) back to the
-// default temporary password and flags them to choose a new one at next login.
+// Super-admin password reset. Sets the password the super admin supplies on a
+// learner's auth account and flags them to choose a new one at next login
+// (must_change_pw). There is no default password: the caller must send one of
+// at least MIN_PASSWORD_LENGTH characters, or the request is refused with 400.
+// The password is never echoed back in the response.
 //
-// NOTE on auth: this matches the existing /admin/lms action routes
-// (delete-user, reactivate-user, delete-user-permanent), which are gated by
-// the super-admin page guard rather than a token. See the security note below.
+// Auth: server-side. Bearer token verified with the service role, then the
+// exact-email super admin list (app/lib/requireAdmin.js, app/lib/superAdmins.js).
+// No session -> 401. Signed in but not a super admin -> 403.
 
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdminRequest } from '@/lib/requireAdmin'
 
-const DEFAULT_TEMP_PASSWORD = '1234567!'
+export const MIN_PASSWORD_LENGTH = 8
 
 export async function POST(request) {
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  )
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
+  const supabaseAdmin = auth.supabaseAdmin
   try {
     const { user_id, password } = await request.json()
     if (!user_id) return NextResponse.json({ error: 'Missing user_id.' }, { status: 400 })
-
-    const newPassword = password && password.length >= 8 ? password : DEFAULT_TEMP_PASSWORD
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      return NextResponse.json({ error: `A new password of at least ${MIN_PASSWORD_LENGTH} characters is required.` }, { status: 400 })
+    }
 
     const { data: target, error: lookupError } = await supabaseAdmin
       .from('lms_users')
@@ -34,13 +37,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'This user has no auth login to reset.' }, { status: 400 })
 
     const { error } = await supabaseAdmin.auth.admin.updateUserById(
-      target.auth_user_id, { password: newPassword }
+      target.auth_user_id, { password }
     )
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    if (error) {
+      console.error('[admin-reset-password] update failed:', error.message)
+      return NextResponse.json({ error: 'Could not reset the password.' }, { status: 400 })
+    }
 
     await supabaseAdmin.from('lms_users').update({ must_change_pw: true }).eq('id', user_id)
 
-    return NextResponse.json({ success: true, password: newPassword, full_name: target.full_name })
+    return NextResponse.json({ success: true, full_name: target.full_name })
   } catch (err) {
     return NextResponse.json({ error: 'Server error.' }, { status: 500 })
   }

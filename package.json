@@ -20,7 +20,8 @@
     "check:quality-gate": "node scripts/check-quality-gate.mjs",
     "check:tha-gate": "node scripts/check-tha-gate.mjs",
     "check:investigation-nav": "node scripts/check-investigation-nav.mjs",
-    "check:ca-access": "node scripts/check-ca-access.mjs"
+    "check:ca-access": "node scripts/check-ca-access.mjs",
+    "check:lms-admin-auth": "node scripts/check-lms-admin-auth.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

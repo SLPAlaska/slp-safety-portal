@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdminRequest } from '@/lib/requireAdmin'
 
 function adminClient() {
   return createClient(
@@ -12,6 +13,8 @@ function adminClient() {
 
 // GET /api/lms/slides?course_id=xxx
 export async function GET(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabase = adminClient()
   const { searchParams } = new URL(request.url)
   const course_id = searchParams.get('course_id')
@@ -36,6 +39,8 @@ export async function GET(request) {
 
 // DELETE /api/lms/slides  { id, course_id }
 export async function DELETE(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabase = adminClient()
   const { id, course_id } = await request.json()
   if (!id || !course_id) return NextResponse.json({ error: 'Missing id or course_id' }, { status: 400 })
@@ -77,6 +82,8 @@ export async function DELETE(request) {
 
 // PATCH /api/lms/slides  { id, course_id, direction: 'up'|'down' }
 export async function PATCH(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabase = adminClient()
   const { id, course_id, direction } = await request.json()
   if (!id || !course_id || !direction) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
@@ -109,6 +116,8 @@ export async function PATCH(request) {
 
 // PUT /api/lms/slides  { id, speaker_notes }
 export async function PUT(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabase = adminClient()
   const { id, speaker_notes } = await request.json()
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
