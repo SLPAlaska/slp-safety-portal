@@ -234,7 +234,7 @@ export default function CompanyDashboard() {
   }
 
   async function handleReactivate(emp) {
-    await fetch('/api/lms/reactivate-user', {
+    await authFetch('/api/lms/reactivate-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: emp.id, auth_user_id: emp.auth_user_id })

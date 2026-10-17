@@ -199,7 +199,7 @@ function EmployeesTab({ token, companyId }) {
 
   async function handleReactivate(user) {
     setActionError('')
-    const res = await fetch('/api/lms/reactivate-user', {
+    const res = await authFetch('/api/lms/reactivate-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id })
@@ -356,8 +356,8 @@ function AssignCoursesTab({ token, companyId }) {
   const load = useCallback(async () => {
     const [ur, cr, ar] = await Promise.all([
       fetch('/api/lms/company-admin/users', { headers: { 'Authorization': `Bearer ${token}` } }),
-      fetch('/api/lms/courses'),
-      fetch('/api/lms/individual-assignments'),
+      authFetch('/api/lms/courses'),
+      authFetch('/api/lms/individual-assignments'),
     ])
     const [ud, cd, ad] = await Promise.all([ur.json(), cr.json(), ar.json()])
     setUsers((ud.users || []).filter(u => u.active))
@@ -371,7 +371,7 @@ function AssignCoursesTab({ token, companyId }) {
     setError(''); setSaving(true)
     let anyError = null
     for (const course_id of form.course_ids) {
-      const res = await fetch('/api/lms/individual-assignments', {
+      const res = await authFetch('/api/lms/individual-assignments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: form.user_id, course_id, due_date: form.due_date || null })
@@ -388,7 +388,7 @@ function AssignCoursesTab({ token, companyId }) {
 
   async function handleRemove(a) {
     if (!confirm(`Remove "${a.lms_courses?.title}" from ${a.lms_users?.full_name}?`)) return
-    await fetch('/api/lms/individual-assignments', {
+    await authFetch('/api/lms/individual-assignments', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: a.id })

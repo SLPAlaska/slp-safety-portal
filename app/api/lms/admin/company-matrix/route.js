@@ -11,8 +11,11 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { fetchExclusions, makeIsExcluded, effectiveRequiredIds } from '@/lib/requiredCourses'
 import { pageAll, pageAllIn } from '@/lib/supabasePage'
+import { requireAdminRequest } from '@/lib/requireAdmin'
 
 export async function GET(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY

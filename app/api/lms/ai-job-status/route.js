@@ -1,8 +1,11 @@
 // app/api/lms/ai-job-status/route.js
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdminRequest } from '@/lib/requireAdmin'
 
 export async function GET(req) {
+  const auth = await requireAdminRequest(req)
+  if (!auth.ok) return auth.response
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY

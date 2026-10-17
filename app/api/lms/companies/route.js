@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdminRequest } from '@/lib/requireAdmin'
 
-export async function GET() {
+export async function GET(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   const { data, error } = await supabaseAdmin.from('lms_companies').select('*').order('name')
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
@@ -9,6 +12,8 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   try {
     const { name, slug, notes } = await request.json()
@@ -22,6 +27,8 @@ export async function POST(request) {
 }
 
 export async function PATCH(request) {
+  const auth = await requireAdminRequest(request)
+  if (!auth.ok) return auth.response
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
   try {
     const { id, active } = await request.json()

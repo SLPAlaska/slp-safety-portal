@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { requireAdminRequest, assertSameCompany } from '@/lib/requireAdmin'
 
 export async function POST(request) {
+  const auth = await requireAdminRequest(request, { allowCompanyAdmin: true })
+  if (!auth.ok) return auth.response
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -13,11 +16,13 @@ export async function POST(request) {
 
     const { data: target, error: lookupError } = await supabaseAdmin
       .from('lms_users')
-      .select('id, auth_user_id')
+      .select('id, auth_user_id, company_id')
       .eq('id', user_id)
       .single()
     if (lookupError || !target)
       return NextResponse.json({ error: 'Employee not found.' }, { status: 404 })
+    const scopeErr = assertSameCompany(auth, target.company_id)
+    if (scopeErr) return scopeErr
 
     const { error: activateError } = await supabaseAdmin
       .from('lms_users').update({ active: true }).eq('id', user_id)
