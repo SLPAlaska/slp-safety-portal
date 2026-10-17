@@ -11,6 +11,7 @@ Function host. Deployed on Vercel at https://portal.slpalaska.com.
 - Secrets never go in the transcript, in git, in migrations, or in cron job bodies. Use Supabase secrets/Vault and scratchpad files for handoff.
 - Company data isolation is load-bearing: any query serving one company must be scoped by company_id, and cross-company access is super-admin only.
 - New tables get RLS enabled from the first migration.
+- New views are created `with (security_invoker = true)` and the same migration runs `revoke all on public.<view> from anon` (grant authenticated only what the page needs). Supabase default privileges otherwise give anon ALL on every new view, and a definer view bypasses RLS. Re-creating an existing view follows the same rule. See supabase/migrations/20261017160000_sql_2026_10_17_60_slp_secdef_views_lockdown.sql; `npm run check:secdef-views` enforces it.
 
 ### How that policy is implemented today
 
